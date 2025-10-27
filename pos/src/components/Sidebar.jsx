@@ -35,7 +35,7 @@ export function Sidebar() {
       <div
         className={`   ${
           isOpen ? "w-44" : "w-16"
-        } bg-gray-900 text-white transition-all duration-300 ease-in-out overflow-scroll  `}
+        } bg-gray-900 text-white transition-all duration-300 ease-in-out overflow-scroll no-scrollbar  `}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-700 sticky top-0 bg-gray-900 z-10">
           <h1 className="    ">{isOpen && "My Pos"}</h1>
