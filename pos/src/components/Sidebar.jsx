@@ -35,13 +35,12 @@ export function Sidebar() {
     { name: "2Customers", icon: <MdManageAccounts /> },
   ];
   return (
-    <div className=" flex bg-gray-100  h-screen">
       <div
         className={` relative  ${
           isOpen ? "w-54" : "w-16"
         } bg-gray-900 text-white transition-all duration-300 ease-in-out overflow-scroll no-scrollbar  `}
       >
-        <div className="flex items-center justify-between p-4 border-b border-gray-700 sticky top-0 bg-gray-900 z-10">
+        <div className="flex items-center justify-between p-4 border-b border-gray-700 sticky top-0 bg-gray-900 ">
           <h1 className="">{isOpen && "My Pos"}</h1>
           <button
             className="text-4xl hover:cursor-pointer  "
@@ -61,10 +60,9 @@ export function Sidebar() {
                 className={` cursor-pointer transition-colors duration-200
                 ${
                   activeMenu === Name
-                    ? "bg-gray-700 text-white" 
+                    ? "bg-gray-700 text-white"
                     : "hover:bg-gray-800 text-gray-300"
                 }`}
-                
               >
                 <div className="flex items-center gap-4 p-3 hover:bg-gray-700 cursor-pointer">
                   <span className="text-4xl"> {Icon}</span>
@@ -80,6 +78,5 @@ export function Sidebar() {
           <button className="text-2xl">{isOpen && <MdManageAccounts />}</button>
         </div>
       </div>
-    </div>
   );
 }
