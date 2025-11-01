@@ -72,7 +72,7 @@ export function Sidebar() {
             );
           })}
         </nav>
-        <div className=" sticky bottom-0  border-t border-gray-700   bg-gray-900 w-full flex justify-between p-3 ">
+        <div className=" sticky bottom-0  border-t border-gray-700    bg-gray-900 w-full flex justify-between p-3 ">
           <p className="">{isOpen && "arif"}</p>
           <span className="   text-4xl  ">{!isOpen && <RiUserFill />}</span>
           <button className="text-2xl">{isOpen && <MdManageAccounts />}</button>
