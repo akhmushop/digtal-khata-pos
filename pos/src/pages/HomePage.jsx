@@ -1,11 +1,20 @@
 import React from "react";
 import { Sidebar } from "../components/Sidebar";
-import { PosHeader } from "../components/PosHeader";
+import { ProductHeader } from "../components/ProductHeader";
+import { CartHeader } from "../components/CartHeader";
+import { ProductList } from "../components/ProductList";
 function HomePage() {
   return (
-    <div className="flex bg-gray-100  h-screen">
+    <div className="flex">
       <Sidebar />
-      <PosHeader />
+      <div className="w-4/6 ">
+        <ProductHeader />
+        <ProductList />
+      </div>
+
+      <div className="w-2/6">
+        <CartHeader />
+      </div>
     </div>
   );
 }
