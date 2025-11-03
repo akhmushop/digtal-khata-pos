@@ -9,7 +9,7 @@ import {
   RiUserFill,
 } from "react-icons/ri";
 import { MdPointOfSale, MdManageAccounts } from "react-icons/md";
-export function Sidebar() {
+export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState("Pos");
   const toggleSidebar = () => {

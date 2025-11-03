@@ -17,7 +17,7 @@ export function CartHeader() {
     };
   }, []);
   return (
-    <div className="flex items-center  bg-gray-300  justify-around  h-17  ">
+    <div className="flex items-center  bg-gray-300  justify-around  h-17 ">
       <div className="relative">
         <input
           id="date"
