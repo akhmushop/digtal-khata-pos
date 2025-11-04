@@ -1,8 +1,7 @@
 import React from "react";
 import { MdOutlineAddCircleOutline, MdDeleteOutline } from "react-icons/md";
 import { FiMinusCircle } from "react-icons/fi";
-import { cartItems } from "../data/cartItems";
-export default function CartItems() {
+export default function CartItems({cartItems = []}) {
   return (
     <div className="overflow-scroll h-[calc(100vh-4.25rem)] no-scrollbar">
       {cartItems.map((items) => {

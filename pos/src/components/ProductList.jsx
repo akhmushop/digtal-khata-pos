@@ -1,15 +1,17 @@
-import React, { useState } from "react";
+import React, {  } from "react";
 import { posProducts } from "../data/products";
-import { cartItems } from "../data/cartItems";
 
-export function ProductList() {
+export function ProductList({addCartItems}) {
   return (
     <div className="grid grid-cols-5  gap-1 p-5   bg-gray-300  overflow-scroll h-[calc(100vh-4.25rem)] no-scrollbar   ">
-      {posProducts.map((product , index) => {
+      {posProducts.map((product) => {
         return (
           <div
-          key={index}
-            className="h-50  bg-amber-300 rounded-sm flex flex-col items-center justify-between py-2 cursor-pointer"
+          key={product.id}
+          onClick={() => {
+            addCartItems(product)
+          }}
+            className="h-50  bg-amber-300 rounded-sm flex flex-col items-center justify-between py-2 cursor-pointer "
           >
             <img className="h-20 rounded-sm " src={product.image} alt="" />
             <h2 className="">{product.name}</h2>
