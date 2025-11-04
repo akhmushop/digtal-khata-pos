@@ -11,7 +11,7 @@ export default function CartItems({cartItems = []}) {
             className="h-20 m-2 bg-amber-100 rounded-xl flex items-center "
           >
             <div className="flex items-center w-full justify-between">
-              <img className="h-20  rounded-xl " src={items.image} alt="" />
+              <img className="h-20 w-20  rounded-xl " src={items.image} alt="" />
               <div className="flex-1 pl-5">
                 <h1>{items.name}</h1>
                 <p>
@@ -33,11 +33,11 @@ export default function CartItems({cartItems = []}) {
       <div className="p-5">
         <div className="flex justify-between py-2 border-b">
           <h4>Total Items</h4>
-          <h4>Qty: 6</h4>
+          <h4>Qty: {cartItems.reduce((total,item) => total + (item.qty || 0 ) ,0)}</h4>
         </div>
         <div className="flex justify-between py-2 border-b">
           <h4>Subtotal</h4>
-          <h4>TK: 9000</h4>
+          <h4>TK: {cartItems.reduce((total, item) => total + (item.price * item.qty),0)}</h4>
         </div>
         <div>
           <h3 className="py-2  w-full flex item">Charges & Taxes</h3>
