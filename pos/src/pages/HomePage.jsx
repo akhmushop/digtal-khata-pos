@@ -28,6 +28,23 @@ function HomePage() {
       return [...prev, { ...product, qty: 1 }];
     });
   };
+  const removeCartItem = (productId) => {
+    setCartItems((prev) => prev.filter((item) => item.id !== productId));
+  };
+  const increaseQty = (product) => {
+    setCartItems((prev) => {
+      return prev.map((p) =>
+        p.id === product.id ? { ...p, qty: p.qty + 1 } : p
+      );
+    });
+  };
+  const decreaseQty = (product) => {
+    setCartItems((prev) => {
+      return prev
+        .map((p) => (p.id === product.id ? { ...p, qty: p.qty - 1 } : p))
+        .filter((p) => p.qty > 0);
+    });
+  };
   return (
     <div className="flex">
       <Sidebar />
@@ -38,7 +55,12 @@ function HomePage() {
 
       <div className="w-3/8">
         <CartHeader />
-        <CartItems cartItems={cartItems} />
+        <CartItems
+          cartItems={cartItems}
+          removeCartItem={removeCartItem}
+          increaseQty={increaseQty}
+          decreaseQty={decreaseQty}
+        />
       </div>
     </div>
   );
