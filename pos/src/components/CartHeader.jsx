@@ -17,7 +17,7 @@ export function CartHeader() {
     };
   }, []);
   return (
-    <div className="flex items-center  bg-gray-300  justify-around  h-17 ">
+    <div className="flex items-center  bg-zuccini-400  justify-around  h-17 mb-3 rounded-md mx-2 mt-2">
       <div className="relative">
         <input
           id="date"
@@ -27,7 +27,7 @@ export function CartHeader() {
         />
         <label
           htmlFor="date"
-          className="absolute -top-3 left-3 bg-gray-300 peer-focus:text-blue-500 text-sm"
+          className="absolute -top-3 left-3 bg-zuccini-400 peer-focus:text-blue-500 text-sm"
         >
           Date
         </label>
@@ -51,8 +51,8 @@ export function CartHeader() {
             htmlFor="customer"
             className={`absolute left-3 mt-1  text-lg transition-all pointer-events-none ${
               inputValue
-                ? "-top-4 text-sm text-blue-500 bg-gray-300"
-                : "peer-focus:-top-4 peer-placeholder-shown:text-gray-400 peer-focus:text-blue-500 peer-focus:text-sm bg-gray-300 "
+                ? "-top-4 text-sm text-blue-500 bg-zuccini-400"
+                : "peer-focus:-top-4 peer-placeholder-shown:text-gray-700 peer-focus:text-blue-500 peer-focus:text-sm bg-zuccini-400 "
             }
                   `}
           >

@@ -11,4 +11,18 @@
         scrollbar-width: none;     /* Firefox */
       }
     }
-    
+    @theme {
+      --color-zuccini-50: #effaf3;
+--color-zuccini-100: #d7f4de;
+--color-zuccini-200: #b3e7c3;
+--color-zuccini-300: #81d4a0;
+--color-zuccini-400: #4dba79;
+--color-zuccini-500: #2b9e5e;
+--color-zuccini-600: #1c7f4a;
+--color-zuccini-700: #16663d;
+--color-zuccini-800: #145132;
+--color-zuccini-900: #12452c;
+--color-zuccini-950: #092519;
+
+
+    }

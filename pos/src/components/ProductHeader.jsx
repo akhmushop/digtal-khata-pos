@@ -3,7 +3,7 @@ import { RiHome9Fill } from "react-icons/ri";
 export function ProductHeader() {
   return (
     <>
-      <div className="flex text-black-200   text-white border-b border-gray-700 bg-indigo-500  h-17 sticky top-0">
+      <div className="flex text-black-200  rounded-md mx-5 mt-2  bg-zuccini-400  h-17 sticky top-0">
         <div className=" flex justify-between  items-center w-full   ">
           <h1 className="text-xl   pl-3 pr-3 ">myPos</h1>
           <input

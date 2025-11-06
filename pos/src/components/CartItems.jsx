@@ -38,12 +38,12 @@ export default function CartItems({
   }, [cartItems, customQty, editQtyId, updateQty]);
 
   return (
-    <div className="overflow-scroll h-[calc(100vh-4.25rem)] no-scrollbar">
+    <div className="overflow-scroll h-[calc(100vh-4.25rem)] no-scrollbar bg-zuccini-50">
       {cartItems.map((items) => {
         return (
           <div
             key={items.id}
-            className="h-20 m-2 bg-amber-100 rounded-xl flex items-center "
+            className="h-20 m-2 bg-zuccini-300 rounded-xl flex items-center "
           >
             <div className="flex items-center w-full justify-between">
               <img
