@@ -13,6 +13,13 @@ function HomePage() {
       return [];
     }
   });
+  const updateQty = (editQty, product) => {
+    setCartItems((prev) => {
+      return prev.map((p) =>
+        p.id === product.id ? { ...p, qty: editQty } : p
+      );
+    });
+  };
 
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cartItems));
@@ -60,6 +67,7 @@ function HomePage() {
           removeCartItem={removeCartItem}
           increaseQty={increaseQty}
           decreaseQty={decreaseQty}
+          updateQty={updateQty}
         />
       </div>
     </div>

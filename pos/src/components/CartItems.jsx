@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { MdOutlineAddCircleOutline, MdDeleteOutline } from "react-icons/md";
 import { FiMinusCircle } from "react-icons/fi";
 export default function CartItems({
@@ -6,7 +6,37 @@ export default function CartItems({
   removeCartItem,
   increaseQty,
   decreaseQty,
+  updateQty,
 }) {
+  const [editQtyId, setEditQtyId] = useState(null);
+  const [customQty, setCustomQty] = useState(null);
+  const editQtyRef = useRef(null);
+
+  useEffect(() => {
+    const clickOutside = (event) => {
+      if (editQtyRef.current && !editQtyRef.current.contains(event.target)) {
+        setEditQtyId(null);
+      }
+      const items = cartItems.find((p) => p.id === editQtyId);
+      if (
+        editQtyRef.current &&
+        items &&
+        !editQtyRef.current.contains(event.target)
+      ) {
+                const newQty = Number(customQty);
+        if (!isNaN(newQty) && newQty > 0) {
+          updateQty(newQty, items); // Send the difference to update
+        }
+        setCustomQty(null);
+        setEditQtyId(null);
+      }
+    };
+    document.addEventListener("mousedown", clickOutside);
+    return () => {
+      document.removeEventListener("mousedown", clickOutside);
+    };
+  }, [cartItems, customQty, editQtyId, updateQty]);
+
   return (
     <div className="overflow-scroll h-[calc(100vh-4.25rem)] no-scrollbar">
       {cartItems.map((items) => {
@@ -36,7 +66,27 @@ export default function CartItems({
                 >
                   <FiMinusCircle />
                 </div>
-                <span className="">{items.qty}</span>
+                <span
+                  onClick={() => {
+                    setEditQtyId(items.id);
+                  }}
+                  className=""
+                >
+                  {editQtyId === items.id ? (
+                    <input
+                      type="number"
+                      className="h-7 w-11 border"
+                      ref={editQtyRef}
+                      defaultValue={items.qty}
+                      autoFocus
+                      onChange={(e) => {
+                        setCustomQty(e.target.value);
+                      }}
+                    />
+                  ) : (
+                    items.qty
+                  )}
+                </span>
                 <div
                   onClick={() => {
                     increaseQty(items);
