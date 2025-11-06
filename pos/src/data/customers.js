@@ -1,0 +1,1 @@
+export const customer = ["walk-in customer","Shajedul islam arif", "John Doe", "Jane Smith"];

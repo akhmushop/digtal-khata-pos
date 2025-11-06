@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { RiUserAddFill } from "react-icons/ri";
+import { customer } from "../data/customers";
 export function CartHeader() {
   const [showCustomer, setShowCustomer] = useState(false);
-  const customer = ["Shajedul islam arif", "John Doe", "Jane Smith"];
   const [inputValue, setInputValue] = useState(customer[0]);
   const inputRef = useRef(null);
   useEffect(() => {
