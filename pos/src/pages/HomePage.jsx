@@ -52,6 +52,7 @@ function HomePage() {
         .filter((p) => p.qty > 0);
     });
   };
+
   return (
     <div className="flex">
       <Sidebar />

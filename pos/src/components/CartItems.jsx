@@ -38,7 +38,8 @@ export default function CartItems({
   }, [cartItems, customQty, editQtyId, updateQty]);
 
   return (
-    <div className="overflow-scroll h-[calc(100vh-4.25rem)] no-scrollbar bg-zuccini-50">
+<div className="h-[calc(100vh-4.25rem)]">
+      <div className="h-full overflow-scroll  no-scrollbar bg-zuccini-50">
       {cartItems.map((items) => {
         return (
           <div
@@ -155,5 +156,6 @@ export default function CartItems({
         </div>
       </div>
     </div>
+</div>
   );
 }
