@@ -1,19 +1,23 @@
 import React, { useState, useRef, useEffect } from "react";
-import { RiUserAddFill , RiCloseLargeFill  } from "react-icons/ri";
-import { customer } from "../data/customers";
+import {
+  RiUserAddFill,
+  RiCloseLargeFill,
+  RiArrowDropDownFill,
+} from "react-icons/ri";
 export function CartHeader() {
-  const [saveCustomer, setSaveCustomer] = useState(() => {
+  const [saveCustomer, setSaveCustomer] = useState(() => {"walk-in customer"
     try {
       const savedCustomer = localStorage.getItem("customer");
-      return savedCustomer ? JSON.parse(savedCustomer) : [];
+      return savedCustomer ? JSON.parse(savedCustomer) : [{ name: "walk-in customer", mobile: "" }];
     } catch {
-      return [];
+      return [{ name: "walk-in customer", mobile: "" }];
     }
   });
 
   const [showCustomer, setShowCustomer] = useState(false);
-  const [inputValue, setInputValue] = useState(customer[0].name);
+  const [inputValue, setInputValue] = useState(saveCustomer[0].name);
   const [addCustomer, setAddCustomer] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const inputRef = useRef(null);
   useEffect(() => {
     const clickOutside = (event) => {
@@ -43,7 +47,12 @@ export function CartHeader() {
             Date
           </label>
         </div>
-        <div className="relative" ref={inputRef}>
+        <div
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+          className="relative"
+          ref={inputRef}
+        >
           <div className="relative ">
             <input
               placeholder=""
@@ -69,10 +78,30 @@ export function CartHeader() {
             >
               Customer
             </label>
+            <div
+              onClick={() => {
+                !showCustomer ? setShowCustomer(true) : setShowCustomer(false);
+              }}
+              className={`absolute right-1 top-2 cursor-pointer text-2xl transition-all duration-300 hover:bg-amber-50 rounded-2xl ${
+                showCustomer ? "rotate-180" : "rotate-0"
+              } `}
+            >
+              <RiArrowDropDownFill />
+            </div>
+            <div
+              onClick={() => {
+                setInputValue("");
+              }}
+              className={`absolute right-7 top-2 cursor-pointer p-1 transition-all duration-300 hover:bg-amber-50 rounded-2xl ${
+                hovered ? "" : "hidden"
+              } `}
+            >
+              <RiCloseLargeFill />
+            </div>
           </div>
 
           <div
-            className={` absolute h-100 w-full  right-0  bg-gray-200 rounded-md border border-gray-400 ${
+            className={` absolute h-70 overflow-y-scroll w-full  right-0  bg-gray-200 rounded-md border border-gray-400  ${
               !showCustomer && "hidden"
             }   `}
           >
@@ -117,46 +146,71 @@ export function CartHeader() {
 function AddCustomer({ saveCustomer, setSaveCustomer, onClose }) {
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
+  const [animation, setAnimation] = useState(false);
   const handelAddCustomer = () => {
-    if (!name.trim()) alert("Enter your Name");
+    if (!name.trim()) return alert("Enter your Name");
     const newCustomer = { name, mobile };
     setSaveCustomer((prev) => [...prev, newCustomer]);
     setName("");
     setMobile("");
-    setTimeout(onClose(), 300);
+    setAnimation(false);
+    setTimeout(onClose, 300);
   };
   useEffect(() => {
     localStorage.setItem("customer", JSON.stringify(saveCustomer));
   }, [saveCustomer]);
+  useEffect(() => {
+    setAnimation(true);
+  }, []);
   return (
-    <div className="h-95 re bg-zuccini-50 w-80 rounded-md absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-transform duration-300">
-      <div className="flex flex-col items-center justify-center h-full ">
-      <button onClick={()=>{
-        onClose()
-      }} className="cursor-pointer text-2xl absolute right-2 top-2 hover:bg-red-400 transition-all duration-300"><RiCloseLargeFill /></button>
+        <div
+      className={`fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-50 
+        transition-opacity duration-300 ${animation ? "opacity-100" : "opacity-0"}`}
+      onClick={() => {
+        setAnimation(false);
+        setTimeout(onClose, 300);
+      }}
+      
+    >
+      <div
+        className={`h-95 re bg-zuccini-50 w-80 rounded-md  transition-transform duration-300 ${
+          animation ? "scale-100 opacity-100" : "scale-90 opacity-100 "
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex flex-col items-center justify-center h-full ">
+          <button
+            onClick={() => {
+              setAnimation(false);
+              setTimeout(onClose, 300);
+            }}
+            className="cursor-pointer text-2xl absolute right-2 top-2 hover:bg-red-400 hover:text-white transition-all duration-300"
+          >
+            <RiCloseLargeFill />
+          </button>
 
-        <h1 className="text-xl">Customer Information</h1>
-        <PeerFocusInput
-          placeholder={"Name"}
-          id={"name"}
-          onChange={(e) => setName(e.target.value)}
-          value={name}
-        />
-        <PeerFocusInput
-          placeholder={"Mobile Number"}
-          id={"name"}
-          onChange={(e) => setMobile(e.target.value)}
-          value={mobile}
-        />
-        <button
-          onClick={() => {
-            handelAddCustomer();
-            setTimeout(onClose, 300);
-          }}
-          className="border h-10 px-4 bg-red-400 text-white cursor-pointer hover:bg-red-500 transition duration-300 rounded"
-        >
-          Add Customer
-        </button>
+          <h1 className="text-xl">Customer Information</h1>
+          <PeerFocusInput
+            placeholder={"Name"}
+            id={"name"}
+            onChange={(e) => setName(e.target.value)}
+            value={name}
+          />
+          <PeerFocusInput
+            placeholder={"Mobile Number"}
+            id={"name"}
+            onChange={(e) => setMobile(e.target.value)}
+            value={mobile}
+          />
+          <button
+            onClick={() => {
+              handelAddCustomer();
+            }}
+            className="border h-10 px-4 bg-red-400 text-white cursor-pointer hover:bg-red-500 transition duration-300 rounded"
+          >
+            Add Customer
+          </button>
+        </div>
       </div>
     </div>
   );
