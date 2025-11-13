@@ -174,7 +174,7 @@ function AddCustomer({ saveCustomer, setSaveCustomer, onClose }) {
     >
       <div
         className={`h-95 re bg-zuccini-50 w-80 rounded-md  transition-transform duration-300 ${
-          animation ? "scale-100 opacity-100" : "scale-90 opacity-100 "
+          animation ? "scale-100" : "scale-90"
         }`}
         onClick={(e) => e.stopPropagation()}
       >

@@ -52,6 +52,9 @@ function HomePage() {
         .filter((p) => p.qty > 0);
     });
   };
+  const resetCart = (reset) => {
+    setCartItems(reset)
+  }
 
   return (
     <div className="flex">
@@ -69,6 +72,7 @@ function HomePage() {
           increaseQty={increaseQty}
           decreaseQty={decreaseQty}
           updateQty={updateQty}
+          resetCart = {resetCart}
         />
       </div>
     </div>
