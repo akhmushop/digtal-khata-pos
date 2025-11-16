@@ -127,7 +127,7 @@ export default function CartItems({
 }
 
 function CartCalculation({ cartItems, resetCart }) {
-  const [animation, setAnimation] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [emptyCartCon, setEmptyCartCon] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const closeMore = useRef(null);
@@ -167,7 +167,8 @@ function CartCalculation({ cartItems, resetCart }) {
     amount: "0",
     note: "",
   });
-  const [paymentBoxOpen, setPaymentBoxOpen] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isCashModalOpen, setIsCashModalOpen] = useState(false);
 
   return (
     <div className="p-5">
@@ -205,8 +206,8 @@ function CartCalculation({ cartItems, resetCart }) {
         {/* emptybutton */}
         {emptyCartCon && (
           <ClickEmptyToResetCart
-            animation={animation}
-            setAnimation={() => setAnimation(false)}
+            isOpen={isOpen}
+            setIsOpen={setIsOpen}
             setEmptyCartCon={() => setEmptyCartCon(false)}
             resetCart={() => resetCart([])}
             cartItems={cartItems}
@@ -214,9 +215,9 @@ function CartCalculation({ cartItems, resetCart }) {
         )}
         <button
           onClick={() => {
-            setAnimation(false);
+            setIsOpen(false);
             setEmptyCartCon(true);
-            setTimeout(() => setAnimation(true), 10);
+            setTimeout(() => setIsOpen(true), 10);
           }}
           className="bg-red-400 p-2 w-full col-span-1 rounded hover:bg-red-500 transition-all duration-300 cursor-pointer"
         >
@@ -236,8 +237,8 @@ function CartCalculation({ cartItems, resetCart }) {
           </div>
           {showHoldItems && (
             <CartHoldShowBtn
-              animation={animation}
-              setAnimationFalse={() => setAnimation(false)}
+              isOpen={isOpen}
+              setIsOpen={setIsOpen}
               setShowHoldItemsFalse={() => setShowHoldItems(false)}
               holdCartItems={holdCartItems}
               resetCart={resetCart}
@@ -247,8 +248,8 @@ function CartCalculation({ cartItems, resetCart }) {
           )}
           {holdConfirm && (
             <CartHoldBtn
-              setAnimationFalse={() => setAnimation(false)}
-              animation={animation}
+              setIsOpen={setIsOpen}
+              isOpen={isOpen}
               setHoldConfirmFalse={() => setHoldConfirm(false)}
               resetCart={() => resetCart([])}
               setHoldCartItems={() =>
@@ -269,21 +270,20 @@ function CartCalculation({ cartItems, resetCart }) {
           <ClickToShowMore
             showMore={showMore}
             setHoldConfirm={() => setHoldConfirm(true)}
-            animationTrue={() => setAnimation(true)}
-            animationFalse={() => setAnimation(false)}
+            setIsOpen={setIsOpen}
             holdCartItems={holdCartItems}
             resetCart={resetCart}
             setShowMoreFalse={() => setShowMore(false)}
             setShowHoldItems={() => setShowHoldItems(true)}
           />
         </div>
-        {paymentBoxOpen && (
-          <PaymentBox
+        {isPaymentModalOpen && (
+          <PaymentModal
             paymentForm={paymentForm}
             setPaymentForm={setPaymentForm}
-            animation={animation}
-            setPaymentBoxOpen={setPaymentBoxOpen}
-            setAnimation={setAnimation}
+            isOpen={isOpen}
+            setIsPaymentModalOpen={setIsPaymentModalOpen}
+            setIsOpen={setIsOpen}
           />
         )}
 
@@ -291,15 +291,31 @@ function CartCalculation({ cartItems, resetCart }) {
         <button
           onClick={() => {
             setPaymentForm((prev) => ({ ...prev, amount: subTotal + vat }));
-            setAnimation(false);
-            setPaymentBoxOpen(true);
-            setTimeout(() => setAnimation(true), 10);
+            setIsOpen(false);
+            setIsPaymentModalOpen(true);
+            setTimeout(() => setIsOpen(true), 10);
           }}
           className="bg-red-400 p-2 w-full col-span-3 rounded hover:bg-red-500 transition-all duration-300 cursor-pointer "
         >
           PAYMENTS
         </button>
-        <button className="bg-red-400 p-2 w-full col-span-6 rounded hover:bg-red-500 transition-all duration-300 cursor-pointer">
+        {isCashModalOpen && (
+          <CashModal
+            paymentForm={paymentForm}
+            setPaymentForm={setPaymentForm}
+            isOpen={isOpen}
+            setIsOpen={setIsOpen}
+            setIsCashModalOpen={setIsCashModalOpen}
+          />
+        )}
+        <button onClick={()=>{
+          setIsCashModalOpen(true)
+          setTimeout(()=>
+            setIsOpen(true)
+          ,30)
+          
+          
+        }} className="bg-red-400 p-2 w-full col-span-6 rounded hover:bg-red-500 transition-all duration-300 cursor-pointer">
           CASH TK: {subTotal + vat}
         </button>
       </div>
@@ -308,107 +324,93 @@ function CartCalculation({ cartItems, resetCart }) {
 }
 
 function CartHoldBtn({
-  setAnimationFalse,
-  animation,
+  setIsOpen,
+  isOpen,
   setHoldConfirmFalse,
   resetCart,
   setHoldCartItems,
   cartItems,
   holdCartItems,
 }) {
+  const handelClose = () => {
+    setTimeout(() => setHoldConfirmFalse(), 300);
+    setIsOpen(false);
+  };
   return (
-    <div
-      onClick={() => {
-        setTimeout(() => setHoldConfirmFalse(), 300);
-        setAnimationFalse();
-      }}
-      className={`fixed flex items-center justify-center bg-black/40 backdrop-blur-md inset-0 z-50 transition-opacity duration-300 ${
-        animation ? "opacity-100" : "opacity-0"
-      }`}
+    <PopupModal
+      handelClose={handelClose}
+      isOpen={isOpen}
+      className="h-40 w-80 flex flex-col items-center justify-center gap-7"
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className={`h-40 w-80 bg-white rounded flex flex-col items-center justify-center gap-7 transition-transform duration-300 ${
-          animation ? "scale-100" : "scale-90"
-        } `}
-      >
-        <h1 className=" text-2xl ">Do you want to hold this cart?</h1>
-        <div className="flex items-center justify-center gap-10">
-          <button
-            onClick={() => {
-              if (cartItems.length === 0) return alert("Your cart is empty");
-              setHoldCartItems();
-              resetCart();
-              setTimeout(() => setHoldConfirmFalse(), 300);
-              setAnimationFalse();
-            }}
-            className="bg-red-400 px-4 py-2 rounded cursor-pointer hover:bg-red-500 transition-all duration-300"
-          >
-            Yes
-          </button>
-          <button
-            onClick={() => {
-              setTimeout(() => setHoldConfirmFalse(), 300);
-              setAnimationFalse();
-            }}
-            className="bg-red-400 px-4 py-2 rounded cursor-pointer hover:bg-red-500 transition-all duration-300"
-          >
-            No
-          </button>
-        </div>
+      <h1 className=" text-2xl ">Do you want to hold this cart?</h1>
+      <div className="flex items-center justify-center gap-10">
+        <button
+          onClick={() => {
+            if (cartItems.length === 0) return alert("Your cart is empty");
+            setHoldCartItems();
+            resetCart();
+            setTimeout(() => setHoldConfirmFalse(), 300);
+            setIsOpen(false);
+          }}
+          className="bg-red-400 px-4 py-2 rounded cursor-pointer hover:bg-red-500 transition-all duration-300"
+        >
+          Yes
+        </button>
+        <button
+          onClick={() => {
+            setTimeout(() => setHoldConfirmFalse(), 300);
+            setIsOpen(false);
+          }}
+          className="bg-red-400 px-4 py-2 rounded cursor-pointer hover:bg-red-500 transition-all duration-300"
+        >
+          No
+        </button>
       </div>
-    </div>
+    </PopupModal>
   );
 }
 function CartHoldShowBtn({
-  animation,
-  setAnimationFalse,
+  isOpen,
+  setIsOpen,
   setShowHoldItemsFalse,
   holdCartItems,
   resetCart,
   cartItems,
   setHoldCartItems,
 }) {
+  const handelClose = () => {
+    setTimeout(() => setShowHoldItemsFalse(), 300);
+    setIsOpen(false);
+  };
   return (
-    <div
-      onClick={() => {
-        setTimeout(() => setShowHoldItemsFalse(), 300);
-        setAnimationFalse();
-      }}
-      className={`fixed inset-0 flex z-50 items-center justify-center bg-black/40 backdrop-blur-md transition-opacity duration-300 ${
-        animation ? "opacity-100" : "opacity-0"
-      } `}
+    <PopupModal
+      isOpen={isOpen}
+      handelClose={handelClose}
+      className="h-80 w-70 flex flex-col gap-3 overflow-y-scroll"
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className={`h-80 w-70 bg-white rounded transition-transform duration-300 flex flex-col gap-3 overflow-y-scroll ${
-          animation ? "scale-100" : "scale-90"
-        }`}
-      >
-        {Array.isArray(holdCartItems) && holdCartItems.length > 0 ? (
-          holdCartItems.map((cart, index) => (
-            <div
-              onClick={() => {
-                resetCart(cart.items);
-                setHoldCartItems((prev) =>
-                  prev.filter((hold) => hold.id !== cart.id)
-                );
-                setTimeout(() => setShowHoldItemsFalse(), 300);
-                setAnimationFalse();
-              }}
-              className="w-full bg-amber-200 flex flex-col items-center cursor-pointer  "
-              key={index}
-            >
-              <h2 className="font-bold">{cart.name}</h2>
-              <p className="text-sm text-gray-700">{cart.time}</p>
-              <p className="text-sm">{cart.items.length} items</p>
-            </div>
-          ))
-        ) : (
-          <h1>No held carts yet</h1>
-        )}
-      </div>
-    </div>
+      {Array.isArray(holdCartItems) && holdCartItems.length > 0 ? (
+        holdCartItems.map((cart, index) => (
+          <div
+            onClick={() => {
+              resetCart(cart.items);
+              setHoldCartItems((prev) =>
+                prev.filter((hold) => hold.id !== cart.id)
+              );
+              setTimeout(() => setShowHoldItemsFalse(), 300);
+              setIsOpen(false);
+            }}
+            className="w-full bg-amber-200 flex flex-col items-center cursor-pointer  "
+            key={index}
+          >
+            <h2 className="font-bold">{cart.name}</h2>
+            <p className="text-sm text-gray-700">{cart.time}</p>
+            <p className="text-sm">{cart.items.length} items</p>
+          </div>
+        ))
+      ) : (
+        <h1>No held carts yet</h1>
+      )}
+    </PopupModal>
   );
 }
 function PeerInput({ id, peerName, value, setPaymentForm }) {
@@ -450,107 +452,158 @@ function PeerInput({ id, peerName, value, setPaymentForm }) {
     </div>
   );
 }
-function PaymentBox({
+function PaymentModal({
   paymentForm,
   setPaymentForm,
-  animation,
-  setPaymentBoxOpen,
-  setAnimation,
+  isOpen,
+  setIsPaymentModalOpen,
+  setIsOpen,
 }) {
   const handelClose = () => {
-    setTimeout(() => setPaymentBoxOpen(false), 300);
-    setAnimation(false);
+    setTimeout(() => setIsPaymentModalOpen(false), 300);
+    setIsOpen(false);
   };
+  return (
+    <PopupModal isOpen={isOpen} handelClose={handelClose} className="w-150 p-6">
+      <div className="flex justify-between mb-5">
+        <h1 className="text-xl font-semibold">Add Payments </h1>
+        <h1
+          onClick={handelClose}
+          className="cursor-pointer text-gray-500 hover:text-gray-700 text-lg"
+        >
+          Close
+        </h1>
+      </div>
+      <div className="space-y-5">
+        <div className="grid grid-cols-2 gap-5">
+          <PeerInput
+            id="discount"
+            peerName="Discount"
+            value={paymentForm.discount}
+            setPaymentForm={setPaymentForm}
+          />
+          <PeerInput
+            id="total"
+            peerName="Total"
+            value={paymentForm.total}
+            setPaymentForm={setPaymentForm}
+          />
+        </div>
+        <PeerInput
+          id="amount"
+          peerName="Amount"
+          value={paymentForm.amount}
+          setPaymentForm={setPaymentForm}
+        />
+        <div className="grid grid-cols-3 gap-3">
+          <button className="py-2 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition">
+            Cash
+          </button>
+          <button className="py-2 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition">
+            Cheque
+          </button>
+          <button className="py-2 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition">
+            Card
+          </button>
+        </div>
+        <PeerInput
+          id="note"
+          peerName="Note"
+          value={paymentForm.note}
+          setPaymentForm={setPaymentForm}
+        />
+        <button
+          onClick={() => {
+            console.log(paymentForm);
+          }}
+          className="w-full  py-5 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition"
+        >
+          PAY
+        </button>
+      </div>
+    </PopupModal>
+  );
+}
+function PopupModal({ isOpen, handelClose, children, className }) {
   return (
     <div
       onClick={handelClose}
       className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md transition-opacity duration-300 ${
-        animation ? "opacity-100" : "opacity-0"
+        isOpen ? "opacity-100" : "opacity-0"
       }`}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`w-150 bg-white rounded p-6 shadow-lg transition-transform duration-300 ${
-          animation ? "scale-100" : "scale-90"
+        className={`${className} bg-white rounded shadow-lg transition-transform duration-300 ${
+          isOpen ? "scale-100" : "scale-90"
         } `}
       >
-        <div className="flex justify-between mb-5">
-          <h1 className="text-xl font-semibold">Add Payments </h1>
-          <h1
-            onClick={handelClose}
-            className="cursor-pointer text-gray-500 hover:text-gray-700 text-lg"
-          >
-            Close
-          </h1>
-        </div>
-        <div className="space-y-5">
-          <div className="grid grid-cols-2 gap-5">
-            <PeerInput
-              id="discount"
-              peerName="Discount"
-              value={paymentForm.discount}
-              setPaymentForm={setPaymentForm}
-            />
-            <PeerInput
-              id="total"
-              peerName="Total"
-              value={paymentForm.total}
-              setPaymentForm={setPaymentForm}
-            />
-          </div>
-          <PeerInput
-            id="amount"
-            peerName="Amount"
-            value={paymentForm.amount}
-            setPaymentForm={setPaymentForm}
-          />
-          <div className="grid grid-cols-3 gap-3">
-            <button className="py-2 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition">
-              Cash
-            </button>
-            <button className="py-2 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition">
-              Cheque
-            </button>
-            <button className="py-2 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition">
-              Card
-            </button>
-          </div>
-          <PeerInput
-            id="note"
-            peerName="Note"
-            value={paymentForm.note}
-            setPaymentForm={setPaymentForm}
-          />
-          <button
-            onClick={() => {
-              console.log(paymentForm);
-            }}
-            className="w-full  py-5 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition"
-          >
-            PAY
-          </button>
-        </div>
+        {children}
       </div>
     </div>
   );
 }
-function PopupModal() {
+function CashModal({ paymentForm, setPaymentForm, isOpen, setIsOpen,setIsCashModalOpen }) {
+  const handelClose = () => {
+    setTimeout(() => setIsCashModalOpen(false), 300);
+    setIsOpen(false);
+  };
   return (
-    <div
-      onClick={handelClose}
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md transition-opacity duration-300 ${
-        animation ? "opacity-100" : "opacity-0"
-      }`}
-    >
-      {" "}
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className={`w-150 bg-white rounded p-6 shadow-lg transition-transform duration-300 ${
-          animation ? "scale-100" : "scale-90"
-        } `}
-      >
-        {Children}
+    <PopupModal isOpen={isOpen} handelClose={handelClose} className="w-150 p-6">
+      <div className="flex justify-between mb-5">
+        <h1 className="text-xl font-semibold">Cash Checkout</h1>
+        <h1
+          onClick={handelClose}
+          className="cursor-pointer text-gray-500 hover:text-gray-700 text-lg"
+        >
+          Close
+        </h1>
       </div>
-    </div>
+      <div className="space-y-5">
+        <div className="grid grid-cols-2 gap-5">
+          <PeerInput
+            id="amount"
+            peerName="Amount Received"
+            value={paymentForm.amount}
+            setPaymentForm={setPaymentForm}
+          />
+          <PeerInput
+            id="amount"
+            peerName="Change"
+            value={paymentForm.amount}
+            setPaymentForm={setPaymentForm}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-5">
+          <PeerInput
+            id="discount"
+            peerName="Discount"
+            value={paymentForm.discount}
+            setPaymentForm={setPaymentForm}
+          />
+          <PeerInput
+            id="total"
+            peerName="Total"
+            value={paymentForm.total}
+            setPaymentForm={setPaymentForm}
+          />
+        </div>
+
+        <PeerInput
+          id="note"
+          peerName="Note"
+          value={paymentForm.note}
+          setPaymentForm={setPaymentForm}
+        />
+        <button
+          onClick={() => {
+            console.log(paymentForm);
+          }}
+          className="w-full  py-5 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition"
+        >
+          PAY
+        </button>
+      </div>
+    </PopupModal>
   );
 }
