@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { Children, useEffect, useRef, useState } from "react";
 import { MdOutlineAddCircleOutline, MdDeleteOutline } from "react-icons/md";
 import { FiMinusCircle } from "react-icons/fi";
 import { HiDotsVertical } from "react-icons/hi";
@@ -161,6 +161,13 @@ function CartCalculation({ cartItems, resetCart }) {
     localStorage.setItem("holdCart", JSON.stringify(holdCartItems));
   }, [holdCartItems]);
   const [showHoldItems, setShowHoldItems] = useState(false);
+  const [paymentForm, setPaymentForm] = useState({
+    discount: "0",
+    total: "0",
+    amount: "0",
+    note: "",
+  });
+  const [paymentBoxOpen, setPaymentBoxOpen] = useState(false);
 
   return (
     <div className="p-5">
@@ -270,8 +277,26 @@ function CartCalculation({ cartItems, resetCart }) {
             setShowHoldItems={() => setShowHoldItems(true)}
           />
         </div>
+        {paymentBoxOpen && (
+          <PaymentBox
+            paymentForm={paymentForm}
+            setPaymentForm={setPaymentForm}
+            animation={animation}
+            setPaymentBoxOpen={setPaymentBoxOpen}
+            setAnimation={setAnimation}
+          />
+        )}
+
         {/* morebutton */}
-        <button className="bg-red-400 p-2 w-full col-span-3 rounded hover:bg-red-500 transition-all duration-300 cursor-pointer ">
+        <button
+          onClick={() => {
+            setPaymentForm((prev) => ({ ...prev, amount: subTotal + vat }));
+            setAnimation(false);
+            setPaymentBoxOpen(true);
+            setTimeout(() => setAnimation(true), 10);
+          }}
+          className="bg-red-400 p-2 w-full col-span-3 rounded hover:bg-red-500 transition-all duration-300 cursor-pointer "
+        >
           PAYMENTS
         </button>
         <button className="bg-red-400 p-2 w-full col-span-6 rounded hover:bg-red-500 transition-all duration-300 cursor-pointer">
@@ -386,60 +411,146 @@ function CartHoldShowBtn({
     </div>
   );
 }
-
-// function CartHoldShowBtn({
-//   animation,
-//   setAnimationFalse,
-//   setShowHoldItemsFalse,
-//   holdCartItems,
-//   restoreCartFromHold, // 👈 function from parent to load items into cart
-// }) {
-//   return (
-//     <div
-//       onClick={() => {
-//         setTimeout(() => setShowHoldItemsFalse(), 300);
-//         setAnimationFalse();
-//       }}
-//       className={`fixed inset-0 flex z-50 items-center justify-center bg-black/40 backdrop-blur-md transition-opacity duration-300 ${
-//         animation ? "opacity-100" : "opacity-0"
-//       } `}
-//     >
-//       <div
-//         onClick={(e) => e.stopPropagation()}
-//         className={`h-80 w-80 bg-white rounded overflow-y-auto p-4 transition-transform duration-300 ${
-//           animation ? "scale-100" : "scale-90"
-//         }`}
-//       >
-//         <h2 className="text-xl font-semibold mb-3 text-center">
-//           Held Carts ({holdCartItems.length})
-//         </h2>
-
-//         {/* ✅ Loop through each held cart */}
-//         {Array.isArray(holdCartItems) && holdCartItems.length > 0 ? (
-//           holdCartItems.map((cart, i) => (
-//             <div
-//               key={i}
-//               onClick={() => {
-//                 restoreCartFromHold(cart); // 👈 send selected cart
-//                 setAnimationFalse();
-//                 setTimeout(() => setShowHoldItemsFalse(), 300);
-//               }}
-//               className="border p-2 mb-2 rounded cursor-pointer hover:bg-gray-100 transition"
-//             >
-//               <h3 className="font-semibold text-gray-700">Hold #{i + 1}</h3>
-//               <ul className="text-sm text-gray-600">
-//                 {cart.map((item, j) => (
-//                   <li key={j}>
-//                     {item.name} × {item.qty}
-//                   </li>
-//                 ))}
-//               </ul>
-//             </div>
-//           ))
-//         ) : (
-//           <p className="text-center text-gray-500">No held carts yet</p>
-//         )}
-//       </div>
-//     </div>
-//   );
-// }
+function PeerInput({ id, peerName, value, setPaymentForm }) {
+  const handelChange = () => (e) => {
+    let v = e.target.value;
+    if (id === "note") {
+      setPaymentForm((prev) => ({ ...prev, [id]: v }));
+    } else {
+      let onlyNumber = e.target.value.replace(/\D/g, "");
+      setPaymentForm((prev) => ({
+        ...prev,
+        [id]: onlyNumber === "" ? "0" : onlyNumber,
+      }));
+    }
+  };
+  return (
+    <div className="relative">
+      <input
+        onFocus={(e) => {
+          e.target.select();
+        }}
+        onChange={handelChange()}
+        value={value}
+        placeholder=" "
+        id={id}
+        className="peer  border border-gray-400 rounded focus:outline-none focus:border-blue-400 px-3 py-3 w-full"
+        type="text"
+      />
+      <label
+        htmlFor={id}
+        className={`${
+          id === "note"
+            ? "absolute top-3 left-3 peer-focus:-top-3.5 peer-not-placeholder-shown:-top-3.5  peer-placeholder-shown:top-3 pointer-events-none text-gray-500 bg-white peer-focus:text-blue-400 transition-all duration-100"
+            : "absolute -top-3.5 bg-white left-3 peer-focus:text-blue-400 transition-all duration-100 text-gray-500"
+        } `}
+      >
+        {peerName}
+      </label>
+    </div>
+  );
+}
+function PaymentBox({
+  paymentForm,
+  setPaymentForm,
+  animation,
+  setPaymentBoxOpen,
+  setAnimation,
+}) {
+  const handelClose = () => {
+    setTimeout(() => setPaymentBoxOpen(false), 300);
+    setAnimation(false);
+  };
+  return (
+    <div
+      onClick={handelClose}
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md transition-opacity duration-300 ${
+        animation ? "opacity-100" : "opacity-0"
+      }`}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className={`w-150 bg-white rounded p-6 shadow-lg transition-transform duration-300 ${
+          animation ? "scale-100" : "scale-90"
+        } `}
+      >
+        <div className="flex justify-between mb-5">
+          <h1 className="text-xl font-semibold">Add Payments </h1>
+          <h1
+            onClick={handelClose}
+            className="cursor-pointer text-gray-500 hover:text-gray-700 text-lg"
+          >
+            Close
+          </h1>
+        </div>
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 gap-5">
+            <PeerInput
+              id="discount"
+              peerName="Discount"
+              value={paymentForm.discount}
+              setPaymentForm={setPaymentForm}
+            />
+            <PeerInput
+              id="total"
+              peerName="Total"
+              value={paymentForm.total}
+              setPaymentForm={setPaymentForm}
+            />
+          </div>
+          <PeerInput
+            id="amount"
+            peerName="Amount"
+            value={paymentForm.amount}
+            setPaymentForm={setPaymentForm}
+          />
+          <div className="grid grid-cols-3 gap-3">
+            <button className="py-2 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition">
+              Cash
+            </button>
+            <button className="py-2 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition">
+              Cheque
+            </button>
+            <button className="py-2 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition">
+              Card
+            </button>
+          </div>
+          <PeerInput
+            id="note"
+            peerName="Note"
+            value={paymentForm.note}
+            setPaymentForm={setPaymentForm}
+          />
+          <button
+            onClick={() => {
+              console.log(paymentForm);
+            }}
+            className="w-full  py-5 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition"
+          >
+            PAY
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+function PopupModal() {
+  return (
+    <div
+      onClick={handelClose}
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md transition-opacity duration-300 ${
+        animation ? "opacity-100" : "opacity-0"
+      }`}
+    >
+      {" "}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className={`w-150 bg-white rounded p-6 shadow-lg transition-transform duration-300 ${
+          animation ? "scale-100" : "scale-90"
+        } `}
+      >
+        {Children}
+      </div>
+    </div>
+  );
+}
