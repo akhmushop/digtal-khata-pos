@@ -57,9 +57,9 @@ function HomePage() {
   }
 
   return (
-    <div className="flex">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar />
-      <div className="w-5/8 ">
+      <div className="w-5/8">
         <ProductHeader />
         <ProductList addCartItems={addCartItems} />
       </div>

@@ -167,41 +167,38 @@ function CartCalculation({ cartItems, resetCart }) {
     amount: "0",
     note: "",
   });
+  const [cashForm, setCashForm] = useState({
+    discount: "0",
+    amountReceived: "0",
+    change: "0",
+    payable: "0",
+    originalPayable: "0",
+    note: "",
+  });
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isCashModalOpen, setIsCashModalOpen] = useState(false);
+  const handleCashTk = () => {
+    const total = subTotal + vat;
+    setCashForm((prev) => ({
+      ...prev,
+      payable: total,
+      originalPayable: total,
+    }));
+    setIsCashModalOpen(true);
+    setTimeout(() => setIsOpen(true), 30);
+  };
+  const handlePayment = () => {
+    const total = subTotal + vat;
+    setPaymentForm((prev) => ({ ...prev, amount: total }));
+    setPaymentForm((prev) => ({ ...prev, total: total }));
+    setIsOpen(false);
+    setIsPaymentModalOpen(true);
+    setTimeout(() => setIsOpen(true), 10);
+  };
 
   return (
     <div className="p-5">
-      <div className="flex justify-between py-2 border-b">
-        <h4>Total Items: {cartItems.reduce((total) => total + 1, 0)}</h4>
-        <h4>
-          Qty: {cartItems.reduce((total, item) => total + (item.qty || 0), 0)}
-        </h4>
-      </div>
-      <div className="flex justify-between py-2 border-b">
-        <h4>Subtotal</h4>
-        <h4>TK: {subTotal}</h4>
-      </div>
-      <div>
-        <h3 className="py-2  w-full flex item">Charges & Taxes</h3>
-      </div>
-      <div className="flex justify-between py-2 ">
-        <h4>VAT: 5%</h4>
-        <h4>TK: {vat}</h4>
-      </div>
-      <div>
-        <button className="flex justify-center py-2 bg-red-400 p-2 w-full col-span-1 rounded hover:bg-red-500 transition-all duration-300 cursor-pointer">
-          ADD CHARGE
-        </button>
-      </div>
-      <div className="flex justify-between py-2 border-b">
-        <h4>Total Charges</h4>
-        <h4>TK: {vat}</h4>
-      </div>
-      <div className="flex justify-between py-2 border-b">
-        <h1>FINAL TOTAL</h1>
-        <h1>TK: {subTotal + vat}</h1>
-      </div>
+      <CartTextModal cartItems={cartItems} subTotal={subTotal} vat={vat} />
       <div className="grid grid-cols-6 py-2 gap-1 ">
         {/* emptybutton */}
         {emptyCartCon && (
@@ -289,12 +286,7 @@ function CartCalculation({ cartItems, resetCart }) {
 
         {/* morebutton */}
         <button
-          onClick={() => {
-            setPaymentForm((prev) => ({ ...prev, amount: subTotal + vat }));
-            setIsOpen(false);
-            setIsPaymentModalOpen(true);
-            setTimeout(() => setIsOpen(true), 10);
-          }}
+          onClick={handlePayment}
           className="bg-red-400 p-2 w-full col-span-3 rounded hover:bg-red-500 transition-all duration-300 cursor-pointer "
         >
           PAYMENTS
@@ -306,16 +298,14 @@ function CartCalculation({ cartItems, resetCart }) {
             isOpen={isOpen}
             setIsOpen={setIsOpen}
             setIsCashModalOpen={setIsCashModalOpen}
+            cashForm={cashForm}
+            setCashForm={setCashForm}
           />
         )}
-        <button onClick={()=>{
-          setIsCashModalOpen(true)
-          setTimeout(()=>
-            setIsOpen(true)
-          ,30)
-          
-          
-        }} className="bg-red-400 p-2 w-full col-span-6 rounded hover:bg-red-500 transition-all duration-300 cursor-pointer">
+        <button
+          onClick={handleCashTk}
+          className="bg-red-400 p-2 w-full col-span-6 rounded hover:bg-red-500 transition-all duration-300 cursor-pointer"
+        >
           CASH TK: {subTotal + vat}
         </button>
       </div>
@@ -413,18 +403,20 @@ function CartHoldShowBtn({
     </PopupModal>
   );
 }
-function PeerInput({ id, peerName, value, setPaymentForm }) {
-  const handelChange = () => (e) => {
-    let v = e.target.value;
+function PeerInput({ id, peerName, value, onChange }) {
+  const handelChange = (e) => {
+    const rawValue = e.target.value;
+
+    // NOTE field does not need number filtering
     if (id === "note") {
-      setPaymentForm((prev) => ({ ...prev, [id]: v }));
-    } else {
-      let onlyNumber = e.target.value.replace(/\D/g, "");
-      setPaymentForm((prev) => ({
-        ...prev,
-        [id]: onlyNumber === "" ? "0" : onlyNumber,
-      }));
+      onChange(id, rawValue);
+      return;
     }
+
+    // Number only
+    const onlyNumber = rawValue.replace(/\D/g, "");
+    const finalValue = onlyNumber === "" ? "0" : onlyNumber;
+    onChange(id, finalValue);
   };
   return (
     <div className="relative">
@@ -432,7 +424,7 @@ function PeerInput({ id, peerName, value, setPaymentForm }) {
         onFocus={(e) => {
           e.target.select();
         }}
-        onChange={handelChange()}
+        onChange={handelChange}
         value={value}
         placeholder=" "
         id={id}
@@ -463,6 +455,14 @@ function PaymentModal({
     setTimeout(() => setIsPaymentModalOpen(false), 300);
     setIsOpen(false);
   };
+  const handlePaymentChange = (id, value) => {
+    setPaymentForm((prev) => {
+      const updated = { ...prev, [id]: value };
+      updated.total = Number(updated.amount) - Number(updated.discount);
+      return updated;
+    });
+  };
+
   return (
     <PopupModal isOpen={isOpen} handelClose={handelClose} className="w-150 p-6">
       <div className="flex justify-between mb-5">
@@ -480,20 +480,20 @@ function PaymentModal({
             id="discount"
             peerName="Discount"
             value={paymentForm.discount}
-            setPaymentForm={setPaymentForm}
+            onChange={handlePaymentChange}
           />
           <PeerInput
             id="total"
             peerName="Total"
             value={paymentForm.total}
-            setPaymentForm={setPaymentForm}
+            onChange={handlePaymentChange}
           />
         </div>
         <PeerInput
           id="amount"
           peerName="Amount"
           value={paymentForm.amount}
-          setPaymentForm={setPaymentForm}
+          onChange={handlePaymentChange}
         />
         <div className="grid grid-cols-3 gap-3">
           <button className="py-2 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition">
@@ -510,11 +510,95 @@ function PaymentModal({
           id="note"
           peerName="Note"
           value={paymentForm.note}
-          setPaymentForm={setPaymentForm}
+          onChange={handlePaymentChange}
         />
         <button
           onClick={() => {
             console.log(paymentForm);
+          }}
+          className="w-full  py-5 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition"
+        >
+          PAY
+        </button>
+      </div>
+    </PopupModal>
+  );
+}
+
+function CashModal({
+  isOpen,
+  setIsOpen,
+  setIsCashModalOpen,
+  cashForm,
+  setCashForm,
+}) {
+  const handelClose = () => {
+    setTimeout(() => setIsCashModalOpen(false), 300);
+    setIsOpen(false);
+  };
+  const handleCashChange = (id, value) => {
+    setCashForm((prev) => {
+      const updated = { ...prev, [id]: value };
+      // payable AFTER discount
+      const originalPayable = prev.originalPayable || prev.payable;
+      updated.payable = Number(originalPayable) - Number(updated.discount);
+      // change = amountReceived - payable
+      const calculatedChange =
+        Number(updated.amountReceived) - Number(updated.payable);
+      updated.change = calculatedChange < 0 ? 0 : calculatedChange;
+      return updated;
+    });
+  };
+  return (
+    <PopupModal isOpen={isOpen} handelClose={handelClose} className="w-150 p-6">
+      <div className="flex justify-between mb-5">
+        <h1 className="text-xl font-semibold">Cash Checkout</h1>
+        <h1
+          onClick={handelClose}
+          className="cursor-pointer text-gray-500 hover:text-gray-700 text-lg"
+        >
+          Close
+        </h1>
+      </div>
+      <div className="space-y-5">
+        <div className="grid grid-cols-2 gap-5">
+          <PeerInput
+            id="amountReceived"
+            peerName="Amount Received"
+            value={cashForm.amountReceived}
+            onChange={handleCashChange}
+          />
+          <PeerInput
+            id="change"
+            peerName="Change"
+            value={cashForm.change}
+            onChange={handleCashChange}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-5">
+          <PeerInput
+            id="discount"
+            peerName="Discount"
+            value={cashForm.discount}
+            onChange={handleCashChange}
+          />
+          <PeerInput
+            id="payable"
+            peerName="Payable Amount"
+            value={cashForm.payable}
+            onChange={handleCashChange}
+          />
+        </div>
+
+        <PeerInput
+          id="note"
+          peerName="Note"
+          value={cashForm.note}
+          onChange={handleCashChange}
+        />
+        <button
+          onClick={() => {
+            console.log(cashForm);
           }}
           className="w-full  py-5 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition"
         >
@@ -543,67 +627,42 @@ function PopupModal({ isOpen, handelClose, children, className }) {
     </div>
   );
 }
-function CashModal({ paymentForm, setPaymentForm, isOpen, setIsOpen,setIsCashModalOpen }) {
-  const handelClose = () => {
-    setTimeout(() => setIsCashModalOpen(false), 300);
-    setIsOpen(false);
-  };
+function CartTextModal({ cartItems, subTotal, vat }) {
+  const totalItemsCount = cartItems.reduce((total) => total + 1, 0);
+  const totalQtyCount = cartItems.reduce(
+    (total, item) => total + (item.qty || 0),
+    0
+  );
   return (
-    <PopupModal isOpen={isOpen} handelClose={handelClose} className="w-150 p-6">
-      <div className="flex justify-between mb-5">
-        <h1 className="text-xl font-semibold">Cash Checkout</h1>
-        <h1
-          onClick={handelClose}
-          className="cursor-pointer text-gray-500 hover:text-gray-700 text-lg"
-        >
-          Close
-        </h1>
+    <>
+      <div className="flex justify-between py-2 border-b">
+        <h4>Total Items: {totalItemsCount}</h4>
+        <h4>Qty: {totalQtyCount}</h4>
       </div>
-      <div className="space-y-5">
-        <div className="grid grid-cols-2 gap-5">
-          <PeerInput
-            id="amount"
-            peerName="Amount Received"
-            value={paymentForm.amount}
-            setPaymentForm={setPaymentForm}
-          />
-          <PeerInput
-            id="amount"
-            peerName="Change"
-            value={paymentForm.amount}
-            setPaymentForm={setPaymentForm}
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-5">
-          <PeerInput
-            id="discount"
-            peerName="Discount"
-            value={paymentForm.discount}
-            setPaymentForm={setPaymentForm}
-          />
-          <PeerInput
-            id="total"
-            peerName="Total"
-            value={paymentForm.total}
-            setPaymentForm={setPaymentForm}
-          />
-        </div>
-
-        <PeerInput
-          id="note"
-          peerName="Note"
-          value={paymentForm.note}
-          setPaymentForm={setPaymentForm}
-        />
-        <button
-          onClick={() => {
-            console.log(paymentForm);
-          }}
-          className="w-full  py-5 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition"
-        >
-          PAY
+      <div className="flex justify-between py-2 border-b">
+        <h4>Subtotal</h4>
+        <h4>TK: {subTotal}</h4>
+      </div>
+      <div>
+        <h3 className="py-2  w-full flex item">Charges & Taxes</h3>
+      </div>
+      <div className="flex justify-between py-2 ">
+        <h4>VAT: 5%</h4>
+        <h4>TK: {vat}</h4>
+      </div>
+      <div>
+        <button className="flex justify-center py-2 bg-red-400 p-2 w-full col-span-1 rounded hover:bg-red-500 transition-all duration-300 cursor-pointer">
+          ADD CHARGE
         </button>
       </div>
-    </PopupModal>
+      <div className="flex justify-between py-2 border-b">
+        <h4>Total Charges</h4>
+        <h4>TK: {vat}</h4>
+      </div>
+      <div className="flex justify-between py-2 border-b">
+        <h1>FINAL TOTAL</h1>
+        <h1>TK: {subTotal + vat}</h1>
+      </div>
+    </>
   );
 }
