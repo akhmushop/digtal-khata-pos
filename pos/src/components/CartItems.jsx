@@ -131,6 +131,7 @@ function CartCalculation({ cartItems, resetCart }) {
   const [emptyCartCon, setEmptyCartCon] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const closeMore = useRef(null);
+  const [isAddChargeModalOpen, setIsChargeModalOpen] = useState(false);
   const [holdCartItems, setHoldCartItems] = useState(() => {
     try {
       const storedHold = localStorage.getItem("holdCart");
@@ -198,7 +199,15 @@ function CartCalculation({ cartItems, resetCart }) {
 
   return (
     <div className="p-5">
-      <CartTextModal cartItems={cartItems} subTotal={subTotal} vat={vat} />
+      <CartTextModal
+        cartItems={cartItems}
+        subTotal={subTotal}
+        vat={vat}
+        setIsOpen={setIsOpen}
+        isAddChargeModalOpen={isAddChargeModalOpen}
+        setIsChargeModalOpen={setIsChargeModalOpen}
+        isOpen={isOpen}
+      />
       <div className="grid grid-cols-6 py-2 gap-1 ">
         {/* emptybutton */}
         {emptyCartCon && (
@@ -627,12 +636,25 @@ function PopupModal({ isOpen, handelClose, children, className }) {
     </div>
   );
 }
-function CartTextModal({ cartItems, subTotal, vat }) {
+function CartTextModal({
+  cartItems,
+  subTotal,
+  vat,
+  setIsOpen,
+  isAddChargeModalOpen,
+  setIsChargeModalOpen,
+  isOpen,
+}) {
   const totalItemsCount = cartItems.reduce((total) => total + 1, 0);
   const totalQtyCount = cartItems.reduce(
     (total, item) => total + (item.qty || 0),
     0
   );
+
+  const handelClose = () => {
+    setTimeout(() => setIsChargeModalOpen(false), 300);
+    setIsOpen(false);
+  };
   return (
     <>
       <div className="flex justify-between py-2 border-b">
@@ -651,7 +673,16 @@ function CartTextModal({ cartItems, subTotal, vat }) {
         <h4>TK: {vat}</h4>
       </div>
       <div>
-        <button className="flex justify-center py-2 bg-red-400 p-2 w-full col-span-1 rounded hover:bg-red-500 transition-all duration-300 cursor-pointer">
+        {isAddChargeModalOpen && (
+          <AddChargeModal handelClose={handelClose} isOpen={isOpen} />
+        )}
+        <button
+          onClick={() => {
+            setIsChargeModalOpen(true);
+            setTimeout(() => setIsOpen(true), 30);
+          }}
+          className="flex justify-center py-2 bg-red-400 p-2 w-full col-span-1 rounded hover:bg-red-500 transition-all duration-300 cursor-pointer"
+        >
           ADD CHARGE
         </button>
       </div>
@@ -664,5 +695,96 @@ function CartTextModal({ cartItems, subTotal, vat }) {
         <h1>TK: {subTotal + vat}</h1>
       </div>
     </>
+  );
+}
+function AddChargeModal({ handelClose, isOpen }) {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const handleOption = () => {
+    setIsDropdownOpen((prev) => !prev);
+  };
+  const addChargeHtml = useRef(null);
+  useEffect(() => {
+    const clickOutside = (event) => {
+      if (
+        addChargeHtml.current &&
+        !addChargeHtml.current.contains(event.target)
+      ) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", clickOutside);
+    return () => {
+      document.removeEventListener("mousedown", clickOutside);
+    };
+  }, []);
+  const [chargeName, setChargeName] = useState("Servicing Charge");
+  const [inputValue, setInputValue] = useState("Servicing Charge");
+  return (
+    <PopupModal
+      isOpen={isOpen}
+      className={"h-40 w-65"}
+      handelClose={handelClose}
+    >
+      <div className="flex flex-col items-center h-full justify-around">
+        <h1 className="text-xl">Add Charge/Tax</h1>
+        <div ref={addChargeHtml} className="relative">
+          <input
+            onClick={handleOption}
+            value={chargeName}
+            readOnly
+            placeholder=" "
+            id="addCharge"
+            type="text"
+            className="peer border cursor-pointer   border-gray-400 rounded outline-none px-5 py-2"
+          />
+          <label
+            htmlFor="addCharge"
+            className="absolute left-5 top-2 text-gray-400 pointer-events-none bg-white peer-focus:-top-3.5 peer-focus:text-blue-500 transition-all duration-200  peer-not-placeholder-shown:-top-3.5 peer-not-placeholder-shown:text-blue-500"
+          >
+            Add Charge
+          </label>
+          {isDropdownOpen && (
+            <div className="absolute w-full  bg-white rounded mt-0.5 ">
+              <div className="flex flex-col gap-1">
+                <div
+                  onClick={() => {
+                    setChargeName("Servicing Charge");
+                    setInputValue("Servicing Charge");
+                    setIsDropdownOpen(false);
+                  }}
+                  className="bg-gray-300 rounded cursor-pointer w-full flex justify-center "
+                >
+                  Servicing Charge
+                </div>
+                <div
+                  onClick={() => {
+                    setChargeName("Delivery Charge");
+                    setInputValue("Delivery Charge");
+                    setIsDropdownOpen(false);
+                  }}
+                  className="bg-red-300 rounded cursor-pointer w-full flex justify-center "
+                >
+                  Delivery Charge
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-3 justify-end w-full mr-10">
+          <button className="border border-gray-400 rounded p-1 hover:bg-red-400 transition-all duration-200 cursor-pointer hover:text-white">
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              console.log(inputValue);
+            }}
+            className="border border-gray-400 rounded p-1 hover:bg-red-400 transition-all duration-200 cursor-pointer hover:text-white"
+          >
+            Add
+          </button>
+        </div>
+      </div>
+    </PopupModal>
   );
 }
