@@ -524,6 +524,8 @@ function PaymentModal({
         <button
           onClick={() => {
             console.log(paymentForm);
+            paymentForm.discount = 0;
+            handelClose();
           }}
           className="w-full  py-5 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition"
         >
@@ -607,7 +609,19 @@ function CashModal({
         />
         <button
           onClick={() => {
-            console.log(cashForm);
+            
+            if (
+              cashForm.amountReceived > 0 &&
+              cashForm.amountReceived > cashForm.payable
+            ) {
+              handelClose();
+              console.log(cashForm);
+              cashForm.amountReceived = 0;
+              cashForm.change = 0;
+              cashForm.discount = 0;
+            } else {
+              alert("add money");
+            }
           }}
           className="w-full  py-5 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition"
         >
@@ -674,7 +688,12 @@ function CartTextModal({
       </div>
       <div>
         {isAddChargeModalOpen && (
-          <AddChargeModal handelClose={handelClose} isOpen={isOpen} />
+          <AddChargeModal
+            handelClose={handelClose}
+            isOpen={isOpen}
+            setIsOpen={setIsOpen}
+            setIsChargeModalOpen={setIsChargeModalOpen}
+          />
         )}
         <button
           onClick={() => {
@@ -697,7 +716,7 @@ function CartTextModal({
     </>
   );
 }
-function AddChargeModal({ handelClose, isOpen }) {
+function AddChargeModal({ isOpen, setIsOpen, setIsChargeModalOpen }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const handleOption = () => {
     setIsDropdownOpen((prev) => !prev);
@@ -719,6 +738,10 @@ function AddChargeModal({ handelClose, isOpen }) {
   }, []);
   const [chargeName, setChargeName] = useState("Servicing Charge");
   const [inputValue, setInputValue] = useState("Servicing Charge");
+  const handelClose = () => {
+    setTimeout(() => setIsChargeModalOpen(false), 300);
+    setIsOpen(false);
+  };
   return (
     <PopupModal
       isOpen={isOpen}
@@ -772,13 +795,14 @@ function AddChargeModal({ handelClose, isOpen }) {
         </div>
 
         <div className="flex gap-3 justify-end w-full mr-10">
-          <button className="border border-gray-400 rounded p-1 hover:bg-red-400 transition-all duration-200 cursor-pointer hover:text-white">
+          <button
+            onClick={handelClose}
+            className="border border-gray-400 rounded p-1 hover:bg-red-400 transition-all duration-200 cursor-pointer hover:text-white"
+          >
             Cancel
           </button>
           <button
-            onClick={() => {
-              console.log(inputValue);
-            }}
+            onClick={handelClose}
             className="border border-gray-400 rounded p-1 hover:bg-red-400 transition-all duration-200 cursor-pointer hover:text-white"
           >
             Add

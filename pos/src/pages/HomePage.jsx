@@ -53,15 +53,15 @@ function HomePage() {
     });
   };
   const resetCart = (reset) => {
-    setCartItems(reset)
-  }
-
+    setCartItems(reset);
+  };
+  const [search, setSearch] = useState("");
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
       <div className="w-5/8">
-        <ProductHeader />
-        <ProductList addCartItems={addCartItems} />
+        <ProductHeader setSearch={setSearch} />
+        <ProductList addCartItems={addCartItems} search={search} />
       </div>
 
       <div className="w-3/8">
@@ -72,7 +72,7 @@ function HomePage() {
           increaseQty={increaseQty}
           decreaseQty={decreaseQty}
           updateQty={updateQty}
-          resetCart = {resetCart}
+          resetCart={resetCart}
         />
       </div>
     </div>
