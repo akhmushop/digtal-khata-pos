@@ -1,18 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
-  RiUserAddFill,
   RiCloseLargeFill,
   RiArrowDropDownFill,
 } from "react-icons/ri";
 export function CartHeader() {
-  const [saveCustomer, setSaveCustomer] = useState(() => {"walk-in customer"
-    try {
-      const savedCustomer = localStorage.getItem("customer");
-      return savedCustomer ? JSON.parse(savedCustomer) : [{ name: "walk-in customer", mobile: "" }];
-    } catch {
-      return [{ name: "walk-in customer", mobile: "" }];
-    }
-  });
+const saveCustomer = [{name:"walk-in customer"}]
 
   const [showCustomer, setShowCustomer] = useState(false);
   const [inputValue, setInputValue] = useState(saveCustomer[0].name);
@@ -128,27 +120,3 @@ export function CartHeader() {
   );
 }
 
-function PeerFocusInput({ placeholder, id, onChange, value }) {
-  return (
-    <div className="relative ">
-      <input
-        placeholder=""
-        value={value}
-        onChange={onChange}
-        type="text"
-        className="border my-5 h-10 peer rounded  focus:outline-blue-500"
-        id={id}
-      />
-      <label
-        htmlFor={id}
-        className={` absolute  transition-all pointer-events-none ${
-          value
-            ? "top-2 left-3 text-blue-500 bg-zuccini-50 border-blue-500"
-            : "peer-focus:top-2 peer-placeholder-shown:text-gray-700 peer-focus:text-blue-500 peer-focus:text-sm peer-focus:bg-zuccini-50  text-sm left-3 top-7"
-        }`}
-      >
-        {placeholder}
-      </label>
-    </div>
-  );
-}

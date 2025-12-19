@@ -1,19 +1,29 @@
-export function AddcustomerModal(){
-    const [addCustomer, setAddCustomer] = useState(false);
-    
-    return(
-        <>
-        <div>
-          <button
-            onClick={() => {
-              !addCustomer ? setAddCustomer(true) : setAddCustomer(false);
-            }}
-            className="text-4xl   cursor-pointer"
-          >
-            <RiUserAddFill />
-          </button>
-        </div>
-        
+import React, { useState, useEffect } from "react";
+import { RiUserAddFill, RiCloseLargeFill } from "react-icons/ri";
+export function AddCustomerModal() {
+  const [addCustomer, setAddCustomer] = useState(false);
+    const [saveCustomer, setSaveCustomer] = useState(() => {"walk-in customer"
+      try {
+        const savedCustomer = localStorage.getItem("customer");
+        return savedCustomer ? JSON.parse(savedCustomer) : [{ name: "walk-in customer", mobile: "" }];
+      } catch {
+        return [{ name: "walk-in customer", mobile: "" }];
+      }
+    });
+
+  return (
+    <>
+      <div>
+        <button
+          onClick={() => {
+            !addCustomer ? setAddCustomer(true) : setAddCustomer(false);
+          }}
+          className="text-4xl   cursor-pointer"
+        >
+          <RiUserAddFill />
+        </button>
+      </div>
+
       {addCustomer && (
         <AddCustomer
           onClose={() => setAddCustomer(false)}
@@ -21,11 +31,11 @@ export function AddcustomerModal(){
           setSaveCustomer={setSaveCustomer}
         />
       )}
-        </>
-    )
-}   
-        
-        function AddCustomer({ saveCustomer, setSaveCustomer, onClose }) {
+    </>
+  );
+}
+
+function AddCustomer({ saveCustomer, setSaveCustomer, onClose }) {
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
   const [animation, setAnimation] = useState(false);
@@ -45,14 +55,15 @@ export function AddcustomerModal(){
     setAnimation(true);
   }, []);
   return (
-        <div
+    <div
       className={`fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-50 
-        transition-opacity duration-300 ${animation ? "opacity-100" : "opacity-0"}`}
+        transition-opacity duration-300 ${
+          animation ? "opacity-100" : "opacity-0"
+        }`}
       onClick={() => {
         setAnimation(false);
         setTimeout(onClose, 300);
       }}
-      
     >
       <div
         className={`h-95 re bg-zuccini-50 w-80 rounded-md  transition-transform duration-300 ${
@@ -94,6 +105,31 @@ export function AddcustomerModal(){
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function PeerFocusInput({ placeholder, id, onChange, value }) {
+  return (
+    <div className="relative ">
+      <input
+        placeholder=""
+        value={value}
+        onChange={onChange}
+        type="text"
+        className="border my-5 h-10 peer rounded  focus:outline-blue-500"
+        id={id}
+      />
+      <label
+        htmlFor={id}
+        className={` absolute  transition-all pointer-events-none ${
+          value
+            ? "top-2 left-3 text-blue-500 bg-zuccini-50 border-blue-500"
+            : "peer-focus:top-2 peer-placeholder-shown:text-gray-700 peer-focus:text-blue-500 peer-focus:text-sm peer-focus:bg-zuccini-50  text-sm left-3 top-7"
+        }`}
+      >
+        {placeholder}
+      </label>
     </div>
   );
 }
