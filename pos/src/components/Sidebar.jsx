@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router";
 import {
   RiMenuFold4Line,
   RiMenuUnfold4Line,
@@ -10,13 +10,6 @@ import {
   RiUserFill,
 } from "react-icons/ri";
 import { MdPointOfSale, MdManageAccounts } from "react-icons/md";
-export default function Sidebar() {
-  const [isOpen, setIsOpen] = useState(true);
-  const [activeMenu, setActiveMenu] = useState("Pos");
-  const navigate = useNavigate();
-  const toggleSidebar = () => {
-    setIsOpen(!isOpen);
-  };
   const menuItems = [
     { name: "DashBoard", icon: <RiDashboardFill /> },
     { name: "Pos", icon: <MdPointOfSale />, path: "/" },
@@ -36,6 +29,24 @@ export default function Sidebar() {
     { name: "2Cash Drawer", icon: <RiArchiveDrawerFill /> },
     { name: "2Customers", icon: <MdManageAccounts /> },
   ];
+export default function Sidebar() {
+  const [isOpen, setIsOpen] = useState(true);
+  const [activeMenu, setActiveMenu] = useState("");
+  const navigate = useNavigate();
+  const location = useLocation();
+  const toggleSidebar = () => {
+    setIsOpen(!isOpen);
+  };
+
+
+  useEffect(() => {
+    const currentItem = menuItems.find(
+      (item) => item.path === location.pathname
+    );
+    if (currentItem) {
+      setActiveMenu(currentItem.name);
+    }
+  }, [location.pathname]);
   return (
     <div
       className={`h-screen relative  ${
@@ -58,7 +69,6 @@ export default function Sidebar() {
             <div
               key={item.name}
               onClick={() => {
-                setActiveMenu(Name);
                 navigate(Path);
               }}
               className={` cursor-pointer transition-colors duration-200
