@@ -609,7 +609,6 @@ function CashModal({
         />
         <button
           onClick={() => {
-            
             if (
               cashForm.amountReceived > 0 &&
               cashForm.amountReceived > cashForm.payable

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { posProducts } from "../data/products";
+import { posProducts } from "../../data/products";
 
 export function ProductList({ addCartItems, search }) {
   const filtered = posProducts.filter((item) =>

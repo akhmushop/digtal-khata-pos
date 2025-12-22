@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import Sidebar from "../components/Sidebar";
-import { ProductHeader } from "../components/ProductHeader";
-import { CartHeader } from "../components/CartHeader";
-import { ProductList } from "../components/ProductList";
-import CartItems from "../components/CartItems";
-function HomePage() {
+import Sidebar from "../../components/Sidebar";
+import { ProductHeader } from "../../components/pos/ProductHeader";
+import { CartHeader } from "../../components/pos/CartHeader";
+import { ProductList } from "../../components/pos/ProductList";
+import CartItems from "../../components/pos/CartItems";
+function Pos() {
   const [cartItems, setCartItems] = useState(() => {
     try {
       const storedItems = localStorage.getItem("cart");
@@ -58,7 +58,6 @@ function HomePage() {
   const [search, setSearch] = useState("");
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar />
       <div className="w-5/8">
         <ProductHeader setSearch={setSearch} />
         <ProductList addCartItems={addCartItems} search={search} />
@@ -78,4 +77,4 @@ function HomePage() {
     </div>
   );
 }
-export default HomePage;
+export default Pos;
