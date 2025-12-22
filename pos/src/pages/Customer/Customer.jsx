@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { RiUserAddFill, RiCloseLargeFill } from "react-icons/ri";
+import Sidebar from "../../components/Sidebar";
 export function AddCustomerModal() {
   const [addCustomer, setAddCustomer] = useState(false);
     const [saveCustomer, setSaveCustomer] = useState(() => {"walk-in customer"
@@ -12,7 +13,8 @@ export function AddCustomerModal() {
     });
 
   return (
-    <>
+    <div className="flex">
+    <Sidebar />
       <div>
         <button
           onClick={() => {
@@ -31,7 +33,7 @@ export function AddCustomerModal() {
           setSaveCustomer={setSaveCustomer}
         />
       )}
-    </>
+    </div>
   );
 }
 

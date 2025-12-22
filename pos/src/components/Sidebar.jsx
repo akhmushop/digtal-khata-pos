@@ -11,7 +11,7 @@ import {
 } from "react-icons/ri";
 import { MdPointOfSale, MdManageAccounts } from "react-icons/md";
 export default function Sidebar() {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   const [activeMenu, setActiveMenu] = useState("Pos");
   const navigate = useNavigate();
   const toggleSidebar = () => {
@@ -20,7 +20,7 @@ export default function Sidebar() {
   const menuItems = [
     { name: "DashBoard", icon: <RiDashboardFill /> },
     { name: "Pos", icon: <MdPointOfSale />, path: "/" },
-    { name: "Products", icon: <RiProductHuntFill /> },
+    { name: "Products", icon: <RiProductHuntFill />, path: "/product" },
     { name: "Sales", icon: <RiMoneyDollarBoxFill /> },
     { name: "Cash Drawer", icon: <RiArchiveDrawerFill /> },
     { name: "Customers", icon: <MdManageAccounts />, path: "/customer" },
