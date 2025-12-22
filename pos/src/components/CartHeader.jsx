@@ -24,7 +24,7 @@ const saveCustomer = [{name:"walk-in customer"}]
   }, []);
   return (
     <>
-      <div className="px-5 gap-4 flex items-center  bg-zuccini-400  justify-around  h-17 mb-3 rounded-md mx-2 mt-2 sticky top-1">
+      <div className="px-5 gap-4 flex items-center  bg-zuccini-400  justify-around  h-17 rounded-md mx-2 mt-2 sticky top-1">
         <div className="relative w-full">
           <input
             id="date"
