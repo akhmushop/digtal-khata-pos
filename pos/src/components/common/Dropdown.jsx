@@ -25,7 +25,7 @@ function DropdownModal({ options, label }) {
     }
   };
   return (
-    <div className="relative m-5 cursor-pointer select-none" ref={dropdownRef}>
+    <div className="relative cursor-pointer select-none" ref={dropdownRef}>
       <div
         tabIndex={0}
         onMouseDown={handleMouseDown}
@@ -40,7 +40,7 @@ function DropdownModal({ options, label }) {
         role="button"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        className={`relative border rounded-sm h-10 w-52 hover:border-gray-700 focus:outline-none ${
+        className={`relative border rounded-sm h-10 w-full hover:border-gray-700 focus:outline-none ${
           isFocused || isOpen
             ? "border-blue-500 ring-1 ring-blue-500"
             : "border-gray-400"
@@ -58,7 +58,7 @@ function DropdownModal({ options, label }) {
         </div>
         <span
           className={`absolute left-3 -top-3 px-1 text-sm bg-white pointer-events-none ${
-            isFocused || isOpen ? "text-blue-500" : "text-gray-400"
+            isFocused || isOpen ? "text-blue-500" : "text-gray-700"
           }`}
         >
           {label}
