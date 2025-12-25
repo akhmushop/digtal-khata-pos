@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef, Children } from "react";
 import Sidebar from "../../components/Sidebar";
+import { Link } from "react-router";
 import DropdownModal from "../../components/common/Dropdown";
 import { RiCloseLargeFill, RiArrowDropDownFill } from "react-icons/ri";
 import AdvancedPOSTable from "../../components/addproduct/Table";
+import ProductStockForm from "./Addproductfrom";
+import FilterBar from "../../components/addproduct/FilterBar";
 import {
   Plus,
   Columns3,
@@ -41,7 +44,7 @@ function AddProduct() {
     <div className="flex min-h-screen">
       <Sidebar />
       <div className="flex flex-col w-full">
-        <div className="grid mt-5 gap-5 grid-cols-12 px-5 w-full">
+        {/* <div className="grid mt-5 gap-5 grid-cols-12 px-5 w-full">
           <div className="col-span-2">
             <DropdownModal options={storeOptions} label={"Store"} />
           </div>
@@ -60,12 +63,19 @@ function AddProduct() {
           <div className="col-span-3">
             <SearchItems placeholder={"Search"} label={"Barcode or Name"} />
           </div>
-        </div>
-        <div className="px-5 mt-5 flex justify-end">
-          <button className="flex bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 cursor-pointer">
-            <Plus />
-            Add Product
-          </button>
+        </div> */}
+        <FilterBar />
+        <div className="px-6 my-6">
+          <div className="flex justify-end">
+            <Link to={"addproduct"}>
+              <button className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-medium text-sm rounded-xl hover:from-emerald-700 hover:to-emerald-600 active:scale-[0.98] transition-all duration-200 shadow-sm hover:shadow-emerald-100 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 group">
+                <div className="p-1 bg-white/20 rounded-lg group-hover:bg-white/25 transition-colors">
+                  <Plus className="w-4 h-4" />
+                </div>
+                <span>Add New Product</span>
+              </button>
+            </Link>
+          </div>
         </div>
         {/* <div className="border border-gray-400 rounded-sm  m-5 ">
           <div className="flex justify-end gap-5 items-center pr-5 border-b h-15 border-gray-400 ">

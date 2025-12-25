@@ -229,7 +229,7 @@ const AdvancedPOSTable = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="max-h-screen bg-gray-50 p-6">
       <div className="max-w-full mx-auto">
         {/* Header with action buttons */}
         <div className="mb-4 flex items-center justify-end">
@@ -251,7 +251,7 @@ const AdvancedPOSTable = () => {
 
         {/* Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-85">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
