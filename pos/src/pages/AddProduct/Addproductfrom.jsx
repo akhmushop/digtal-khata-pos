@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { 
-  Upload, 
-  Package, 
+import React, { useState } from "react";
+import {
+  Upload,
+  Package,
   AlertCircle,
   Tag,
   ShoppingBag,
@@ -16,30 +16,32 @@ import {
   Image as ImageIcon,
   Barcode,
   Layers,
-  ChevronDown
-} from 'lucide-react';
-
+  ChevronDown,
+} from "lucide-react";
+import { useProductStore } from "../../store/product-store";
 const ProductStockForm = () => {
+  const addToProduct = useProductStore((state) => state.addToProduct)
   const [imagePreview, setImagePreview] = useState(null);
-  const [formData, setFormData] = useState({
-    barcode: '1821',
-    productName: '',
-    productUnit: 'PC',
-    productType: 'SIMPLE',
-    alertQuantity: '2',
-    cost: '',
-    price: '',
-    quantity: '',
-    discountPercent: '0',
-    flatDiscount: '0',
-    batchNumber: '26122025',
-    expiryDate: '',
-    description: '',
-    supplier: '',
-    brand: '',
-    category: '',
-    tags: ''
-  });
+  const initialFormData = {
+    barcode: "",
+    productName: "",
+    productUnit: "PC",
+    productType: "SIMPLE",
+    alertQuantity: "2",
+    cost: "",
+    price: "",
+    quantity: "",
+    discountPercent: "0",
+    flatDiscount: "0",
+    batchNumber: "",
+    expiryDate: "",
+    description: "",
+    supplier: "",
+    brand: "",
+    category: "",
+    tags: "",
+  };
+  const [formData, setFormData] = useState(initialFormData);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -54,31 +56,34 @@ const ProductStockForm = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
+    console.log("Form submitted:", formData);
+    addToProduct(formData)
+    setFormData(initialFormData);
+    setImagePreview(null);
   };
 
-  const productUnits = ['PC', 'KG', 'L', 'M', 'SET'];
-  const productTypes = ['SIMPLE', 'VARIABLE', 'DIGITAL', 'BUNDLE'];
+  const productUnits = ["PC", "KG", "L", "M", "SET"];
+  const productTypes = ["SIMPLE", "VARIABLE", "DIGITAL", "BUNDLE"];
   const suppliers = [
-    'Global Suppliers Inc.',
-    'Premium Goods Co.',
-    'Tech Importers Ltd.',
-    'Quality Merchants LLC'
+    "Global Suppliers Inc.",
+    "Premium Goods Co.",
+    "Tech Importers Ltd.",
+    "Quality Merchants LLC",
   ];
   const categories = [
-    'Electronics',
-    'Clothing',
-    'Home & Garden',
-    'Sports',
-    'Beauty'
+    "Electronics",
+    "Clothing",
+    "Home & Garden",
+    "Sports",
+    "Beauty",
   ];
 
   return (
@@ -88,8 +93,12 @@ const ProductStockForm = () => {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Product Stock Management</h1>
-              <p className="text-gray-600 mt-1">Add and manage inventory with detailed specifications</p>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Product Stock Management
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Add and manage inventory with detailed specifications
+              </p>
             </div>
             <div className="flex items-center gap-2">
               <span className="px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
@@ -99,7 +108,10 @@ const ProductStockForm = () => {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white rounded-2xl shadow-xl overflow-hidden"
+        >
           <div className="p-6 md:p-8">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Left Column - Form Fields */}
@@ -111,8 +123,12 @@ const ProductStockForm = () => {
                       <Package className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-800">General Information</h2>
-                      <p className="text-sm text-gray-500">Basic product details</p>
+                      <h2 className="text-lg font-semibold text-gray-800">
+                        General Information
+                      </h2>
+                      <p className="text-sm text-gray-500">
+                        Basic product details
+                      </p>
                     </div>
                   </div>
 
@@ -152,7 +168,9 @@ const ProductStockForm = () => {
 
                     {/* Product Unit */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">Product Unit</label>
+                      <label className="text-sm font-medium text-gray-700">
+                        Product Unit
+                      </label>
                       <div className="relative">
                         <select
                           name="productUnit"
@@ -160,8 +178,10 @@ const ProductStockForm = () => {
                           onChange={handleChange}
                           className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
                         >
-                          {productUnits.map(unit => (
-                            <option key={unit} value={unit}>{unit}</option>
+                          {productUnits.map((unit) => (
+                            <option key={unit} value={unit}>
+                              {unit}
+                            </option>
                           ))}
                         </select>
                         <ChevronDown className="absolute right-3 top-3.5 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -170,7 +190,9 @@ const ProductStockForm = () => {
 
                     {/* Product Type */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">Product Type</label>
+                      <label className="text-sm font-medium text-gray-700">
+                        Product Type
+                      </label>
                       <div className="relative">
                         <select
                           name="productType"
@@ -178,8 +200,10 @@ const ProductStockForm = () => {
                           onChange={handleChange}
                           className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
                         >
-                          {productTypes.map(type => (
-                            <option key={type} value={type}>{type}</option>
+                          {productTypes.map((type) => (
+                            <option key={type} value={type}>
+                              {type}
+                            </option>
                           ))}
                         </select>
                         <Layers className="absolute right-3 top-3.5 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -210,8 +234,12 @@ const ProductStockForm = () => {
                       <ShoppingBag className="w-5 h-5 text-green-600" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-800">Stock & Pricing</h2>
-                      <p className="text-sm text-gray-500">Inventory and pricing details</p>
+                      <h2 className="text-lg font-semibold text-gray-800">
+                        Stock & Pricing
+                      </h2>
+                      <p className="text-sm text-gray-500">
+                        Inventory and pricing details
+                      </p>
                     </div>
                   </div>
 
@@ -289,7 +317,9 @@ const ProductStockForm = () => {
 
                     {/* Flat Discount */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">Flat Discount</label>
+                      <label className="text-sm font-medium text-gray-700">
+                        Flat Discount
+                      </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                           <DollarSign className="w-4 h-4 text-gray-400" />
@@ -306,7 +336,9 @@ const ProductStockForm = () => {
 
                     {/* Batch Number */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">Batch #</label>
+                      <label className="text-sm font-medium text-gray-700">
+                        Batch #
+                      </label>
                       <input
                         type="text"
                         name="batchNumber"
@@ -335,7 +367,9 @@ const ProductStockForm = () => {
 
                 {/* Description Card */}
                 <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl border border-gray-200 p-6">
-                  <h2 className="text-lg font-semibold text-gray-800 mb-4">Product Description</h2>
+                  <h2 className="text-lg font-semibold text-gray-800 mb-4">
+                    Product Description
+                  </h2>
                   <textarea
                     name="description"
                     value={formData.description}
@@ -359,9 +393,15 @@ const ProductStockForm = () => {
 
                   {/* Image Upload Area */}
                   <div className="mb-6">
-                    <div 
-                      className={`border-2 border-dashed ${imagePreview ? 'border-green-300 bg-green-50' : 'border-gray-300'} rounded-xl p-8 transition-all duration-300 cursor-pointer hover:border-green-400`}
-                      onClick={() => document.getElementById('file-upload').click()}
+                    <div
+                      className={`border-2 border-dashed ${
+                        imagePreview
+                          ? "border-green-300 bg-green-50"
+                          : "border-gray-300"
+                      } rounded-xl p-8 transition-all duration-300 cursor-pointer hover:border-green-400`}
+                      onClick={() =>
+                        document.getElementById("file-upload").click()
+                      }
                     >
                       <input
                         type="file"
@@ -370,12 +410,12 @@ const ProductStockForm = () => {
                         className="hidden"
                         onChange={handleImageChange}
                       />
-                      
+
                       {imagePreview ? (
                         <div className="relative">
-                          <img 
-                            src={imagePreview} 
-                            alt="Product preview" 
+                          <img
+                            src={imagePreview}
+                            alt="Product preview"
                             className="mx-auto max-h-64 object-contain rounded-lg shadow-sm"
                           />
                           <button
@@ -394,8 +434,12 @@ const ProductStockForm = () => {
                           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full mb-4">
                             <ImageIcon className="w-10 h-10 text-gray-400" />
                           </div>
-                          <p className="text-sm font-medium text-gray-600 mb-2">Upload Product Image</p>
-                          <p className="text-xs text-gray-500">Click or drag to upload</p>
+                          <p className="text-sm font-medium text-gray-600 mb-2">
+                            Upload Product Image
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Click or drag to upload
+                          </p>
                         </div>
                       )}
                     </div>
@@ -404,7 +448,9 @@ const ProductStockForm = () => {
                   {/* Upload Button */}
                   <button
                     type="button"
-                    onClick={() => document.getElementById('file-upload').click()}
+                    onClick={() =>
+                      document.getElementById("file-upload").click()
+                    }
                     className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow"
                   >
                     <Upload className="w-5 h-5" />
@@ -419,8 +465,12 @@ const ProductStockForm = () => {
                       <Grid className="w-5 h-5 text-purple-600" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-800">More Information</h2>
-                      <p className="text-sm text-gray-500">Additional product details</p>
+                      <h2 className="text-lg font-semibold text-gray-800">
+                        More Information
+                      </h2>
+                      <p className="text-sm text-gray-500">
+                        Additional product details
+                      </p>
                     </div>
                   </div>
 
@@ -440,7 +490,9 @@ const ProductStockForm = () => {
                         >
                           <option value="">Select a supplier...</option>
                           {suppliers.map((supplier, index) => (
-                            <option key={index} value={supplier}>{supplier}</option>
+                            <option key={index} value={supplier}>
+                              {supplier}
+                            </option>
                           ))}
                         </select>
                         <ChevronDown className="absolute right-3 top-3.5 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -449,7 +501,9 @@ const ProductStockForm = () => {
 
                     {/* Brand */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">Brand</label>
+                      <label className="text-sm font-medium text-gray-700">
+                        Brand
+                      </label>
                       <input
                         type="text"
                         name="brand"
@@ -462,7 +516,9 @@ const ProductStockForm = () => {
 
                     {/* Categories */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">Categories</label>
+                      <label className="text-sm font-medium text-gray-700">
+                        Categories
+                      </label>
                       <div className="relative">
                         <select
                           name="category"
@@ -472,7 +528,9 @@ const ProductStockForm = () => {
                         >
                           <option value="">Select category...</option>
                           {categories.map((category, index) => (
-                            <option key={index} value={category}>{category}</option>
+                            <option key={index} value={category}>
+                              {category}
+                            </option>
                           ))}
                         </select>
                         <ChevronDown className="absolute right-3 top-3.5 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -516,7 +574,8 @@ const ProductStockForm = () => {
                     </button>
                   </div>
                   <p className="text-xs text-gray-500 text-center mt-4">
-                    All required fields are marked with <span className="text-red-500">*</span>
+                    All required fields are marked with{" "}
+                    <span className="text-red-500">*</span>
                   </p>
                 </div>
               </div>
@@ -528,7 +587,9 @@ const ProductStockForm = () => {
         <div className="mt-6 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-sm text-gray-600">Form autosave enabled • Last saved: Just now</span>
+            <span className="text-sm text-gray-600">
+              Form autosave enabled • Last saved: Just now
+            </span>
           </div>
         </div>
       </div>

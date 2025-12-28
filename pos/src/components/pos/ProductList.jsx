@@ -1,9 +1,16 @@
 import React, { useState } from "react";
-import { posProducts } from "../../data/products";
-
+import { useProductStore } from "../../store/product-store";
+// const storedData = JSON.parse(localStorage.getItem("posProducts"))
+//  const valuation = storedData.reduce(
+//     (total, item) => total + item.price * item.quantity,
+//     0
+//   );
+//   const alertQuantity = storedData.filter((item)=> item.alertQuantity >= item.quantity)
+// console.log(alertQuantity)
 export function ProductList({ addCartItems, search }) {
-  const filtered = posProducts.filter((item) =>
-    item.name.toLowerCase().includes(search.toLowerCase())
+  const product = useProductStore((state) => state.product);
+  const filtered = product.filter((item) =>
+    item.productName.toLowerCase().includes(search.toLowerCase())
   );
   return (
     <div className="h-[calc(100vh-4.25rem)]">
@@ -12,7 +19,7 @@ export function ProductList({ addCartItems, search }) {
           {filtered.map((product) => {
             return (
               <div
-                key={product.id}
+                key={product.barcode}
                 onClick={() => {
                   addCartItems(product);
                 }}
