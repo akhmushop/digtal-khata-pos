@@ -355,6 +355,54 @@ export const useProductStore = create(
       ],
       addToProduct: (product) =>
         set((state) => ({ product: [...state.product, product] })),
+      removeQty: (productBarcode) =>
+        set((state) => ({
+          product: state.product.map((product) => {
+            if (product.barcode === productBarcode && product.quantity > 0) {
+              return {
+                ...product,
+                quantity: product.quantity - 1,
+              };
+            }
+            return product;
+          }),
+        })),
+      addQty: (productBarcode) =>
+        set((state) => ({
+          product: state.product.map((product) => {
+            if (product.barcode === productBarcode && product.quantity > 0) {
+              return {
+                ...product,
+                quantity: product.quantity + 1,
+              };
+            }
+            return product;
+          }),
+        })),
+      addCustomQty: (productBarcode, itemQty, prevQty) =>
+        set((state) => ({
+          product: state.product.map((product) => {
+            if (product.barcode === productBarcode && product.quantity > 0) {
+              return {
+                ...product,
+                quantity: product.quantity - (itemQty - prevQty),
+              };
+            }
+            return product;
+          }),
+        })),
+      restoreQty: (productBarcode, itemQty) =>
+        set((state) => ({
+          product: state.product.map((product) => {
+            if (product.barcode === productBarcode && product.quantity > 0) {
+              return {
+                ...product,
+                quantity: product.quantity + itemQty,
+              };
+            }
+            return product;
+          }),
+        })),
     }),
     {
       name: "product-storage",

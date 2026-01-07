@@ -4,6 +4,7 @@ import { FiMinusCircle } from "react-icons/fi";
 import { HiDotsVertical } from "react-icons/hi";
 import { ClickToShowMore } from "./CartMoreMenu";
 import { ClickEmptyToResetCart } from "./CartEmptyBtn";
+import { useProductStore } from "../../store/product-store";
 
 export default function CartItems({
   cartItems = [],
@@ -13,9 +14,14 @@ export default function CartItems({
   updateQty,
   resetCart,
 }) {
+  const addQtn = useProductStore((state) => state.addQty);
+  const removeQty = useProductStore((state) => state.removeQty);
+  const addCustomQty = useProductStore((state) => state.addCustomQty);
+  const restoreQty = useProductStore((state) => state.restoreQty);
   const [editQtyId, setEditQtyId] = useState(null);
   const [customQty, setCustomQty] = useState(null);
   const editQtyRef = useRef(null);
+
   // ClickOutSideToSaveCustomQty
   useEffect(() => {
     const clickOutside = (event) => {
@@ -31,6 +37,7 @@ export default function CartItems({
         const newQty = Number(customQty);
         if (!isNaN(newQty) && newQty > 0) {
           updateQty(newQty, items); // Send the difference to update
+          addCustomQty(items.barcode, newQty, items.qty);
         }
         setCustomQty(null);
         setEditQtyId(null);
@@ -40,7 +47,7 @@ export default function CartItems({
     return () => {
       document.removeEventListener("mousedown", clickOutside);
     };
-  }, [cartItems, customQty, editQtyId, updateQty]);
+  }, [cartItems, customQty, editQtyId, updateQty, addCustomQty]);
   // ClickOutSideToSaveCustomQty
 
   return (
@@ -62,12 +69,14 @@ export default function CartItems({
                 <div className="flex-1 pl-5">
                   <h1>{items.name}</h1>
                   <p>
-                    {items.price} * {items.qty} = {items.price * items.qty}
+                    {items.price.toFixed(2)} * {items.qty} ={" "}
+                    {(items.price * items.qty).toFixed(2)}
                   </p>
                 </div>
                 <div className="flex text-2xl gap-x-4 items-center pr-5  ">
                   <div
                     onClick={() => {
+                      addQtn(items.barcode);
                       decreaseQty(items);
                     }}
                     className="cursor-pointer"
@@ -97,6 +106,7 @@ export default function CartItems({
                   </span>
                   <div
                     onClick={() => {
+                      removeQty(items.barcode);
                       increaseQty(items);
                     }}
                     className="cursor-pointer"
@@ -106,6 +116,7 @@ export default function CartItems({
                   <div
                     className="cursor-pointer"
                     onClick={() => {
+                      restoreQty(items.barcode, items.qty);
                       removeCartItem(items.id);
                     }}
                   >
@@ -140,11 +151,10 @@ function CartCalculation({ cartItems, resetCart }) {
       return [];
     }
   });
-  const subTotal = cartItems.reduce(
-    (total, item) => total + item.price * item.qty,
-    0
+  const subTotal = Number(
+    cartItems.reduce((total, item) => total + item.price * item.qty, 0)
   );
-  const vat = subTotal * (5 / 100);
+  const vat = Number(subTotal * (5 / 100));
   const [holdConfirm, setHoldConfirm] = useState(false);
 
   useEffect(() => {
@@ -239,6 +249,7 @@ function CartCalculation({ cartItems, resetCart }) {
             <div className="flex-1 text-center">MORE</div>
             <div className="">
               <HiDotsVertical />
+              <HiDotsVertical />
             </div>
           </div>
           {showHoldItems && (
@@ -315,7 +326,7 @@ function CartCalculation({ cartItems, resetCart }) {
           onClick={handleCashTk}
           className="bg-red-400 p-2 w-full col-span-6 rounded hover:bg-red-500 transition-all duration-300 cursor-pointer"
         >
-          CASH TK: {subTotal + vat}
+          CASH TK: {(subTotal + vat).toFixed(2)}
         </button>
       </div>
     </div>
@@ -676,14 +687,14 @@ function CartTextModal({
       </div>
       <div className="flex justify-between py-2 border-b">
         <h4>Subtotal</h4>
-        <h4>TK: {subTotal}</h4>
+        <h4>TK: {subTotal.toFixed(2)}</h4>
       </div>
       <div>
         <h3 className="py-2  w-full flex item">Charges & Taxes</h3>
       </div>
       <div className="flex justify-between py-2 ">
         <h4>VAT: 5%</h4>
-        <h4>TK: {vat}</h4>
+        <h4>TK: {vat.toFixed(2)}</h4>
       </div>
       <div>
         {isAddChargeModalOpen && (
@@ -706,11 +717,11 @@ function CartTextModal({
       </div>
       <div className="flex justify-between py-2 border-b">
         <h4>Total Charges</h4>
-        <h4>TK: {vat}</h4>
+        <h4>TK: {vat.toFixed(2)}</h4>
       </div>
       <div className="flex justify-between py-2 border-b">
         <h1>FINAL TOTAL</h1>
-        <h1>TK: {subTotal + vat}</h1>
+        <h1>TK: {(subTotal + vat).toFixed(2)}</h1>
       </div>
     </>
   );

@@ -9,27 +9,38 @@ import { useProductStore } from "../../store/product-store";
 // console.log(alertQuantity)
 export function ProductList({ addCartItems, search }) {
   const product = useProductStore((state) => state.product);
+  const removeQty = useProductStore((state) => state.removeQty);
   const filtered = product.filter((item) =>
-    item.productName.toLowerCase().includes(search.toLowerCase())
+    item.productName.toLowerCase().includes(search.toLowerCase() || "")
   );
   return (
     <div className="h-[calc(100vh-4.25rem)]">
       <div className=" h-full overflow-scroll  no-scrollbar bg-zuccini-50">
-        <div className=" grid grid-cols-5  gap-1 p-5     ">
+        <div className=" grid grid-cols-4  gap-1 p-5">
           {filtered.map((product) => {
             return (
               <div
                 key={product.barcode}
                 onClick={() => {
+                  if (product.quantity <= 0) return;
                   addCartItems(product);
+                  removeQty(product.barcode);
                 }}
-                className="h-50  bg-zuccini-300 rounded-sm flex flex-col items-center justify-between py-2 cursor-pointer "
+                className={`relative h-60 bg-zuccini-300 rounded-sm flex flex-col items-center justify-between py-2 
+  ${
+    product.quantity <= 0 ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+  }`}
               >
+                {product.quantity <= 0 && (
+                  <div className="absolute inset-0 bg-black/50 rounded-sm flex items-center justify-center text-white text-xl">
+                    Stock Out
+                  </div>
+                )}
                 <img className="h-20 rounded-sm " src={product.image} alt="" />
-                <h2 className="">{product.name}</h2>
+                <h2 className="text-center">{product.productName}</h2>
                 <p className=" ">{product.category}</p>
                 <h1 className=" ">TK: {product.price}</h1>
-                <p className=" ">Stock: {product.stock}</p>
+                <p className=" ">Stock: {product.quantity}</p>
               </div>
             );
           })}

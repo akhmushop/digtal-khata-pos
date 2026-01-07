@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { Link } from "react-router";
 import { 
   Search, ChevronDown, ChevronUp, Eye, Edit2, Trash2, MoreVertical,
   Download, Filter, RefreshCw, Grid3x3, List, Package2, Plus, X,
@@ -6,7 +7,7 @@ import {
   MapPin, DollarSign, AlertCircle, Calendar, BarChart, Settings,
   FileText, ShoppingCart, Check, Minus
 } from 'lucide-react';
-
+import { useProductStore } from '../../store/product-store';
 const AdvancedPOSTable = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
@@ -43,103 +44,7 @@ const AdvancedPOSTable = () => {
     action: 100
   });
   const [resizing, setResizing] = useState(null);
-
-  // Sample comprehensive data
-  const [products, setProducts] = useState([
-    { 
-      id: 1, 
-      name: 'Premium Wireless Mouse', 
-      image: '', 
-      barcode: 'WM2024001', 
-      category: 'Electronics', 
-      supplier: 'Tech Supply Co',
-      price: 45.99, 
-      cost: 25.00,
-      stock: 124, 
-      alertQuantity: 20,
-      location: 'Warehouse A',
-      status: 'In Stock',
-      tags: ['wireless', 'premium'],
-      lastUpdated: '2024-12-20',
-      sales: 450,
-      variants: [
-        { id: 1, name: 'Black', stock: 60 },
-        { id: 2, name: 'White', stock: 64 }
-      ]
-    },
-    { 
-      id: 2, 
-      name: 'USB-C Cable 2M', 
-      image: '', 
-      barcode: 'CB2024002', 
-      category: 'Accessories', 
-      supplier: 'Cable Mart',
-      price: 12.99, 
-      cost: 5.00,
-      stock: 8, 
-      alertQuantity: 15,
-      location: 'Store Front',
-      status: 'Low Stock',
-      tags: ['cable', 'usb-c'],
-      lastUpdated: '2024-12-28',
-      sales: 320,
-      variants: []
-    },
-    { 
-      id: 3, 
-      name: 'Ergonomic Laptop Stand', 
-      image: '', 
-      barcode: 'LS2024003', 
-      category: 'Furniture', 
-      supplier: 'Office Plus',
-      price: 79.99, 
-      cost: 40.00,
-      stock: 0, 
-      alertQuantity: 5,
-      location: 'Warehouse B',
-      status: 'Out of Stock',
-      tags: ['ergonomic', 'furniture'],
-      lastUpdated: '2024-12-15',
-      sales: 89,
-      variants: []
-    },
-    { 
-      id: 4, 
-      name: 'Mechanical Keyboard RGB', 
-      image: '', 
-      barcode: 'KB2024004', 
-      category: 'Electronics', 
-      supplier: 'Tech Supply Co',
-      price: 129.99, 
-      cost: 70.00,
-      stock: 45, 
-      alertQuantity: 10,
-      location: 'Warehouse A',
-      status: 'In Stock',
-      tags: ['keyboard', 'rgb', 'gaming'],
-      lastUpdated: '2024-12-25',
-      sales: 234,
-      variants: []
-    },
-    { 
-      id: 5, 
-      name: '27" 4K Monitor', 
-      image: '', 
-      barcode: 'MN2024005', 
-      category: 'Electronics', 
-      supplier: 'Display World',
-      price: 349.99, 
-      cost: 200.00,
-      stock: 23, 
-      alertQuantity: 5,
-      location: 'Store Front',
-      status: 'In Stock',
-      tags: ['monitor', '4k'],
-      lastUpdated: '2024-12-22',
-      sales: 156,
-      variants: []
-    },
-  ]);
+const products = useProductStore((state)=>state.product)
 
   const [categories] = useState(['Electronics', 'Accessories', 'Furniture', 'Office Supplies']);
   const [suppliers] = useState(['Tech Supply Co', 'Cable Mart', 'Office Plus', 'Display World']);
@@ -172,7 +77,7 @@ const AdvancedPOSTable = () => {
 
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
-      const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      const matchesSearch = p.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            p.barcode.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = filters.category === 'all' || p.category === filters.category;
       const matchesStatus = filters.status === 'all' || p.status === filters.status;
@@ -287,7 +192,7 @@ const AdvancedPOSTable = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div className="h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 overflow-y-scroll">
       <div className="max-w-[1800px] mx-auto">
         
         {/* Header */}
@@ -316,13 +221,13 @@ const AdvancedPOSTable = () => {
                 <Download className="w-4 h-4" />
                 Export
               </button>
+              <Link to={"addproduct"}>
               <button 
-                onClick={() => openProductModal()}
                 className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm font-medium"
               >
                 <Plus className="w-4 h-4" />
                 Add Product
-              </button>
+              </button></Link>
             </div>
           </div>
 
@@ -641,12 +546,13 @@ const AdvancedPOSTable = () => {
                       />
                     </td>
                     <td className="px-4 py-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg flex items-center justify-center">
-                        <Package2 className="w-6 h-6 text-slate-400" />
+                      <div className="">
+                        {/* <Package2 className="w-6 h-6 text-slate-400" /> */}
+                        <img className="w-12 h-12 bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg flex items-center justify-center " src={product.image} alt="" />
                       </div>
                     </td>
                     <td className="px-4 py-4 truncate">
-                      <div className="font-semibold text-slate-900 truncate">{product.name}</div>
+                      <div className="font-semibold text-slate-900 truncate">{product.productName}</div>
                       {product.tags && product.tags.length > 0 && (
                         <div className="flex gap-1 mt-1">
                           {product.tags.slice(0, 2).map(tag => (
@@ -674,7 +580,7 @@ const AdvancedPOSTable = () => {
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-slate-900">{product.stock}</span>
+                        <span className="text-sm font-medium text-slate-900">{product.quantity}</span>
                         <button 
                           onClick={() => openStockModal(product)}
                           className="p-1 rounded hover:bg-slate-100"
@@ -682,7 +588,7 @@ const AdvancedPOSTable = () => {
                           <Edit2 className="w-3 h-3 text-slate-400" />
                         </button>
                       </div>
-                      {product.stock <= product.alertQuantity && product.stock > 0 && (
+                      {product.quantity <= product.alertQuantity && product.quantity > 0 && (
                         <div className="text-xs text-amber-600 mt-1">Alert: {product.alertQuantity}</div>
                       )}
                     </td>
