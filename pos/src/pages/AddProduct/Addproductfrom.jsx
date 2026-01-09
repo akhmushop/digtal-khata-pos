@@ -13,15 +13,18 @@ import {
   Building,
   Save,
   X,
-  Image as ImageIcon,
+  Image,
   Barcode,
   Layers,
   ChevronDown,
+  CheckCircle,
 } from "lucide-react";
-import { useProductStore } from "../../store/product-store";
+
 const ProductStockForm = () => {
-  const addToProduct = useProductStore((state) => state.addToProduct)
   const [imagePreview, setImagePreview] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [showSuccess, setShowSuccess] = useState(false);
+
   const initialFormData = {
     barcode: "",
     productName: "",
@@ -41,14 +44,52 @@ const ProductStockForm = () => {
     category: "",
     tags: "",
   };
+  
   const [formData, setFormData] = useState(initialFormData);
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.barcode.trim()) {
+      newErrors.barcode = "Barcode is required";
+    }
+    
+    if (!formData.productName.trim()) {
+      newErrors.productName = "Product name is required";
+    }
+    
+    if (!formData.cost || parseFloat(formData.cost) <= 0) {
+      newErrors.cost = "Valid cost is required";
+    }
+    
+    if (!formData.price || parseFloat(formData.price) <= 0) {
+      newErrors.price = "Valid price is required";
+    }
+    
+    if (!formData.quantity || parseInt(formData.quantity) < 0) {
+      newErrors.quantity = "Valid quantity is required";
+    }
+    
+    if (parseFloat(formData.cost) > parseFloat(formData.price)) {
+      newErrors.price = "Price should be greater than cost";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors({ ...errors, image: "Image size should be less than 5MB" });
+        return;
+      }
+      
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
+        setErrors({ ...errors, image: null });
       };
       reader.readAsDataURL(file);
     }
@@ -56,21 +97,55 @@ const ProductStockForm = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    console.log(name ,value)
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
+    
+    // Clear error for this field
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: null });
+    }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
-    addToProduct(formData)
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    // Calculate final price after discounts
+    const basePrice = parseFloat(formData.price);
+    const percentDiscount = (basePrice * parseFloat(formData.discountPercent)) / 100;
+    const finalPrice = basePrice - percentDiscount - parseFloat(formData.flatDiscount);
+
+    const productData = {
+      ...formData,
+      finalPrice: finalPrice.toFixed(2),
+      image: imagePreview,
+      createdAt: new Date().toISOString(),
+    };
+
+    console.log("Product saved:", productData);
+    
+    // Show success message
+    setShowSuccess(true);
+    setTimeout(() => setShowSuccess(false), 3000);
+    
+    // Reset form
     setFormData(initialFormData);
     setImagePreview(null);
+    setErrors({});
   };
 
-  const productUnits = ["PC", "KG", "L", "M", "SET"];
+  const handleCancel = () => {
+    setFormData(initialFormData);
+    setImagePreview(null);
+    setErrors({});
+  };
+  const productUnits = ["PC", "KG", "L", "M", "SET", "BOX", "DOZEN"];
   const productTypes = ["SIMPLE", "VARIABLE", "DIGITAL", "BUNDLE"];
   const suppliers = [
     "Global Suppliers Inc.",
@@ -84,16 +159,26 @@ const ProductStockForm = () => {
     "Home & Garden",
     "Sports",
     "Beauty",
+    "Food & Beverage",
+    "Automotive",
   ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
+        {/* Success Message */}
+        {showSuccess && (
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3 animate-fade-in">
+            <CheckCircle className="w-5 h-5 text-green-600" />
+            <span className="text-green-800 font-medium">Product saved successfully!</span>
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-gray-900">
                 Product Stock Management
               </h1>
               <p className="text-gray-600 mt-1">
@@ -145,10 +230,16 @@ const ProductStockForm = () => {
                           name="barcode"
                           value={formData.barcode}
                           onChange={handleChange}
-                          className="w-full px-4 py-3 pl-10 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                          placeholder="Enter barcode"
+                          className={`w-full px-4 py-3 pl-10 bg-white border ${
+                            errors.barcode ? "border-red-500" : "border-gray-300"
+                          } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                         />
                         <Hash className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
                       </div>
+                      {errors.barcode && (
+                        <p className="text-xs text-red-500">{errors.barcode}</p>
+                      )}
                     </div>
 
                     {/* Product Name */}
@@ -162,8 +253,13 @@ const ProductStockForm = () => {
                         value={formData.productName}
                         onChange={handleChange}
                         placeholder="Enter product name"
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                        className={`w-full px-4 py-3 bg-white border ${
+                          errors.productName ? "border-red-500" : "border-gray-300"
+                        } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                       />
+                      {errors.productName && (
+                        <p className="text-xs text-red-500">{errors.productName}</p>
+                      )}
                     </div>
 
                     {/* Product Unit */}
@@ -221,6 +317,7 @@ const ProductStockForm = () => {
                         name="alertQuantity"
                         value={formData.alertQuantity}
                         onChange={handleChange}
+                        min="0"
                         className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200"
                       />
                     </div>
@@ -259,9 +356,16 @@ const ProductStockForm = () => {
                           value={formData.cost}
                           onChange={handleChange}
                           placeholder="0.00"
-                          className="w-full px-4 py-3 pl-10 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                          step="0.01"
+                          min="0"
+                          className={`w-full px-4 py-3 pl-10 bg-white border ${
+                            errors.cost ? "border-red-500" : "border-gray-300"
+                          } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                         />
                       </div>
+                      {errors.cost && (
+                        <p className="text-xs text-red-500">{errors.cost}</p>
+                      )}
                     </div>
 
                     {/* Price */}
@@ -279,9 +383,16 @@ const ProductStockForm = () => {
                           value={formData.price}
                           onChange={handleChange}
                           placeholder="0.00"
-                          className="w-full px-4 py-3 pl-10 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                          step="0.01"
+                          min="0"
+                          className={`w-full px-4 py-3 pl-10 bg-white border ${
+                            errors.price ? "border-red-500" : "border-gray-300"
+                          } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                         />
                       </div>
+                      {errors.price && (
+                        <p className="text-xs text-red-500">{errors.price}</p>
+                      )}
                     </div>
 
                     {/* Quantity */}
@@ -294,8 +405,15 @@ const ProductStockForm = () => {
                         name="quantity"
                         value={formData.quantity}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                        placeholder="0"
+                        min="0"
+                        className={`w-full px-4 py-3 bg-white border ${
+                          errors.quantity ? "border-red-500" : "border-gray-300"
+                        } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                       />
+                      {errors.quantity && (
+                        <p className="text-xs text-red-500">{errors.quantity}</p>
+                      )}
                     </div>
 
                     {/* Discount % */}
@@ -311,6 +429,7 @@ const ProductStockForm = () => {
                         onChange={handleChange}
                         min="0"
                         max="100"
+                        step="0.1"
                         className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
                       />
                     </div>
@@ -329,10 +448,28 @@ const ProductStockForm = () => {
                           name="flatDiscount"
                           value={formData.flatDiscount}
                           onChange={handleChange}
+                          step="0.01"
+                          min="0"
                           className="w-full px-4 py-3 pl-10 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                         />
                       </div>
                     </div>
+
+                    {/* Final Price Display */}
+                    {formData.price && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">
+                          Final Price
+                        </label>
+                        <div className="px-4 py-3 bg-green-50 border border-green-200 rounded-lg font-semibold text-green-700">
+                          ${(
+                            parseFloat(formData.price || 0) -
+                            (parseFloat(formData.price || 0) * parseFloat(formData.discountPercent || 0)) / 100 -
+                            parseFloat(formData.flatDiscount || 0)
+                          ).toFixed(2)}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Batch Number */}
                     <div className="space-y-2">
@@ -344,6 +481,7 @@ const ProductStockForm = () => {
                         name="batchNumber"
                         value={formData.batchNumber}
                         onChange={handleChange}
+                        placeholder="Enter batch number"
                         className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                       />
                     </div>
@@ -359,6 +497,7 @@ const ProductStockForm = () => {
                         name="expiryDate"
                         value={formData.expiryDate}
                         onChange={handleChange}
+                        min={new Date().toISOString().split('T')[0]}
                         className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                       />
                     </div>
@@ -397,6 +536,8 @@ const ProductStockForm = () => {
                       className={`border-2 border-dashed ${
                         imagePreview
                           ? "border-green-300 bg-green-50"
+                          : errors.image
+                          ? "border-red-300 bg-red-50"
                           : "border-gray-300"
                       } rounded-xl p-8 transition-all duration-300 cursor-pointer hover:border-green-400`}
                       onClick={() =>
@@ -432,17 +573,20 @@ const ProductStockForm = () => {
                       ) : (
                         <div className="text-center">
                           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full mb-4">
-                            <ImageIcon className="w-10 h-10 text-gray-400" />
+                            <Image className="w-10 h-10 text-gray-400" />
                           </div>
                           <p className="text-sm font-medium text-gray-600 mb-2">
                             Upload Product Image
                           </p>
                           <p className="text-xs text-gray-500">
-                            Click or drag to upload
+                            Click or drag to upload (Max 5MB)
                           </p>
                         </div>
                       )}
                     </div>
+                    {errors.image && (
+                      <p className="text-xs text-red-500 mt-2">{errors.image}</p>
+                    )}
                   </div>
 
                   {/* Upload Button */}
@@ -560,6 +704,7 @@ const ProductStockForm = () => {
                   <div className="flex flex-col sm:flex-row gap-3">
                     <button
                       type="button"
+                      onClick={handleCancel}
                       className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-all duration-200 flex items-center justify-center gap-2"
                     >
                       <X className="w-5 h-5" />
@@ -588,7 +733,7 @@ const ProductStockForm = () => {
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
             <span className="text-sm text-gray-600">
-              Form autosave enabled • Last saved: Just now
+              Form ready • Fill in the required fields to save
             </span>
           </div>
         </div>

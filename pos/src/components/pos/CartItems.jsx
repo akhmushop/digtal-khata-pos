@@ -249,7 +249,6 @@ function CartCalculation({ cartItems, resetCart }) {
             <div className="flex-1 text-center">MORE</div>
             <div className="">
               <HiDotsVertical />
-              <HiDotsVertical />
             </div>
           </div>
           {showHoldItems && (
