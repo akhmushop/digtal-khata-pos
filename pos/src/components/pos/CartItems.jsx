@@ -57,8 +57,8 @@ export default function CartItems({
         {cartItems.map((items) => {
           return (
             <div
-              key={items.id}
-              className="h-20 m-2 bg-zuccini-300 rounded-xl flex items-center "
+              key={items.barcode}
+              className="h-20 m-2 bg-zuccini-300 rounded-xl flex items-center select-none"
             >
               <div className="flex items-center w-full justify-between">
                 <img
@@ -69,8 +69,8 @@ export default function CartItems({
                 <div className="flex-1 pl-5">
                   <h1>{items.name}</h1>
                   <p>
-                    {items.price.toFixed(2)} * {items.qty} ={" "}
-                    {(items.price * items.qty).toFixed(2)}
+                    {Number(items.price).toFixed(2)} × {Number(items.qty)} ={" "}
+                    {(Number(items.price) * Number(items.qty)).toFixed(2)}
                   </p>
                 </div>
                 <div className="flex text-2xl gap-x-4 items-center pr-5  ">

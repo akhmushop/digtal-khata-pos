@@ -26,7 +26,7 @@ export function ProductList({ addCartItems, search }) {
                   addCartItems(product);
                   removeQty(product.barcode);
                 }}
-                className={`relative h-60 bg-zuccini-300 rounded-sm flex flex-col items-center justify-between py-2 
+                className={`select-none relative h-60 bg-zuccini-300 rounded-sm flex flex-col items-center justify-between py-2 
   ${
     product.quantity <= 0 ? "cursor-not-allowed opacity-60" : "cursor-pointer"
   }`}

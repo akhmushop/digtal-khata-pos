@@ -19,11 +19,13 @@ import {
   ChevronDown,
   CheckCircle,
 } from "lucide-react";
+import { useProductStore } from "../../store/product-store";
 
 const ProductStockForm = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [errors, setErrors] = useState({});
   const [showSuccess, setShowSuccess] = useState(false);
+  const addToProduct = useProductStore((state) => state.addToProduct);
 
   const initialFormData = {
     barcode: "",
@@ -44,32 +46,32 @@ const ProductStockForm = () => {
     category: "",
     tags: "",
   };
-  
+
   const [formData, setFormData] = useState(initialFormData);
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.barcode.trim()) {
       newErrors.barcode = "Barcode is required";
     }
-    
+
     if (!formData.productName.trim()) {
       newErrors.productName = "Product name is required";
     }
-    
+
     if (!formData.cost || parseFloat(formData.cost) <= 0) {
       newErrors.cost = "Valid cost is required";
     }
-    
+
     if (!formData.price || parseFloat(formData.price) <= 0) {
       newErrors.price = "Valid price is required";
     }
-    
+
     if (!formData.quantity || parseInt(formData.quantity) < 0) {
       newErrors.quantity = "Valid quantity is required";
     }
-    
+
     if (parseFloat(formData.cost) > parseFloat(formData.price)) {
       newErrors.price = "Price should be greater than cost";
     }
@@ -85,7 +87,7 @@ const ProductStockForm = () => {
         setErrors({ ...errors, image: "Image size should be less than 5MB" });
         return;
       }
-      
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
@@ -97,12 +99,11 @@ const ProductStockForm = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    console.log(name ,value)
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
-    
+
     // Clear error for this field
     if (errors[name]) {
       setErrors({ ...errors, [name]: null });
@@ -111,15 +112,17 @@ const ProductStockForm = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
 
     // Calculate final price after discounts
     const basePrice = parseFloat(formData.price);
-    const percentDiscount = (basePrice * parseFloat(formData.discountPercent)) / 100;
-    const finalPrice = basePrice - percentDiscount - parseFloat(formData.flatDiscount);
+    const percentDiscount =
+      (basePrice * parseFloat(formData.discountPercent)) / 100;
+    const finalPrice =
+      basePrice - percentDiscount - parseFloat(formData.flatDiscount);
 
     const productData = {
       ...formData,
@@ -129,11 +132,12 @@ const ProductStockForm = () => {
     };
 
     console.log("Product saved:", productData);
-    
+    addToProduct(productData);
+
     // Show success message
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 3000);
-    
+
     // Reset form
     setFormData(initialFormData);
     setImagePreview(null);
@@ -170,7 +174,9 @@ const ProductStockForm = () => {
         {showSuccess && (
           <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3 animate-fade-in">
             <CheckCircle className="w-5 h-5 text-green-600" />
-            <span className="text-green-800 font-medium">Product saved successfully!</span>
+            <span className="text-green-800 font-medium">
+              Product saved successfully!
+            </span>
           </div>
         )}
 
@@ -232,7 +238,9 @@ const ProductStockForm = () => {
                           onChange={handleChange}
                           placeholder="Enter barcode"
                           className={`w-full px-4 py-3 pl-10 bg-white border ${
-                            errors.barcode ? "border-red-500" : "border-gray-300"
+                            errors.barcode
+                              ? "border-red-500"
+                              : "border-gray-300"
                           } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                         />
                         <Hash className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
@@ -254,11 +262,15 @@ const ProductStockForm = () => {
                         onChange={handleChange}
                         placeholder="Enter product name"
                         className={`w-full px-4 py-3 bg-white border ${
-                          errors.productName ? "border-red-500" : "border-gray-300"
+                          errors.productName
+                            ? "border-red-500"
+                            : "border-gray-300"
                         } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                       />
                       {errors.productName && (
-                        <p className="text-xs text-red-500">{errors.productName}</p>
+                        <p className="text-xs text-red-500">
+                          {errors.productName}
+                        </p>
                       )}
                     </div>
 
@@ -412,7 +424,9 @@ const ProductStockForm = () => {
                         } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                       />
                       {errors.quantity && (
-                        <p className="text-xs text-red-500">{errors.quantity}</p>
+                        <p className="text-xs text-red-500">
+                          {errors.quantity}
+                        </p>
                       )}
                     </div>
 
@@ -462,9 +476,12 @@ const ProductStockForm = () => {
                           Final Price
                         </label>
                         <div className="px-4 py-3 bg-green-50 border border-green-200 rounded-lg font-semibold text-green-700">
-                          ${(
+                          $
+                          {(
                             parseFloat(formData.price || 0) -
-                            (parseFloat(formData.price || 0) * parseFloat(formData.discountPercent || 0)) / 100 -
+                            (parseFloat(formData.price || 0) *
+                              parseFloat(formData.discountPercent || 0)) /
+                              100 -
                             parseFloat(formData.flatDiscount || 0)
                           ).toFixed(2)}
                         </div>
@@ -497,7 +514,7 @@ const ProductStockForm = () => {
                         name="expiryDate"
                         value={formData.expiryDate}
                         onChange={handleChange}
-                        min={new Date().toISOString().split('T')[0]}
+                        min={new Date().toISOString().split("T")[0]}
                         className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                       />
                     </div>
@@ -585,7 +602,9 @@ const ProductStockForm = () => {
                       )}
                     </div>
                     {errors.image && (
-                      <p className="text-xs text-red-500 mt-2">{errors.image}</p>
+                      <p className="text-xs text-red-500 mt-2">
+                        {errors.image}
+                      </p>
                     )}
                   </div>
 
