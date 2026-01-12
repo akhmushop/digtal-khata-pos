@@ -1,11 +1,8 @@
 import React from "react";
-export function ClickEmptyToResetCart({
-  isOpen,
-  setIsOpen,
-  setEmptyCartCon,
-  resetCart,
-  cartItems,
-}) {
+import { useCartStore } from "../../store/cart-store";
+export function ClickEmptyToResetCart({ isOpen, setIsOpen, setEmptyCartCon }) {
+  const resetCart = useCartStore((state) => state.resetCart);
+  const cart = useCartStore((state) => state.cart);
   return (
     <div
       onClick={() => {
@@ -26,8 +23,7 @@ export function ClickEmptyToResetCart({
         <div className="flex  w-full justify-center gap-3">
           <button
             onClick={() => {
-              if (cartItems.length === 0)
-                return alert("Your cart is already empty");
+              if (cart.length === 0) return alert("Your cart is already empty");
               resetCart();
               setIsOpen();
               setTimeout(() => setEmptyCartCon(), 300);
@@ -50,4 +46,3 @@ export function ClickEmptyToResetCart({
     </div>
   );
 }
-

@@ -5,19 +5,20 @@ import { HiDotsVertical } from "react-icons/hi";
 import { ClickToShowMore } from "./CartMoreMenu";
 import { ClickEmptyToResetCart } from "./CartEmptyBtn";
 import { useProductStore } from "../../store/product-store";
+import { useCartStore } from "../../store/cart-store";
 
-export default function CartItems({
-  cartItems = [],
-  removeCartItem,
-  increaseQty,
-  decreaseQty,
-  updateQty,
-  resetCart,
-}) {
-  const addQtn = useProductStore((state) => state.addQty);
-  const removeQty = useProductStore((state) => state.removeQty);
-  const addCustomQty = useProductStore((state) => state.addCustomQty);
-  const restoreQty = useProductStore((state) => state.restoreQty);
+export default function CartItems() {
+  const addProductQtn = useProductStore((state) => state.addProductQtn);
+  const removeProductQty = useProductStore((state) => state.removeProductQty);
+  const addCustomProductQty = useProductStore(
+    (state) => state.addCustomProductQty
+  );
+  const restoreProductQty = useProductStore((state) => state.restoreProductQty);
+  const cart = useCartStore((state) => state.cart);
+  const addCartQty = useCartStore((state) => state.addCartQty);
+  const removeCartQty = useCartStore((state) => state.removeCartQty);
+  const removeCartItem = useCartStore((state) => state.removeCartItem);
+  const addCustomCartQty = useCartStore((state) => state.addCustomCartQty);
   const [editQtyId, setEditQtyId] = useState(null);
   const [customQty, setCustomQty] = useState(null);
   const editQtyRef = useRef(null);
@@ -28,7 +29,7 @@ export default function CartItems({
       if (editQtyRef.current && !editQtyRef.current.contains(event.target)) {
         setEditQtyId(null);
       }
-      const items = cartItems.find((p) => p.id === editQtyId);
+      const items = cart.find((p) => p.id === editQtyId);
       if (
         editQtyRef.current &&
         items &&
@@ -36,8 +37,8 @@ export default function CartItems({
       ) {
         const newQty = Number(customQty);
         if (!isNaN(newQty) && newQty > 0) {
-          updateQty(newQty, items); // Send the difference to update
-          addCustomQty(items.barcode, newQty, items.qty);
+          addCustomCartQty(newQty, items.barcode); // Send the difference to update
+          addCustomProductQty(items.barcode, newQty, items.qty);
         }
         setCustomQty(null);
         setEditQtyId(null);
@@ -47,14 +48,14 @@ export default function CartItems({
     return () => {
       document.removeEventListener("mousedown", clickOutside);
     };
-  }, [cartItems, customQty, editQtyId, updateQty, addCustomQty]);
+  }, [cart, customQty, editQtyId, addCustomCartQty, addCustomProductQty]);
   // ClickOutSideToSaveCustomQty
 
   return (
     <div className="h-[calc(100vh-4.25rem)]">
       <div className="h-full overflow-scroll  no-scrollbar bg-zuccini-50">
         {/* cartitem */}
-        {cartItems.map((items) => {
+        {cart.map((items) => {
           return (
             <div
               key={items.barcode}
@@ -76,8 +77,8 @@ export default function CartItems({
                 <div className="flex text-2xl gap-x-4 items-center pr-5  ">
                   <div
                     onClick={() => {
-                      addQtn(items.barcode);
-                      decreaseQty(items);
+                      addProductQtn(items.barcode);
+                      removeCartQty(items.barcode);
                     }}
                     className="cursor-pointer"
                   >
@@ -106,8 +107,8 @@ export default function CartItems({
                   </span>
                   <div
                     onClick={() => {
-                      removeQty(items.barcode);
-                      increaseQty(items);
+                      removeProductQty(items.barcode);
+                      addCartQty(items.barcode);
                     }}
                     className="cursor-pointer"
                   >
@@ -116,8 +117,8 @@ export default function CartItems({
                   <div
                     className="cursor-pointer"
                     onClick={() => {
-                      restoreQty(items.barcode, items.qty);
-                      removeCartItem(items.id);
+                      restoreProductQty(items.barcode, items.qty);
+                      removeCartItem(items.barcode);
                     }}
                   >
                     <MdDeleteOutline />
@@ -130,14 +131,15 @@ export default function CartItems({
         {/* cartitem */}
 
         {/* cartCalculation */}
-        <CartCalculation cartItems={cartItems} resetCart={resetCart} />
+        <CartCalculation />
         {/* cartCalculation */}
       </div>
     </div>
   );
 }
 
-function CartCalculation({ cartItems, resetCart }) {
+function CartCalculation() {
+  const cart = useCartStore((state) => state.cart);
   const [isOpen, setIsOpen] = useState(false);
   const [emptyCartCon, setEmptyCartCon] = useState(false);
   const [showMore, setShowMore] = useState(false);
@@ -152,7 +154,7 @@ function CartCalculation({ cartItems, resetCart }) {
     }
   });
   const subTotal = Number(
-    cartItems.reduce((total, item) => total + item.price * item.qty, 0)
+    cart.reduce((total, item) => total + item.price * item.qty, 0)
   );
   const vat = Number(subTotal * (5 / 100));
   const [holdConfirm, setHoldConfirm] = useState(false);
@@ -210,7 +212,6 @@ function CartCalculation({ cartItems, resetCart }) {
   return (
     <div className="p-5">
       <CartTextModal
-        cartItems={cartItems}
         subTotal={subTotal}
         vat={vat}
         setIsOpen={setIsOpen}
@@ -225,8 +226,6 @@ function CartCalculation({ cartItems, resetCart }) {
             isOpen={isOpen}
             setIsOpen={setIsOpen}
             setEmptyCartCon={() => setEmptyCartCon(false)}
-            resetCart={() => resetCart([])}
-            cartItems={cartItems}
           />
         )}
         <button
@@ -257,8 +256,6 @@ function CartCalculation({ cartItems, resetCart }) {
               setIsOpen={setIsOpen}
               setShowHoldItemsFalse={() => setShowHoldItems(false)}
               holdCartItems={holdCartItems}
-              resetCart={resetCart}
-              cartItems={cartItems}
               setHoldCartItems={setHoldCartItems}
             />
           )}
@@ -267,7 +264,6 @@ function CartCalculation({ cartItems, resetCart }) {
               setIsOpen={setIsOpen}
               isOpen={isOpen}
               setHoldConfirmFalse={() => setHoldConfirm(false)}
-              resetCart={() => resetCart([])}
               setHoldCartItems={() =>
                 setHoldCartItems((prev) => [
                   ...prev,
@@ -275,11 +271,10 @@ function CartCalculation({ cartItems, resetCart }) {
                     id: Date.now(), // unique ID
                     name: `Hold ${prev.length + 1}`, // display name
                     time: new Date().toLocaleTimeString(), // store time
-                    items: cartItems, // your cart items
+                    items: cart, // your cart items
                   },
                 ])
               }
-              cartItems={cartItems}
               holdCartItems={holdCartItems}
             />
           )}
@@ -288,7 +283,6 @@ function CartCalculation({ cartItems, resetCart }) {
             setHoldConfirm={() => setHoldConfirm(true)}
             setIsOpen={setIsOpen}
             holdCartItems={holdCartItems}
-            resetCart={resetCart}
             setShowMoreFalse={() => setShowMore(false)}
             setShowHoldItems={() => setShowHoldItems(true)}
           />
@@ -336,11 +330,11 @@ function CartHoldBtn({
   setIsOpen,
   isOpen,
   setHoldConfirmFalse,
-  resetCart,
   setHoldCartItems,
-  cartItems,
   holdCartItems,
 }) {
+  const cart = useCartStore((state) => state.cart);
+  const resetCart = useCartStore((state) => state.resetCart);
   const handelClose = () => {
     setTimeout(() => setHoldConfirmFalse(), 300);
     setIsOpen(false);
@@ -355,7 +349,7 @@ function CartHoldBtn({
       <div className="flex items-center justify-center gap-10">
         <button
           onClick={() => {
-            if (cartItems.length === 0) return alert("Your cart is empty");
+            if (cart.length === 0) return alert("Your cart is empty");
             setHoldCartItems();
             resetCart();
             setTimeout(() => setHoldConfirmFalse(), 300);
@@ -383,10 +377,9 @@ function CartHoldShowBtn({
   setIsOpen,
   setShowHoldItemsFalse,
   holdCartItems,
-  resetCart,
-  cartItems,
   setHoldCartItems,
 }) {
+  const addHoldItemsToCart = useCartStore((state) => state.addHoldItemsToCart);
   const handelClose = () => {
     setTimeout(() => setShowHoldItemsFalse(), 300);
     setIsOpen(false);
@@ -401,7 +394,7 @@ function CartHoldShowBtn({
         holdCartItems.map((cart, index) => (
           <div
             onClick={() => {
-              resetCart(cart.items);
+              addHoldItemsToCart(cart.items);
               setHoldCartItems((prev) =>
                 prev.filter((hold) => hold.id !== cart.id)
               );
@@ -660,7 +653,6 @@ function PopupModal({ isOpen, handelClose, children, className }) {
   );
 }
 function CartTextModal({
-  cartItems,
   subTotal,
   vat,
   setIsOpen,
@@ -668,8 +660,9 @@ function CartTextModal({
   setIsChargeModalOpen,
   isOpen,
 }) {
-  const totalItemsCount = cartItems.reduce((total) => total + 1, 0);
-  const totalQtyCount = cartItems.reduce(
+  const cart = useCartStore((state) => state.cart);
+  const totalItemsCount = cart.reduce((total) => total + 1, 0);
+  const totalQtyCount = cart.reduce(
     (total, item) => total + (item.qty || 0),
     0
   );

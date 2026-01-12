@@ -1,15 +1,10 @@
 import React, { useState } from "react";
 import { useProductStore } from "../../store/product-store";
-// const storedData = JSON.parse(localStorage.getItem("posProducts"))
-//  const valuation = storedData.reduce(
-//     (total, item) => total + item.price * item.quantity,
-//     0
-//   );
-//   const alertQuantity = storedData.filter((item)=> item.alertQuantity >= item.quantity)
-// console.log(alertQuantity)
-export function ProductList({ addCartItems, search }) {
+import { useCartStore } from "../../store/cart-store";
+export function ProductList({ search }) {
   const product = useProductStore((state) => state.product);
-  const removeQty = useProductStore((state) => state.removeQty);
+  const removeProductQty = useProductStore((state) => state.removeProductQty);
+  const addToCart = useCartStore((state) => state.addToCart);
   const filtered = product.filter((item) =>
     item.productName.toLowerCase().includes(search.toLowerCase() || "")
   );
@@ -23,8 +18,8 @@ export function ProductList({ addCartItems, search }) {
                 key={product.barcode}
                 onClick={() => {
                   if (product.quantity <= 0) return;
-                  addCartItems(product);
-                  removeQty(product.barcode);
+                  addToCart(product);
+                  removeProductQty(product.barcode);
                 }}
                 className={`select-none relative h-60 bg-zuccini-300 rounded-sm flex flex-col items-center justify-between py-2 
   ${

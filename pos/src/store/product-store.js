@@ -355,7 +355,7 @@ export const useProductStore = create(
       ],
       addToProduct: (product) =>
         set((state) => ({ product: [...state.product, product] })),
-      removeQty: (productBarcode) =>
+      removeProductQty: (productBarcode) =>
         set((state) => ({
           product: state.product.map((product) => {
             if (product.barcode === productBarcode) {
@@ -367,7 +367,7 @@ export const useProductStore = create(
             return product;
           }),
         })),
-      addQty: (productBarcode) =>
+      addProductQtn: (productBarcode) =>
         set((state) => ({
           product: state.product.map((product) => {
             if (product.barcode === productBarcode) {
@@ -379,7 +379,7 @@ export const useProductStore = create(
             return product;
           }),
         })),
-      addCustomQty: (productBarcode, itemQty, prevQty) =>
+      addCustomProductQty: (productBarcode, itemQty, prevQty) =>
         set((state) => ({
           product: state.product.map((product) => {
             if (product.barcode === productBarcode) {
@@ -391,7 +391,7 @@ export const useProductStore = create(
             return product;
           }),
         })),
-      restoreQty: (productBarcode, itemQty) =>
+      restoreProductQty: (productBarcode, itemQty) =>
         set((state) => ({
           product: state.product.map((product) => {
             if (product.barcode === productBarcode) {
