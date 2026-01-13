@@ -1,14 +1,25 @@
 import React from "react";
 import { useCartStore } from "../../store/cart-store";
+import { useProductStore } from "../../store/product-store";
 export function ClickEmptyToResetCart({ isOpen, setIsOpen, setEmptyCartCon }) {
   const resetCart = useCartStore((state) => state.resetCart);
   const cart = useCartStore((state) => state.cart);
+  const restoreProductQty = useProductStore((state) => state.restoreProductQty);
+  const handleShowPopup = () => {
+    setIsOpen();
+    setTimeout(() => setEmptyCartCon(), 300);
+  };
+  const handleClearCart = () => {
+    if (cart.length === 0) return alert("Your cart is already empty");
+    cart.map((p) => {
+      restoreProductQty(p.barcode, p.qty);
+    });
+    resetCart();
+    handleShowPopup();
+  };
   return (
     <div
-      onClick={() => {
-        setIsOpen();
-        setTimeout(() => setEmptyCartCon(), 300);
-      }}
+      onClick={handleShowPopup}
       className={`fixed flex items-center justify-center inset-0 bg-black/80 backdrop-blur-sm z-50  transition-opacity duration-300 ${
         isOpen ? "opacity-100" : "opacity-0 "
       } `}
@@ -22,21 +33,13 @@ export function ClickEmptyToResetCart({ isOpen, setIsOpen, setEmptyCartCon }) {
         <h1 className="text-xl mb-5">Do you want to clear this cart?</h1>
         <div className="flex  w-full justify-center gap-3">
           <button
-            onClick={() => {
-              if (cart.length === 0) return alert("Your cart is already empty");
-              resetCart();
-              setIsOpen();
-              setTimeout(() => setEmptyCartCon(), 300);
-            }}
+            onClick={handleClearCart}
             className="bg-red-400 hover:bg-red-500 cursor-pointer px-4 py-2 rounded transition-all duration-300 "
           >
             Yes
           </button>
           <button
-            onClick={() => {
-              setIsOpen();
-              setTimeout(() => setEmptyCartCon(), 300);
-            }}
+            onClick={handleShowPopup}
             className="bg-red-400 hover:bg-red-500 cursor-pointer px-4 py-2 rounded transition-all duration-300 "
           >
             No
