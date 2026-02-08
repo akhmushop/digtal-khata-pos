@@ -3,8 +3,6 @@ export function ClickToShowMore({
   showMore,
   setHoldConfirm,
   setIsOpen,
-  holdCartItems,
-  resetCart,
   setShowMoreFalse,
   setShowHoldItems,
 }) {
@@ -30,7 +28,6 @@ export function ClickToShowMore({
         </div>
         <div
           onClick={() => {
-            // resetCart(holdCartItems);
             setShowHoldItems();
             setTimeout(() => setIsOpen(true), 30);
             setShowMoreFalse();

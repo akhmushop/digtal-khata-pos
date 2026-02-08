@@ -1,33 +1,61 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router";
-import { 
-  Search, ChevronDown, ChevronUp, Eye, Edit2, Trash2, MoreVertical,
-  Download, Filter, RefreshCw, Grid3x3, List, Package2, Plus, X,
-  Upload, Printer, Copy, Archive, Bell, TrendingUp, Tag, Users,
-  MapPin, DollarSign, AlertCircle, Calendar, BarChart, Settings,
-  FileText, ShoppingCart, Check, Minus
-} from 'lucide-react';
-import { useProductStore } from '../../store/product-store';
+import {
+  Search,
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  Edit2,
+  Trash2,
+  MoreVertical,
+  Download,
+  Filter,
+  RefreshCw,
+  Grid3x3,
+  List,
+  Package2,
+  Plus,
+  X,
+  Upload,
+  Printer,
+  Copy,
+  Archive,
+  Bell,
+  TrendingUp,
+  Tag,
+  Users,
+  MapPin,
+  DollarSign,
+  AlertCircle,
+  Calendar,
+  BarChart,
+  Settings,
+  FileText,
+  ShoppingCart,
+  Check,
+  Minus,
+} from "lucide-react";
+import { useProductStore } from "../../store/product-store";
 const AdvancedPOSTable = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [perPage, setPerPage] = useState(50);
   const [currentPage, setCurrentPage] = useState(1);
-  const [viewMode, setViewMode] = useState('list');
+  const [viewMode, setViewMode] = useState("list");
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [showStockModal, setShowStockModal] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [currentProduct, setCurrentProduct] = useState(null);
-  
+
   const [filters, setFilters] = useState({
-    category: 'all',
-    status: 'all',
-    priceMin: '',
-    priceMax: '',
-    supplier: 'all',
-    location: 'all'
+    category: "all",
+    status: "all",
+    priceMin: "",
+    priceMax: "",
+    supplier: "all",
+    location: "all",
   });
 
   const [columnWidths, setColumnWidths] = useState({
@@ -41,53 +69,86 @@ const AdvancedPOSTable = () => {
     stock: 90,
     location: 110,
     status: 110,
-    action: 100
+    action: 100,
   });
   const [resizing, setResizing] = useState(null);
-const products = useProductStore((state)=>state.product)
+  const products = useProductStore((state) => state.product);
 
-  const [categories] = useState(['Electronics', 'Accessories', 'Furniture', 'Office Supplies']);
-  const [suppliers] = useState(['Tech Supply Co', 'Cable Mart', 'Office Plus', 'Display World']);
-  const [locations] = useState(['Warehouse A', 'Warehouse B', 'Store Front', 'Online']);
+  const [categories] = useState([
+    "Electronics",
+    "Accessories",
+    "Furniture",
+    "Office Supplies",
+  ]);
+  const [suppliers] = useState([
+    "Tech Supply Co",
+    "Cable Mart",
+    "Office Plus",
+    "Display World",
+  ]);
+  const [locations] = useState([
+    "Warehouse A",
+    "Warehouse B",
+    "Store Front",
+    "Online",
+  ]);
 
   const handleMouseDown = (columnKey, e) => {
     e.preventDefault();
-    setResizing({ columnKey, startX: e.pageX, startWidth: columnWidths[columnKey] });
+    setResizing({
+      columnKey,
+      startX: e.pageX,
+      startWidth: columnWidths[columnKey],
+    });
   };
 
   const handleMouseMove = (e) => {
     if (!resizing) return;
     const diff = e.pageX - resizing.startX;
     const newWidth = Math.max(50, resizing.startWidth + diff);
-    setColumnWidths(prev => ({ ...prev, [resizing.columnKey]: newWidth }));
+    setColumnWidths((prev) => ({ ...prev, [resizing.columnKey]: newWidth }));
   };
 
   const handleMouseUp = () => setResizing(null);
 
   useEffect(() => {
     if (resizing) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
       return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
       };
     }
   }, [resizing]);
 
   const filteredProducts = useMemo(() => {
-    return products.filter(p => {
-      const matchesSearch = p.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           p.barcode.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = filters.category === 'all' || p.category === filters.category;
-      const matchesStatus = filters.status === 'all' || p.status === filters.status;
-      const matchesSupplier = filters.supplier === 'all' || p.supplier === filters.supplier;
-      const matchesLocation = filters.location === 'all' || p.location === filters.location;
-      const matchesPriceMin = !filters.priceMin || p.price >= parseFloat(filters.priceMin);
-      const matchesPriceMax = !filters.priceMax || p.price <= parseFloat(filters.priceMax);
-      
-      return matchesSearch && matchesCategory && matchesStatus && matchesSupplier && 
-             matchesLocation && matchesPriceMin && matchesPriceMax;
+    return products.filter((p) => {
+      const matchesSearch =
+        p.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.barcode.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory =
+        filters.category === "all" || p.category === filters.category;
+      const matchesStatus =
+        filters.status === "all" || p.status === filters.status;
+      const matchesSupplier =
+        filters.supplier === "all" || p.supplier === filters.supplier;
+      const matchesLocation =
+        filters.location === "all" || p.location === filters.location;
+      const matchesPriceMin =
+        !filters.priceMin || p.price >= parseFloat(filters.priceMin);
+      const matchesPriceMax =
+        !filters.priceMax || p.price <= parseFloat(filters.priceMax);
+
+      return (
+        matchesSearch &&
+        matchesCategory &&
+        matchesStatus &&
+        matchesSupplier &&
+        matchesLocation &&
+        matchesPriceMin &&
+        matchesPriceMax
+      );
     });
   }, [products, searchTerm, filters]);
 
@@ -95,8 +156,10 @@ const products = useProductStore((state)=>state.product)
     let sorted = [...filteredProducts];
     if (sortConfig.key) {
       sorted.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'asc' ? 1 : -1;
+        if (a[sortConfig.key] < b[sortConfig.key])
+          return sortConfig.direction === "asc" ? -1 : 1;
+        if (a[sortConfig.key] > b[sortConfig.key])
+          return sortConfig.direction === "asc" ? 1 : -1;
         return 0;
       });
     }
@@ -106,31 +169,46 @@ const products = useProductStore((state)=>state.product)
   const requestSort = (key) => {
     setSortConfig({
       key,
-      direction: sortConfig.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc'
+      direction:
+        sortConfig.key === key && sortConfig.direction === "asc"
+          ? "desc"
+          : "asc",
     });
   };
 
   const totalPages = Math.ceil(sortedProducts.length / perPage);
   const startIndex = (currentPage - 1) * perPage;
-  const paginatedProducts = sortedProducts.slice(startIndex, startIndex + perPage);
+  const paginatedProducts = sortedProducts.slice(
+    startIndex,
+    startIndex + perPage,
+  );
 
   const getStatusStyle = (status) => {
     switch (status) {
-      case 'In Stock': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-      case 'Low Stock': return 'bg-amber-50 text-amber-700 border-amber-200';
-      case 'Out of Stock': return 'bg-red-50 text-red-700 border-red-200';
-      default: return 'bg-gray-50 text-gray-700 border-gray-200';
+      case "In Stock":
+        return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      case "Low Stock":
+        return "bg-amber-50 text-amber-700 border-amber-200";
+      case "Out of Stock":
+        return "bg-red-50 text-red-700 border-red-200";
+      default:
+        return "bg-gray-50 text-gray-700 border-gray-200";
     }
   };
 
-  const totalValue = products.reduce((sum, p) => sum + (p.price * p.stock), 0);
-  const totalProfit = products.reduce((sum, p) => sum + ((p.price - p.cost) * p.stock), 0);
-  const lowStockCount = products.filter(p => p.stock > 0 && p.stock <= p.alertQuantity).length;
-  const outOfStockCount = products.filter(p => p.stock === 0).length;
+  const totalValue = products.reduce((sum, p) => sum + p.price * p.stock, 0);
+  const totalProfit = products.reduce(
+    (sum, p) => sum + (p.price - p.cost) * p.stock,
+    0,
+  );
+  const lowStockCount = products.filter(
+    (p) => p.stock > 0 && p.stock <= p.alertQuantity,
+  ).length;
+  const outOfStockCount = products.filter((p) => p.stock === 0).length;
 
   const toggleSelectProduct = (id) => {
-    setSelectedProducts(prev => 
-      prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]
+    setSelectedProducts((prev) =>
+      prev.includes(id) ? prev.filter((pid) => pid !== id) : [...prev, id],
     );
   };
 
@@ -138,28 +216,43 @@ const products = useProductStore((state)=>state.product)
     if (selectedProducts.length === paginatedProducts.length) {
       setSelectedProducts([]);
     } else {
-      setSelectedProducts(paginatedProducts.map(p => p.id));
+      setSelectedProducts(paginatedProducts.map((p) => p.id));
     }
   };
 
   const handleBulkDelete = () => {
     if (window.confirm(`Delete ${selectedProducts.length} products?`)) {
-      setProducts(products.filter(p => !selectedProducts.includes(p.id)));
+      setProducts(products.filter((p) => !selectedProducts.includes(p.id)));
       setSelectedProducts([]);
       setShowBulkActions(false);
     }
   };
 
   const handleBulkExport = () => {
-    const selectedData = products.filter(p => selectedProducts.includes(p.id));
-    console.log('Exporting:', selectedData);
-    alert('Export functionality would download CSV here');
+    const selectedData = products.filter((p) =>
+      selectedProducts.includes(p.id),
+    );
+    console.log("Exporting:", selectedData);
+    alert("Export functionality would download CSV here");
   };
 
   const handleUpdateStock = (productId, newStock) => {
-    setProducts(products.map(p => 
-      p.id === productId ? { ...p, stock: newStock, status: newStock === 0 ? 'Out of Stock' : newStock <= p.alertQuantity ? 'Low Stock' : 'In Stock' } : p
-    ));
+    setProducts(
+      products.map((p) =>
+        p.id === productId
+          ? {
+              ...p,
+              stock: newStock,
+              status:
+                newStock === 0
+                  ? "Out of Stock"
+                  : newStock <= p.alertQuantity
+                    ? "Low Stock"
+                    : "In Stock",
+            }
+          : p,
+      ),
+    );
   };
 
   const openProductModal = (product = null) => {
@@ -174,7 +267,11 @@ const products = useProductStore((state)=>state.product)
 
   const handleSaveProduct = (productData) => {
     if (currentProduct) {
-      setProducts(products.map(p => p.id === currentProduct.id ? { ...p, ...productData } : p));
+      setProducts(
+        products.map((p) =>
+          p.id === currentProduct.id ? { ...p, ...productData } : p,
+        ),
+      );
     } else {
       setProducts([...products, { ...productData, id: Date.now() }]);
     }
@@ -182,11 +279,11 @@ const products = useProductStore((state)=>state.product)
   };
 
   const duplicateProduct = (product) => {
-    const newProduct = { 
-      ...product, 
-      id: Date.now(), 
+    const newProduct = {
+      ...product,
+      id: Date.now(),
       name: `${product.name} (Copy)`,
-      barcode: `${product.barcode}-COPY`
+      barcode: `${product.barcode}-COPY`,
     };
     setProducts([...products, newProduct]);
   };
@@ -194,16 +291,19 @@ const products = useProductStore((state)=>state.product)
   return (
     <div className="h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 overflow-y-scroll">
       <div className="max-w-[1800px] mx-auto">
-        
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900 mb-1">Advanced POS System</h1>
-              <p className="text-slate-500">Complete inventory management solution</p>
+              <h1 className="text-3xl font-bold text-slate-900 mb-1">
+                Advanced POS System
+              </h1>
+              <p className="text-slate-500">
+                Complete inventory management solution
+              </p>
             </div>
             <div className="flex items-center gap-3">
-              <button 
+              <button
                 onClick={() => setShowAnalytics(!showAnalytics)}
                 className="px-4 py-2.5 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2 text-sm font-medium text-slate-700"
               >
@@ -214,7 +314,7 @@ const products = useProductStore((state)=>state.product)
                 <Upload className="w-4 h-4" />
                 Import
               </button>
-              <button 
+              <button
                 onClick={handleBulkExport}
                 className="px-4 py-2.5 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2 text-sm font-medium text-slate-700"
               >
@@ -222,12 +322,11 @@ const products = useProductStore((state)=>state.product)
                 Export
               </button>
               <Link to={"addproduct"}>
-              <button 
-                className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm font-medium"
-              >
-                <Plus className="w-4 h-4" />
-                Add Product
-              </button></Link>
+                <button className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm font-medium">
+                  <Plus className="w-4 h-4" />
+                  Add Product
+                </button>
+              </Link>
             </div>
           </div>
 
@@ -235,7 +334,9 @@ const products = useProductStore((state)=>state.product)
           {showAnalytics && (
             <div className="mb-6 bg-white rounded-xl p-6 border border-slate-200">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-slate-900">Analytics Overview</h2>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Analytics Overview
+                </h2>
                 <button onClick={() => setShowAnalytics(false)}>
                   <X className="w-5 h-5 text-slate-400 hover:text-slate-600" />
                 </button>
@@ -243,37 +344,59 @@ const products = useProductStore((state)=>state.product)
               <div className="grid grid-cols-4 gap-4">
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-blue-700">Total Revenue</span>
+                    <span className="text-sm font-medium text-blue-700">
+                      Total Revenue
+                    </span>
                     <TrendingUp className="w-5 h-5 text-blue-600" />
                   </div>
-                  <div className="text-2xl font-bold text-blue-900">${totalValue.toFixed(2)}</div>
-                  <div className="text-xs text-blue-600 mt-1">+12.5% from last month</div>
+                  <div className="text-2xl font-bold text-blue-900">
+                    ${totalValue.toFixed(2)}
+                  </div>
+                  <div className="text-xs text-blue-600 mt-1">
+                    +12.5% from last month
+                  </div>
                 </div>
                 <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-emerald-700">Total Profit</span>
+                    <span className="text-sm font-medium text-emerald-700">
+                      Total Profit
+                    </span>
                     <DollarSign className="w-5 h-5 text-emerald-600" />
                   </div>
-                  <div className="text-2xl font-bold text-emerald-900">${totalProfit.toFixed(2)}</div>
-                  <div className="text-xs text-emerald-600 mt-1">Margin: {((totalProfit/totalValue)*100).toFixed(1)}%</div>
+                  <div className="text-2xl font-bold text-emerald-900">
+                    ${totalProfit.toFixed(2)}
+                  </div>
+                  <div className="text-xs text-emerald-600 mt-1">
+                    Margin: {((totalProfit / totalValue) * 100).toFixed(1)}%
+                  </div>
                 </div>
                 <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-purple-700">Total Sales</span>
+                    <span className="text-sm font-medium text-purple-700">
+                      Total Sales
+                    </span>
                     <ShoppingCart className="w-5 h-5 text-purple-600" />
                   </div>
                   <div className="text-2xl font-bold text-purple-900">
                     {products.reduce((sum, p) => sum + p.sales, 0)}
                   </div>
-                  <div className="text-xs text-purple-600 mt-1">Units sold this month</div>
+                  <div className="text-xs text-purple-600 mt-1">
+                    Units sold this month
+                  </div>
                 </div>
                 <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-orange-700">Avg. Turnover</span>
+                    <span className="text-sm font-medium text-orange-700">
+                      Avg. Turnover
+                    </span>
                     <RefreshCw className="w-5 h-5 text-orange-600" />
                   </div>
-                  <div className="text-2xl font-bold text-orange-900">8.5 days</div>
-                  <div className="text-xs text-orange-600 mt-1">Average stock rotation</div>
+                  <div className="text-2xl font-bold text-orange-900">
+                    8.5 days
+                  </div>
+                  <div className="text-xs text-orange-600 mt-1">
+                    Average stock rotation
+                  </div>
                 </div>
               </div>
             </div>
@@ -283,41 +406,61 @@ const products = useProductStore((state)=>state.product)
           <div className="grid grid-cols-4 gap-4 mb-6">
             <div className="bg-white rounded-xl p-5 border border-slate-200">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-slate-500">Total Products</span>
+                <span className="text-sm font-medium text-slate-500">
+                  Total Products
+                </span>
                 <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
                   <Package2 className="w-5 h-5 text-blue-600" />
                 </div>
               </div>
-              <div className="text-2xl font-bold text-slate-900">{products.length}</div>
-              <div className="text-xs text-slate-500 mt-1">{filteredProducts.length} filtered</div>
+              <div className="text-2xl font-bold text-slate-900">
+                {products.length}
+              </div>
+              <div className="text-xs text-slate-500 mt-1">
+                {filteredProducts.length} filtered
+              </div>
             </div>
             <div className="bg-white rounded-xl p-5 border border-slate-200">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-slate-500">Total Value</span>
+                <span className="text-sm font-medium text-slate-500">
+                  Total Value
+                </span>
                 <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
                   <DollarSign className="w-5 h-5 text-emerald-600" />
                 </div>
               </div>
-              <div className="text-2xl font-bold text-slate-900">${totalValue.toFixed(2)}</div>
+              <div className="text-2xl font-bold text-slate-900">
+                ${totalValue.toFixed(2)}
+              </div>
             </div>
             <div className="bg-white rounded-xl p-5 border border-slate-200">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-slate-500">Low Stock Alerts</span>
+                <span className="text-sm font-medium text-slate-500">
+                  Low Stock Alerts
+                </span>
                 <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
                   <AlertCircle className="w-5 h-5 text-amber-600" />
                 </div>
               </div>
-              <div className="text-2xl font-bold text-slate-900">{lowStockCount}</div>
-              <div className="text-xs text-amber-600 mt-1">Requires attention</div>
+              <div className="text-2xl font-bold text-slate-900">
+                {lowStockCount}
+              </div>
+              <div className="text-xs text-amber-600 mt-1">
+                Requires attention
+              </div>
             </div>
             <div className="bg-white rounded-xl p-5 border border-slate-200">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-slate-500">Out of Stock</span>
+                <span className="text-sm font-medium text-slate-500">
+                  Out of Stock
+                </span>
                 <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
                   <Bell className="w-5 h-5 text-red-600" />
                 </div>
               </div>
-              <div className="text-2xl font-bold text-slate-900">{outOfStockCount}</div>
+              <div className="text-2xl font-bold text-slate-900">
+                {outOfStockCount}
+              </div>
               <div className="text-xs text-red-600 mt-1">Needs reorder</div>
             </div>
           </div>
@@ -327,9 +470,10 @@ const products = useProductStore((state)=>state.product)
             <div className="mb-4 bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="text-sm font-medium text-blue-900">
-                  {selectedProducts.length} product{selectedProducts.length > 1 ? 's' : ''} selected
+                  {selectedProducts.length} product
+                  {selectedProducts.length > 1 ? "s" : ""} selected
                 </span>
-                <button 
+                <button
                   onClick={() => setSelectedProducts([])}
                   className="text-sm text-blue-600 hover:text-blue-800"
                 >
@@ -341,7 +485,7 @@ const products = useProductStore((state)=>state.product)
                   <Edit2 className="w-4 h-4" />
                   Bulk Edit
                 </button>
-                <button 
+                <button
                   onClick={handleBulkExport}
                   className="px-3 py-1.5 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 text-sm text-blue-700 flex items-center gap-2"
                 >
@@ -352,7 +496,7 @@ const products = useProductStore((state)=>state.product)
                   <Printer className="w-4 h-4" />
                   Print Labels
                 </button>
-                <button 
+                <button
                   onClick={handleBulkDelete}
                   className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm flex items-center gap-2"
                 >
@@ -377,9 +521,9 @@ const products = useProductStore((state)=>state.product)
                     className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                   />
                 </div>
-                <button 
+                <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className={`p-2.5 border rounded-lg transition-colors ${showFilters ? 'bg-blue-50 border-blue-200 text-blue-600' : 'border-slate-200 hover:bg-slate-50'}`}
+                  className={`p-2.5 border rounded-lg transition-colors ${showFilters ? "bg-blue-50 border-blue-200 text-blue-600" : "border-slate-200 hover:bg-slate-50"}`}
                 >
                   <Filter className="w-5 h-5" />
                 </button>
@@ -388,15 +532,15 @@ const products = useProductStore((state)=>state.product)
                 </button>
               </div>
               <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2.5 border rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-blue-50 border-blue-200 text-blue-600' : 'border-slate-200 hover:bg-slate-50'}`}
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={`p-2.5 border rounded-lg transition-colors ${viewMode === "grid" ? "bg-blue-50 border-blue-200 text-blue-600" : "border-slate-200 hover:bg-slate-50"}`}
                 >
                   <Grid3x3 className="w-5 h-5" />
                 </button>
-                <button 
-                  onClick={() => setViewMode('list')}
-                  className={`p-2.5 border rounded-lg transition-colors ${viewMode === 'list' ? 'bg-blue-50 border-blue-200 text-blue-600' : 'border-slate-200 hover:bg-slate-50'}`}
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`p-2.5 border rounded-lg transition-colors ${viewMode === "list" ? "bg-blue-50 border-blue-200 text-blue-600" : "border-slate-200 hover:bg-slate-50"}`}
                 >
                   <List className="w-5 h-5" />
                 </button>
@@ -409,15 +553,23 @@ const products = useProductStore((state)=>state.product)
                 <div className="grid grid-cols-6 gap-3">
                   <select
                     value={filters.category}
-                    onChange={(e) => setFilters({...filters, category: e.target.value})}
+                    onChange={(e) =>
+                      setFilters({ ...filters, category: e.target.value })
+                    }
                     className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="all">All Categories</option>
-                    {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
                   </select>
                   <select
                     value={filters.status}
-                    onChange={(e) => setFilters({...filters, status: e.target.value})}
+                    onChange={(e) =>
+                      setFilters({ ...filters, status: e.target.value })
+                    }
                     className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="all">All Status</option>
@@ -427,37 +579,62 @@ const products = useProductStore((state)=>state.product)
                   </select>
                   <select
                     value={filters.supplier}
-                    onChange={(e) => setFilters({...filters, supplier: e.target.value})}
+                    onChange={(e) =>
+                      setFilters({ ...filters, supplier: e.target.value })
+                    }
                     className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="all">All Suppliers</option>
-                    {suppliers.map(sup => <option key={sup} value={sup}>{sup}</option>)}
+                    {suppliers.map((sup) => (
+                      <option key={sup} value={sup}>
+                        {sup}
+                      </option>
+                    ))}
                   </select>
                   <select
                     value={filters.location}
-                    onChange={(e) => setFilters({...filters, location: e.target.value})}
+                    onChange={(e) =>
+                      setFilters({ ...filters, location: e.target.value })
+                    }
                     className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="all">All Locations</option>
-                    {locations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+                    {locations.map((loc) => (
+                      <option key={loc} value={loc}>
+                        {loc}
+                      </option>
+                    ))}
                   </select>
                   <input
                     type="number"
                     placeholder="Min Price"
                     value={filters.priceMin}
-                    onChange={(e) => setFilters({...filters, priceMin: e.target.value})}
+                    onChange={(e) =>
+                      setFilters({ ...filters, priceMin: e.target.value })
+                    }
                     className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <input
                     type="number"
                     placeholder="Max Price"
                     value={filters.priceMax}
-                    onChange={(e) => setFilters({...filters, priceMax: e.target.value})}
+                    onChange={(e) =>
+                      setFilters({ ...filters, priceMax: e.target.value })
+                    }
                     className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                <button 
-                  onClick={() => setFilters({category: 'all', status: 'all', priceMin: '', priceMax: '', supplier: 'all', location: 'all'})}
+                <button
+                  onClick={() =>
+                    setFilters({
+                      category: "all",
+                      status: "all",
+                      priceMin: "",
+                      priceMax: "",
+                      supplier: "all",
+                      location: "all",
+                    })
+                  }
                   className="mt-3 text-sm text-blue-600 hover:text-blue-800"
                 >
                   Clear all filters
@@ -470,73 +647,183 @@ const products = useProductStore((state)=>state.product)
         {/* Table */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full" style={{ tableLayout: 'fixed' }}>
+            <table className="w-full" style={{ tableLayout: "fixed" }}>
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50">
-                  <th className="px-4 py-4 text-left" style={{ width: `${columnWidths.checkbox}px` }}>
+                  <th
+                    className="px-4 py-4 text-left"
+                    style={{ width: `${columnWidths.checkbox}px` }}
+                  >
                     <input
                       type="checkbox"
-                      checked={selectedProducts.length === paginatedProducts.length && paginatedProducts.length > 0}
+                      checked={
+                        selectedProducts.length === paginatedProducts.length &&
+                        paginatedProducts.length > 0
+                      }
                       onChange={toggleSelectAll}
                       className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                     />
                   </th>
-                  <th className="px-4 py-4 text-left relative" style={{ width: `${columnWidths.image}px` }}>
-                    <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Image</span>
-                    <div className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400" onMouseDown={(e) => handleMouseDown('image', e)} />
+                  <th
+                    className="px-4 py-4 text-left relative"
+                    style={{ width: `${columnWidths.image}px` }}
+                  >
+                    <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Image
+                    </span>
+                    <div
+                      className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400"
+                      onMouseDown={(e) => handleMouseDown("image", e)}
+                    />
                   </th>
-                  <th className="px-4 py-4 text-left relative" style={{ width: `${columnWidths.name}px` }}>
-                    <button onClick={() => requestSort('name')} className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900">
+                  <th
+                    className="px-4 py-4 text-left relative"
+                    style={{ width: `${columnWidths.name}px` }}
+                  >
+                    <button
+                      onClick={() => requestSort("name")}
+                      className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
+                    >
                       Product Name
-                      {sortConfig.key === 'name' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                      {sortConfig.key === "name" &&
+                        (sortConfig.direction === "asc" ? (
+                          <ChevronUp className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4" />
+                        ))}
                     </button>
-                    <div className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400" onMouseDown={(e) => handleMouseDown('name', e)} />
+                    <div
+                      className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400"
+                      onMouseDown={(e) => handleMouseDown("name", e)}
+                    />
                   </th>
-                  <th className="px-4 py-4 text-left relative" style={{ width: `${columnWidths.barcode}px` }}>
-                    <button onClick={() => requestSort('barcode')} className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900">
+                  <th
+                    className="px-4 py-4 text-left relative"
+                    style={{ width: `${columnWidths.barcode}px` }}
+                  >
+                    <button
+                      onClick={() => requestSort("barcode")}
+                      className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
+                    >
                       Barcode
-                      {sortConfig.key === 'barcode' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                      {sortConfig.key === "barcode" &&
+                        (sortConfig.direction === "asc" ? (
+                          <ChevronUp className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4" />
+                        ))}
                     </button>
-                    <div className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400" onMouseDown={(e) => handleMouseDown('barcode', e)} />
+                    <div
+                      className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400"
+                      onMouseDown={(e) => handleMouseDown("barcode", e)}
+                    />
                   </th>
-                  <th className="px-4 py-4 text-left relative" style={{ width: `${columnWidths.category}px` }}>
-                    <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Category</span>
-                    <div className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400" onMouseDown={(e) => handleMouseDown('category', e)} />
+                  <th
+                    className="px-4 py-4 text-left relative"
+                    style={{ width: `${columnWidths.category}px` }}
+                  >
+                    <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Category
+                    </span>
+                    <div
+                      className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400"
+                      onMouseDown={(e) => handleMouseDown("category", e)}
+                    />
                   </th>
-                  <th className="px-4 py-4 text-left relative" style={{ width: `${columnWidths.supplier}px` }}>
-                    <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Supplier</span>
-                    <div className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400" onMouseDown={(e) => handleMouseDown('supplier', e)} />
+                  <th
+                    className="px-4 py-4 text-left relative"
+                    style={{ width: `${columnWidths.supplier}px` }}
+                  >
+                    <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Supplier
+                    </span>
+                    <div
+                      className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400"
+                      onMouseDown={(e) => handleMouseDown("supplier", e)}
+                    />
                   </th>
-                  <th className="px-4 py-4 text-left relative" style={{ width: `${columnWidths.price}px` }}>
-                    <button onClick={() => requestSort('price')} className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900">
+                  <th
+                    className="px-4 py-4 text-left relative"
+                    style={{ width: `${columnWidths.price}px` }}
+                  >
+                    <button
+                      onClick={() => requestSort("price")}
+                      className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
+                    >
                       Price
-                      {sortConfig.key === 'price' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                      {sortConfig.key === "price" &&
+                        (sortConfig.direction === "asc" ? (
+                          <ChevronUp className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4" />
+                        ))}
                     </button>
-                    <div className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400" onMouseDown={(e) => handleMouseDown('price', e)} />
+                    <div
+                      className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400"
+                      onMouseDown={(e) => handleMouseDown("price", e)}
+                    />
                   </th>
-                  <th className="px-4 py-4 text-left relative" style={{ width: `${columnWidths.stock}px` }}>
-                    <button onClick={() => requestSort('stock')} className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900">
+                  <th
+                    className="px-4 py-4 text-left relative"
+                    style={{ width: `${columnWidths.stock}px` }}
+                  >
+                    <button
+                      onClick={() => requestSort("stock")}
+                      className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
+                    >
                       Stock
-                      {sortConfig.key === 'stock' && (sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                      {sortConfig.key === "stock" &&
+                        (sortConfig.direction === "asc" ? (
+                          <ChevronUp className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4" />
+                        ))}
                     </button>
-                    <div className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400" onMouseDown={(e) => handleMouseDown('stock', e)} />
+                    <div
+                      className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400"
+                      onMouseDown={(e) => handleMouseDown("stock", e)}
+                    />
                   </th>
-                  <th className="px-4 py-4 text-left relative" style={{ width: `${columnWidths.location}px` }}>
-                    <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Location</span>
-                    <div className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400" onMouseDown={(e) => handleMouseDown('location', e)} />
+                  <th
+                    className="px-4 py-4 text-left relative"
+                    style={{ width: `${columnWidths.location}px` }}
+                  >
+                    <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Location
+                    </span>
+                    <div
+                      className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400"
+                      onMouseDown={(e) => handleMouseDown("location", e)}
+                    />
                   </th>
-                  <th className="px-4 py-4 text-left relative" style={{ width: `${columnWidths.status}px` }}>
-                    <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</span>
-                    <div className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400" onMouseDown={(e) => handleMouseDown('status', e)} />
+                  <th
+                    className="px-4 py-4 text-left relative"
+                    style={{ width: `${columnWidths.status}px` }}
+                  >
+                    <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Status
+                    </span>
+                    <div
+                      className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400"
+                      onMouseDown={(e) => handleMouseDown("status", e)}
+                    />
                   </th>
-                  <th className="px-4 py-4 text-center" style={{ width: `${columnWidths.action}px` }}>
-                    <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</span>
+                  <th
+                    className="px-4 py-4 text-center"
+                    style={{ width: `${columnWidths.action}px` }}
+                  >
+                    <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Actions
+                    </span>
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {paginatedProducts.map((product) => (
-                  <tr key={product.id} className={`hover:bg-slate-50 transition-colors ${selectedProducts.includes(product.id) ? 'bg-blue-50' : ''}`}>
+                  <tr
+                    key={product.id}
+                    className={`hover:bg-slate-50 transition-colors ${selectedProducts.includes(product.id) ? "bg-blue-50" : ""}`}
+                  >
                     <td className="px-4 py-4">
                       <input
                         type="checkbox"
@@ -548,23 +835,40 @@ const products = useProductStore((state)=>state.product)
                     <td className="px-4 py-4">
                       <div className="">
                         {/* <Package2 className="w-6 h-6 text-slate-400" /> */}
-                        <img className="w-12 h-12 bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg flex items-center justify-center " src={product.image} alt="" />
+                        <img
+                          className="w-12 h-12 bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg flex items-center justify-center "
+                          src={product.image}
+                          alt=""
+                        />
                       </div>
                     </td>
                     <td className="px-4 py-4 truncate">
-                      <div className="font-semibold text-slate-900 truncate">{product.productName}</div>
+                      <div className="font-semibold text-slate-900 truncate">
+                        {product.productName}
+                      </div>
                       {product.tags && product.tags.length > 0 && (
                         <div className="flex gap-1 mt-1">
-                          {product.tags.slice(0, 2).map(tag => (
-                            <span key={tag} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-slate-100 text-slate-600">
-                              {tag}
+                          {product.tags?.length ? (
+                            product.tags.slice(0, 2).map((tag) => (
+                              <span
+                                key={tag}
+                                className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-slate-100 text-slate-600"
+                              >
+                                {tag}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-slate-100 text-slate-600">
+                              No Tags
                             </span>
-                          ))}
+                          )}
                         </div>
                       )}
                     </td>
                     <td className="px-4 py-4 truncate">
-                      <span className="text-sm text-slate-600 font-mono">{product.barcode}</span>
+                      <span className="text-sm text-slate-600 font-mono">
+                        {product.barcode}
+                      </span>
                     </td>
                     <td className="px-4 py-4 truncate">
                       <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-medium">
@@ -572,25 +876,36 @@ const products = useProductStore((state)=>state.product)
                       </span>
                     </td>
                     <td className="px-4 py-4 truncate">
-                      <span className="text-sm text-slate-600">{product.supplier}</span>
+                      <span className="text-sm text-slate-600">
+                        {product.supplier}
+                      </span>
                     </td>
                     <td className="px-4 py-4">
-                      <span className="text-sm font-semibold text-slate-900">${product.price}</span>
-                      <div className="text-xs text-slate-500">Cost: ${product.cost}</div>
+                      <span className="text-sm font-semibold text-slate-900">
+                        ${product.price}
+                      </span>
+                      <div className="text-xs text-slate-500">
+                        Cost: ${product.cost}
+                      </div>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-slate-900">{product.quantity}</span>
-                        <button 
+                        <span className="text-sm font-medium text-slate-900">
+                          {product.quantity}
+                        </span>
+                        <button
                           onClick={() => openStockModal(product)}
                           className="p-1 rounded hover:bg-slate-100"
                         >
                           <Edit2 className="w-3 h-3 text-slate-400" />
                         </button>
                       </div>
-                      {product.quantity <= product.alertQuantity && product.quantity > 0 && (
-                        <div className="text-xs text-amber-600 mt-1">Alert: {product.alertQuantity}</div>
-                      )}
+                      {product.quantity <= product.alertQuantity &&
+                        product.quantity > 0 && (
+                          <div className="text-xs text-amber-600 mt-1">
+                            Alert: {product.alertQuantity}
+                          </div>
+                        )}
                     </td>
                     <td className="px-4 py-4 truncate">
                       <span className="text-sm text-slate-600 flex items-center gap-1">
@@ -599,34 +914,39 @@ const products = useProductStore((state)=>state.product)
                       </span>
                     </td>
                     <td className="px-4 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusStyle(product.status)}`}>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusStyle(product.status)}`}
+                      >
                         {product.status}
                       </span>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center justify-center gap-1">
-                        <button 
+                        <button
                           onClick={() => openProductModal(product)}
                           className="p-2 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"
                           title="View Details"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button 
+                        <button
                           onClick={() => openProductModal(product)}
                           className="p-2 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"
                           title="Edit"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
-                        <button 
+                        <button
                           onClick={() => duplicateProduct(product)}
                           className="p-2 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"
                           title="Duplicate"
                         >
                           <Copy className="w-4 h-4" />
                         </button>
-                        <button className="p-2 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors" title="Delete">
+                        <button
+                          className="p-2 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors"
+                          title="Delete"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -642,7 +962,19 @@ const products = useProductStore((state)=>state.product)
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <span className="text-sm text-slate-600">
-                  Showing <span className="font-medium text-slate-900">{startIndex + 1}</span> to <span className="font-medium text-slate-900">{Math.min(startIndex + perPage, sortedProducts.length)}</span> of <span className="font-medium text-slate-900">{sortedProducts.length}</span> results
+                  Showing{" "}
+                  <span className="font-medium text-slate-900">
+                    {startIndex + 1}
+                  </span>{" "}
+                  to{" "}
+                  <span className="font-medium text-slate-900">
+                    {Math.min(startIndex + perPage, sortedProducts.length)}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-medium text-slate-900">
+                    {sortedProducts.length}
+                  </span>{" "}
+                  results
                 </span>
               </div>
               <div className="flex items-center gap-3">
@@ -664,7 +996,7 @@ const products = useProductStore((state)=>state.product)
                 </div>
                 <div className="flex items-center gap-1">
                   <button
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                     className="p-2 rounded-lg border border-slate-200 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed"
                   >
@@ -674,7 +1006,9 @@ const products = useProductStore((state)=>state.product)
                     {currentPage} / {totalPages}
                   </div>
                   <button
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    }
                     disabled={currentPage === totalPages}
                     className="p-2 rounded-lg border border-slate-200 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed"
                   >
@@ -691,18 +1025,32 @@ const products = useProductStore((state)=>state.product)
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl max-w-md w-full p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-slate-900">Adjust Stock</h3>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Adjust Stock
+                </h3>
                 <button onClick={() => setShowStockModal(false)}>
                   <X className="w-5 h-5 text-slate-400 hover:text-slate-600" />
                 </button>
               </div>
               <div className="mb-4">
-                <p className="text-sm text-slate-600 mb-2">Product: <span className="font-medium text-slate-900">{currentProduct.name}</span></p>
-                <p className="text-sm text-slate-600">Current Stock: <span className="font-medium text-slate-900">{currentProduct.stock}</span></p>
+                <p className="text-sm text-slate-600 mb-2">
+                  Product:{" "}
+                  <span className="font-medium text-slate-900">
+                    {currentProduct.name}
+                  </span>
+                </p>
+                <p className="text-sm text-slate-600">
+                  Current Stock:{" "}
+                  <span className="font-medium text-slate-900">
+                    {currentProduct.stock}
+                  </span>
+                </p>
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">New Stock Quantity</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    New Stock Quantity
+                  </label>
                   <input
                     type="number"
                     defaultValue={currentProduct.stock}
@@ -711,9 +1059,11 @@ const products = useProductStore((state)=>state.product)
                   />
                 </div>
                 <div className="flex gap-2">
-                  <button 
+                  <button
                     onClick={() => {
-                      const newStock = parseInt(document.getElementById('newStock').value);
+                      const newStock = parseInt(
+                        document.getElementById("newStock").value,
+                      );
                       handleUpdateStock(currentProduct.id, newStock);
                       setShowStockModal(false);
                     }}
@@ -721,7 +1071,7 @@ const products = useProductStore((state)=>state.product)
                   >
                     Update Stock
                   </button>
-                  <button 
+                  <button
                     onClick={() => setShowStockModal(false)}
                     className="flex-1 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200"
                   >
@@ -732,7 +1082,6 @@ const products = useProductStore((state)=>state.product)
             </div>
           </div>
         )}
-
       </div>
     </div>
   );

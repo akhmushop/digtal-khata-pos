@@ -48,6 +48,7 @@ const ProductStockForm = () => {
   };
 
   const [formData, setFormData] = useState(initialFormData);
+  const [tagInput, setTagInput] = useState("");
 
   const validateForm = () => {
     const newErrors = {};
@@ -99,10 +100,13 @@ const ProductStockForm = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    if (name === "tags") {
+      setTagInput(value);
+    } else
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
 
     // Clear error for this field
     if (errors[name]) {
@@ -123,9 +127,13 @@ const ProductStockForm = () => {
       (basePrice * parseFloat(formData.discountPercent)) / 100;
     const finalPrice =
       basePrice - percentDiscount - parseFloat(formData.flatDiscount);
-
+    const tagsArray = tagInput
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean);
     const productData = {
       ...formData,
+      tags: tagsArray,
       finalPrice: finalPrice.toFixed(2),
       image: imagePreview,
       createdAt: new Date().toISOString(),
@@ -140,6 +148,7 @@ const ProductStockForm = () => {
 
     // Reset form
     setFormData(initialFormData);
+    setTagInput("");
     setImagePreview(null);
     setErrors({});
   };
@@ -554,8 +563,8 @@ const ProductStockForm = () => {
                         imagePreview
                           ? "border-green-300 bg-green-50"
                           : errors.image
-                          ? "border-red-300 bg-red-50"
-                          : "border-gray-300"
+                            ? "border-red-300 bg-red-50"
+                            : "border-gray-300"
                       } rounded-xl p-8 transition-all duration-300 cursor-pointer hover:border-green-400`}
                       onClick={() =>
                         document.getElementById("file-upload").click()
@@ -709,7 +718,7 @@ const ProductStockForm = () => {
                       <input
                         type="text"
                         name="tags"
-                        value={formData.tags}
+                        value={tagInput}
                         onChange={handleChange}
                         placeholder="Add tags separated by commas"
                         className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"

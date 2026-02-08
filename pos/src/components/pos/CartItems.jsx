@@ -22,7 +22,6 @@ export default function CartItems() {
   const [editQtyId, setEditQtyId] = useState(null);
   const [customQty, setCustomQty] = useState(null);
   const editQtyRef = useRef(null);
-
   // ClickOutSideToSaveCustomQty
   useEffect(() => {
     const clickOutside = (event) => {
