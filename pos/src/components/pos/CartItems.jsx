@@ -6,6 +6,7 @@ import { ClickToShowMore } from "./CartMoreMenu";
 import { ClickEmptyToResetCart } from "./CartEmptyBtn";
 import { useProductStore } from "../../store/product-store";
 import { useCartStore } from "../../store/cart-store";
+import { useSellStore } from "../../store/sell-store";
 
 export default function CartItems() {
   const addProductQtn = useProductStore((state) => state.addProductQtn);
@@ -462,6 +463,7 @@ function PaymentModal({
   setIsPaymentModalOpen,
   setIsOpen,
 }) {
+  
   const handelClose = () => {
     setTimeout(() => setIsPaymentModalOpen(false), 300);
     setIsOpen(false);
@@ -525,6 +527,7 @@ function PaymentModal({
         />
         <button
           onClick={() => {
+
             console.log(paymentForm);
             paymentForm.discount = 0;
             handelClose();
@@ -545,6 +548,9 @@ function CashModal({
   cashForm,
   setCashForm,
 }) {
+  const addToSellProduct = useSellStore((state) => state.addToSellProduct)
+   const cart = useCartStore((state) => state.cart);
+   const resetCart = useCartStore((state) => state.resetCart);
   const handelClose = () => {
     setTimeout(() => setIsCashModalOpen(false), 300);
     setIsOpen(false);
@@ -615,6 +621,8 @@ function CashModal({
               cashForm.amountReceived > 0 &&
               cashForm.amountReceived > cashForm.payable
             ) {
+              addToSellProduct(cart)
+              resetCart()
               handelClose();
               console.log(cashForm);
               cashForm.amountReceived = 0;

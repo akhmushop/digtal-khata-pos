@@ -821,7 +821,7 @@ const AdvancedPOSTable = () => {
               <tbody className="divide-y divide-slate-100">
                 {paginatedProducts.map((product) => (
                   <tr
-                    key={product.id}
+                    key={product.barcode}
                     className={`hover:bg-slate-50 transition-colors ${selectedProducts.includes(product.id) ? "bg-blue-50" : ""}`}
                   >
                     <td className="px-4 py-4">
