@@ -6,13 +6,13 @@ import { ClickToShowMore } from "./CartMoreMenu";
 import { ClickEmptyToResetCart } from "./CartEmptyBtn";
 import { useProductStore } from "../../store/product-store";
 import { useCartStore } from "../../store/cart-store";
-import { useSellStore } from "../../store/sell-store";
+import { useSellStore } from "../../store/sold-store";
 
 export default function CartItems() {
   const addProductQtn = useProductStore((state) => state.addProductQtn);
   const removeProductQty = useProductStore((state) => state.removeProductQty);
   const addCustomProductQty = useProductStore(
-    (state) => state.addCustomProductQty
+    (state) => state.addCustomProductQty,
   );
   const restoreProductQty = useProductStore((state) => state.restoreProductQty);
   const cart = useCartStore((state) => state.cart);
@@ -154,7 +154,7 @@ function CartCalculation() {
     }
   });
   const subTotal = Number(
-    cart.reduce((total, item) => total + item.price * item.qty, 0)
+    cart.reduce((total, item) => total + item.price * item.qty, 0),
   );
   const vat = Number(subTotal * (5 / 100));
   const [holdConfirm, setHoldConfirm] = useState(false);
@@ -396,7 +396,7 @@ function CartHoldShowBtn({
             onClick={() => {
               addHoldItemsToCart(cart.items);
               setHoldCartItems((prev) =>
-                prev.filter((hold) => hold.id !== cart.id)
+                prev.filter((hold) => hold.id !== cart.id),
               );
               setTimeout(() => setShowHoldItemsFalse(), 300);
               setIsOpen(false);
@@ -463,7 +463,6 @@ function PaymentModal({
   setIsPaymentModalOpen,
   setIsOpen,
 }) {
-  
   const handelClose = () => {
     setTimeout(() => setIsPaymentModalOpen(false), 300);
     setIsOpen(false);
@@ -527,7 +526,6 @@ function PaymentModal({
         />
         <button
           onClick={() => {
-
             console.log(paymentForm);
             paymentForm.discount = 0;
             handelClose();
@@ -548,9 +546,9 @@ function CashModal({
   cashForm,
   setCashForm,
 }) {
-  const addToSellProduct = useSellStore((state) => state.addToSellProduct)
-   const cart = useCartStore((state) => state.cart);
-   const resetCart = useCartStore((state) => state.resetCart);
+  const addToSellProduct = useSellStore((state) => state.addToSellProduct);
+  const cart = useCartStore((state) => state.cart);
+  const resetCart = useCartStore((state) => state.resetCart);
   const handelClose = () => {
     setTimeout(() => setIsCashModalOpen(false), 300);
     setIsOpen(false);
@@ -621,8 +619,8 @@ function CashModal({
               cashForm.amountReceived > 0 &&
               cashForm.amountReceived > cashForm.payable
             ) {
-              addToSellProduct(cart)
-              resetCart()
+              addToSellProduct(cart);
+              resetCart();
               handelClose();
               console.log(cashForm);
               cashForm.amountReceived = 0;
@@ -671,7 +669,7 @@ function CartTextModal({
   const totalItemsCount = cart.reduce((total) => total + 1, 0);
   const totalQtyCount = cart.reduce(
     (total, item) => total + (item.qty || 0),
-    0
+    0,
   );
 
   const handelClose = () => {
