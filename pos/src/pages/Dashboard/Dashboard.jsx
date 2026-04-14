@@ -26,6 +26,8 @@ import {
   MoreVertical,
 } from "lucide-react";
 import Sidebar from "../../components/Sidebar";
+import { useProductStore } from "../../store/product-store";
+import { useSellStore } from "../../store/sold-store";
 
 // Sample chart data
 const salesData = [
@@ -89,10 +91,56 @@ const DashboardComponent = () => {
       maximumFractionDigits: 2,
     }).format(value);
   };
+  const products = useProductStore((state) => state.product);
+  const soldProducts = useSellStore((state) => state.soldProducts);
+
+  // alert products start
+  const alertProducts = products.filter(
+    (item) => item.quantity <= item.alertQuantity,
+  );
+  //alert products end
+
+  //out of stocks start
+  const stockOutProducts = products.filter((item) => item.quantity <= 0);
+  //out of stocks end
+
+  // total items start
+  const totalItems = products.reduce((sum, item) => sum + item.quantity, 0);
+
+  // total items end
+
+  //total valuation start
+  const totalValuation = products.reduce(
+    (sum, item) => sum + item.quantity * item.cost,
+    0,
+  );
+
+  //total valuation end
+
+  // sold items start
+  const soldProductsItems = soldProducts.flatMap((item) => item.items);
+  const totalSoldItems = soldProductsItems.reduce(
+    (sum, item) => sum + item.qty,
+    0,
+  );
+
+  const monthlySold = soldProductsItems.reduce((acc, item) => {
+    const date = new Date(item.soldAt);
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    if(!acc[monthKey]){
+      acc[monthKey] = 0;
+    }
+    acc[monthKey] += item.qty
+    return acc
+  }, {});
+  console.log(monthlySold)
+  // sold items end
 
   return (
     <div className="flex">
-      <div className="fixed left-0 top-0 h-screen z-40"><Sidebar /></div>
+      <div className="fixed left-0 top-0 h-screen z-40">
+        <Sidebar />
+      </div>
       <div className="ml-60 w-full min-h-screen bg-gray-50 p-6">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
@@ -120,7 +168,9 @@ const DashboardComponent = () => {
                 <p className="text-sm font-medium text-gray-600">
                   Alert Products
                 </p>
-                <p className="text-2xl font-bold text-orange-600 mt-2">448</p>
+                <p className="text-2xl font-bold text-orange-600 mt-2">
+                  {alertProducts.length}
+                </p>
               </div>
               <div className="p-3 bg-orange-50 rounded-lg">
                 <AlertTriangle className="w-6 h-6 text-orange-600" />
@@ -134,7 +184,9 @@ const DashboardComponent = () => {
                 <p className="text-sm font-medium text-gray-600">
                   Out of Stocks
                 </p>
-                <p className="text-2xl font-bold text-yellow-600 mt-2">0</p>
+                <p className="text-2xl font-bold text-yellow-600 mt-2">
+                  {stockOutProducts.length}
+                </p>
               </div>
               <div className="p-3 bg-yellow-50 rounded-lg">
                 <Package className="w-6 h-6 text-yellow-600" />
@@ -175,7 +227,9 @@ const DashboardComponent = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-blue-700">Total Items</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">820</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">
+                  {totalItems}
+                </p>
                 <p className="text-xs text-blue-600 mt-1">Current Total</p>
               </div>
               <Package className="w-10 h-10 text-blue-600 opacity-70" />
@@ -189,7 +243,7 @@ const DashboardComponent = () => {
                   Total Valuation
                 </p>
                 <p className="text-2xl font-bold text-gray-900 mt-2">
-                  Rs 33,805,690.00
+                  {totalValuation.toFixed(2)}
                 </p>
               </div>
               <TrendingUp className="w-10 h-10 text-amber-600 opacity-70" />
@@ -202,7 +256,9 @@ const DashboardComponent = () => {
                 <p className="text-sm font-medium text-emerald-700">
                   Sold Items
                 </p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">5,215</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">
+                  {totalSoldItems}
+                </p>
                 <p className="text-xs text-emerald-600 mt-1">
                   +12% from last month
                 </p>

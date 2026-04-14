@@ -3,21 +3,24 @@ import { persist } from "zustand/middleware";
 export const useSellStore = create(
   persist(
     (set) => ({
-      sellProduct: [],
+      soldProducts: [],
       addToSellProduct: (cartItems) =>
         set((state) => ({
-          sellProduct: [
-            ...state.sellProduct,
+          soldProducts: [
+            ...state.soldProducts,
             {
               id: Date.now(),
-              items: cartItems,
-              createdAt: new Date().toISOString(),
+              items: cartItems.map((item) => ({
+                ...item ,
+                soldAt: new Date().toISOString()
+              })),
+              transactionDate: new Date().toISOString(),
             },
           ],
         })),
     }),
     {
-      name: "sellProduct-storage",
+      name: "soldProducts-storage",
     },
   ),
 );
