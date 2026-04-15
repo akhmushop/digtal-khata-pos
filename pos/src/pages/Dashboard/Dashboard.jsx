@@ -29,22 +29,6 @@ import Sidebar from "../../components/Sidebar";
 import { useProductStore } from "../../store/product-store";
 import { useSellStore } from "../../store/sold-store";
 
-const topSold = [
-  { product: "Denim", quantity: 505, color: "#3b82f6" },
-  { product: "Milk Tea", quantity: 431, color: "#10b981" },
-  { product: "Mustabak", quantity: 253, color: "#8b5cf6" },
-  { product: "PHOTO COPY", quantity: 280, color: "#f59e0b" },
-  { product: "Denim", quantity: 240, color: "#ef4444" },
-];
-
-const topProfit = [
-  { product: "Denim", profit: 279250, change: "+12%" },
-  { product: "Mustabak", profit: 111800, change: "+8%" },
-  { product: "Dialysis Reloading", profit: 95000, change: "+5%" },
-  { product: "Books", profit: 75000, change: "-2%" },
-  { product: "EZ CASH", profit: 64500, change: "+15%" },
-];
-
 const topItems = [
   { product: "Denim", gross: 498500, trend: "up" },
   { product: "Mustabak", gross: 366000, trend: "up" },
@@ -114,6 +98,7 @@ const DashboardComponent = () => {
       acc[monthKey] = 0;
     }
     acc[monthKey] += item.qty * item.price;
+
     return acc;
   }, {});
   const monthlyTotals = {
@@ -134,7 +119,6 @@ const DashboardComponent = () => {
         const prevTotal = arr[index - 1][1];
         percentageChange = ((total - prevTotal) / prevTotal) * 100;
       }
-
       const [year, monthNum] = month.split("-");
       const date = new Date(year, monthNum - 1);
       const monthName = date.toLocaleDateString("default", { month: "short" });
@@ -171,32 +155,70 @@ const DashboardComponent = () => {
   });
   const [range, setRange] = useState("3");
   const filteredData = salesData.slice(-Number(range));
-    const totalSales = soldProductsItems.reduce(
+  const totalSales = soldProductsItems.reduce(
     (sum, item) => sum + item.qty * item.price,
     0,
   );
   // sales overview end
   // performance table Start
-  const categoryCount = soldProductsItems.reduce((acc, item) =>{
+  const categoryCount = soldProductsItems.reduce((acc, item) => {
     const category = item.category;
-    acc[category] = (acc[category] || 0) + item.qty
-    return acc
-  }, {})
-const colors = [
-  "#f59e0b",
-  "#10b981",
-  "#3b82f6",
-  "#ef4444",
-  "#8b5cf6"
-];
-  const topSoldProduct = Object.entries(categoryCount).map(([category, quantity], index) =>({
-    category,
-    quantity,
-    color: colors[index % colors.length]
-  }))
-  const topSoldFive = [...topSoldProduct].sort((a, b) => b.quantity -a.quantity).slice(0, 5)
-  console.log(topSoldFive)
+    acc[category] = (acc[category] || 0) + item.qty;
+    return acc;
+  }, {});
+  const colors = ["#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#8b5cf6"];
+  const topSoldProduct = Object.entries(categoryCount).map(
+    ([category, quantity], index) => ({
+      category,
+      quantity,
+      color: colors[index % colors.length],
+    }),
+  );
+  const topSoldFive = [...topSoldProduct]
+    .sort((a, b) => b.quantity - a.quantity)
+    .slice(0, 5);
   // performance table end
+  //top profit start
+  const monthlyProfitByCategory = soldProductsItems.reduce((acc, item) => {
+    const date = new Date(item.soldAt);
+    const category = item.category;
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    const price = item.price || 0;
+    const cost = item.cost || 0;
+    const quantity = item.qty || 1;
+    const profit = (price - cost) * quantity;
+
+    if (!acc[monthKey]) {
+      acc[monthKey] = {};
+    }
+
+    acc[monthKey][category] = (acc[monthKey][category] || 0) + profit;
+    return acc;
+  }, {});
+  const lastMonthKey = Object.keys(monthlyProfitByCategory).sort().slice(-1)[0];
+  const lastMonthProfitByCategory = lastMonthKey
+    ? monthlyProfitByCategory[lastMonthKey]
+    : {};
+  const totalProfitLastMonth = Object.values(lastMonthProfitByCategory).reduce(
+    (sum, profit) => sum + profit,
+    0,
+  );
+  const lastMonthProfitByCategoryPercentage = Object.entries(
+    lastMonthProfitByCategory,
+  ).map(([category, profit]) => ({
+    category,
+    profit,
+    percentage:
+      totalProfitLastMonth && totalProfitLastMonth !== 0
+        ? (profit / totalProfitLastMonth) * 100
+        : 0,
+  }));
+  const topProfitData = lastMonthProfitByCategoryPercentage.length
+    ? [...lastMonthProfitByCategoryPercentage]
+        .sort((a, b) => b.profit - a.profit)
+        .slice(0, 5)
+    : [];
+  //top profit end
   return (
     <div className="flex">
       <div className="fixed left-0 top-0 h-screen z-40">
@@ -487,7 +509,7 @@ const colors = [
               </button>
             </div>
             <div className="space-y-4">
-              {topProfit.map((item, index) => (
+              {topProfitData.map((item, index) => (
                 <div
                   key={index}
                   className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg"
@@ -497,20 +519,20 @@ const colors = [
                       <DollarSign className="w-4 h-4 text-blue-600" />
                     </div>
                     <div>
-                      <p className="font-medium">{item.product}</p>
+                      <p className="font-medium">{item.category}</p>
                       <p
                         className={`text-xs ${
-                          item.change.startsWith("+")
+                          item.percentage >= 0
                             ? "text-green-600"
                             : "text-red-600"
                         }`}
                       >
-                        {item.change}
+                        {item.percentage.toFixed(2)}%
                       </p>
                     </div>
                   </div>
                   <span className="font-bold">
-                    Rs {formatCurrency(item.profit)}
+                    TK {formatCurrency(item.profit)}
                   </span>
                 </div>
               ))}
