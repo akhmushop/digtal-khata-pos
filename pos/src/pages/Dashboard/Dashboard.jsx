@@ -29,32 +29,6 @@ import Sidebar from "../../components/Sidebar";
 import { useProductStore } from "../../store/product-store";
 import { useSellStore } from "../../store/sold-store";
 
-// Sample chart data
-const salesData = [
-  { month: "Sep", Sales: 0, Cash: 0, Inventory: 0, Expenses: 0 },
-  {
-    month: "Oct",
-    Sales: 42000,
-    Cash: 21000,
-    Inventory: 17000,
-    Expenses: 18000,
-  },
-  {
-    month: "Nov",
-    Sales: 52000,
-    Cash: 26000,
-    Inventory: 22000,
-    Expenses: 23000,
-  },
-  {
-    month: "Dec",
-    Sales: 68000,
-    Cash: 34000,
-    Inventory: 28000,
-    Expenses: 29000,
-  },
-];
-
 const topSold = [
   { product: "Denim", quantity: 505, color: "#3b82f6" },
   { product: "Milk Tea", quantity: 431, color: "#10b981" },
@@ -133,10 +107,26 @@ const DashboardComponent = () => {
     acc[monthKey] += item.qty;
     return acc;
   }, {});
+
+  const monthlyTotalSales = soldProductsItems.reduce((acc, item) => {
+    const date = new Date(item.soldAt);
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    if (!acc[monthKey]) {
+      acc[monthKey] = 0;
+    }
+    acc[monthKey] += item.qty * item.price;
+    return acc;
+  }, {});
+  console.log(monthlyTotalSales);
   const monthlyTotals = {
     "2026-01": 150,
     "2026-02": 275,
     "2026-03": 300,
+    "2026-04": 400,
+    "2026-05": 700,
+    "2026-06": 500,
+    "2026-07": 800,
+    "2026-08": 400,
   };
   const month = Object.entries(monthlyTotals)
     .sort()
@@ -159,17 +149,37 @@ const DashboardComponent = () => {
               percentageChange.toFixed(2) +
               "%"
             : "N/A",
-        monthName
+        monthName,
       };
     });
-    // sold items end
+  // sold items end
 
-    // sales overview start
-    const percentageChange = month.at(-1)?.percentageChange;
-    const monthName =month.map((item) => item.monthName)
-    const lastThreeMonth = monthName.slice(-3)
-    console.log(lastThreeMonth)
-    // sales overview end
+  // sales overview start
+  const percentageChange = month.at(-1)?.percentageChange;
+  const monthName = month.map((item) => item.monthName);
+  const lastThreeMonth = monthName.slice(-3);
+
+  const salesData = Object.entries(monthlyTotals).map(([month, total]) => {
+    const [year, monthNum] = month.split("-");
+    const date = new Date(year, monthNum - 1);
+    const monthName = date.toLocaleDateString("default", { month: "short" });
+    return {
+      month: monthName,
+      Sales: total,
+      Cash: total * 0.5,
+      Inventory: 17000,
+      Expenses: 18000,
+    };
+  });
+  const [range, setRange] = useState("3");
+  const filteredData = salesData.slice(-Number(range));
+    const totalSales = soldProductsItems.reduce(
+    (sum, item) => sum + item.qty * item.price,
+    0,
+  );
+
+console.log(totalSales)
+  // sales overview end
   return (
     <div className="flex">
       <div className="fixed left-0 top-0 h-screen z-40">
@@ -328,10 +338,14 @@ const DashboardComponent = () => {
               </p>
             </div>
             <div className="flex items-center space-x-4 mt-4 sm:mt-0">
-              <select className="bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option>Last 3 months</option>
-                <option>Last 6 months</option>
-                <option>Last year</option>
+              <select
+                value={range}
+                onChange={(e) => setRange(e.target.value)}
+                className="bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value={"3"}>Last 3 months</option>
+                <option value={"6"}>Last 6 months</option>
+                <option value={"12"}>Last year</option>
               </select>
               <button className="p-2 hover:bg-gray-100 rounded-lg">
                 <Filter className="w-4 h-4" />
@@ -340,7 +354,7 @@ const DashboardComponent = () => {
           </div>
 
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={salesData}>
+            <AreaChart data={filteredData}>
               <defs>
                 <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#fbbf24" stopOpacity={0.8} />
@@ -389,14 +403,14 @@ const DashboardComponent = () => {
               <div className="w-3 h-3 bg-amber-500 rounded-full mr-3"></div>
               <div>
                 <p className="text-sm font-medium text-gray-600">Sales</p>
-                <p className="font-bold">Rs 0.00</p>
+                <p className="font-bold">TK {totalSales.toFixed(2)}</p>
               </div>
             </div>
             <div className="flex items-center p-3 bg-emerald-50 rounded-lg">
               <div className="w-3 h-3 bg-emerald-500 rounded-full mr-3"></div>
               <div>
                 <p className="text-sm font-medium text-gray-600">Cash</p>
-                <p className="font-bold">Rs 0.00</p>
+                <p className="font-bold">TK {(totalSales * 0.5).toFixed(2)}</p>
               </div>
             </div>
             <div className="flex items-center p-3 bg-blue-50 rounded-lg">
