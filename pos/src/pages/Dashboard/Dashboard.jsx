@@ -29,14 +29,6 @@ import Sidebar from "../../components/Sidebar";
 import { useProductStore } from "../../store/product-store";
 import { useSellStore } from "../../store/sold-store";
 
-const topItems = [
-  { product: "Denim", gross: 498500, trend: "up" },
-  { product: "Mustabak", gross: 366000, trend: "up" },
-  { product: "Dialysis Reloading", gross: 212400, trend: "down" },
-  { product: "Books", gross: 193500, trend: "up" },
-  { product: "EZ CASH", gross: 133290, trend: "up" },
-];
-
 const DashboardComponent = () => {
   const [dateRange, setDateRange] = useState({
     start: "2023-12-26",
@@ -219,6 +211,57 @@ const DashboardComponent = () => {
         .slice(0, 5)
     : [];
   //top profit end
+
+  //top items gross start
+  const salesByProductByMonth = soldProductsItems.reduce((acc, item) => {
+    const date = new Date(item.soldAt);
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    const productName = item.productName || item.category || "Unknown";
+    const gross = (item.qty || 0) * (item.price || 0);
+    if (!acc[monthKey]) {
+      acc[monthKey] = {};
+    }
+    acc[monthKey][productName] = (acc[monthKey][productName] || 0) + gross;
+    return acc;
+  }, {});
+
+  const allTimeGrossByProduct = soldProductsItems.reduce((acc, item) => {
+    const productName = item.productName || item.category || "Unknown";
+    const gross = (item.qty || 0) * (item.price || 0);
+    acc[productName] = (acc[productName] || 0) + gross;
+    return acc;
+  }, {});
+
+  const productMonthKeys = Object.keys(salesByProductByMonth).sort();
+  const latestProductMonth = productMonthKeys.at(-1);
+  const previousProductMonth = productMonthKeys.slice(-2, -1)[0];
+
+  const currentMonthProductGross = latestProductMonth
+    ? salesByProductByMonth[latestProductMonth]
+    : {};
+  const previousMonthProductGross = previousProductMonth
+    ? salesByProductByMonth[previousProductMonth]
+    : {};
+  const grossSource =
+    Object.keys(currentMonthProductGross).length > 0
+      ? currentMonthProductGross
+      : allTimeGrossByProduct;
+  const trendBase = Object.keys(currentMonthProductGross).length
+    ? previousMonthProductGross
+    : {};
+  const topGrossItems = Object.entries(grossSource)
+    .map(([product, gross]) => {
+      const previousGross = trendBase[product] || 0;
+      return {
+        product,
+        gross,
+        trend: gross >= previousGross ? "up" : "down",
+      };
+    })
+    .sort((a, b) => b.gross - a.gross)
+    .slice(0, 5);
+  console.log(topGrossItems);
+  //top items gross end
   return (
     <div className="flex">
       <div className="fixed left-0 top-0 h-screen z-40">
@@ -548,30 +591,36 @@ const DashboardComponent = () => {
               </button>
             </div>
             <div className="space-y-4">
-              {topItems.map((item, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg"
-                >
-                  <div className="flex items-center">
-                    <div
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 ${
-                        item.trend === "up" ? "bg-green-100" : "bg-red-100"
-                      }`}
-                    >
-                      {item.trend === "up" ? (
-                        <TrendingUp className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <TrendingDown className="w-4 h-4 text-red-600" />
-                      )}
+              {topGrossItems.length > 0 ? (
+                topGrossItems.map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg"
+                  >
+                    <div className="flex items-center">
+                      <div
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 ${
+                          item.trend === "up" ? "bg-green-100" : "bg-red-100"
+                        }`}
+                      >
+                        {item.trend === "up" ? (
+                          <TrendingUp className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <TrendingDown className="w-4 h-4 text-red-600" />
+                        )}
+                      </div>
+                      <span className="font-medium">{item.product}</span>
                     </div>
-                    <span className="font-medium">{item.product}</span>
+                    <span className="font-bold">
+                      TK {formatCurrency(item.gross)}
+                    </span>
                   </div>
-                  <span className="font-bold">
-                    Rs {formatCurrency(item.gross)}
-                  </span>
+                ))
+              ) : (
+                <div className="text-sm text-gray-500">
+                  No sales data available yet.
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
