@@ -127,15 +127,49 @@ const DashboardComponent = () => {
   const monthlySold = soldProductsItems.reduce((acc, item) => {
     const date = new Date(item.soldAt);
     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-    if(!acc[monthKey]){
+    if (!acc[monthKey]) {
       acc[monthKey] = 0;
     }
-    acc[monthKey] += item.qty
-    return acc
+    acc[monthKey] += item.qty;
+    return acc;
   }, {});
-  console.log(monthlySold)
-  // sold items end
+  const monthlyTotals = {
+    "2026-01": 150,
+    "2026-02": 275,
+    "2026-03": 300,
+  };
+  const month = Object.entries(monthlyTotals)
+    .sort()
+    .map(([month, total], index, arr) => {
+      let percentageChange = null;
+      if (index > 0) {
+        const prevTotal = arr[index - 1][1];
+        percentageChange = ((total - prevTotal) / prevTotal) * 100;
+      }
 
+      const [year, monthNum] = month.split("-");
+      const date = new Date(year, monthNum - 1);
+      const monthName = date.toLocaleDateString("default", { month: "short" });
+      return {
+        month,
+        total,
+        percentageChange:
+          percentageChange !== null
+            ? (percentageChange > 0 ? "+" : "") +
+              percentageChange.toFixed(2) +
+              "%"
+            : "N/A",
+        monthName
+      };
+    });
+    // sold items end
+
+    // sales overview start
+    const percentageChange = month.at(-1)?.percentageChange;
+    const monthName =month.map((item) => item.monthName)
+    const lastThreeMonth = monthName.slice(-3)
+    console.log(lastThreeMonth)
+    // sales overview end
   return (
     <div className="flex">
       <div className="fixed left-0 top-0 h-screen z-40">
@@ -260,7 +294,7 @@ const DashboardComponent = () => {
                   {totalSoldItems}
                 </p>
                 <p className="text-xs text-emerald-600 mt-1">
-                  +12% from last month
+                  {percentageChange} from last month
                 </p>
               </div>
               <ShoppingCart className="w-10 h-10 text-emerald-600 opacity-70" />
