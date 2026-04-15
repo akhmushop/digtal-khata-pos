@@ -67,7 +67,6 @@ const DashboardComponent = () => {
   };
   const products = useProductStore((state) => state.product);
   const soldProducts = useSellStore((state) => state.soldProducts);
-
   // alert products start
   const alertProducts = products.filter(
     (item) => item.quantity <= item.alertQuantity,
@@ -117,7 +116,6 @@ const DashboardComponent = () => {
     acc[monthKey] += item.qty * item.price;
     return acc;
   }, {});
-  console.log(monthlyTotalSales);
   const monthlyTotals = {
     "2026-01": 150,
     "2026-02": 275,
@@ -177,9 +175,28 @@ const DashboardComponent = () => {
     (sum, item) => sum + item.qty * item.price,
     0,
   );
-
-console.log(totalSales)
   // sales overview end
+  // performance table Start
+  const categoryCount = soldProductsItems.reduce((acc, item) =>{
+    const category = item.category;
+    acc[category] = (acc[category] || 0) + item.qty
+    return acc
+  }, {})
+const colors = [
+  "#f59e0b",
+  "#10b981",
+  "#3b82f6",
+  "#ef4444",
+  "#8b5cf6"
+];
+  const topSoldProduct = Object.entries(categoryCount).map(([category, quantity], index) =>({
+    category,
+    quantity,
+    color: colors[index % colors.length]
+  }))
+  const topSoldFive = [...topSoldProduct].sort((a, b) => b.quantity -a.quantity).slice(0, 5)
+  console.log(topSoldFive)
+  // performance table end
   return (
     <div className="flex">
       <div className="fixed left-0 top-0 h-screen z-40">
@@ -443,7 +460,7 @@ console.log(totalSales)
               </button>
             </div>
             <div className="space-y-4">
-              {topSold.map((item, index) => (
+              {topSoldFive.map((item, index) => (
                 <div
                   key={index}
                   className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg"
@@ -453,7 +470,7 @@ console.log(totalSales)
                       className="w-3 h-3 rounded-full mr-3"
                       style={{ backgroundColor: item.color }}
                     ></div>
-                    <span className="font-medium">{item.product}</span>
+                    <span className="font-medium">{item.category}</span>
                   </div>
                   <span className="font-bold">{item.quantity}</span>
                 </div>
