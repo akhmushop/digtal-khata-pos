@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import Sidebar from "../../components/Sidebar";
 import { useProductStore } from "../../store/product-store";
-import { useSellStore } from "../../store/sold-store";
+import { useSoldStore } from "../../store/sold-store";
 
 const DashboardComponent = () => {
   const [dateRange, setDateRange] = useState({
@@ -42,7 +42,7 @@ const DashboardComponent = () => {
     }).format(value);
   };
   const products = useProductStore((state) => state.product);
-  const soldProducts = useSellStore((state) => state.soldProducts);
+  const soldProducts = useSoldStore((state) => state.soldProducts);
   // alert products start
   const alertProducts = products.filter(
     (item) => item.quantity <= item.alertQuantity,

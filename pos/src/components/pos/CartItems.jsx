@@ -6,7 +6,7 @@ import { ClickToShowMore } from "./CartMoreMenu";
 import { ClickEmptyToResetCart } from "./CartEmptyBtn";
 import { useProductStore } from "../../store/product-store";
 import { useCartStore } from "../../store/cart-store";
-import { useSellStore } from "../../store/sold-store";
+import { useSoldStore } from "../../store/sold-store";
 
 export default function CartItems() {
   const addProductQtn = useProductStore((state) => state.addProductQtn);
@@ -546,7 +546,7 @@ function CashModal({
   cashForm,
   setCashForm,
 }) {
-  const addToSellProduct = useSellStore((state) => state.addToSellProduct);
+  const addToSellProduct = useSoldStore((state) => state.addToSellProduct);
   const cart = useCartStore((state) => state.cart);
   const resetCart = useCartStore((state) => state.resetCart);
   const handelClose = () => {
