@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-export const useSellStore = create(
+export const useSoldStore = create(
   persist(
     (set) => ({
       soldProducts: [],
