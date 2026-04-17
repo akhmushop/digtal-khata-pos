@@ -72,7 +72,7 @@ const DashboardComponent = () => {
     (sum, item) => sum + item.qty,
     0,
   );
-
+  console.log(totalSoldItems)
   const monthlySold = soldProductsItems.reduce((acc, item) => {
     const date = new Date(item.soldAt);
     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
