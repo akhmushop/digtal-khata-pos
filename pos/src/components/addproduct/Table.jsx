@@ -331,8 +331,37 @@ const AdvancedPOSTable = () => {
             : "N/A",
       };
     });
-    const percentageChange = totalRevenueInArray.at(-1)?.percentageChange;
-  console.log(percentageChange);
+  const percentageChange = totalRevenueInArray.at(-1)?.percentageChange;
+
+  //Avg. Turnover
+  const totalInventory = products.reduce(
+    (sum, p) => sum + (Number(p.quantity) || 0),
+    0,
+  );
+  const saleDateRange = soldProductsItems.reduce(
+    (range, item) => {
+      const date = new Date(item.soldAt);
+      if (isNaN(date)) return range;
+
+      return {
+        min: range.min ? (date < range.min ? date : range.min) : date,
+        max: range.max ? (date > range.max ? date : range.max) : date,
+      };
+    },
+    { min: null, max: null },
+  );
+  const salePeriodDays =
+    saleDateRange.min && saleDateRange.max
+      ? Math.max(
+          1,
+          (saleDateRange.max - saleDateRange.min) / (1000 * 60 * 60 * 24),
+        )
+      : 1;
+  const averageSalesPerDay =
+    salePeriodDays > 0 ? totalSoldItems / salePeriodDays : 0;
+  const averageTurnoverDays =
+    averageSalesPerDay > 0 ? totalInventory / averageSalesPerDay : null;
+  console.log(averageTurnoverDays);
   return (
     <div className="h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 overflow-y-scroll">
       <div className="max-w-[1800px] mx-auto">
@@ -437,7 +466,10 @@ const AdvancedPOSTable = () => {
                     <RefreshCw className="w-5 h-5 text-orange-600" />
                   </div>
                   <div className="text-2xl font-bold text-orange-900">
-                    8.5 days
+                    {averageTurnoverDays
+                      ? averageTurnoverDays.toFixed(1)
+                      : "N/A"}{" "}
+                    Days
                   </div>
                   <div className="text-xs text-orange-600 mt-1">
                     Estimated days to move current stock
