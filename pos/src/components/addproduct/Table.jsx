@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router";
+import { useSoldStore } from "../../store/sold-store";
 import {
   Search,
   ChevronDown,
@@ -48,6 +49,8 @@ const AdvancedPOSTable = () => {
   const [showStockModal, setShowStockModal] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [currentProduct, setCurrentProduct] = useState(null);
+  const soldProducts = useSoldStore((state) => state.soldProducts);
+  const soldProductsItems = soldProducts.flatMap((item) => item.items);
 
   const [filters, setFilters] = useState({
     category: "all",
@@ -196,15 +199,18 @@ const AdvancedPOSTable = () => {
     }
   };
 
-  const totalValue = products.reduce((sum, p) => sum + p.price * p.stock, 0);
-  const totalProfit = products.reduce(
-    (sum, p) => sum + (p.price - p.cost) * p.stock,
+  const totalValue = soldProductsItems.reduce(
+    (sum, p) => sum + p.price * p.qty,
+    0,
+  );
+  const totalProfit = soldProductsItems.reduce(
+    (sum, p) => sum + (p.price - p.cost) * p.qty,
     0,
   );
   const lowStockCount = products.filter(
-    (p) => p.stock > 0 && p.stock <= p.alertQuantity,
+    (p) => p.quantity > 0 && p.quantity <= p.alertQuantity,
   ).length;
-  const outOfStockCount = products.filter((p) => p.stock === 0).length;
+  const outOfStockCount = products.filter((p) => p.quantity === 0).length;
 
   const toggleSelectProduct = (id) => {
     setSelectedProducts((prev) =>
@@ -242,7 +248,7 @@ const AdvancedPOSTable = () => {
         p.id === productId
           ? {
               ...p,
-              stock: newStock,
+              quantity: newStock,
               status:
                 newStock === 0
                   ? "Out of Stock"
@@ -288,6 +294,45 @@ const AdvancedPOSTable = () => {
     setProducts([...products, newProduct]);
   };
 
+  // total sold
+
+  const totalSoldItems = soldProductsItems.reduce(
+    (sum, item) => sum + item.qty,
+    0,
+  );
+  const totalRevenueByMonth = soldProductsItems.reduce((acc, item) => {
+    const date = new Date(item.soldAt);
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    const revenue = item.price * item.qty;
+    if (!acc[monthKey]) {
+      acc[monthKey] = 0;
+    }
+    acc[monthKey] += revenue;
+    return acc;
+  }, {});
+  const totalRevenueInArray = Object.entries(totalRevenueByMonth)
+    .sort()
+    .map(([month, total], index, arr) => {
+      let percentageChange = null;
+
+      if (index > 0) {
+        const prevMonthRevenue = arr[index - 1][1];
+        percentageChange =
+          ((total - prevMonthRevenue) / prevMonthRevenue) * 100;
+      }
+      return {
+        month,
+        total,
+        percentageChange:
+          percentageChange !== null
+            ? (percentageChange > 0 ? "+" : "") +
+              percentageChange.toFixed(2) +
+              "%"
+            : "N/A",
+      };
+    });
+    const percentageChange = totalRevenueInArray.at(-1)?.percentageChange;
+  console.log(percentageChange);
   return (
     <div className="h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 overflow-y-scroll">
       <div className="max-w-[1800px] mx-auto">
@@ -353,7 +398,7 @@ const AdvancedPOSTable = () => {
                     ${totalValue.toFixed(2)}
                   </div>
                   <div className="text-xs text-blue-600 mt-1">
-                    +12.5% from last month
+                    {percentageChange} from last month
                   </div>
                 </div>
                 <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg p-4">
@@ -378,7 +423,7 @@ const AdvancedPOSTable = () => {
                     <ShoppingCart className="w-5 h-5 text-purple-600" />
                   </div>
                   <div className="text-2xl font-bold text-purple-900">
-                    {products.reduce((sum, p) => sum + p.sales, 0)}
+                    {totalSoldItems}
                   </div>
                   <div className="text-xs text-purple-600 mt-1">
                     Units sold this month
@@ -395,7 +440,7 @@ const AdvancedPOSTable = () => {
                     8.5 days
                   </div>
                   <div className="text-xs text-orange-600 mt-1">
-                    Average stock rotation
+                    Estimated days to move current stock
                   </div>
                 </div>
               </div>
