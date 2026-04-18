@@ -76,6 +76,7 @@ const AdvancedPOSTable = () => {
   });
   const [resizing, setResizing] = useState(null);
   const products = useProductStore((state) => state.product);
+  const removeProduct = useProductStore((state) => state.removeProduct);
 
   const [categories] = useState([
     "Electronics",
@@ -185,7 +186,6 @@ const AdvancedPOSTable = () => {
     startIndex,
     startIndex + perPage,
   );
-
   const getStatusStyle = (status) => {
     switch (status) {
       case "In Stock":
@@ -228,7 +228,7 @@ const AdvancedPOSTable = () => {
 
   const handleBulkDelete = () => {
     if (window.confirm(`Delete ${selectedProducts.length} products?`)) {
-      setProducts(products.filter((p) => !selectedProducts.includes(p.id)));
+      removeProduct(selectedProducts)
       setSelectedProducts([]);
       setShowBulkActions(false);
     }
@@ -361,7 +361,6 @@ const AdvancedPOSTable = () => {
     salePeriodDays > 0 ? totalSoldItems / salePeriodDays : 0;
   const averageTurnoverDays =
     averageSalesPerDay > 0 ? totalInventory / averageSalesPerDay : null;
-  console.log(averageTurnoverDays);
   return (
     <div className="h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 overflow-y-scroll">
       <div className="max-w-[1800px] mx-auto">
@@ -758,11 +757,11 @@ const AdvancedPOSTable = () => {
                     style={{ width: `${columnWidths.name}px` }}
                   >
                     <button
-                      onClick={() => requestSort("name")}
+                      onClick={() => requestSort("productName")}
                       className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
                     >
                       Product Name
-                      {sortConfig.key === "name" &&
+                      {sortConfig.key === "productName" &&
                         (sortConfig.direction === "asc" ? (
                           <ChevronUp className="w-4 h-4" />
                         ) : (
@@ -845,11 +844,11 @@ const AdvancedPOSTable = () => {
                     style={{ width: `${columnWidths.stock}px` }}
                   >
                     <button
-                      onClick={() => requestSort("stock")}
+                      onClick={() => requestSort("quantity")}
                       className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
                     >
                       Stock
-                      {sortConfig.key === "stock" &&
+                      {sortConfig.key === "quantity" &&
                         (sortConfig.direction === "asc" ? (
                           <ChevronUp className="w-4 h-4" />
                         ) : (

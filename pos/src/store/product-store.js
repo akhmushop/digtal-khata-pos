@@ -355,6 +355,10 @@ export const useProductStore = create(
       ],
       addToProduct: (product) =>
         set((state) => ({ product: [...state.product, product] })),
+      removeProduct: (selectedProducts) =>
+        set((state) => ({
+          product: state.product.filter((product) => !selectedProducts.includes(product.id)),
+        })),
       removeProductQty: (productBarcode) =>
         set((state) => ({
           product: state.product.map((product) => {
@@ -406,6 +410,6 @@ export const useProductStore = create(
     }),
     {
       name: "product-storage",
-    }
-  )
+    },
+  ),
 );
