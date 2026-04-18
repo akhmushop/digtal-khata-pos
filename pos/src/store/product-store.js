@@ -357,7 +357,9 @@ export const useProductStore = create(
         set((state) => ({ product: [...state.product, product] })),
       removeProduct: (selectedProducts) =>
         set((state) => ({
-          product: state.product.filter((product) => !selectedProducts.includes(product.id)),
+          product: state.product.filter(
+            (product) => !selectedProducts.includes(product.id),
+          ),
         })),
       removeProductQty: (productBarcode) =>
         set((state) => ({
@@ -382,6 +384,23 @@ export const useProductStore = create(
             }
             return product;
           }),
+        })),
+      updateStock: (productId, newStock) =>
+        set((state) => ({
+          product: state.product.map((product) =>
+            product.id === productId
+              ? {
+                  ...product,
+                  quantity: newStock,
+                  status:
+                    newStock === 0
+                      ? "Out of Stock"
+                      : newStock <= product.alertQuantity
+                        ? "Low Stock"
+                        : "In Stock",
+                }
+              : product,
+          ),
         })),
       addCustomProductQty: (productBarcode, itemQty, prevQty) =>
         set((state) => ({
