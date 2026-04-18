@@ -77,6 +77,7 @@ const AdvancedPOSTable = () => {
   const [resizing, setResizing] = useState(null);
   const products = useProductStore((state) => state.product);
   const removeProduct = useProductStore((state) => state.removeProduct);
+  const updateStock = useProductStore((state) => state.updateStock);
 
   const [categories] = useState([
     "Electronics",
@@ -228,7 +229,7 @@ const AdvancedPOSTable = () => {
 
   const handleBulkDelete = () => {
     if (window.confirm(`Delete ${selectedProducts.length} products?`)) {
-      removeProduct(selectedProducts)
+      removeProduct(selectedProducts);
       setSelectedProducts([]);
       setShowBulkActions(false);
     }
@@ -240,25 +241,6 @@ const AdvancedPOSTable = () => {
     );
     console.log("Exporting:", selectedData);
     alert("Export functionality would download CSV here");
-  };
-
-  const handleUpdateStock = (productId, newStock) => {
-    setProducts(
-      products.map((p) =>
-        p.id === productId
-          ? {
-              ...p,
-              quantity: newStock,
-              status:
-                newStock === 0
-                  ? "Out of Stock"
-                  : newStock <= p.alertQuantity
-                    ? "Low Stock"
-                    : "In Stock",
-            }
-          : p,
-      ),
-    );
   };
 
   const openProductModal = (product = null) => {
@@ -1020,6 +1002,10 @@ const AdvancedPOSTable = () => {
                           <Copy className="w-4 h-4" />
                         </button>
                         <button
+                          onClick={() => {
+                            if (window.confirm("Delete 1 Product"))
+                              removeProduct(product.id);
+                          }}
                           className="p-2 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors"
                           title="Delete"
                         >
@@ -1112,13 +1098,13 @@ const AdvancedPOSTable = () => {
                 <p className="text-sm text-slate-600 mb-2">
                   Product:{" "}
                   <span className="font-medium text-slate-900">
-                    {currentProduct.name}
+                    {currentProduct.productName}
                   </span>
                 </p>
                 <p className="text-sm text-slate-600">
                   Current Stock:{" "}
                   <span className="font-medium text-slate-900">
-                    {currentProduct.stock}
+                    {currentProduct.quantity}
                   </span>
                 </p>
               </div>
@@ -1129,7 +1115,8 @@ const AdvancedPOSTable = () => {
                   </label>
                   <input
                     type="number"
-                    defaultValue={currentProduct.stock}
+                    defaultValue={currentProduct.quantity}
+                    min={0}
                     className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     id="newStock"
                   />
@@ -1140,7 +1127,7 @@ const AdvancedPOSTable = () => {
                       const newStock = parseInt(
                         document.getElementById("newStock").value,
                       );
-                      handleUpdateStock(currentProduct.id, newStock);
+                      updateStock(currentProduct.id, newStock);
                       setShowStockModal(false);
                     }}
                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
