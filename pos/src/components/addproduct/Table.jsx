@@ -40,6 +40,7 @@ import {
   useProductStore,
   useEditProductStore,
 } from "../../store/product-store";
+import { PopupModal } from "../pos/CartItems";
 const AdvancedPOSTable = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
@@ -57,6 +58,13 @@ const AdvancedPOSTable = () => {
   const setEditingProduct = useEditProductStore(
     (state) => state.setEditingProduct,
   );
+  const products = useProductStore((state) => state.product);
+  const removeProduct = useProductStore((state) => state.removeProduct);
+  const updateStock = useProductStore((state) => state.updateStock);
+  const duplicateProduct = useProductStore((state) => state.duplicateProduct);
+  const [showProductDetailsModal, setShowProductDetailsModal] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
   const [filters, setFilters] = useState({
     category: "all",
     status: "all",
@@ -80,10 +88,6 @@ const AdvancedPOSTable = () => {
     action: 100,
   });
   const [resizing, setResizing] = useState(null);
-  const products = useProductStore((state) => state.product);
-  const removeProduct = useProductStore((state) => state.removeProduct);
-  const updateStock = useProductStore((state) => state.updateStock);
-  const duplicateProduct = useProductStore((state) => state.duplicateProduct);
 
   const [categories] = useState([
     "Electronics",
@@ -346,8 +350,19 @@ const AdvancedPOSTable = () => {
     salePeriodDays > 0 ? totalSoldItems / salePeriodDays : 0;
   const averageTurnoverDays =
     averageSalesPerDay > 0 ? totalInventory / averageSalesPerDay : null;
+  const handelClose = () => {
+    setEditingProduct(null);
+    setTimeout(() => setShowProductDetailsModal(false), 300);
+    setIsOpen(false);
+  };
   return (
     <div className="h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 overflow-y-scroll">
+      {showProductDetailsModal && (
+        <PopupModal isOpen={isOpen} handelClose={handelClose}>
+          <ShowProductDetails handelClose={handelClose} />
+        </PopupModal>
+      )}
+
       <div className="max-w-[1800px] mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -984,7 +999,11 @@ const AdvancedPOSTable = () => {
                     <td className="px-4 py-4">
                       <div className="flex items-center justify-center gap-1">
                         <button
-                          onClick={() => openProductModal(product)}
+                          onClick={() => {
+                            setEditingProduct(product);
+                            setShowProductDetailsModal(true);
+                            setTimeout(() => setIsOpen(true), 30);
+                          }}
                           className="p-2 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"
                           title="View Details"
                         >
@@ -1170,5 +1189,183 @@ const AdvancedPOSTable = () => {
     </div>
   );
 };
+const ShowProductDetails = ({ handelClose = { handelClose } }) => {
+  const detailsProduct = useEditProductStore((state) => state.editingProduct);
+  return (
+    <div className="relative w-130  bg-white shadow-md overflow-hidden rounded-b-lg">
+      <div className="bg-rose-700 px-4 py-2 flex justify-between items-center ">
+        <h2 className="text-white font-semibold text-lg">Product Details</h2>
+        <button
+          onClick={handelClose}
+          className="text-white hover:bg-rose-600 rounded-full w-8 h-8 flex items-center justify-center transition-colors duration-200"
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      </div>
 
+      {detailsProduct && (
+        <div className="p-4 space-y-2">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+            <div className="flex items-start">
+              <span className="font-semibold text-gray-700 w-28">Barcode:</span>
+              <span className="text-gray-600 flex-1">
+                {detailsProduct.barcode}
+              </span>
+            </div>
+
+            <div className="flex items-start">
+              <span className="font-semibold text-gray-700 w-28">
+                Product Name:
+              </span>
+              <span className="text-gray-600 flex-1 break-words">
+                {detailsProduct.productName}
+              </span>
+            </div>
+
+            <div className="flex items-start">
+              <span className="font-semibold text-gray-700 w-28">
+                Product Unit:
+              </span>
+              <span className="text-gray-600 flex-1">
+                {detailsProduct.productUnit}
+              </span>
+            </div>
+
+            <div className="flex items-start">
+              <span className="font-semibold text-gray-700 w-28">
+                Product Type:
+              </span>
+              <span className="text-gray-600 flex-1">
+                {detailsProduct.productType}
+              </span>
+            </div>
+
+            <div className="flex items-start">
+              <span className="font-semibold text-gray-700 w-28">
+                Alert Quantity:
+              </span>
+              <span className="text-gray-600 flex-1">
+                {detailsProduct.alertQuantity}
+              </span>
+            </div>
+
+            <div className="flex items-start">
+              <span className="font-semibold text-gray-700 w-28">Cost:</span>
+              <span className="text-green-600 font-medium flex-1">
+                ${detailsProduct.cost}
+              </span>
+            </div>
+
+            <div className="flex items-start">
+              <span className="font-semibold text-gray-700 w-28">Price:</span>
+              <span className="text-green-600 font-medium flex-1">
+                ${detailsProduct.price}
+              </span>
+            </div>
+
+            <div className="flex items-start">
+              <span className="font-semibold text-gray-700 w-28">
+                Quantity:
+              </span>
+              <span
+                className={`flex-1 ${detailsProduct.quantity < detailsProduct.alertQuantity ? "text-red-600 font-semibold" : "text-gray-600"}`}
+              >
+                {detailsProduct.quantity}
+              </span>
+            </div>
+
+            <div className="flex items-start">
+              <span className="font-semibold text-gray-700 w-28">
+                Discount:
+              </span>
+              <span className="text-gray-600 flex-1">
+                {detailsProduct.discountPercent > 0 &&
+                  `${detailsProduct.discountPercent}%`}
+                {detailsProduct.discountPercent > 0 &&
+                  detailsProduct.flatDiscount > 0 &&
+                  " / "}
+                {detailsProduct.flatDiscount > 0 &&
+                  `$${detailsProduct.flatDiscount} flat`}
+                {detailsProduct.discountPercent === 0 &&
+                  detailsProduct.flatDiscount === 0 &&
+                  "No discount"}
+              </span>
+            </div>
+
+            <div className="flex items-start">
+              <span className="font-semibold text-gray-700 w-28">
+                Batch Number:
+              </span>
+              <span className="text-gray-600 flex-1">
+                {detailsProduct.batchNumber}
+              </span>
+            </div>
+
+            <div className="flex items-start">
+              <span className="font-semibold text-gray-700 w-28">
+                Expiry Date:
+              </span>
+              <span className="text-gray-600 flex-1">
+                {detailsProduct.expiryDate || "N/A"}
+              </span>
+            </div>
+
+            <div className="flex items-start">
+              <span className="font-semibold text-gray-700 w-28">
+                Supplier:
+              </span>
+              <span className="text-gray-600 flex-1">
+                {detailsProduct.supplier}
+              </span>
+            </div>
+
+            <div className="flex items-start">
+              <span className="font-semibold text-gray-700 w-28">Brand:</span>
+              <span className="text-gray-600 flex-1">
+                {detailsProduct.brand}
+              </span>
+            </div>
+
+            <div className="flex items-start">
+              <span className="font-semibold text-gray-700 w-28">
+                Category:
+              </span>
+              <span className="text-gray-600 flex-1">
+                {detailsProduct.category}
+              </span>
+            </div>
+
+            <div className="flex items-start">
+              <span className="font-semibold text-gray-700 w-28">Tags:</span>
+              <span className="text-gray-600 flex-1 break-words">
+                {detailsProduct.tags.join(", ")}
+              </span>
+            </div>
+
+            <div className="col-span-2 flex items-start">
+              <span className="font-semibold text-gray-700 w-28">
+                Description:
+              </span>
+              <span className="text-gray-600 flex-1 break-words">
+                {detailsProduct.description}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 export default AdvancedPOSTable;
