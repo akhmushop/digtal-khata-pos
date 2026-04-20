@@ -432,6 +432,18 @@ export const useProductStore = create(
             p.id === editingProduct.id ? { ...p, ...editingProduct } : p,
           ),
         })),
+      duplicateProduct: (duplicateProduct) =>
+        set((state) => ({
+          product: [
+            ...state.product,
+            {
+              ...duplicateProduct,
+              id: Date.now(),
+              productName: `${duplicateProduct.productName} copy`,
+              barcode: `${duplicateProduct.barcode}-COPY`,
+            },
+          ],
+        })),
     }),
     {
       name: "product-storage",
@@ -440,5 +452,5 @@ export const useProductStore = create(
 );
 export const useEditProductStore = create((set) => ({
   editingProduct: null,
-  setEditingProduct: (product) => set({ editingProduct: product ,}),
+  setEditingProduct: (product) => set({ editingProduct: product }),
 }));

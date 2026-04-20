@@ -181,7 +181,14 @@ const ProductStockForm = () => {
 
       if (window.confirm("Do you want to update this product")) {
         setEditingProduct(null);
-        navigate(from);
+        navigate(from, {
+          state: {
+            updated: true,
+            productId: editingProduct.id,
+            timestamp: Date.now(),
+          },
+          replace: true,
+        });
       }
     } else {
       addToProduct(productData);

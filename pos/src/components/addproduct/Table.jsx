@@ -83,6 +83,7 @@ const AdvancedPOSTable = () => {
   const products = useProductStore((state) => state.product);
   const removeProduct = useProductStore((state) => state.removeProduct);
   const updateStock = useProductStore((state) => state.updateStock);
+  const duplicateProduct = useProductStore((state) => state.duplicateProduct);
 
   const [categories] = useState([
     "Electronics",
@@ -269,17 +270,15 @@ const AdvancedPOSTable = () => {
     }
     setShowProductModal(false);
   };
-
-  const duplicateProduct = (product) => {
-    const newProduct = {
-      ...product,
-      id: Date.now(),
-      name: `${product.name} (Copy)`,
-      barcode: `${product.barcode}-COPY`,
-    };
-    setProducts([...products, newProduct]);
-  };
-
+  // const duplicateProduct = (product) => {
+  //   const newProduct = {
+  //     ...product,
+  //     id: Date.now(),
+  //     name: `${product.name} (Copy)`,
+  //     barcode: `${product.barcode}-COPY`,
+  //   };
+  //   setProducts([...products, newProduct]);
+  // };
   // total sold
 
   const totalSoldItems = soldProductsItems.reduce(
@@ -1012,7 +1011,12 @@ const AdvancedPOSTable = () => {
                           </button>
                         </Link>
                         <button
-                          onClick={() => duplicateProduct(product)}
+                          onClick={() => {
+                            if (
+                              window.confirm("Do you want to duplicate product")
+                            )
+                              duplicateProduct(product);
+                          }}
                           className="p-2 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"
                           title="Duplicate"
                         >
