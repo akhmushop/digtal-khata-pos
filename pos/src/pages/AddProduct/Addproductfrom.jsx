@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import toast, { Toaster } from "react-hot-toast";
 import {
   Upload,
   Package,
@@ -19,37 +20,69 @@ import {
   ChevronDown,
   CheckCircle,
 } from "lucide-react";
-import { useProductStore } from "../../store/product-store";
+import {
+  useProductStore,
+  useEditProductStore,
+} from "../../store/product-store";
+import { useLocation, useNavigate } from "react-router";
 
 const ProductStockForm = () => {
-  const [imagePreview, setImagePreview] = useState(null);
+  const editingProduct = useEditProductStore((state) => state.editingProduct);
+  const [imagePreview, setImagePreview] = useState(
+    editingProduct?.image ?? null,
+  );
   const [errors, setErrors] = useState({});
   const [showSuccess, setShowSuccess] = useState(false);
   const addToProduct = useProductStore((state) => state.addToProduct);
+  const updateProduct = useProductStore((state) => state.updateProduct);
+  const setEditingProduct = useEditProductStore(
+    (state) => state.setEditingProduct,
+  );
 
-  const initialFormData = {
-    barcode: "",
-    productName: "",
-    productUnit: "PC",
-    productType: "SIMPLE",
-    alertQuantity: "2",
-    cost: "",
-    price: "",
-    quantity: "",
-    discountPercent: "0",
-    flatDiscount: "0",
-    batchNumber: "",
-    expiryDate: "",
-    description: "",
-    supplier: "",
-    brand: "",
-    category: "",
-    tags: "",
-  };
+  const initialFormData = editingProduct
+    ? {
+        barcode: editingProduct.barcode,
+        productName: editingProduct.productName,
+        productUnit: editingProduct.productUnit,
+        productType: editingProduct.productType,
+        alertQuantity: editingProduct.alertQuantity,
+        cost: editingProduct.cost,
+        price: editingProduct.price,
+        quantity: editingProduct.quantity,
+        discountPercent: editingProduct.discountPercent,
+        flatDiscount: editingProduct.flatDiscount,
+        batchNumber: editingProduct.batchNumber,
+        expiryDate: editingProduct.expiryDate || "",
+        description: editingProduct.description,
+        supplier: editingProduct.supplier,
+        brand: editingProduct.brand,
+        category: editingProduct.category,
+        tags: editingProduct.tags,
+      }
+    : {
+        barcode: "",
+        productName: "",
+        productUnit: "PC",
+        productType: "SIMPLE",
+        alertQuantity: "2",
+        cost: "",
+        price: "",
+        quantity: "",
+        discountPercent: "0",
+        flatDiscount: "0",
+        batchNumber: "",
+        expiryDate: "",
+        description: "",
+        supplier: "",
+        brand: "",
+        category: "",
+        tags: "",
+      };
 
   const [formData, setFormData] = useState(initialFormData);
-  const [tagInput, setTagInput] = useState("");
-
+  const [tagInput, setTagInput] = useState(
+    editingProduct?.tags?.join(", ") ?? "",
+  );
   const validateForm = () => {
     const newErrors = {};
 
@@ -114,6 +147,9 @@ const ProductStockForm = () => {
     }
   };
 
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || "/product";
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -132,6 +168,7 @@ const ProductStockForm = () => {
       .map((tag) => tag.trim())
       .filter(Boolean);
     const productData = {
+      ...(editingProduct ? editingProduct : {}),
       ...formData,
       tags: tagsArray,
       finalPrice: finalPrice.toFixed(2),
@@ -139,18 +176,25 @@ const ProductStockForm = () => {
       createdAt: new Date().toISOString(),
     };
 
-    console.log("Product saved:", productData);
-    addToProduct(productData);
+    if (editingProduct) {
+      updateProduct(productData);
 
-    // Show success message
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 3000);
+      if (window.confirm("Do you want to update this product")) {
+        setEditingProduct(null);
+        navigate(from);
+      }
+    } else {
+      addToProduct(productData);
+      // Show success message
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
 
-    // Reset form
-    setFormData(initialFormData);
-    setTagInput("");
-    setImagePreview(null);
-    setErrors({});
+      // Reset form
+      setFormData(initialFormData);
+      setTagInput("");
+      setImagePreview(null);
+      setErrors({});
+    }
   };
 
   const handleCancel = () => {
@@ -738,13 +782,23 @@ const ProductStockForm = () => {
                       <X className="w-5 h-5" />
                       Cancel
                     </button>
-                    <button
-                      type="submit"
-                      className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow"
-                    >
-                      <Save className="w-5 h-5" />
-                      Save Product
-                    </button>
+                    {editingProduct ? (
+                      <button
+                        type="submit"
+                        className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow"
+                      >
+                        <Save className="w-5 h-5" />
+                        Update Product
+                      </button>
+                    ) : (
+                      <button
+                        type="submit"
+                        className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow"
+                      >
+                        <Save className="w-5 h-5" />
+                        Save Product
+                      </button>
+                    )}
                   </div>
                   <p className="text-xs text-gray-500 text-center mt-4">
                     All required fields are marked with{" "}
