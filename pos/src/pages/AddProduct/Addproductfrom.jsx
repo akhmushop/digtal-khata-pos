@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import {
   Upload,
@@ -25,6 +25,7 @@ import {
   useEditProductStore,
 } from "../../store/product-store";
 import { useLocation, useNavigate } from "react-router";
+import { useBlocker } from "react-router";
 
 const ProductStockForm = () => {
   const editingProduct = useEditProductStore((state) => state.editingProduct);
@@ -78,6 +79,21 @@ const ProductStockForm = () => {
         category: "",
         tags: "",
       };
+  const [hasChanges, setHasChanges] = useState(false);
+
+  const useUnsavedChanges = (hasChanges) => {
+    useEffect(() => {
+      const handelBeforeUnload = (e) => {
+        if (hasChanges) {
+          e.preventDefault();
+          e.returnValue = "You have unsave changes. Leave anyway?";
+        }
+      };
+      window.addEventListener("beforeunload", handelBeforeUnload);
+      return () =>
+        window.removeEventListener("beforeunload", handelBeforeUnload);
+    }, [handleChange]);
+  };
 
   const [formData, setFormData] = useState(initialFormData);
   const [tagInput, setTagInput] = useState(
@@ -140,13 +156,29 @@ const ProductStockForm = () => {
         ...prev,
         [name]: value,
       }));
+    setHasChanges(true);
 
     // Clear error for this field
     if (errors[name]) {
       setErrors({ ...errors, [name]: null });
     }
   };
-
+  useUnsavedChanges(hasChanges);
+  const blocker = useBlocker(({ currentLocation, nextLocation }) => {
+    return hasChanges && currentLocation.pathname !== nextLocation.pathname;
+  });
+  useEffect(() => {
+    if (blocker.state === "blocked") {
+      const userWantsToLeave = window.confirm(
+        "You have unsave changes. Leave anyway?",
+      );
+      if (userWantsToLeave) {
+        blocker.proceed();
+      } else {
+        blocker.reset();
+      }
+    }
+  }, [blocker]);
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || "/product";
