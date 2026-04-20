@@ -426,9 +426,19 @@ export const useProductStore = create(
             return product;
           }),
         })),
+      updateProduct: (editingProduct) =>
+        set((state) => ({
+          product: state.product.map((p) =>
+            p.id === editingProduct.id ? { ...p, ...editingProduct } : p,
+          ),
+        })),
     }),
     {
       name: "product-storage",
     },
   ),
 );
+export const useEditProductStore = create((set) => ({
+  editingProduct: null,
+  setEditingProduct: (product) => set({ editingProduct: product ,}),
+}));

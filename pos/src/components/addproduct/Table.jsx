@@ -36,7 +36,10 @@ import {
   Check,
   Minus,
 } from "lucide-react";
-import { useProductStore } from "../../store/product-store";
+import {
+  useProductStore,
+  useEditProductStore,
+} from "../../store/product-store";
 const AdvancedPOSTable = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
@@ -51,7 +54,9 @@ const AdvancedPOSTable = () => {
   const [currentProduct, setCurrentProduct] = useState(null);
   const soldProducts = useSoldStore((state) => state.soldProducts);
   const soldProductsItems = soldProducts.flatMap((item) => item.items);
-
+  const setEditingProduct = useEditProductStore(
+    (state) => state.setEditingProduct,
+  );
   const [filters, setFilters] = useState({
     category: "all",
     status: "all",
@@ -252,7 +257,6 @@ const AdvancedPOSTable = () => {
     setCurrentProduct(product);
     setShowStockModal(true);
   };
-
   const handleSaveProduct = (productData) => {
     if (currentProduct) {
       setProducts(
@@ -987,13 +991,26 @@ const AdvancedPOSTable = () => {
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => openProductModal(product)}
-                          className="p-2 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"
-                          title="Edit"
+                        <Link
+                          to={"addproduct"}
+                          onClick={(e) => {
+                            if (
+                              !window.confirm(
+                                "Do you want to edit this product",
+                              )
+                            ) {
+                              e.preventDefault();
+                            }
+                          }}
                         >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
+                          <button
+                            onClick={() => setEditingProduct(product)}
+                            className="p-2 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"
+                            title="Edit"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                        </Link>
                         <button
                           onClick={() => duplicateProduct(product)}
                           className="p-2 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"
