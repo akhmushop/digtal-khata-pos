@@ -638,7 +638,7 @@ function CashModal({
     </PopupModal>
   );
 }
-function PopupModal({ isOpen, handelClose, children, className }) {
+export function PopupModal({ isOpen, handelClose, children, className }) {
   return (
     <div
       onClick={handelClose}
