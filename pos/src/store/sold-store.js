@@ -36,6 +36,12 @@ export const useSoldStore = create(
             return product;
           }),
         })),
+      removeProduct: () =>
+        set((state) => ({
+          soldProducts: state.soldProducts.filter(
+            (product) => product.items.length !== 0,
+          ),
+        })),
     }),
     {
       name: "soldProducts-storage",

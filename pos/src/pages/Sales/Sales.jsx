@@ -4,6 +4,7 @@ import { PopupModal } from "../../components/pos/CartItems";
 
 export const Sales = () => {
   const soldProducts = useSoldStore((state) => state.soldProducts);
+  const removeProduct = useSoldStore((state) => state.removeProduct);
   const [isOpen, setIsOpen] = useState(false);
   const [showProductDetailsModal, setShowProductDetailsModal] = useState(false);
   const [soldProductArray, setSoldProductArray] = useState([]);
@@ -125,7 +126,8 @@ export const Sales = () => {
                       <td>
                         <button
                           onClick={() => {
-                            returnSingleItems(item.id, identifyArray);
+                            returnSingleItems(item.id, identifyArray ,soldArray.items.length);
+                            removeProduct()
                           }}
                         >
                           Return
