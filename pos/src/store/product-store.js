@@ -444,6 +444,18 @@ export const useProductStore = create(
             },
           ],
         })),
+      restoreReturnProduct: (itemId, itemQty) =>
+        set((state) => ({
+          product: state.product.map((item) => {
+            if (item.id === itemId) {
+              return {
+                ...item,
+                quantity: item.quantity + itemQty,
+              };
+            }
+            return item;
+          }),
+        })),
     }),
     {
       name: "product-storage",
