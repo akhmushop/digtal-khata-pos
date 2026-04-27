@@ -1,10 +1,14 @@
 import React, { useState } from "react";
 import { useSoldStore } from "../../store/sold-store";
 import { PopupModal } from "../../components/pos/CartItems";
+import { useProductStore } from "../../store/product-store";
 
 export const Sales = () => {
   const soldProducts = useSoldStore((state) => state.soldProducts);
   const removeProduct = useSoldStore((state) => state.removeProduct);
+  const restoreReturnProduct = useProductStore(
+    (state) => state.restoreReturnProduct,
+  );
   const [isOpen, setIsOpen] = useState(false);
   const [showProductDetailsModal, setShowProductDetailsModal] = useState(false);
   const [soldProductArray, setSoldProductArray] = useState([]);
@@ -64,8 +68,12 @@ export const Sales = () => {
                   </button>
                   <button
                     onClick={() => {
-                      if (window.confirm("Do you want to return"))
+                      if (window.confirm("Do you want to return")) {
+                        product.items.map((p) => {
+                          restoreReturnProduct(p.id, p.qty);
+                        });
                         returnProducts(product.id);
+                      }
                     }}
                   >
                     Return
@@ -126,8 +134,12 @@ export const Sales = () => {
                       <td>
                         <button
                           onClick={() => {
-                            returnSingleItems(item.id, identifyArray ,soldArray.items.length);
-                            removeProduct()
+                            returnSingleItems(
+                              item.id,
+                              identifyArray,
+                              soldArray.items.length,
+                            );
+                            removeProduct();
                           }}
                         >
                           Return
