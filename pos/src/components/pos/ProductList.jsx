@@ -1,13 +1,19 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useProductStore } from "../../store/product-store";
 import { useCartStore } from "../../store/cart-store";
 export function ProductList({ search }) {
-  const product = useProductStore((state) => state.product);
-  const removeProductQty = useProductStore((state) => state.removeProductQty);
+  // const getProducts = useProductStore((state) => state.getProducts);
+  // const product = useProductStore((state) => state.product);
+  // const removeProductQty = useProductStore((state) => state.removeProductQty);
   const addToCart = useCartStore((state) => state.addToCart);
+  const {product,getProducts,removeProductQty} = useProductStore()
+  useEffect(() => {
+    getProducts();
+  }, []);
   const filtered = product.filter((item) =>
-    item.productName.toLowerCase().includes(search.toLowerCase() || "")
+    item.product_name.toLowerCase().includes(search.toLowerCase() || ""),
   );
+
   return (
     <div className="h-[calc(100vh-4.25rem)]">
       <div className=" h-full overflow-scroll  no-scrollbar bg-zuccini-50">
