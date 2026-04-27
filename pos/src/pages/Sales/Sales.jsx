@@ -21,6 +21,24 @@ export const Sales = () => {
     setTimeout(() => setShowProductDetailsModal(false), 300);
     setIsOpen(false);
   };
+  const handleFullReturn = (product) => {
+    if (window.confirm("Do you want to return")) {
+      product.items.map((p) => {
+        restoreReturnProduct(p.id, p.qty);
+      });
+      returnProducts(product.id);
+    }
+  };
+  const handleSingleReturn = (soldArray, item) => {
+    restoreReturnProduct(item.id, item.qty);
+    returnSingleItems(item.id, identifyArray, soldArray.items.length);
+    removeProduct();
+  };
+  const handleMoreInfo = (item) => {
+    setDetailsProduct(item);
+    setShowProductDetailsModal(true);
+    setTimeout(() => setIsOpen(true), 30);
+  };
   return (
     <div>
       {showProductDetailsModal && (
@@ -59,7 +77,6 @@ export const Sales = () => {
                   <button
                     onClick={() => {
                       setIdentifyArray(product.id);
-                      // setSoldProductArray(product.items);
                       setShowSoldProductModal(true);
                     }}
                     className="pr-5"
@@ -68,12 +85,7 @@ export const Sales = () => {
                   </button>
                   <button
                     onClick={() => {
-                      if (window.confirm("Do you want to return")) {
-                        product.items.map((p) => {
-                          restoreReturnProduct(p.id, p.qty);
-                        });
-                        returnProducts(product.id);
-                      }
+                      handleFullReturn(product);
                     }}
                   >
                     Return
@@ -123,9 +135,7 @@ export const Sales = () => {
                       <td className="p-2">
                         <button
                           onClick={() => {
-                            setDetailsProduct(item);
-                            setShowProductDetailsModal(true);
-                            setTimeout(() => setIsOpen(true), 30);
+                            handleMoreInfo(item);
                           }}
                         >
                           More Info
@@ -134,12 +144,7 @@ export const Sales = () => {
                       <td>
                         <button
                           onClick={() => {
-                            returnSingleItems(
-                              item.id,
-                              identifyArray,
-                              soldArray.items.length,
-                            );
-                            removeProduct();
+                            handleSingleReturn(soldArray, item);
                           }}
                         >
                           Return
