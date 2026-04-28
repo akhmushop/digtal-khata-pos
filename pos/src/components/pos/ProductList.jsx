@@ -6,11 +6,11 @@ export function ProductList({ search }) {
   // const product = useProductStore((state) => state.product);
   // const removeProductQty = useProductStore((state) => state.removeProductQty);
   const addToCart = useCartStore((state) => state.addToCart);
-  const {product,getProducts,removeProductQty} = useProductStore()
+  const {products,getProducts,removeProductQuantity} = useProductStore()
   useEffect(() => {
     getProducts();
   }, []);
-  const filtered = product.filter((item) =>
+  const filtered = products.filter((item) =>
     item.product_name.toLowerCase().includes(search.toLowerCase() || ""),
   );
 
@@ -21,11 +21,11 @@ export function ProductList({ search }) {
           {filtered.map((product) => {
             return (
               <div
-                key={product.barcode}
+                key={product.id}
                 onClick={() => {
                   if (product.quantity <= 0) return;
                   addToCart(product);
-                  removeProductQty(product.barcode);
+                  removeProductQuantity(product.id ,product.quantity);
                 }}
                 className={`select-none relative h-60 bg-zuccini-300 rounded-sm flex flex-col items-center justify-between py-2 
   ${
@@ -38,7 +38,7 @@ export function ProductList({ search }) {
                   </div>
                 )}
                 <img className="h-20 rounded-sm " src={product.image} alt="" />
-                <h2 className="text-center">{product.productName}</h2>
+                <h2 className="text-center">{product.product_name}</h2>
                 <p className=" ">{product.category}</p>
                 <h1 className=" ">TK: {product.price}</h1>
                 <p className=" ">Stock: {product.quantity}</p>
