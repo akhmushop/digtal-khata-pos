@@ -467,18 +467,38 @@ export const useEditProductStore = create((set) => ({
   setEditingProduct: (product) => set({ editingProduct: product }),
 }));
 export const useProductStore = create((set) => ({
-  product:[],
-  loading:false,
-  error:null,
+  products: [],
+  loading: false,
+  error: null,
   getProducts: async () => {
-    set({loading: true});
+    set({ loading: true });
     try {
       const res = await fetch("http://localhost:3000/api/products");
       const data = await res.json();
-      set({ product: data, loading:false})
+      set({ products: data, loading: false });
     } catch (err) {
-      set({error: err.message, loading:false})
+      set({ error: err.message, loading: false });
     }
-  }
-
-}))
+  },
+  removeProductQuantity: async (id, quantity) => {
+    try {
+      await fetch(`http://localhost:3000/api/products/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quantity }),
+      });
+      set((state) => ({
+        products: state.products.map((product) =>
+          product.id === id
+            ? {
+                ...product,
+                quantity: product.quantity - 1,
+              }
+            : product,
+        ),
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  },
+}));
