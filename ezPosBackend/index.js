@@ -10,62 +10,13 @@ app.use(express.json());
 const PORT = 3000;
 
 app.post("/api/products", async (req, res) => {
-  const {
-    id,
-    barcode,
-    productName,
-    productUnit,
-    productType,
-    alertQuantity,
-    cost,
-    price,
-    discountPercent,
-    flatDiscount,
-    quantity,
-    batchNumber,
-    expiryDate,
-    description,
-    brand,
-    category,
-    tags,
-    supplier,
-    image,
-    status,
-    createdAt,
-    sku,
-    weight,
-    dimensions,
-  } = req.body;
-  const newProduct = await pool.query(
-    "INSERT INTO products (barcode,productname,productunit,producttype,alertquantity,cost,price,discountpercent,flatdiscount,quantity,batchnumber,expirydate,description,brand,category,tags,supplier,image,status,createdat,sku,weight,dimensions,id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)",
-    [
-      barcode,
-      productName,
-      productUnit,
-      productType,
-      alertQuantity,
-      cost,
-      price,
-      discountPercent,
-      flatDiscount,
-      quantity,
-      batchNumber,
-      expiryDate,
-      description,
-      brand,
-      category,
-      tags,
-      supplier,
-      image,
-      status,
-      createdAt,
-      sku,
-      weight,
-      dimensions,
-      id,
-    ],
-  );
-  res.json(newProduct);
+const product = req.body
+const keys = Object.keys(product)
+const values = Object.values(product)
+const columns = keys.join(",")
+const placeholders = keys.map((_,i) => `$${i+1}`).join(",")
+const newProduct = await pool.query(`INSERT INTO products (${columns}) VALUES (${placeholders})`,values)
+  res.json(newProduct.rows);
 });
 
 app.get("/api/products", async (req, res) => {
