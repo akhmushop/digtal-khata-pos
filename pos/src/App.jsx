@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Routes,
   Route,
@@ -12,6 +12,9 @@ import AddProduct from "./pages/AddProduct/AddProduct";
 import ProductStockForm from "./pages/AddProduct/Addproductfrom";
 import DashboardComponent from "./pages/Dashboard/Dashboard";
 import { Sales } from "./pages/Sales/Sales";
+import { useProductStore } from "./store/product-store";
+import { useCartStore } from "./store/cart-store";
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -39,6 +42,12 @@ const router = createBrowserRouter([
   },
 ]);
 function App() {
+  const { getProducts } = useProductStore();
+  const { getCart } = useCartStore();
+  useEffect(() => {
+    getProducts();
+    getCart();
+  }, []);
   return <RouterProvider router={router} />;
 }
 

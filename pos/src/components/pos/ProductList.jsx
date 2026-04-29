@@ -5,11 +5,8 @@ export function ProductList({ search }) {
   // const getProducts = useProductStore((state) => state.getProducts);
   // const product = useProductStore((state) => state.product);
   // const removeProductQty = useProductStore((state) => state.removeProductQty);
-  const addToCart = useCartStore((state) => state.addToCart);
-  const {products,getProducts,removeProductQuantity} = useProductStore()
-  useEffect(() => {
-    getProducts();
-  }, []);
+  const { addToCart } = useCartStore();
+  const { products, removeProductQuantity } = useProductStore();
   const filtered = products.filter((item) =>
     item.product_name.toLowerCase().includes(search.toLowerCase() || ""),
   );
@@ -25,7 +22,7 @@ export function ProductList({ search }) {
                 onClick={() => {
                   if (product.quantity <= 0) return;
                   addToCart(product);
-                  removeProductQuantity(product.id ,product.quantity);
+                  removeProductQuantity(product.id, product.quantity);
                 }}
                 className={`select-none relative h-60 bg-zuccini-300 rounded-sm flex flex-col items-center justify-between py-2 
   ${
