@@ -47,4 +47,39 @@ app.put("/api/products/:id", async (req, res) => {
   }
 });
 
+app.get("/api/cart", async (req, res) => {
+  try {
+    const cart = await pool.query("SELECT * FROM cart");
+    res.json(cart.rows);
+  } catch (err) {
+    console.error(err);
+  }
+});
+app.post("/api/cart", async (req, res) => {
+  const cart = req.body;
+  const keys = Object.keys(cart);
+  const values = Object.values(cart);
+  const columns = keys.join(",");
+  const placeholders = keys.map((_, i) => `$${i + 1}`).join(",");
+  const addToCart = await pool.query(
+    `INSERT INTO cart (${columns}) VALUES (${placeholders}) `,
+    values,
+  );
+  res.json(addToCart.rows);
+});
+app.put("/api/cart/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { quantity } = req.body;
+    const increaseQuantity = quantity + 1;
+    const updatedQuantity = await pool.query(
+      "UPDATE cart SET sold_quantity = $1 WHERE id = $2",
+      [increaseQuantity, id],
+    );
+    res.json(updatedQuantity);
+  } catch (err) {
+    console.error(err);
+  }
+});
+
 app.listen(PORT, () => console.log(`server is running on PORT ${PORT}`));

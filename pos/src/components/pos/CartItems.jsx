@@ -68,10 +68,13 @@ export default function CartItems() {
                   alt=""
                 />
                 <div className="flex-1 pl-5">
-                  <h1>{items.name}</h1>
+                  <h1>{items.product_name}</h1>
                   <p>
-                    {Number(items.price).toFixed(2)} × {Number(items.qty)} ={" "}
-                    {(Number(items.price) * Number(items.qty)).toFixed(2)}
+                    {Number(items.price).toFixed(2)} ×{" "}
+                    {Number(items.sold_quantity)} ={" "}
+                    {(
+                      Number(items.price) * Number(items.sold_quantity)
+                    ).toFixed(2)}
                   </p>
                 </div>
                 <div className="flex text-2xl gap-x-4 items-center pr-5  ">
@@ -95,14 +98,14 @@ export default function CartItems() {
                         type="number"
                         className="h-7 w-11 border"
                         ref={editQtyRef}
-                        defaultValue={items.qty}
+                        defaultValue={items.sold_quantity}
                         autoFocus
                         onChange={(e) => {
                           setCustomQty(e.target.value);
                         }}
                       />
                     ) : (
-                      items.qty
+                      items.sold_quantity
                     )}
                   </span>
                   <div
