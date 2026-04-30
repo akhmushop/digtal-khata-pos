@@ -97,13 +97,13 @@ export const useCartStore = create((set) => ({
       const data = await res.json();
       const exists = data.find((p) => p.id === cartProduct.id);
       if (exists) {
-        fetch(`http://localhost:3000/api/cart/${cartProduct.id}`, {
+        await fetch(`http://localhost:3000/api/cart/${cartProduct.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ quantity: exists.sold_quantity }),
         });
       } else {
-        fetch(`http://localhost:3000/api/cart`, {
+       await fetch(`http://localhost:3000/api/cart`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(cartProduct),
@@ -125,6 +125,18 @@ export const useCartStore = create((set) => ({
       });
     } catch (err) {
       console.err(err);
+    }
+  },
+  removeCartItem: async (id) => {
+    try {
+      await fetch(`http://localhost:3000/api/cart/${id}`, {
+        method: "DELETE"
+      });
+      set((state) => ({
+        cart: state.cart.filter((p) => p.id !== id),
+      }));
+    } catch (err) {
+      console.error(err);
     }
   },
 }));

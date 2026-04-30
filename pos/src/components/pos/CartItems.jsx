@@ -9,17 +9,8 @@ import { useCartStore } from "../../store/cart-store";
 import { useSoldStore } from "../../store/sold-store";
 
 export default function CartItems() {
-  const addProductQtn = useProductStore((state) => state.addProductQtn);
-  const removeProductQty = useProductStore((state) => state.removeProductQty);
-  const addCustomProductQty = useProductStore(
-    (state) => state.addCustomProductQty,
-  );
-  const restoreProductQty = useProductStore((state) => state.restoreProductQty);
-  const cart = useCartStore((state) => state.cart);
-  const addCartQty = useCartStore((state) => state.addCartQty);
-  const removeCartQty = useCartStore((state) => state.removeCartQty);
-  const removeCartItem = useCartStore((state) => state.removeCartItem);
-  const addCustomCartQty = useCartStore((state) => state.addCustomCartQty);
+const {addProductQtn,removeProductQty,addCustomProductQty,restoreProductQty} = useProductStore();
+  const {cart,addCartQty,removeCartQty,removeCartItem,addCustomCartQty} = useCartStore();
   const [editQtyId, setEditQtyId] = useState(null);
   const [customQty, setCustomQty] = useState(null);
   const editQtyRef = useRef(null);
@@ -120,8 +111,8 @@ export default function CartItems() {
                   <div
                     className="cursor-pointer"
                     onClick={() => {
-                      restoreProductQty(items.barcode, items.qty);
-                      removeCartItem(items.barcode);
+                      // restoreProductQty(items.barcode, items.qty);
+                      removeCartItem(items.id);
                     }}
                   >
                     <MdDeleteOutline />
