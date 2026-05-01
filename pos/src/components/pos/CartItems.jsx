@@ -9,7 +9,7 @@ import { useCartStore } from "../../store/cart-store";
 import { useSoldStore } from "../../store/sold-store";
 
 export default function CartItems() {
-const {addProductQuantityToCart,removeProductQuantityToCart,addCustomProductQty,restoreProductQty} = useProductStore();
+const {products,addProductQuantityToCart,removeProductQuantityToCart,addCustomProductQty,restoreProductQuantityToCart} = useProductStore();
   const {cart,addCartQuantity,removeCartQuantity,removeCartItem,addCustomCartQty} = useCartStore();
   const [editQtyId, setEditQtyId] = useState(null);
   const [customQty, setCustomQty] = useState(null);
@@ -71,7 +71,7 @@ const {addProductQuantityToCart,removeProductQuantityToCart,addCustomProductQty,
                 <div className="flex text-2xl gap-x-4 items-center pr-5  ">
                   <div
                     onClick={() => {
-                      addProductQuantityToCart(items.id);
+                      addProductQuantityToCart(items.id,products);
                       removeCartQuantity(items.id,items.sold_quantity);
                     }}
                     className="cursor-pointer"
@@ -101,7 +101,7 @@ const {addProductQuantityToCart,removeProductQuantityToCart,addCustomProductQty,
                   </span>
                   <div
                     onClick={() => {
-                      removeProductQuantityToCart(items.id);
+                      removeProductQuantityToCart(items.id,products);
                       addCartQuantity(items.id,items.sold_quantity);
                     }}
                     className="cursor-pointer"
@@ -111,7 +111,7 @@ const {addProductQuantityToCart,removeProductQuantityToCart,addCustomProductQty,
                   <div
                     className="cursor-pointer"
                     onClick={() => {
-                      // restoreProductQty(items.barcode, items.qty);
+                      restoreProductQuantityToCart(items.id, items.sold_quantity,products);
                       removeCartItem(items.id);
                     }}
                   >
