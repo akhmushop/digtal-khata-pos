@@ -103,7 +103,7 @@ export const useCartStore = create((set) => ({
           body: JSON.stringify({ quantity: exists.sold_quantity }),
         });
       } else {
-       await fetch(`http://localhost:3000/api/cart`, {
+        await fetch(`http://localhost:3000/api/cart`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(cartProduct),
@@ -130,10 +130,48 @@ export const useCartStore = create((set) => ({
   removeCartItem: async (id) => {
     try {
       await fetch(`http://localhost:3000/api/cart/${id}`, {
-        method: "DELETE"
+        method: "DELETE",
       });
       set((state) => ({
         cart: state.cart.filter((p) => p.id !== id),
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  },
+  addCartQuantity: async (id, sold_quantity) => {
+    try {
+      fetch(`http://localhost:3000/api/cart/add/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "Application/json" },
+        body: JSON.stringify({ sold_quantity: sold_quantity }),
+      });
+      set((state) => ({
+        cart: state.cart.map((p) => {
+          if (p.id === id) {
+            return {
+              ...p,
+              sold_quantity: p.sold_quantity + 1,
+            };
+          }
+          return p;
+        }),
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  },
+  removeCartQuantity: async (id, sold_quantity) => {
+    try {
+      fetch(`http://localhost:3000/api/cart/remove/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "Application/json" },
+        body: JSON.stringify({ sold_quantity: sold_quantity }),
+      });
+      set((state) => ({
+        cart: state.cart.map((p) =>
+          p.id === id ? { ...p, sold_quantity: p.sold_quantity - 1 } : p,
+        ),
       }));
     } catch (err) {
       console.error(err);
