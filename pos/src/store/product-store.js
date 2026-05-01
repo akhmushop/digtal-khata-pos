@@ -501,46 +501,64 @@ export const useProductStore = create((set) => ({
       console.error(err);
     }
   },
-  removeProductQuantityToCart: async (id ,products) => {
+  removeProductQuantityToCart: async (id, products) => {
     try {
-      const findProduct = products.find((p) =>p.id === id)
-      fetch(`http://localhost:3000/api/products/remove/${id}`,{
-        method:"PUT",
-        headers:{"Content-Type" :"Application/json"},
-        body:JSON.stringify({quantity: findProduct.quantity})
-      })
-      set((state) =>({
-        products: state.products.map((p) => p.id === id ? { ...p ,quantity: p.quantity - 1 } : p)
-      }))
+      const findProduct = products.find((p) => p.id === id);
+      fetch(`http://localhost:3000/api/products/remove/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "Application/json" },
+        body: JSON.stringify({ quantity: findProduct.quantity }),
+      });
+      set((state) => ({
+        products: state.products.map((p) =>
+          p.id === id ? { ...p, quantity: p.quantity - 1 } : p,
+        ),
+      }));
     } catch (err) {
-      console.error(err)
-    }
-  }, 
-  addProductQuantityToCart: async (id,products) => {
-    try {
-      const findProduct = products.find((p) =>p.id === id)
-      fetch(`http://localhost:3000/api/products/add/${id}`,{
-        method:"PUT",
-        headers:{"Content-Type" :"Application/json"},
-        body:JSON.stringify({quantity: findProduct.quantity})
-      })
-      set((state) =>({
-        products: state.products.map((p) => p.id === id ? { ...p, quantity: p.quantity + 1 } : p)
-      }))
-    } catch (err) {
-      console.error(err)
+      console.error(err);
     }
   },
-  restoreProductQuantityToCart: async (id, sold_quantity,products) => {
+  addProductQuantityToCart: async (id, products) => {
     try {
-      const findProduct = products.find((p) => p.id ===id)
-      fetch(`http://localhost:3000/api/products/restore/${id}`,{
+      const findProduct = products.find((p) => p.id === id);
+      fetch(`http://localhost:3000/api/products/add/${id}`, {
         method: "PUT",
-        headers:{"Content-Type" : "Application/json"},
-        body:JSON.stringify({sold_quantity: sold_quantity , quantity:findProduct.quantity})
-      })
+        headers: { "Content-Type": "Application/json" },
+        body: JSON.stringify({ quantity: findProduct.quantity }),
+      });
+      set((state) => ({
+        products: state.products.map((p) =>
+          p.id === id ? { ...p, quantity: p.quantity + 1 } : p,
+        ),
+      }));
     } catch (err) {
-      console.error(err)
+      console.error(err);
     }
-  }
+  },
+  restoreProductQuantityToCart: async (id, sold_quantity, products) => {
+    try {
+      const findProduct = products.find((p) => p.id === id);
+      fetch(`http://localhost:3000/api/products/restore/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "Application/json" },
+        body: JSON.stringify({
+          sold_quantity: sold_quantity,
+          quantity: findProduct.quantity,
+        }),
+      });
+      set((state) => ({
+        products: state.products.map((p) => {
+          if (p.id === id) {
+            return {
+              ...p,
+              quantity: p.quantity + sold_quantity,
+            };
+          }
+          return p;
+        }),
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  },
 }));
