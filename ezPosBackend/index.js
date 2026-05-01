@@ -83,12 +83,36 @@ app.put("/api/cart/:id", async (req, res) => {
 });
 app.delete("/api/cart/:id", async (req, res) => {
   try {
-    const {id} = req.params;
-    const removeCartItem = await pool.query("DELETE FROM cart WHERE id = $1",[id])
-    console.log(id)
-  res.json(id)
+    const { id } = req.params;
+    const removeCartItem = await pool.query("DELETE FROM cart WHERE id = $1", [
+      id,
+    ]);
+    console.log(id);
+    res.json(id);
   } catch (err) {
-    console.error(err)
+    console.error(err);
   }
-})
+});
+app.put("/api/cart/add/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { sold_quantity } = req.body;
+    const updatedQuantity = sold_quantity + 1;
+    const addCartQuantity = await pool.query(
+      "UPDATE  cart SET sold_quantity = $1 WHERE id = $2",
+      [updatedQuantity, id],
+    );
+  } catch (err) {
+    console.error(err);
+  }
+});
+app.put("/api/cart/remove/:id", async (req, res) => {
+  const { id } = req.params;
+  const { sold_quantity } = req.body;
+  const updatedQuantity = sold_quantity - 1;
+  const updateCartQuantity = await pool.query(
+    "UPDATE cart SET sold_quantity = $1 WHERE id = $2",
+    [updatedQuantity, id],
+  );
+});
 app.listen(PORT, () => console.log(`server is running on PORT ${PORT}`));
