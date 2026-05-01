@@ -5,7 +5,7 @@ export function ProductList({ search }) {
   // const getProducts = useProductStore((state) => state.getProducts);
   // const product = useProductStore((state) => state.product);
   // const removeProductQty = useProductStore((state) => state.removeProductQty);
-  const { addToCart } = useCartStore();
+  const { addToCart,cart } = useCartStore();
   const { products, removeProductQuantity } = useProductStore();
   const filtered = products.filter((item) =>
     item.product_name.toLowerCase().includes(search.toLowerCase() || ""),
@@ -21,7 +21,7 @@ export function ProductList({ search }) {
                 key={product.id}
                 onClick={() => {
                   if (product.quantity <= 0) return;
-                  addToCart(product);
+                  addToCart(product ,cart);
                   removeProductQuantity(product.id, product.quantity);
                 }}
                 className={`select-none relative h-60 bg-zuccini-300 rounded-sm flex flex-col items-center justify-between py-2 

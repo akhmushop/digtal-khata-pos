@@ -91,11 +91,9 @@ export const useCartStore = create((set) => ({
       set({ error: err.message, loading: false });
     }
   },
-  addToCart: async (cartProduct) => {
+  addToCart: async (cartProduct , cart) => {
     try {
-      const res = await fetch("http://localhost:3000/api/cart");
-      const data = await res.json();
-      const exists = data.find((p) => p.id === cartProduct.id);
+      const exists = cart.find((p) => p.id === cartProduct.id);
       if (exists) {
          fetch(`http://localhost:3000/api/cart/${cartProduct.id}`, {
           method: "PUT",

@@ -70,6 +70,19 @@ app.put("/api/products/add/:id", async (req, res) => {
     console.error(err);
   }
 });
+app.put("/api/products/restore/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { sold_quantity, quantity } = req.body;
+    const updatedQuantity = quantity + sold_quantity;
+    const restoreProductQuantity = await pool.query(
+      "UPDATE products SET quantity = $1 WHERE id = $2",
+      [updatedQuantity, id],
+    );
+  } catch (err) {
+    console.error(err);
+  }
+});
 
 app.get("/api/cart", async (req, res) => {
   try {
