@@ -482,7 +482,7 @@ export const useProductStore = create((set) => ({
   },
   removeProductQuantity: async (id, quantity) => {
     try {
-      await fetch(`http://localhost:3000/api/products/${id}`, {
+      fetch(`http://localhost:3000/api/products/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ quantity }),
@@ -501,4 +501,38 @@ export const useProductStore = create((set) => ({
       console.error(err);
     }
   },
+  removeProductQuantityToCart: async (id) => {
+    try {
+      const res = await fetch("http://localhost:3000/api/products");
+      const data = await res.json()
+      const findProduct = data.find((p) =>p.id === id)
+      fetch(`http://localhost:3000/api/products/remove/${id}`,{
+        method:"PUT",
+        headers:{"Content-Type" :"Application/json"},
+        body:JSON.stringify({quantity: findProduct.quantity})
+      })
+      set((state) =>({
+        products: state.products.map((p) => p.id === id ? { ...p ,quantity: p.quantity - 1 } : p)
+      }))
+    } catch (err) {
+      console.error(err)
+    }
+  }, 
+  addProductQuantityToCart: async (id) => {
+    try {
+      const res = await fetch("http://localhost:3000/api/products");
+      const data = await res.json()
+      const findProduct = data.find((p) =>p.id === id)
+      fetch(`http://localhost:3000/api/products/add/${id}`,{
+        method:"PUT",
+        headers:{"Content-Type" :"Application/json"},
+        body:JSON.stringify({quantity: findProduct.quantity})
+      })
+      set((state) =>({
+        products: state.products.map((p) => p.id === id ? { ...p, quantity: p.quantity + 1 } : p)
+      }))
+    } catch (err) {
+      console.error(err)
+    }
+  }
 }));

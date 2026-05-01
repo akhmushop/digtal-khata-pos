@@ -27,7 +27,6 @@ app.post("/api/products", async (req, res) => {
       `INSERT INTO products (${columns}) VALUES (${placeholders})`,
       values,
     );
-    res.json(newProduct.rows);
   } catch (err) {
     console.error(err);
   }
@@ -41,7 +40,32 @@ app.put("/api/products/:id", async (req, res) => {
       "UPDATE products SET quantity = $1 WHERE id = $2",
       [updatedQuantity, id],
     );
-    res.json();
+  } catch (err) {
+    console.error(err);
+  }
+});
+app.put("/api/products/remove/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { quantity } = req.body;
+    const updatedQuantity = quantity - 1;
+    const removeProductQuantity = await pool.query(
+      "UPDATE products SET quantity = $1 WHERE id = $2",
+      [updatedQuantity, id],
+    );
+  } catch (err) {
+    console.error(err);
+  }
+});
+app.put("/api/products/add/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { quantity } = req.body;
+    const updatedQuantity = quantity + 1;
+    const addProductQuantity = await pool.query(
+      "UPDATE products SET quantity = $1 WHERE id = $2",
+      [updatedQuantity, id],
+    );
   } catch (err) {
     console.error(err);
   }
@@ -65,7 +89,6 @@ app.post("/api/cart", async (req, res) => {
     `INSERT INTO cart (${columns}) VALUES (${placeholders}) `,
     values,
   );
-  res.json(addToCart.rows);
 });
 app.put("/api/cart/:id", async (req, res) => {
   try {
@@ -76,7 +99,6 @@ app.put("/api/cart/:id", async (req, res) => {
       "UPDATE cart SET sold_quantity = $1 WHERE id = $2",
       [increaseQuantity, id],
     );
-    res.json(updatedQuantity);
   } catch (err) {
     console.error(err);
   }
@@ -87,8 +109,6 @@ app.delete("/api/cart/:id", async (req, res) => {
     const removeCartItem = await pool.query("DELETE FROM cart WHERE id = $1", [
       id,
     ]);
-    console.log(id);
-    res.json(id);
   } catch (err) {
     console.error(err);
   }

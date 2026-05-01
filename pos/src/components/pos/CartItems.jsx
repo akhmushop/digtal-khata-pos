@@ -9,7 +9,7 @@ import { useCartStore } from "../../store/cart-store";
 import { useSoldStore } from "../../store/sold-store";
 
 export default function CartItems() {
-const {addProductQtn,removeProductQty,addCustomProductQty,restoreProductQty} = useProductStore();
+const {addProductQuantityToCart,removeProductQuantityToCart,addCustomProductQty,restoreProductQty} = useProductStore();
   const {cart,addCartQuantity,removeCartQuantity,removeCartItem,addCustomCartQty} = useCartStore();
   const [editQtyId, setEditQtyId] = useState(null);
   const [customQty, setCustomQty] = useState(null);
@@ -71,7 +71,7 @@ const {addProductQtn,removeProductQty,addCustomProductQty,restoreProductQty} = u
                 <div className="flex text-2xl gap-x-4 items-center pr-5  ">
                   <div
                     onClick={() => {
-                      // addProductQtn(items.barcode);
+                      addProductQuantityToCart(items.id);
                       removeCartQuantity(items.id,items.sold_quantity);
                     }}
                     className="cursor-pointer"
@@ -101,7 +101,7 @@ const {addProductQtn,removeProductQty,addCustomProductQty,restoreProductQty} = u
                   </span>
                   <div
                     onClick={() => {
-                      // removeProductQty(items.barcode);
+                      removeProductQuantityToCart(items.id);
                       addCartQuantity(items.id,items.sold_quantity);
                     }}
                     className="cursor-pointer"
