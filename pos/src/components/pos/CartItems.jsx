@@ -540,7 +540,7 @@ function CashModal({
   cashForm,
   setCashForm,
 }) {
-  const addToSellProduct = useSoldStore((state) => state.addToSellProduct);
+  const addToSoldProduct = useSoldStore((state) => state.addToSoldProduct);
   const cart = useCartStore((state) => state.cart);
   const resetCart = useCartStore((state) => state.resetCart);
   const handelClose = () => {
@@ -613,7 +613,7 @@ function CashModal({
               cashForm.amountReceived > 0 &&
               cashForm.amountReceived > cashForm.payable
             ) {
-              addToSellProduct(cart);
+              addToSoldProduct(cart);
               resetCart();
               handelClose();
               console.log(cashForm);

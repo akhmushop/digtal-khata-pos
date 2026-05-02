@@ -14,6 +14,7 @@ import DashboardComponent from "./pages/Dashboard/Dashboard";
 import { Sales } from "./pages/Sales/Sales";
 import { useProductStore } from "./store/product-store";
 import { useCartStore } from "./store/cart-store";
+import { useSoldStore } from "./store/sold-store";
 
 const router = createBrowserRouter([
   {
@@ -44,9 +45,11 @@ const router = createBrowserRouter([
 function App() {
   const { getProducts } = useProductStore();
   const { getCart } = useCartStore();
+  const { getSoldProducts } = useSoldStore();
   useEffect(() => {
     getProducts();
     getCart();
+    getSoldProducts();
   }, []);
   return <RouterProvider router={router} />;
 }
