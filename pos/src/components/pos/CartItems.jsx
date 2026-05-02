@@ -9,38 +9,38 @@ import { useCartStore } from "../../store/cart-store";
 import { useSoldStore } from "../../store/sold-store";
 
 export default function CartItems() {
-const {products,addProductQuantityToCart,removeProductQuantityToCart,addCustomProductQty,restoreProductQuantityToCart} = useProductStore();
-  const {cart,addCartQuantity,removeCartQuantity,removeCartItem,addCustomCartQty} = useCartStore();
-  const [editQtyId, setEditQtyId] = useState(null);
-  const [customQty, setCustomQty] = useState(null);
-  const editQtyRef = useRef(null);
-  // ClickOutSideToSaveCustomQty
+const {products,addProductQuantityToCart,removeProductQuantityToCart,addCustomProductQuantityToCart,restoreProductQuantityToCart} = useProductStore();
+  const {cart,addCartQuantity,removeCartQuantity,removeCartItem,addCustomCartQuantity} = useCartStore();
+  const [editQuantityId, setEditQuantityId] = useState(null);
+  const [customQuantity, setCustomQuantity] = useState(null);
+  const editQuantityRef = useRef(null);
+  // ClickOutSideToSaveCustomQuantity
   useEffect(() => {
     const clickOutside = (event) => {
-      if (editQtyRef.current && !editQtyRef.current.contains(event.target)) {
-        setEditQtyId(null);
+      if (editQuantityRef.current && !editQuantityRef.current.contains(event.target)) {
+        setEditQuantityId(null);
       }
-      const items = cart.find((p) => p.id === editQtyId);
+      const items = cart.find((p) => p.id === editQuantityId);
       if (
-        editQtyRef.current &&
+        editQuantityRef.current &&
         items &&
-        !editQtyRef.current.contains(event.target)
+        !editQuantityRef.current.contains(event.target)
       ) {
-        const newQty = Number(customQty);
-        if (!isNaN(newQty) && newQty > 0) {
-          addCustomCartQty(newQty, items.barcode); // Send the difference to update
-          addCustomProductQty(items.barcode, newQty, items.qty);
+        const newQuantity = Number(customQuantity);
+        if (!isNaN(newQuantity) && newQuantity > 0) {
+          addCustomCartQuantity(items.id,newQuantity ); // Send the difference to update
+          addCustomProductQuantityToCart(items.id, newQuantity, items.sold_quantity, products);
         }
-        setCustomQty(null);
-        setEditQtyId(null);
+        setCustomQuantity(null);
+        setEditQuantityId(null);
       }
     };
     document.addEventListener("mousedown", clickOutside);
     return () => {
       document.removeEventListener("mousedown", clickOutside);
     };
-  }, [cart, customQty, editQtyId, addCustomCartQty, addCustomProductQty]);
-  // ClickOutSideToSaveCustomQty
+  }, [cart, customQuantity, editQuantityId, addCustomCartQuantity, addCustomProductQuantityToCart]);
+  // ClickOutSideToSaveCustomQuantity
 
   return (
     <div className="h-[calc(100vh-4.25rem)]">
@@ -80,19 +80,19 @@ const {products,addProductQuantityToCart,removeProductQuantityToCart,addCustomPr
                   </div>
                   <span
                     onClick={() => {
-                      setEditQtyId(items.id);
+                      setEditQuantityId(items.id);
                     }}
                     className=""
                   >
-                    {editQtyId === items.id ? (
+                    {editQuantityId === items.id ? (
                       <input
                         type="number"
                         className="h-7 w-11 border"
-                        ref={editQtyRef}
+                        ref={editQuantityRef}
                         defaultValue={items.sold_quantity}
                         autoFocus
                         onChange={(e) => {
-                          setCustomQty(e.target.value);
+                          setCustomQuantity(e.target.value);
                         }}
                       />
                     ) : (
@@ -661,7 +661,7 @@ function CartTextModal({
 }) {
   const cart = useCartStore((state) => state.cart);
   const totalItemsCount = cart.reduce((total) => total + 1, 0);
-  const totalQtyCount = cart.reduce(
+  const totalQuantityCount = cart.reduce(
     (total, item) => total + (item.qty || 0),
     0,
   );
@@ -674,7 +674,7 @@ function CartTextModal({
     <>
       <div className="flex justify-between py-2 border-b">
         <h4>Total Items: {totalItemsCount}</h4>
-        <h4>Qty: {totalQtyCount}</h4>
+        <h4>Qty: {totalQuantityCount}</h4>
       </div>
       <div className="flex justify-between py-2 border-b">
         <h4>Subtotal</h4>

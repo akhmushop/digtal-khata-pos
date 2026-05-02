@@ -83,7 +83,25 @@ app.put("/api/products/restore/:id", async (req, res) => {
     console.error(err);
   }
 });
-
+app.put("/api/products/custom/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { new_quantity, prev_quantity ,products_quantity} = req.body;
+    const updatedQuantity =products_quantity - (new_quantity - prev_quantity);
+    const addCustomProductQuantity = await pool.query(
+      "UPDATE products SET quantity = $1 WHERE id = $2",
+      [updatedQuantity, id],
+      console.log(new_quantity,prev_quantity,products_quantity,updatedQuantity)
+    );
+  } catch (err) {
+    console.error(err);
+  }
+});
+//
+//
+//
+//
+//
 app.get("/api/cart", async (req, res) => {
   try {
     const cart = await pool.query("SELECT * FROM cart");
@@ -147,5 +165,17 @@ app.put("/api/cart/remove/:id", async (req, res) => {
     "UPDATE cart SET sold_quantity = $1 WHERE id = $2",
     [updatedQuantity, id],
   );
+});
+app.put("/api/cart/custom/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { sold_quantity } = req.body;
+    const updateCustomCartQuantity = await pool.query(
+      "UPDATE cart SET sold_quantity = $1 WHERE id = $2",
+      [sold_quantity, id],
+    );
+  } catch (err) {
+    console.error(err);
+  }
 });
 app.listen(PORT, () => console.log(`server is running on PORT ${PORT}`));
