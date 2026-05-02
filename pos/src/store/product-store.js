@@ -561,16 +561,32 @@ export const useProductStore = create((set) => ({
       console.error(err);
     }
   },
-  addCustomProductQuantityToCart: async ( id, customQuantity, sold_quantity ,products) => {
+  addCustomProductQuantityToCart: async (
+    id,
+    customQuantity,
+    sold_quantity,
+    products,
+  ) => {
     try {
-      const findProduct = products.find((p) => p.id === id)
-      fetch(`http://localhost:3000/api/products/custom/${id}`,{
+      const findProduct = products.find((p) => p.id === id);
+      fetch(`http://localhost:3000/api/products/custom/${id}`, {
         method: "PUT",
-        headers:{"Content-Type" : "Application/json"},
-        body:JSON.stringify({new_quantity:customQuantity, prev_quantity:sold_quantity , products_quantity:findProduct.quantity})
-      })
+        headers: { "Content-Type": "Application/json" },
+        body: JSON.stringify({
+          new_quantity: customQuantity,
+          prev_quantity: sold_quantity,
+          products_quantity: findProduct.quantity,
+        }),
+      });
+      set((state) => ({
+        products: state.products.map((p) =>
+          p.id === id
+            ? { ...p, quantity: p.quantity - (customQuantity - sold_quantity) }
+            : p,
+        ),
+      }));
     } catch (err) {
-      console.error(err)
+      console.error(err);
     }
-  }
+  },
 }));
