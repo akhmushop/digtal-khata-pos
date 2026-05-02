@@ -91,17 +91,17 @@ export const useCartStore = create((set) => ({
       set({ error: err.message, loading: false });
     }
   },
-  addToCart: async (cartProduct , cart) => {
+  addToCart: async (cartProduct, cart) => {
     try {
       const exists = cart.find((p) => p.id === cartProduct.id);
       if (exists) {
-         fetch(`http://localhost:3000/api/cart/${cartProduct.id}`, {
+        fetch(`http://localhost:3000/api/cart/${cartProduct.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ quantity: exists.sold_quantity }),
         });
       } else {
-         fetch(`http://localhost:3000/api/cart`, {
+        fetch(`http://localhost:3000/api/cart`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(cartProduct),
@@ -127,7 +127,7 @@ export const useCartStore = create((set) => ({
   },
   removeCartItem: async (id) => {
     try {
-       fetch(`http://localhost:3000/api/cart/${id}`, {
+      fetch(`http://localhost:3000/api/cart/${id}`, {
         method: "DELETE",
       });
       set((state) => ({
@@ -169,6 +169,22 @@ export const useCartStore = create((set) => ({
       set((state) => ({
         cart: state.cart.map((p) =>
           p.id === id ? { ...p, sold_quantity: p.sold_quantity - 1 } : p,
+        ),
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  },
+  addCustomCartQuantity: async (id, customCartQuantity) => {
+    try {
+      fetch(`http://localhost:3000/api/cart/custom/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "Application/json" },
+        body: JSON.stringify({ sold_quantity: customCartQuantity }),
+      });
+      set((state) => ({
+        cart: state.cart.map((p) =>
+          p.id === id ? { ...p, sold_quantity: customCartQuantity } : p,
         ),
       }));
     } catch (err) {

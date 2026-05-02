@@ -41,7 +41,7 @@ const DashboardComponent = () => {
       maximumFractionDigits: 2,
     }).format(value);
   };
-  const products = useProductStore((state) => state.product);
+  const products = useProductStore((state) => state.products);
   const soldProducts = useSoldStore((state) => state.soldProducts);
   // alert products start
   const alertProducts = products.filter(

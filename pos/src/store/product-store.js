@@ -561,4 +561,16 @@ export const useProductStore = create((set) => ({
       console.error(err);
     }
   },
+  addCustomProductQuantityToCart: async ( id, customQuantity, sold_quantity ,products) => {
+    try {
+      const findProduct = products.find((p) => p.id === id)
+      fetch(`http://localhost:3000/api/products/custom/${id}`,{
+        method: "PUT",
+        headers:{"Content-Type" : "Application/json"},
+        body:JSON.stringify({new_quantity:customQuantity, prev_quantity:sold_quantity , products_quantity:findProduct.quantity})
+      })
+    } catch (err) {
+      console.error(err)
+    }
+  }
 }));
