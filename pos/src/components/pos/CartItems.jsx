@@ -148,7 +148,7 @@ function CartCalculation() {
     }
   });
   const subTotal = Number(
-    cart.reduce((total, item) => total + item.price * item.qty, 0),
+    cart.reduce((total, item) => total + item.price * item.sold_quantity, 0),
   );
   const vat = Number(subTotal * (5 / 100));
   const [holdConfirm, setHoldConfirm] = useState(false);
@@ -662,7 +662,7 @@ function CartTextModal({
   const cart = useCartStore((state) => state.cart);
   const totalItemsCount = cart.reduce((total) => total + 1, 0);
   const totalQuantityCount = cart.reduce(
-    (total, item) => total + (item.qty || 0),
+    (total, item) => total + (item.sold_quantity || 0),
     0,
   );
 
