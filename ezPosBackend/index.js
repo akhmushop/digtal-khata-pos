@@ -91,7 +91,6 @@ app.put("/api/products/custom/:id", async (req, res) => {
     const addCustomProductQuantity = await pool.query(
       "UPDATE products SET quantity = $1 WHERE id = $2",
       [updatedQuantity, id],
-      console.log(new_quantity,prev_quantity,products_quantity,updatedQuantity)
     );
   } catch (err) {
     console.error(err);
