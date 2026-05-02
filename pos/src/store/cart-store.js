@@ -161,16 +161,26 @@ export const useCartStore = create((set) => ({
   },
   removeCartQuantity: async (id, sold_quantity) => {
     try {
-      fetch(`http://localhost:3000/api/cart/remove/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "Application/json" },
-        body: JSON.stringify({ sold_quantity: sold_quantity }),
+      set((state) => {
+        fetch(`http://localhost:3000/api/cart/remove/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "Application/json" },
+          body: JSON.stringify({ sold_quantity: sold_quantity }),
+        });
+        const findProduct = state.cart.find((p) => p.sold_quantity >0)
+        if(findProduct){
+          fetch(`http://localhost:3000/api/cart/remove_cart/${id}`,{
+            method:"DELETE"
+          })
+        }
+        return {
+          cart: state.cart
+            .map((p) =>
+              p.id === id ? { ...p, sold_quantity: p.sold_quantity - 1 } : p,
+            )
+            .filter((p) => p.sold_quantity > 0),
+        };
       });
-      set((state) => ({
-        cart: state.cart.map((p) =>
-          p.id === id ? { ...p, sold_quantity: p.sold_quantity - 1 } : p,
-        ),
-      }));
     } catch (err) {
       console.error(err);
     }
@@ -197,8 +207,8 @@ export const useCartStore = create((set) => ({
         method: "DELETE",
       });
       set((state) => ({
-        cart:[]
-      }))
+        cart: [],
+      }));
     } catch (err) {
       console.error(err);
     }

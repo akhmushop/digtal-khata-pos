@@ -198,4 +198,15 @@ app.delete("/api/cart/reset/:id", async (req, res) => {
     console.error(err);
   }
 });
+app.delete("/api/cart/remove_cart/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const removeCartItem = await pool.query("DELETE FROM cart WHERE id = $1", [
+      id,
+    ]);
+  } catch (err) {
+    console.error(err);
+  }
+});
+
 app.listen(PORT, () => console.log(`server is running on PORT ${PORT}`));
