@@ -208,5 +208,30 @@ app.delete("/api/cart/remove_cart/:id", async (req, res) => {
     console.error(err);
   }
 });
+//
+//
+//
+//
+//
+//
+app.get("/api/sold_products", async (req, res) => {
+  try {
+    const sold_products = await pool.query("SELECT * FROM sold_products")
+    res.json(sold_products.rows)
+  } catch (err) {
+    console.error(err)
+  }
+})
+app.post("/api/sold_products", async (req, res) => {
+  try {
+    const  cart  = req.body;
+    const insertSoldProducts = await pool.query(
+      "INSERT INTO sold_products (items) VALUES ($1)",
+      [cart],
+    );
+  } catch (err) {
+    console.error(err);
+  }
+});
 
 app.listen(PORT, () => console.log(`server is running on PORT ${PORT}`));
