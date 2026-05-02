@@ -86,9 +86,22 @@ app.put("/api/products/restore/:id", async (req, res) => {
 app.put("/api/products/custom/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { new_quantity, prev_quantity ,products_quantity} = req.body;
-    const updatedQuantity =products_quantity - (new_quantity - prev_quantity);
+    const { new_quantity, prev_quantity, products_quantity } = req.body;
+    const updatedQuantity = products_quantity - (new_quantity - prev_quantity);
     const addCustomProductQuantity = await pool.query(
+      "UPDATE products SET quantity = $1 WHERE id = $2",
+      [updatedQuantity, id],
+    );
+  } catch (err) {
+    console.error(err);
+  }
+});
+app.put("/api/products/restore_all/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { sold_quantity, products_quantity } = req.body;
+    const updatedQuantity = products_quantity + sold_quantity;
+    const restoreProductQuantity = await pool.query(
       "UPDATE products SET quantity = $1 WHERE id = $2",
       [updatedQuantity, id],
     );
@@ -173,6 +186,14 @@ app.put("/api/cart/custom/:id", async (req, res) => {
       "UPDATE cart SET sold_quantity = $1 WHERE id = $2",
       [sold_quantity, id],
     );
+  } catch (err) {
+    console.error(err);
+  }
+});
+app.delete("/api/cart/reset/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const resetCart = await pool.query("DELETE FROM cart ");
   } catch (err) {
     console.error(err);
   }

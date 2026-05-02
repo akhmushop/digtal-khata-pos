@@ -4,7 +4,7 @@ import { useProductStore } from "../../store/product-store";
 export function ClickEmptyToResetCart({ isOpen, setIsOpen, setEmptyCartCon }) {
   const resetCart = useCartStore((state) => state.resetCart);
   const cart = useCartStore((state) => state.cart);
-  const restoreProductQty = useProductStore((state) => state.restoreProductQty);
+  const {products,restoreAllProductQuantityToCart} = useProductStore();
   const handleShowPopup = () => {
     setIsOpen();
     setTimeout(() => setEmptyCartCon(), 300);
@@ -12,7 +12,7 @@ export function ClickEmptyToResetCart({ isOpen, setIsOpen, setEmptyCartCon }) {
   const handleClearCart = () => {
     if (cart.length === 0) return alert("Your cart is already empty");
     cart.map((p) => {
-      restoreProductQty(p.barcode, p.qty);
+      restoreAllProductQuantityToCart(p.id, p.sold_quantity,products);
     });
     resetCart();
     handleShowPopup();

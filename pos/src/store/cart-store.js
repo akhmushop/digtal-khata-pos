@@ -191,4 +191,16 @@ export const useCartStore = create((set) => ({
       console.error(err);
     }
   },
+  resetCart: async (id) => {
+    try {
+      fetch(`http://localhost:3000/api/cart/reset/${id}`, {
+        method: "DELETE",
+      });
+      set((state) => ({
+        cart:[]
+      }))
+    } catch (err) {
+      console.error(err);
+    }
+  },
 }));
