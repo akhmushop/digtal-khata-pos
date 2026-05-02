@@ -9,7 +9,7 @@ import { useCartStore } from "../../store/cart-store";
 import { useSoldStore } from "../../store/sold-store";
 
 export default function CartItems() {
-const {products,addProductQuantityToCart,removeProductQuantityToCart,addCustomProductQuantityToCart,restoreProductQuantityToCart} = useProductStore();
+const {products,addProductQuantityToCart,removeProductQuantityToCart,addCustomProductQuantityToCart,restoreSingleProductQuantityToCart} = useProductStore();
   const {cart,addCartQuantity,removeCartQuantity,removeCartItem,addCustomCartQuantity} = useCartStore();
   const [editQuantityId, setEditQuantityId] = useState(null);
   const [customQuantity, setCustomQuantity] = useState(null);
@@ -111,7 +111,7 @@ const {products,addProductQuantityToCart,removeProductQuantityToCart,addCustomPr
                   <div
                     className="cursor-pointer"
                     onClick={() => {
-                      restoreProductQuantityToCart(items.id, items.sold_quantity,products);
+                      restoreSingleProductQuantityToCart(items.id, items.sold_quantity,products);
                       removeCartItem(items.id);
                     }}
                   >

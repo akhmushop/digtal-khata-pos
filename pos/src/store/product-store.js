@@ -535,7 +535,7 @@ export const useProductStore = create((set) => ({
       console.error(err);
     }
   },
-  restoreProductQuantityToCart: async (id, sold_quantity, products) => {
+  restoreSingleProductQuantityToCart: async (id, sold_quantity, products) => {
     try {
       const findProduct = products.find((p) => p.id === id);
       fetch(`http://localhost:3000/api/products/restore/${id}`, {
@@ -589,4 +589,16 @@ export const useProductStore = create((set) => ({
       console.error(err);
     }
   },
+  restoreAllProductQuantityToCart: async (id, sold_quantity,products) => {
+    try {
+      const findProduct = products.find((p) => p.id ===id)
+      fetch(`http://localhost:3000/api/products/restore_all/${id}`,{
+        method:"PUT",
+        headers:{"Content-Type" : "Application/json"},
+        body:JSON.stringify({sold_quantity: sold_quantity, products_quantity:findProduct.quantity})
+      })
+    } catch (err) {
+      console.error(err)
+    }
+  }
 }));
