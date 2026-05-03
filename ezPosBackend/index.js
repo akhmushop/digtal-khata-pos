@@ -216,19 +216,29 @@ app.delete("/api/cart/remove_cart/:id", async (req, res) => {
 //
 app.get("/api/sold_products", async (req, res) => {
   try {
-    const sold_products = await pool.query("SELECT * FROM sold_products")
-    res.json(sold_products.rows)
+    const sold_products = await pool.query(
+      "SELECT s.id ,p.product_name,p.category, p.cost, p.price ,si.sold_quantity, si.sold_price, s.created_at FROM sale_items si JOIN sales s ON si.sale_id = s.id JOIN products p ON si.product_id = p.id",
+    );
+    res.json(sold_products.rows);
   } catch (err) {
-    console.error(err)
+    console.error(err);
   }
-})
+});
 app.post("/api/sold_products", async (req, res) => {
   try {
-    const  cart  = req.body;
-    const insertSoldProducts = await pool.query(
-      "INSERT INTO sold_products (items) VALUES ($1)",
-      [cart],
+    const cart = req.body;
+    console.log(cart);
+    const insertSale = await pool.query(
+      "INSERT INTO sales DEFAULT VALUES RETURNING id",
     );
+    const salesId = insertSale.rows[0].id;
+    console.log();
+    for (let item of cart) {
+      const insertSoldProducts = await pool.query(
+        "INSERT INTO sale_items (sale_id, product_id, quantity, price) VALUES ($1,$2,$3,$4)",
+        [salesId, item.id, item.sold_quantity, item.price],
+      );
+    }
   } catch (err) {
     console.error(err);
   }
