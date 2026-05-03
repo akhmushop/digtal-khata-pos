@@ -1,3 +1,4 @@
+import { Network } from "lucide-react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 // export const useProductStore = create(
@@ -589,16 +590,51 @@ export const useProductStore = create((set) => ({
       console.error(err);
     }
   },
-  restoreAllProductQuantityToCart: async (id, sold_quantity,products) => {
+  restoreAllProductQuantityToCart: async (id, sold_quantity, products) => {
     try {
-      const findProduct = products.find((p) => p.id ===id)
-      fetch(`http://localhost:3000/api/products/restore_all/${id}`,{
-        method:"PUT",
-        headers:{"Content-Type" : "Application/json"},
-        body:JSON.stringify({sold_quantity: sold_quantity, products_quantity:findProduct.quantity})
-      })
+      const findProduct = products.find((p) => p.id === id);
+      fetch(`http://localhost:3000/api/products/restore_all/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "Application/json" },
+        body: JSON.stringify({
+          sold_quantity: sold_quantity,
+          products_quantity: findProduct.quantity,
+        }),
+      });
     } catch (err) {
-      console.error(err)
+      console.error(err);
     }
-  }
+  },
+  updateStock: async (id, newStock) => {
+    try {
+      set((state) => {
+        const findProduct = state.products.find((p) => p.id === id);
+        const status =
+          newStock === 0
+            ? "Out of Stock"
+            : newStock <= findProduct.alertquantity
+              ? "Low-Stock"
+              : "In-Stock";
+        fetch(`http://localhost:3000/api/products/update_stock/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "Application/json" },
+          body: JSON.stringify({ newStock: newStock , status:status }),
+        });
+        return {
+          products: state.products.map((p) => {
+            if (p.id === id) {
+              return {
+                ...p,
+                quantity: newStock,
+                status: status,
+              };
+            }
+            return p;
+          }),
+        };
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  },
 }));
