@@ -54,11 +54,10 @@ const AdvancedPOSTable = () => {
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [currentProduct, setCurrentProduct] = useState(null);
   const soldProducts = useSoldStore((state) => state.soldProducts);
-  const soldProductsItems = soldProducts.flatMap((item) => item.items);
   const setEditingProduct = useEditProductStore(
     (state) => state.setEditingProduct,
   );
-  const products = useProductStore((state) => state.product);
+  const products = useProductStore((state) => state.products);
   const removeProduct = useProductStore((state) => state.removeProduct);
   const updateStock = useProductStore((state) => state.updateStock);
   const duplicateProduct = useProductStore((state) => state.duplicateProduct);
@@ -140,8 +139,8 @@ const AdvancedPOSTable = () => {
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
       const matchesSearch =
-        p.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.barcode.toLowerCase().includes(searchTerm.toLowerCase());
+        p.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.id.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory =
         filters.category === "all" || p.category === filters.category;
       const matchesStatus =
@@ -210,12 +209,12 @@ const AdvancedPOSTable = () => {
     }
   };
 
-  const totalValue = soldProductsItems.reduce(
-    (sum, p) => sum + p.price * p.qty,
+  const totalValue = soldProducts.reduce(
+    (sum, p) => sum + p.price * p.sold_quantity,
     0,
   );
-  const totalProfit = soldProductsItems.reduce(
-    (sum, p) => sum + (p.price - p.cost) * p.qty,
+  const totalProfit = soldProducts.reduce(
+    (sum, p) => sum + (p.price - p.cost) * p.sold_quantity,
     0,
   );
   const lowStockCount = products.filter(
@@ -285,14 +284,14 @@ const AdvancedPOSTable = () => {
   // };
   // total sold
 
-  const totalSoldItems = soldProductsItems.reduce(
-    (sum, item) => sum + item.qty,
+  const totalSoldItems = soldProducts.reduce(
+    (sum, item) => sum + item.sold_quantity,
     0,
   );
-  const totalRevenueByMonth = soldProductsItems.reduce((acc, item) => {
+  const totalRevenueByMonth = soldProducts.reduce((acc, item) => {
     const date = new Date(item.soldAt);
     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-    const revenue = item.price * item.qty;
+    const revenue = item.price * item.sold_quantity;
     if (!acc[monthKey]) {
       acc[monthKey] = 0;
     }
@@ -327,7 +326,7 @@ const AdvancedPOSTable = () => {
     (sum, p) => sum + (Number(p.quantity) || 0),
     0,
   );
-  const saleDateRange = soldProductsItems.reduce(
+  const saleDateRange = soldProducts.reduce(
     (range, item) => {
       const date = new Date(item.soldAt);
       if (isNaN(date)) return range;
@@ -757,11 +756,11 @@ const AdvancedPOSTable = () => {
                     style={{ width: `${columnWidths.name}px` }}
                   >
                     <button
-                      onClick={() => requestSort("productName")}
+                      onClick={() => requestSort("product_name")}
                       className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
                     >
                       Product Name
-                      {sortConfig.key === "productName" &&
+                      {sortConfig.key === "product_name" &&
                         (sortConfig.direction === "asc" ? (
                           <ChevronUp className="w-4 h-4" />
                         ) : (
@@ -897,7 +896,7 @@ const AdvancedPOSTable = () => {
               <tbody className="divide-y divide-slate-100">
                 {paginatedProducts.map((product) => (
                   <tr
-                    key={product.barcode}
+                    key={product.id}
                     className={`hover:bg-slate-50 transition-colors ${selectedProducts.includes(product.id) ? "bg-blue-50" : ""}`}
                   >
                     <td className="px-4 py-4">
@@ -920,7 +919,7 @@ const AdvancedPOSTable = () => {
                     </td>
                     <td className="px-4 py-4 truncate">
                       <div className="font-semibold text-slate-900 truncate">
-                        {product.productName}
+                        {product.product_name}
                       </div>
                       {product.tags && product.tags.length > 0 && (
                         <div className="flex gap-1 mt-1">
@@ -1138,7 +1137,7 @@ const AdvancedPOSTable = () => {
                 <p className="text-sm text-slate-600 mb-2">
                   Product:{" "}
                   <span className="font-medium text-slate-900">
-                    {currentProduct.productName}
+                    {currentProduct.product_name}
                   </span>
                 </p>
                 <p className="text-sm text-slate-600">
@@ -1230,7 +1229,7 @@ const ShowProductDetails = ({ handelClose = { handelClose } }) => {
                 Product Name:
               </span>
               <span className="text-gray-600 flex-1 break-words">
-                {detailsProduct.productName}
+                {detailsProduct.product_name}
               </span>
             </div>
 

@@ -28,7 +28,8 @@ app.post("/api/products", async (req, res) => {
       values,
     );
   } catch (err) {
-    console.error(err);
+    console.error("ERROR:", err.message);
+    res.status(500).json({error: err.message})
   }
 });
 app.put("/api/products/:id", async (req, res) => {
@@ -109,6 +110,12 @@ app.put("/api/products/restore_all/:id", async (req, res) => {
     console.error(err);
   }
 });
+app.put("/api/products/update_stock/:id", async (req, res) => {
+  const{id} = req.params;
+  const {newStock,status} = req.body;
+  const insertNewStock = await pool.query("UPDATE products SET quantity = $1, status = $2 WHERE id = $3",[newStock,status,id])
+  res.json(id)
+})
 //
 //
 //
