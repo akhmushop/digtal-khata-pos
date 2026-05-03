@@ -67,29 +67,27 @@ const DashboardComponent = () => {
   //total valuation end
 
   // sold items start
-  const soldProductsItems = soldProducts.flatMap((item) => item.items);
+  const soldProductsItems = soldProducts
   const totalSoldItems = soldProductsItems.reduce(
-    (sum, item) => sum + item.qty,
+    (sum, item) => sum + item.sold_quantity,
     0,
   );
-  console.log(totalSoldItems)
   const monthlySold = soldProductsItems.reduce((acc, item) => {
-    const date = new Date(item.soldAt);
+    const date = new Date(item.created_at);
     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
     if (!acc[monthKey]) {
       acc[monthKey] = 0;
     }
-    acc[monthKey] += item.qty;
+    acc[monthKey] += item.sold_quantity;
     return acc;
   }, {});
-
   const monthlyTotalSales = soldProductsItems.reduce((acc, item) => {
-    const date = new Date(item.soldAt);
+    const date = new Date(item.created_at);
     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
     if (!acc[monthKey]) {
       acc[monthKey] = 0;
     }
-    acc[monthKey] += item.qty * item.price;
+    acc[monthKey] += item.sold_quantity * item.price;
 
     return acc;
   }, {});
@@ -148,14 +146,14 @@ const DashboardComponent = () => {
   const [range, setRange] = useState("3");
   const filteredData = salesData.slice(-Number(range));
   const totalSales = soldProductsItems.reduce(
-    (sum, item) => sum + item.qty * item.price,
+    (sum, item) => sum + item.sold_quantity * item.sold_price,
     0,
   );
   // sales overview end
   // performance table Start
   const categoryCount = soldProductsItems.reduce((acc, item) => {
     const category = item.category;
-    acc[category] = (acc[category] || 0) + item.qty;
+    acc[category] = (acc[category] || 0) + item.sold_quantity;
     return acc;
   }, {});
   const colors = ["#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#8b5cf6"];
@@ -172,12 +170,12 @@ const DashboardComponent = () => {
   // performance table end
   //top profit start
   const monthlyProfitByCategory = soldProductsItems.reduce((acc, item) => {
-    const date = new Date(item.soldAt);
+    const date = new Date(item.created_at);
     const category = item.category;
     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
     const price = item.price || 0;
     const cost = item.cost || 0;
-    const quantity = item.qty || 1;
+    const quantity = item.sold_quantity || 1;
     const profit = (price - cost) * quantity;
 
     if (!acc[monthKey]) {
@@ -214,10 +212,10 @@ const DashboardComponent = () => {
 
   //top items gross start
   const salesByProductByMonth = soldProductsItems.reduce((acc, item) => {
-    const date = new Date(item.soldAt);
+    const date = new Date(item.created_at);
     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-    const productName = item.productName || item.category || "Unknown";
-    const gross = (item.qty || 0) * (item.price || 0);
+    const productName = item.product_name || item.category || "Unknown";
+    const gross = (item.sold_quantity || 0) * (item.price || 0);
     if (!acc[monthKey]) {
       acc[monthKey] = {};
     }
@@ -226,8 +224,8 @@ const DashboardComponent = () => {
   }, {});
 
   const allTimeGrossByProduct = soldProductsItems.reduce((acc, item) => {
-    const productName = item.productName || item.category || "Unknown";
-    const gross = (item.qty || 0) * (item.price || 0);
+    const productName = item.product_name || item.category || "Unknown";
+    const gross = (item.sold_quantity || 0) * (item.price || 0);
     acc[productName] = (acc[productName] || 0) + gross;
     return acc;
   }, {});
@@ -260,7 +258,6 @@ const DashboardComponent = () => {
     })
     .sort((a, b) => b.gross - a.gross)
     .slice(0, 5);
-  console.log(topGrossItems);
   //top items gross end
   return (
     <div className="flex">
