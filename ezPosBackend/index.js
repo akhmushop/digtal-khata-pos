@@ -120,6 +120,17 @@ app.put("/api/products/update_stock/:id", async (req, res) => {
   );
   res.json(id);
 });
+app.delete("/api/products/remove_product/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleteProduct = await pool.query(
+      "DELETE FROM products WHERE id = $1",
+      [id],
+    );
+  } catch (err) {
+    console.error(err);
+  }
+});
 //
 //
 //
