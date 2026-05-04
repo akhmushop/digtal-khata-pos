@@ -1242,7 +1242,7 @@ const ShowProductDetails = ({ handelClose = { handelClose } }) => {
                 Product Unit:
               </span>
               <span className="text-gray-600 flex-1">
-                {detailsProduct.productUnit}
+                {detailsProduct.productunit}
               </span>
             </div>
 
@@ -1251,7 +1251,7 @@ const ShowProductDetails = ({ handelClose = { handelClose } }) => {
                 Product Type:
               </span>
               <span className="text-gray-600 flex-1">
-                {detailsProduct.productType}
+                {detailsProduct.producttype}
               </span>
             </div>
 
@@ -1260,7 +1260,7 @@ const ShowProductDetails = ({ handelClose = { handelClose } }) => {
                 Alert Quantity:
               </span>
               <span className="text-gray-600 flex-1">
-                {detailsProduct.alertQuantity}
+                {detailsProduct.alertquantity}
               </span>
             </div>
 
@@ -1283,7 +1283,7 @@ const ShowProductDetails = ({ handelClose = { handelClose } }) => {
                 Quantity:
               </span>
               <span
-                className={`flex-1 ${detailsProduct.quantity < detailsProduct.alertQuantity ? "text-red-600 font-semibold" : "text-gray-600"}`}
+                className={`flex-1 ${detailsProduct.quantity < detailsProduct.alertquantity ? "text-red-600 font-semibold" : "text-gray-600"}`}
               >
                 {detailsProduct.quantity}
               </span>
@@ -1294,15 +1294,15 @@ const ShowProductDetails = ({ handelClose = { handelClose } }) => {
                 Discount:
               </span>
               <span className="text-gray-600 flex-1">
-                {detailsProduct.discountPercent > 0 &&
-                  `${detailsProduct.discountPercent}%`}
-                {detailsProduct.discountPercent > 0 &&
-                  detailsProduct.flatDiscount > 0 &&
+                {detailsProduct.discountpercent > 0 &&
+                  `${detailsProduct.discountpercent}%`}
+                {detailsProduct.discountpercent > 0 &&
+                  detailsProduct.flatdiscount > 0 &&
                   " / "}
-                {detailsProduct.flatDiscount > 0 &&
-                  `$${detailsProduct.flatDiscount} flat`}
-                {detailsProduct.discountPercent === 0 &&
-                  detailsProduct.flatDiscount === 0 &&
+                {detailsProduct.flatdiscount > 0 &&
+                  `$${detailsProduct.flatdiscount} flat`}
+                {detailsProduct.discountpercent === 0 &&
+                  detailsProduct.flatdiscount === 0 &&
                   "No discount"}
               </span>
             </div>
@@ -1312,7 +1312,7 @@ const ShowProductDetails = ({ handelClose = { handelClose } }) => {
                 Batch Number:
               </span>
               <span className="text-gray-600 flex-1">
-                {detailsProduct.batchNumber}
+                {detailsProduct.batchnumber}
               </span>
             </div>
 
@@ -1353,7 +1353,7 @@ const ShowProductDetails = ({ handelClose = { handelClose } }) => {
             <div className="flex items-start">
               <span className="font-semibold text-gray-700 w-28">Tags:</span>
               <span className="text-gray-600 flex-1 break-words">
-                {detailsProduct.tags.join(", ")}
+                {detailsProduct.tags?.join(", ")}
               </span>
             </div>
 
