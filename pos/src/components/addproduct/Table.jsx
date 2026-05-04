@@ -238,7 +238,11 @@ const AdvancedPOSTable = () => {
 
   const handleBulkDelete = () => {
     if (window.confirm(`Delete ${selectedProducts.length} products?`)) {
-      removeProduct(selectedProducts);
+      selectedProducts.map((id) =>{
+        console.log(id)
+        removeProduct(id);
+      })
+      
       setSelectedProducts([]);
       setShowBulkActions(false);
     }
