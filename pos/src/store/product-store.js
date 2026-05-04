@@ -683,5 +683,12 @@ export const useProductStore = create((set) => ({
     } catch (err) {
       console.error(err)
     }
+  },
+  updateProduct: async(product) => {
+    try {
+      console.log(product)
+    } catch (err) {
+      console.error(err)
+    }
   }
 }));

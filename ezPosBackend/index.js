@@ -265,7 +265,7 @@ app.delete("/api/cart/remove_cart/:id", async (req, res) => {
 app.get("/api/sold_products", async (req, res) => {
   try {
     const sold_products = await pool.query(
-      "SELECT s.id ,p.product_name,p.category, p.cost, p.price ,si.sold_quantity, si.sold_price, s.created_at FROM sale_items si JOIN sales s ON si.sale_id = s.id JOIN products p ON si.product_id = p.id",
+      "SELECT s.id AS sale_id ,p.id,p.product_name,p.category, p.cost, p.price ,si.sold_quantity, si.sold_price, s.created_at FROM sale_items si JOIN sales s ON si.sale_id = s.id JOIN products p ON si.product_id = p.id",
     );
     res.json(sold_products.rows);
   } catch (err) {
