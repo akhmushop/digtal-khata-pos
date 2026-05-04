@@ -651,4 +651,16 @@ export const useProductStore = create((set) => ({
       console.log(err);
     }
   },
+  removeProduct: async (id) => {
+    try {
+      fetch(`http://localhost:3000/api/products/remove_product/${id}`, {
+        method: "DELETE",
+      });
+      set((state) => ({
+        products: state.products.filter((p) => p.id !== id),
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  },
 }));
