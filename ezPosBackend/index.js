@@ -131,6 +131,32 @@ app.delete("/api/products/remove_product/:id", async (req, res) => {
     console.error(err);
   }
 });
+app.post("/api/products/duplicate-product/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const product = req.body;
+    const keys = Object.keys(product).filter((p) => p !== "id");
+    const values = Object.values(product);
+    const copyColumns = keys
+      .map((p) => {
+        if (p === "product_name") {
+          return (p = "product_name || '(copy)'");
+        } else if (p === "barcode") p = "barcode || '(copy)'";
+        return p;
+      })
+      .join(",");
+    const columns = keys.join(",");
+    const placeholders = keys.map((_, i) => `$${i + 1}`).join(",");
+    const newProduct = await pool.query(
+      `INSERT INTO products (${columns})  SELECT ${copyColumns}  FROM products WHERE id = $1`,
+      [id],
+    );
+    // res.json(newProduct.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
 //
 //
 //
