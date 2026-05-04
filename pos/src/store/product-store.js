@@ -663,4 +663,25 @@ export const useProductStore = create((set) => ({
       console.error(err);
     }
   },
+  duplicateProduct: async(product) => {
+    try {
+      fetch(`http://localhost:3000/api/products/duplicate-product/${product.id}`, {
+        method: "POST",
+        headers:{"Content-Type" : "Application/json"},
+        body:JSON.stringify(product)
+      });
+      set((state) => ({
+        products:[
+          ...state.products,
+          {
+            ...product,
+            product_name: `${product.product_name}(copy)`,
+            barcode: `${product.barcode}(copy)`
+          }
+        ]
+      }))
+    } catch (err) {
+      console.error(err)
+    }
+  }
 }));
