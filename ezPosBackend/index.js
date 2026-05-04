@@ -24,12 +24,13 @@ app.post("/api/products", async (req, res) => {
     const columns = keys.join(",");
     const placeholders = keys.map((_, i) => `$${i + 1}`).join(",");
     const newProduct = await pool.query(
-      `INSERT INTO products (${columns}) VALUES (${placeholders})`,
+      `INSERT INTO products (${columns}) VALUES (${placeholders}) RETURNING *`,
       values,
     );
+    res.json(newProduct.rows[0]);
   } catch (err) {
-    console.error("ERROR:", err.message);
-    res.status(500).json({error: err.message})
+    console.error(err);
+    res.status(500).json({ error: err.message });
   }
 });
 app.put("/api/products/:id", async (req, res) => {
@@ -111,11 +112,14 @@ app.put("/api/products/restore_all/:id", async (req, res) => {
   }
 });
 app.put("/api/products/update_stock/:id", async (req, res) => {
-  const{id} = req.params;
-  const {newStock,status} = req.body;
-  const insertNewStock = await pool.query("UPDATE products SET quantity = $1, status = $2 WHERE id = $3",[newStock,status,id])
-  res.json(id)
-})
+  const { id } = req.params;
+  const { newStock, status } = req.body;
+  const insertNewStock = await pool.query(
+    "UPDATE products SET quantity = $1, status = $2 WHERE id = $3",
+    [newStock, status, id],
+  );
+  res.json(id);
+});
 //
 //
 //

@@ -618,7 +618,7 @@ export const useProductStore = create((set) => ({
         fetch(`http://localhost:3000/api/products/update_stock/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "Application/json" },
-          body: JSON.stringify({ newStock: newStock , status:status }),
+          body: JSON.stringify({ newStock: newStock, status: status }),
         });
         return {
           products: state.products.map((p) => {
@@ -635,6 +635,20 @@ export const useProductStore = create((set) => ({
       });
     } catch (err) {
       console.error(err);
+    }
+  },
+  addToProduct: async (product) => {
+    try {
+      fetch(`http://localhost:3000/api/products`, {
+        method: "POST",
+        headers: { "Content-Type": "Application/json" },
+        body: JSON.stringify(product),
+      });
+      set((state) => ({
+        products: [...state.products, product],
+      }));
+    } catch (err) {
+      console.log(err);
     }
   },
 }));

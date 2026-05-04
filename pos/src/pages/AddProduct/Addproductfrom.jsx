@@ -43,7 +43,7 @@ const ProductStockForm = () => {
   const initialFormData = editingProduct
     ? {
         barcode: editingProduct.barcode,
-        productName: editingProduct.productName,
+        product_name: editingProduct.product_name,
         productUnit: editingProduct.productUnit,
         productType: editingProduct.productType,
         alertQuantity: editingProduct.alertQuantity,
@@ -62,7 +62,7 @@ const ProductStockForm = () => {
       }
     : {
         barcode: "",
-        productName: "",
+        product_name: "",
         productUnit: "PC",
         productType: "SIMPLE",
         alertQuantity: "2",
@@ -106,8 +106,8 @@ const ProductStockForm = () => {
       newErrors.barcode = "Barcode is required";
     }
 
-    if (!formData.productName.trim()) {
-      newErrors.productName = "Product name is required";
+    if (!formData.product_name.trim()) {
+      newErrors.product_name = "Product name is required";
     }
 
     if (!formData.cost || parseFloat(formData.cost) <= 0) {
@@ -202,8 +202,8 @@ const ProductStockForm = () => {
     const productData = {
       ...(editingProduct ? editingProduct : {}),
       ...formData,
-      tags: tagsArray,
-      finalPrice: finalPrice.toFixed(2),
+      tags: JSON.stringify(tagsArray),
+      final_price: finalPrice.toFixed(2),
       image: imagePreview,
       createdAt: new Date().toISOString(),
     };
@@ -349,19 +349,19 @@ const ProductStockForm = () => {
                       </label>
                       <input
                         type="text"
-                        name="productName"
-                        value={formData.productName}
+                        name="product_name"
+                        value={formData.product_name}
                         onChange={handleChange}
                         placeholder="Enter product name"
                         className={`w-full px-4 py-3 bg-white border ${
-                          errors.productName
+                          errors.product_name
                             ? "border-red-500"
                             : "border-gray-300"
                         } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                       />
-                      {errors.productName && (
+                      {errors.product_name && (
                         <p className="text-xs text-red-500">
-                          {errors.productName}
+                          {errors.product_name}
                         </p>
                       )}
                     </div>
