@@ -44,16 +44,16 @@ const ProductStockForm = () => {
     ? {
         barcode: editingProduct.barcode,
         product_name: editingProduct.product_name,
-        productunit: editingProduct.productunit,
-        producttype: editingProduct.producttype,
-        alertquantity: editingProduct.alertquantity,
+        product_unit: editingProduct.product_unit,
+        product_type: editingProduct.product_type,
+        alert_quantity: editingProduct.alert_quantity,
         cost: editingProduct.cost,
         price: editingProduct.price,
         quantity: editingProduct.quantity,
-        discountpercent: editingProduct.discountpercent,
-        flatdiscount: editingProduct.flatdiscount,
-        batchnumber: editingProduct.batchnumber,
-        expirydate: editingProduct.expirydate || "",
+        discount_percent: editingProduct.discount_percent,
+        flat_discount: editingProduct.flat_discount,
+        batch_number: editingProduct.batch_number,
+        expiry_date: editingProduct.expiry_date || "",
         description: editingProduct.description,
         supplier: editingProduct.supplier,
         brand: editingProduct.brand,
@@ -63,16 +63,16 @@ const ProductStockForm = () => {
     : {
         barcode: "",
         product_name: "",
-        productunit: "PC",
-        producttype: "SIMPLE",
-        alertquantity: "2",
+        product_unit: "PC",
+        product_type: "SIMPLE",
+        alert_quantity: "2",
         cost: "",
         price: "",
         quantity: "",
-        discountpercent: "0",
-        flatdiscount: "0",
-        batchnumber: "",
-        expirydate: "",
+        discount_percent: "0",
+        flat_discount: "0",
+        batch_number: "",
+        expiry_date: "",
         description: "",
         supplier: "",
         brand: "",
@@ -195,9 +195,9 @@ const ProductStockForm = () => {
     // Calculate final price after discounts
     const basePrice = parseFloat(formData.price);
     const percentDiscount =
-      (basePrice * parseFloat(formData.discountpercent)) / 100;
+      (basePrice * parseFloat(formData.discount_percent)) / 100;
     const finalPrice =
-      basePrice - percentDiscount - parseFloat(formData.flatdiscount);
+      basePrice - percentDiscount - parseFloat(formData.flat_discount);
     const tagsArray = tagInput
       .split(",")
       .map((tag) => tag.trim())
@@ -386,8 +386,8 @@ const ProductStockForm = () => {
                       </label>
                       <div className="relative">
                         <select
-                          name="productUnit"
-                          value={formData.productunit}
+                          name="product_unit"
+                          value={formData.product_unit}
                           onChange={handleChange}
                           className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
                         >
@@ -408,8 +408,8 @@ const ProductStockForm = () => {
                       </label>
                       <div className="relative">
                         <select
-                          name="productType"
-                          value={formData.producttype}
+                          name="product_type"
+                          value={formData.product_type}
                           onChange={handleChange}
                           className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
                         >
@@ -431,8 +431,8 @@ const ProductStockForm = () => {
                       </label>
                       <input
                         type="number"
-                        name="alertquantity"
-                        value={formData.alertquantity}
+                        name="alert_quantity"
+                        value={formData.alert_quantity}
                         onChange={handleChange}
                         min="0"
                         className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200"
@@ -543,8 +543,8 @@ const ProductStockForm = () => {
                       </label>
                       <input
                         type="number"
-                        name="discountPercent"
-                        value={formData.discountpercent}
+                        name="discount_percent"
+                        value={formData.discount_percent}
                         onChange={handleChange}
                         min="0"
                         max="100"
@@ -564,8 +564,8 @@ const ProductStockForm = () => {
                         </div>
                         <input
                           type="number"
-                          name="flatDiscount"
-                          value={formData.flatdiscount}
+                          name="flat_discount"
+                          value={formData.flat_discount}
                           onChange={handleChange}
                           step="0.01"
                           min="0"
@@ -585,9 +585,9 @@ const ProductStockForm = () => {
                           {(
                             parseFloat(formData.price || 0) -
                             (parseFloat(formData.price || 0) *
-                              parseFloat(formData.discountPercent || 0)) /
+                              parseFloat(formData.discount_percent || 0)) /
                               100 -
-                            parseFloat(formData.flatDiscount || 0)
+                            parseFloat(formData.flat_discount || 0)
                           ).toFixed(2)}
                         </div>
                       </div>
@@ -600,8 +600,8 @@ const ProductStockForm = () => {
                       </label>
                       <input
                         type="text"
-                        name="batchNumber"
-                        value={formData.batchnumber}
+                        name="batch_number"
+                        value={formData.batch_number}
                         onChange={handleChange}
                         placeholder="Enter batch number"
                         className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
@@ -616,8 +616,8 @@ const ProductStockForm = () => {
                       </label>
                       <input
                         type="date"
-                        name="expirydate"
-                        value={formData.expirydate}
+                        name="expiry_date"
+                        value={formData.expiry_date}
                         onChange={handleChange}
                         min={new Date().toISOString().split("T")[0]}
                         className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"

@@ -218,7 +218,7 @@ const AdvancedPOSTable = () => {
     0,
   );
   const lowStockCount = products.filter(
-    (p) => p.quantity > 0 && p.quantity <= p.alertquantity,
+    (p) => p.quantity > 0 && p.quantity <= p.alert_quantity,
   ).length;
   const outOfStockCount = products.filter((p) => p.quantity === 0).length;
 
@@ -293,7 +293,7 @@ const AdvancedPOSTable = () => {
     0,
   );
   const totalRevenueByMonth = soldProducts.reduce((acc, item) => {
-    const date = new Date(item.soldAt);
+    const date = new Date(item.created_at);
     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
     const revenue = item.price * item.sold_quantity;
     if (!acc[monthKey]) {
@@ -332,7 +332,7 @@ const AdvancedPOSTable = () => {
   );
   const saleDateRange = soldProducts.reduce(
     (range, item) => {
-      const date = new Date(item.soldAt);
+      const date = new Date(item.created_at);
       if (isNaN(date)) return range;
 
       return {
@@ -979,10 +979,10 @@ const AdvancedPOSTable = () => {
                           <Edit2 className="w-3 h-3 text-slate-400" />
                         </button>
                       </div>
-                      {product.quantity <= product.alertQuantity &&
+                      {product.quantity <= product.alert_quantity &&
                         product.quantity > 0 && (
                           <div className="text-xs text-amber-600 mt-1">
-                            Alert: {product.alertQuantity}
+                            Alert: {product.alert_quantity}
                           </div>
                         )}
                     </td>
@@ -1242,7 +1242,7 @@ const ShowProductDetails = ({ handelClose = { handelClose } }) => {
                 Product Unit:
               </span>
               <span className="text-gray-600 flex-1">
-                {detailsProduct.productunit}
+                {detailsProduct.product_unit}
               </span>
             </div>
 
@@ -1251,7 +1251,7 @@ const ShowProductDetails = ({ handelClose = { handelClose } }) => {
                 Product Type:
               </span>
               <span className="text-gray-600 flex-1">
-                {detailsProduct.producttype}
+                {detailsProduct.product_type}
               </span>
             </div>
 
@@ -1260,7 +1260,7 @@ const ShowProductDetails = ({ handelClose = { handelClose } }) => {
                 Alert Quantity:
               </span>
               <span className="text-gray-600 flex-1">
-                {detailsProduct.alertquantity}
+                {detailsProduct.alert_quantity}
               </span>
             </div>
 
@@ -1283,7 +1283,7 @@ const ShowProductDetails = ({ handelClose = { handelClose } }) => {
                 Quantity:
               </span>
               <span
-                className={`flex-1 ${detailsProduct.quantity < detailsProduct.alertquantity ? "text-red-600 font-semibold" : "text-gray-600"}`}
+                className={`flex-1 ${detailsProduct.quantity < detailsProduct.alert_quantity ? "text-red-600 font-semibold" : "text-gray-600"}`}
               >
                 {detailsProduct.quantity}
               </span>
@@ -1294,15 +1294,15 @@ const ShowProductDetails = ({ handelClose = { handelClose } }) => {
                 Discount:
               </span>
               <span className="text-gray-600 flex-1">
-                {detailsProduct.discountpercent > 0 &&
-                  `${detailsProduct.discountpercent}%`}
-                {detailsProduct.discountpercent > 0 &&
-                  detailsProduct.flatdiscount > 0 &&
+                {detailsProduct.discount_percent > 0 &&
+                  `${detailsProduct.discount_percent}%`}
+                {detailsProduct.discount_percent > 0 &&
+                  detailsProduct.flat_discount > 0 &&
                   " / "}
-                {detailsProduct.flatdiscount > 0 &&
-                  `$${detailsProduct.flatdiscount} flat`}
-                {detailsProduct.discountpercent === 0 &&
-                  detailsProduct.flatdiscount === 0 &&
+                {detailsProduct.flat_discount > 0 &&
+                  `$${detailsProduct.flat_discount} flat`}
+                {detailsProduct.discount_percent === 0 &&
+                  detailsProduct.flat_discount === 0 &&
                   "No discount"}
               </span>
             </div>
@@ -1312,7 +1312,7 @@ const ShowProductDetails = ({ handelClose = { handelClose } }) => {
                 Batch Number:
               </span>
               <span className="text-gray-600 flex-1">
-                {detailsProduct.batchnumber}
+                {detailsProduct.batch_number}
               </span>
             </div>
 
@@ -1321,7 +1321,7 @@ const ShowProductDetails = ({ handelClose = { handelClose } }) => {
                 Expiry Date:
               </span>
               <span className="text-gray-600 flex-1">
-                {detailsProduct.expiryDate || "N/A"}
+                {detailsProduct.expiry_date || "N/A"}
               </span>
             </div>
 
