@@ -1,6 +1,7 @@
 import { Network } from "lucide-react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import axios from "../axios";
 // export const useProductStore = create(
 //   persist(
 //     (set) => ({
@@ -474,20 +475,15 @@ export const useProductStore = create((set) => ({
   getProducts: async () => {
     set({ loading: true });
     try {
-      const res = await fetch("http://localhost:3000/api/products");
-      const data = await res.json();
-      set({ products: data, loading: false });
+      const res = await axios.get("/products");
+      set({ products: res.data, loading: false });
     } catch (err) {
       set({ error: err.message, loading: false });
     }
   },
   removeProductQuantity: async (id, quantity) => {
     try {
-      fetch(`http://localhost:3000/api/products/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ quantity }),
-      });
+      axios.put(`/products/${id}`, { quantity });
       set((state) => ({
         products: state.products.map((product) =>
           product.id === id
@@ -505,11 +501,7 @@ export const useProductStore = create((set) => ({
   removeProductQuantityToCart: async (id, products) => {
     try {
       const findProduct = products.find((p) => p.id === id);
-      fetch(`http://localhost:3000/api/products/remove/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "Application/json" },
-        body: JSON.stringify({ quantity: findProduct.quantity }),
-      });
+      axios.put(`products/remove/${id}`, { quantity: findProduct.quantity });
       set((state) => ({
         products: state.products.map((p) =>
           p.id === id ? { ...p, quantity: p.quantity - 1 } : p,
@@ -522,11 +514,7 @@ export const useProductStore = create((set) => ({
   addProductQuantityToCart: async (id, products) => {
     try {
       const findProduct = products.find((p) => p.id === id);
-      fetch(`http://localhost:3000/api/products/add/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "Application/json" },
-        body: JSON.stringify({ quantity: findProduct.quantity }),
-      });
+      axios.put(`products/add/${id}`, { quantity: findProduct.quantity });
       set((state) => ({
         products: state.products.map((p) =>
           p.id === id ? { ...p, quantity: p.quantity + 1 } : p,
@@ -539,13 +527,9 @@ export const useProductStore = create((set) => ({
   restoreSingleProductQuantityToCart: async (id, sold_quantity, products) => {
     try {
       const findProduct = products.find((p) => p.id === id);
-      fetch(`http://localhost:3000/api/products/restore/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "Application/json" },
-        body: JSON.stringify({
-          sold_quantity: sold_quantity,
-          quantity: findProduct.quantity,
-        }),
+      axios.put(`products/restore/${id}`, {
+        sold_quantity: sold_quantity,
+        quantity: findProduct.quantity,
       });
       set((state) => ({
         products: state.products.map((p) => {
@@ -570,14 +554,10 @@ export const useProductStore = create((set) => ({
   ) => {
     try {
       const findProduct = products.find((p) => p.id === id);
-      fetch(`http://localhost:3000/api/products/custom/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "Application/json" },
-        body: JSON.stringify({
-          new_quantity: customQuantity,
-          prev_quantity: sold_quantity,
-          products_quantity: findProduct.quantity,
-        }),
+      axios.put(`products/custom/${id}`, {
+        new_quantity: customQuantity,
+        prev_quantity: sold_quantity,
+        products_quantity: findProduct.quantity,
       });
       set((state) => ({
         products: state.products.map((p) =>
@@ -593,13 +573,9 @@ export const useProductStore = create((set) => ({
   restoreAllProductQuantityToCart: async (id, sold_quantity, products) => {
     try {
       const findProduct = products.find((p) => p.id === id);
-      fetch(`http://localhost:3000/api/products/restore_all/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "Application/json" },
-        body: JSON.stringify({
-          sold_quantity: sold_quantity,
-          products_quantity: findProduct.quantity,
-        }),
+      axios.put(`products/restore_all/${id}`, {
+        sold_quantity: sold_quantity,
+        products_quantity: findProduct.quantity,
       });
     } catch (err) {
       console.error(err);
@@ -615,10 +591,10 @@ export const useProductStore = create((set) => ({
             : newStock <= findProduct.alertquantity
               ? "Low-Stock"
               : "In-Stock";
-        fetch(`http://localhost:3000/api/products/update_stock/${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "Application/json" },
-          body: JSON.stringify({ newStock: newStock, status: status }),
+
+        axios.put(`products/update_stock/${id}`, {
+          newStock: newStock,
+          status: status,
         });
         return {
           products: state.products.map((p) => {
@@ -639,11 +615,7 @@ export const useProductStore = create((set) => ({
   },
   addToProduct: async (product) => {
     try {
-      fetch(`http://localhost:3000/api/products`, {
-        method: "POST",
-        headers: { "Content-Type": "Application/json" },
-        body: JSON.stringify(product),
-      });
+      axios.post(`/products`, product);
       set((state) => ({
         products: [...state.products, product],
       }));
@@ -653,9 +625,7 @@ export const useProductStore = create((set) => ({
   },
   removeProduct: async (id) => {
     try {
-      fetch(`http://localhost:3000/api/products/remove_product/${id}`, {
-        method: "DELETE",
-      });
+      axios.delete(`products/remove_product/${id}`)
       set((state) => ({
         products: state.products.filter((p) => p.id !== id),
       }));
@@ -663,32 +633,28 @@ export const useProductStore = create((set) => ({
       console.error(err);
     }
   },
-  duplicateProduct: async(product) => {
+  duplicateProduct: async (product) => {
     try {
-      fetch(`http://localhost:3000/api/products/duplicate-product/${product.id}`, {
-        method: "POST",
-        headers:{"Content-Type" : "Application/json"},
-        body:JSON.stringify(product)
-      });
+      axios.post(`products/duplicate-product/${product.id}`)
       set((state) => ({
-        products:[
+        products: [
           ...state.products,
           {
             ...product,
             product_name: `${product.product_name}(copy)`,
-            barcode: `${product.barcode}(copy)`
-          }
-        ]
-      }))
+            barcode: `${product.barcode}(copy)`,
+          },
+        ],
+      }));
     } catch (err) {
-      console.error(err)
+      console.error(err);
     }
   },
-  updateProduct: async(product) => {
+  updateProduct: async (product) => {
     try {
-      console.log(product)
+      console.log(product);
     } catch (err) {
-      console.error(err)
+      console.error(err);
     }
-  }
+  },
 }));
