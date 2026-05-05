@@ -218,7 +218,7 @@ const AdvancedPOSTable = () => {
     0,
   );
   const lowStockCount = products.filter(
-    (p) => p.quantity > 0 && p.quantity <= p.alertQuantity,
+    (p) => p.quantity > 0 && p.quantity <= p.alertquantity,
   ).length;
   const outOfStockCount = products.filter((p) => p.quantity === 0).length;
 
