@@ -1,3 +1,4 @@
+import axios from "../axios";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 // export const useCartStore = create(
@@ -84,9 +85,8 @@ export const useCartStore = create((set) => ({
   getCart: async () => {
     set({ loading: true });
     try {
-      const res = await fetch("http://localhost:3000/api/cart");
-      const data = await res.json();
-      set({ cart: data, loading: false });
+      const res = await axios.get("/cart");
+      set({ cart: res.data, loading: false });
     } catch (err) {
       set({ error: err.message, loading: false });
     }
@@ -95,17 +95,9 @@ export const useCartStore = create((set) => ({
     try {
       const exists = cart.find((p) => p.id === cartProduct.id);
       if (exists) {
-        fetch(`http://localhost:3000/api/cart/${cartProduct.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ quantity: exists.sold_quantity }),
-        });
+        axios.put(`cart/${cartProduct.id}`, { quantity: exists.sold_quantity });
       } else {
-        fetch(`http://localhost:3000/api/cart`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(cartProduct),
-        });
+        axios.post(`/cart`, cartProduct);
       }
 
       set((state) => {
@@ -127,9 +119,7 @@ export const useCartStore = create((set) => ({
   },
   removeCartItem: async (id) => {
     try {
-      fetch(`http://localhost:3000/api/cart/${id}`, {
-        method: "DELETE",
-      });
+      axios.delete(`cart/${id}`);
       set((state) => ({
         cart: state.cart.filter((p) => p.id !== id),
       }));
@@ -139,11 +129,7 @@ export const useCartStore = create((set) => ({
   },
   addCartQuantity: async (id, sold_quantity) => {
     try {
-      fetch(`http://localhost:3000/api/cart/add/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "Application/json" },
-        body: JSON.stringify({ sold_quantity: sold_quantity }),
-      });
+      axios.put(`cart/add/${id}`, { sold_quantity: sold_quantity });
       set((state) => ({
         cart: state.cart.map((p) => {
           if (p.id === id) {
@@ -162,16 +148,10 @@ export const useCartStore = create((set) => ({
   removeCartQuantity: async (id, sold_quantity) => {
     try {
       set((state) => {
-        fetch(`http://localhost:3000/api/cart/remove/${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "Application/json" },
-          body: JSON.stringify({ sold_quantity: sold_quantity }),
-        });
-        const findProduct = state.cart.find((p) => p.sold_quantity >0)
-        if(findProduct){
-          fetch(`http://localhost:3000/api/cart/remove_cart/${id}`,{
-            method:"DELETE"
-          })
+        axios.put(`cart/remove/${id}`, { sold_quantity: sold_quantity });
+        const findProduct = state.cart.find((p) => p.sold_quantity <= 1);
+        if (findProduct) {
+          axios.delete(`cart/remove_cart/${id}`);
         }
         return {
           cart: state.cart
@@ -187,11 +167,7 @@ export const useCartStore = create((set) => ({
   },
   addCustomCartQuantity: async (id, customCartQuantity) => {
     try {
-      fetch(`http://localhost:3000/api/cart/custom/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "Application/json" },
-        body: JSON.stringify({ sold_quantity: customCartQuantity }),
-      });
+      axios.put(`cart/custom/${id}`, { sold_quantity: customCartQuantity });
       set((state) => ({
         cart: state.cart.map((p) =>
           p.id === id ? { ...p, sold_quantity: customCartQuantity } : p,
@@ -203,9 +179,7 @@ export const useCartStore = create((set) => ({
   },
   resetCart: async (id) => {
     try {
-      fetch(`http://localhost:3000/api/cart/reset/${id}`, {
-        method: "DELETE",
-      });
+      axios.delete(`cart/reset/${id}`);
       set((state) => ({
         cart: [],
       }));

@@ -1,3 +1,4 @@
+import axios from "../axios";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 // export const useSoldStore = create(
@@ -55,18 +56,13 @@ export const useSoldStore = create((set) => ({
   getSoldProducts: async () => {
     set({ loading: true });
     try {
-      const res = await fetch("http://localhost:3000/api/sold_products");
-      const data = await res.json();
-      set({soldProducts:data ,loading:false})
+      const res = await axios.get("/sold_products");
+      set({ soldProducts: res.data, loading: false });
     } catch (err) {
       set({ error: err.message, loading: false });
     }
   },
   addToSoldProduct: async (cart) => {
-    fetch("http://localhost:3000/api/sold_products",{
-      method:"POST",
-      headers:{"Content-Type" : "Application/json"},
-      body:JSON.stringify(cart)
-    })
-  }
+    axios.post("/sold_products", cart);
+  },
 }));
