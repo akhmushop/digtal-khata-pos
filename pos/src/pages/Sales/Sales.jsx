@@ -25,13 +25,13 @@ export const Sales = () => {
   const handleFullReturn = (product) => {
     if (window.confirm("Do you want to return")) {
       product.items.map((p) => {
-        restoreReturnProduct(p.id, p.qty);
+        restoreReturnProduct(p.id, p.sold_quantity);
       });
       returnProducts(product.id);
     }
   };
   const handleSingleReturn = (soldArray, item) => {
-    restoreReturnProduct(item.id, item.qty);
+    restoreReturnProduct(item.id, item.sold_quantity);
     returnSingleItems(item.id, identifyArray, soldArray.items.length);
     removeProduct();
   };
@@ -231,7 +231,7 @@ const ShowProductDetails = ({
                 Product Unit:
               </span>
               <span className="text-gray-600 flex-1">
-                {detailsProduct.productunit}
+                {detailsProduct.product_unit}
               </span>
             </div>
 
@@ -240,7 +240,7 @@ const ShowProductDetails = ({
                 Product Type:
               </span>
               <span className="text-gray-600 flex-1">
-                {detailsProduct.producttype}
+                {detailsProduct.product_type}
               </span>
             </div>
 
@@ -249,7 +249,7 @@ const ShowProductDetails = ({
                 Alert Quantity:
               </span>
               <span className="text-gray-600 flex-1">
-                {detailsProduct.alertquantity}
+                {detailsProduct.alert_quantity}
               </span>
             </div>
 
@@ -272,7 +272,7 @@ const ShowProductDetails = ({
                 Quantity:
               </span>
               <span
-                className={`flex-1 ${detailsProduct.quantity < detailsProduct.alertQuantity ? "text-red-600 font-semibold" : "text-gray-600"}`}
+                className={`flex-1 ${detailsProduct.quantity < detailsProduct.alert_quantity ? "text-red-600 font-semibold" : "text-gray-600"}`}
               >
                 {detailsProduct.quantity}
               </span>
@@ -283,15 +283,15 @@ const ShowProductDetails = ({
                 Discount:
               </span>
               <span className="text-gray-600 flex-1">
-                {detailsProduct.discountpercent > 0 &&
-                  `${detailsProduct.discountpercent}%`}
-                {detailsProduct.discountpercent > 0 &&
-                  detailsProduct.flatdiscount > 0 &&
+                {detailsProduct.discount_percent > 0 &&
+                  `${detailsProduct.discount_percent}%`}
+                {detailsProduct.discount_percent > 0 &&
+                  detailsProduct.flat_discount > 0 &&
                   " / "}
-                {detailsProduct.flatdiscount > 0 &&
-                  `$${detailsProduct.flatdiscount} flat`}
-                {detailsProduct.discountpercent === 0 &&
-                  detailsProduct.flatdiscount === 0 &&
+                {detailsProduct.flat_discount > 0 &&
+                  `$${detailsProduct.flat_discount} flat`}
+                {detailsProduct.discount_percent === 0 &&
+                  detailsProduct.flat_discount === 0 &&
                   "No discount"}
               </span>
             </div>
@@ -301,7 +301,7 @@ const ShowProductDetails = ({
                 Batch Number:
               </span>
               <span className="text-gray-600 flex-1">
-                {detailsProduct.batchnumber}
+                {detailsProduct.batch_number}
               </span>
             </div>
 
@@ -310,7 +310,7 @@ const ShowProductDetails = ({
                 Expiry Date:
               </span>
               <span className="text-gray-600 flex-1">
-                {detailsProduct.expirydate || "N/A"}
+                {detailsProduct.expiry_date || "N/A"}
               </span>
             </div>
 

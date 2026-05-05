@@ -45,7 +45,7 @@ const DashboardComponent = () => {
   const soldProducts = useSoldStore((state) => state.soldProducts);
   // alert products start
   const alertProducts = products.filter(
-    (item) => item.quantity <= item.alertQuantity,
+    (item) => item.quantity <= item.alert_quantity,
   );
   //alert products end
 
