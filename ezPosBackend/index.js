@@ -157,6 +157,22 @@ app.post("/api/products/duplicate-product/:id", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+app.patch("/api/products/updated_product/:id" ,async (req, res) =>{
+  try {
+    const {id} =req.params;
+    const update_product = req.body
+    if(Object.keys(update_product).length === 0){
+      return res.status(400).json({error:"No fields to update"})
+    }
+    const keys = Object.keys(update_product)
+    const values = Object.values(update_product)
+    const setClause = keys.map((key, i)=>`${key} = $${i+1}`).join(", ")
+    values.push(id)
+    const result = await pool.query(`UPDATE products SET ${setClause} WHERE id = $${values.length}`,values)
+  } catch (err) {
+    console.error(err)
+  }
+})
 //
 //
 //

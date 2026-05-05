@@ -650,9 +650,21 @@ export const useProductStore = create((set) => ({
       console.error(err);
     }
   },
-  updateProduct: async (product) => {
+  updateProduct: async (id,updatedProduct) => {
     try {
-      console.log(product);
+      axios.patch(`/products/updated_product/${id}`,updatedProduct)
+      console.log(updatedProduct)
+      set((state) => ({
+        products: state.products.map((p)=>{
+          if(p.id === id){
+            return{
+            ...p,
+            ...updatedProduct
+          }
+          }
+          return p
+        })
+      }))
     } catch (err) {
       console.error(err);
     }
