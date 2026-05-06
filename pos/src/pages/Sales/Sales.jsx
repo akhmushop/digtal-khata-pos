@@ -7,9 +7,7 @@ import { create } from "zustand";
 export const Sales = () => {
   const soldProducts = useSoldStore((state) => state.soldProducts);
   const removeProduct = useSoldStore((state) => state.removeProduct);
-  const restoreReturnProduct = useProductStore(
-    (state) => state.restoreReturnProduct,
-  );
+  const { restoreReturnProduct } = useProductStore();
   const [isOpen, setIsOpen] = useState(false);
   const [showProductDetailsModal, setShowProductDetailsModal] = useState(false);
   const [soldProductArray, setSoldProductArray] = useState([]);
@@ -40,24 +38,23 @@ export const Sales = () => {
     setShowProductDetailsModal(true);
     setTimeout(() => setIsOpen(true), 30);
   };
-  const grouped = soldProducts.reduce((acc, item)=>{
-    const key = item.sale_id
-    if(!acc[item.sale_id]){
-       acc[key] = []
+  const grouped = soldProducts.reduce((acc, item) => {
+    const key = item.sale_id;
+    if (!acc[item.sale_id]) {
+      acc[key] = [];
     }
-    acc[item.sale_id].push(item)
-    return acc
-  },{})
-  const allSoldProduct = Object.entries(grouped).map(([id, items])=>{
+    acc[item.sale_id].push(item);
+    return acc;
+  }, {});
+  const allSoldProduct = Object.entries(grouped).map(([id, items]) => {
+    const find = items.find((p) => p.id);
 
-    const find = items.find((p) => p.id)
-    
-   return {
-    id:Number(id),
-    items,
-    created_at:find.created_at
-   }
-  })
+    return {
+      id: Number(id),
+      items,
+      created_at: find.created_at,
+    };
+  });
   return (
     <div>
       {showProductDetailsModal && (
@@ -183,6 +180,7 @@ const ShowProductDetails = ({
   handelClose = { handelClose },
   detailsProduct = { detailsProduct },
 }) => {
+  const { products } = useProductStore();
   return (
     <div className="relative w-130  bg-white shadow-md overflow-hidden rounded-b-lg">
       <div className="bg-rose-700 px-4 py-2 flex justify-between items-center ">
@@ -207,156 +205,171 @@ const ShowProductDetails = ({
         </button>
       </div>
 
-      {detailsProduct && (
-        <div className="p-4 space-y-2">
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-            <div className="flex items-start">
-              <span className="font-semibold text-gray-700 w-28">Barcode:</span>
-              <span className="text-gray-600 flex-1">
-                {detailsProduct.barcode}
-              </span>
-            </div>
+      {detailsProduct &&
+        products.map((product) => {
+          if (product.id === detailsProduct.id) {
+            return (
+              <div key={product.id} className="p-4 space-y-2">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                  <div className="flex items-start">
+                    <span className="font-semibold text-gray-700 w-28">
+                      Barcode:
+                    </span>
+                    <span className="text-gray-600 flex-1">
+                      {product.barcode}
+                    </span>
+                  </div>
 
-            <div className="flex items-start">
-              <span className="font-semibold text-gray-700 w-28">
-                Product Name:
-              </span>
-              <span className="text-gray-600 flex-1 break-words">
-                {detailsProduct.product_name}
-              </span>
-            </div>
+                  <div className="flex items-start">
+                    <span className="font-semibold text-gray-700 w-28">
+                      Product Name:
+                    </span>
+                    <span className="text-gray-600 flex-1 break-words">
+                      {product.product_name}
+                    </span>
+                  </div>
 
-            <div className="flex items-start">
-              <span className="font-semibold text-gray-700 w-28">
-                Product Unit:
-              </span>
-              <span className="text-gray-600 flex-1">
-                {detailsProduct.product_unit}
-              </span>
-            </div>
+                  <div className="flex items-start">
+                    <span className="font-semibold text-gray-700 w-28">
+                      Product Unit:
+                    </span>
+                    <span className="text-gray-600 flex-1">
+                      {product.product_unit}
+                    </span>
+                  </div>
 
-            <div className="flex items-start">
-              <span className="font-semibold text-gray-700 w-28">
-                Product Type:
-              </span>
-              <span className="text-gray-600 flex-1">
-                {detailsProduct.product_type}
-              </span>
-            </div>
+                  <div className="flex items-start">
+                    <span className="font-semibold text-gray-700 w-28">
+                      Product Type:
+                    </span>
+                    <span className="text-gray-600 flex-1">
+                      {product.product_type}
+                    </span>
+                  </div>
 
-            <div className="flex items-start">
-              <span className="font-semibold text-gray-700 w-28">
-                Alert Quantity:
-              </span>
-              <span className="text-gray-600 flex-1">
-                {detailsProduct.alert_quantity}
-              </span>
-            </div>
+                  <div className="flex items-start">
+                    <span className="font-semibold text-gray-700 w-28">
+                      Alert Quantity:
+                    </span>
+                    <span className="text-gray-600 flex-1">
+                      {product.alert_quantity}
+                    </span>
+                  </div>
 
-            <div className="flex items-start">
-              <span className="font-semibold text-gray-700 w-28">Cost:</span>
-              <span className="text-green-600 font-medium flex-1">
-                ${detailsProduct.cost}
-              </span>
-            </div>
+                  <div className="flex items-start">
+                    <span className="font-semibold text-gray-700 w-28">
+                      Cost:
+                    </span>
+                    <span className="text-green-600 font-medium flex-1">
+                      ${product.cost}
+                    </span>
+                  </div>
 
-            <div className="flex items-start">
-              <span className="font-semibold text-gray-700 w-28">Price:</span>
-              <span className="text-green-600 font-medium flex-1">
-                ${detailsProduct.price}
-              </span>
-            </div>
+                  <div className="flex items-start">
+                    <span className="font-semibold text-gray-700 w-28">
+                      Price:
+                    </span>
+                    <span className="text-green-600 font-medium flex-1">
+                      ${product.price}
+                    </span>
+                  </div>
 
-            <div className="flex items-start">
-              <span className="font-semibold text-gray-700 w-28">
-                Quantity:
-              </span>
-              <span
-                className={`flex-1 ${detailsProduct.quantity < detailsProduct.alert_quantity ? "text-red-600 font-semibold" : "text-gray-600"}`}
-              >
-                {detailsProduct.quantity}
-              </span>
-            </div>
+                  <div className="flex items-start">
+                    <span className="font-semibold text-gray-700 w-28">
+                      Quantity:
+                    </span>
+                    <span
+                      className={`flex-1 ${product.quantity < product.alert_quantity ? "text-red-600 font-semibold" : "text-gray-600"}`}
+                    >
+                      {product.quantity}
+                    </span>
+                  </div>
 
-            <div className="flex items-start">
-              <span className="font-semibold text-gray-700 w-28">
-                Discount:
-              </span>
-              <span className="text-gray-600 flex-1">
-                {detailsProduct.discount_percent > 0 &&
-                  `${detailsProduct.discount_percent}%`}
-                {detailsProduct.discount_percent > 0 &&
-                  detailsProduct.flat_discount > 0 &&
-                  " / "}
-                {detailsProduct.flat_discount > 0 &&
-                  `$${detailsProduct.flat_discount} flat`}
-                {detailsProduct.discount_percent === 0 &&
-                  detailsProduct.flat_discount === 0 &&
-                  "No discount"}
-              </span>
-            </div>
+                  <div className="flex items-start">
+                    <span className="font-semibold text-gray-700 w-28">
+                      Discount:
+                    </span>
+                    <span className="text-gray-600 flex-1">
+                      {product.discount_percent > 0 &&
+                        `${product.discount_percent}%`}
+                      {product.discount_percent > 0 &&
+                        product.flat_discount > 0 &&
+                        " / "}
+                      {product.flat_discount > 0 &&
+                        `$${product.flat_discount} flat`}
+                      {product.discount_percent === 0 &&
+                        product.flat_discount === 0 &&
+                        "No discount"}
+                    </span>
+                  </div>
 
-            <div className="flex items-start">
-              <span className="font-semibold text-gray-700 w-28">
-                Batch Number:
-              </span>
-              <span className="text-gray-600 flex-1">
-                {detailsProduct.batch_number}
-              </span>
-            </div>
+                  <div className="flex items-start">
+                    <span className="font-semibold text-gray-700 w-28">
+                      Batch Number:
+                    </span>
+                    <span className="text-gray-600 flex-1">
+                      {product.batch_number}
+                    </span>
+                  </div>
 
-            <div className="flex items-start">
-              <span className="font-semibold text-gray-700 w-28">
-                Expiry Date:
-              </span>
-              <span className="text-gray-600 flex-1">
-                {detailsProduct.expiry_date || "N/A"}
-              </span>
-            </div>
+                  <div className="flex items-start">
+                    <span className="font-semibold text-gray-700 w-28">
+                      Expiry Date:
+                    </span>
+                    <span className="text-gray-600 flex-1">
+                      {product.expiry_date || "N/A"}
+                    </span>
+                  </div>
 
-            <div className="flex items-start">
-              <span className="font-semibold text-gray-700 w-28">
-                Supplier:
-              </span>
-              <span className="text-gray-600 flex-1">
-                {detailsProduct.supplier}
-              </span>
-            </div>
+                  <div className="flex items-start">
+                    <span className="font-semibold text-gray-700 w-28">
+                      Supplier:
+                    </span>
+                    <span className="text-gray-600 flex-1">
+                      {product.supplier}
+                    </span>
+                  </div>
 
-            <div className="flex items-start">
-              <span className="font-semibold text-gray-700 w-28">Brand:</span>
-              <span className="text-gray-600 flex-1">
-                {detailsProduct.brand}
-              </span>
-            </div>
+                  <div className="flex items-start">
+                    <span className="font-semibold text-gray-700 w-28">
+                      Brand:
+                    </span>
+                    <span className="text-gray-600 flex-1">
+                      {product.brand}
+                    </span>
+                  </div>
 
-            <div className="flex items-start">
-              <span className="font-semibold text-gray-700 w-28">
-                Category:
-              </span>
-              <span className="text-gray-600 flex-1">
-                {detailsProduct.category}
-              </span>
-            </div>
+                  <div className="flex items-start">
+                    <span className="font-semibold text-gray-700 w-28">
+                      Category:
+                    </span>
+                    <span className="text-gray-600 flex-1">
+                      {product.category}
+                    </span>
+                  </div>
 
-            <div className="flex items-start">
-              <span className="font-semibold text-gray-700 w-28">Tags:</span>
-              <span className="text-gray-600 flex-1 break-words">
-                {detailsProduct.tags?.join(", ")}
-              </span>
-            </div>
+                  <div className="flex items-start">
+                    <span className="font-semibold text-gray-700 w-28">
+                      Tags:
+                    </span>
+                    <span className="text-gray-600 flex-1 break-words">
+                      {product.tags?.join(", ")}
+                    </span>
+                  </div>
 
-            <div className="col-span-2 flex items-start">
-              <span className="font-semibold text-gray-700 w-28">
-                Description:
-              </span>
-              <span className="text-gray-600 flex-1 break-words">
-                {detailsProduct.description}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
+                  <div className="col-span-2 flex items-start">
+                    <span className="font-semibold text-gray-700 w-28">
+                      Description:
+                    </span>
+                    <span className="text-gray-600 flex-1 break-words">
+                      {product.description}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+        })}
     </div>
   );
 };
