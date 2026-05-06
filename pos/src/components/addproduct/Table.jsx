@@ -238,11 +238,11 @@ const AdvancedPOSTable = () => {
 
   const handleBulkDelete = () => {
     if (window.confirm(`Delete ${selectedProducts.length} products?`)) {
-      selectedProducts.map((id) =>{
-        console.log(id)
+      selectedProducts.map((id) => {
+        console.log(id);
         removeProduct(id);
-      })
-      
+      });
+
       setSelectedProducts([]);
       setShowBulkActions(false);
     }
@@ -925,24 +925,23 @@ const AdvancedPOSTable = () => {
                       <div className="font-semibold text-slate-900 truncate">
                         {product.product_name}
                       </div>
-                      {product.tags && product.tags.length > 0 && (
-                        <div className="flex gap-1 mt-1">
-                          {product.tags?.length ? (
-                            product.tags.slice(0, 2).map((tag) => (
-                              <span
-                                key={tag}
-                                className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-slate-100 text-slate-600"
-                              >
-                                {tag}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-slate-100 text-slate-600">
-                              No Tags
+
+                      <div className="flex gap-1 mt-1">
+                        {product.tags?.length ? (
+                          product.tags.slice(0, 2).map((tag) => (
+                            <span
+                              key={tag}
+                              className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-slate-100 text-slate-600"
+                            >
+                              {tag}
                             </span>
-                          )}
-                        </div>
-                      )}
+                          ))
+                        ) : (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-slate-100 text-slate-600">
+                            No Tags
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-4 truncate">
                       <span className="text-sm text-slate-600 font-mono">
