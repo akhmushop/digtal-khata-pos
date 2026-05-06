@@ -208,7 +208,7 @@ const ProductStockForm = () => {
       tags: JSON.stringify(tagsArray),
       final_price: finalPrice.toFixed(2),
       image: imagePreview,
-      createdAt: new Date().toISOString(),
+      created_at: new Date().toISOString(),
     };
 
     if (editingProduct) {
