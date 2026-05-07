@@ -157,22 +157,25 @@ app.post("/api/products/duplicate-product/:id", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-app.patch("/api/products/updated_product/:id" ,async (req, res) =>{
+app.patch("/api/products/updated_product/:id", async (req, res) => {
   try {
-    const {id} =req.params;
-    const update_product = req.body
-    if(Object.keys(update_product).length === 0){
-      return res.status(400).json({error:"No fields to update"})
+    const { id } = req.params;
+    const update_product = req.body;
+    if (Object.keys(update_product).length === 0) {
+      return res.status(400).json({ error: "No fields to update" });
     }
-    const keys = Object.keys(update_product)
-    const values = Object.values(update_product)
-    const setClause = keys.map((key, i)=>`${key} = $${i+1}`).join(", ")
-    values.push(id)
-    const result = await pool.query(`UPDATE products SET ${setClause} WHERE id = $${values.length}`,values)
+    const keys = Object.keys(update_product);
+    const values = Object.values(update_product);
+    const setClause = keys.map((key, i) => `${key} = $${i + 1}`).join(", ");
+    values.push(id);
+    const result = await pool.query(
+      `UPDATE products SET ${setClause} WHERE id = $${values.length}`,
+      values,
+    );
   } catch (err) {
-    console.error(err)
+    console.error(err);
   }
-})
+});
 //
 //
 //
@@ -281,7 +284,7 @@ app.delete("/api/cart/remove_cart/:id", async (req, res) => {
 app.get("/api/sold_products", async (req, res) => {
   try {
     const sold_products = await pool.query(
-      "SELECT s.id AS sale_id ,p.id,p.product_name,p.category, p.cost, p.price ,si.sold_quantity, si.sold_price, s.created_at FROM sale_items si JOIN sales s ON si.sale_id = s.id JOIN products p ON si.product_id = p.id",
+      "SELECT s.id AS sale_id,si.id AS sale_items_id,p.id,p.product_name,p.category, p.cost, p.price ,si.sold_quantity, si.sold_price, s.created_at FROM sale_items si JOIN sales s ON si.sale_id = s.id JOIN products p ON si.product_id = p.id WHERE si.status = 'completed'",
     );
     res.json(sold_products.rows);
   } catch (err) {
@@ -291,18 +294,39 @@ app.get("/api/sold_products", async (req, res) => {
 app.post("/api/sold_products", async (req, res) => {
   try {
     const cart = req.body;
-    console.log(cart);
     const insertSale = await pool.query(
       "INSERT INTO sales DEFAULT VALUES RETURNING id",
     );
     const salesId = insertSale.rows[0].id;
-    console.log();
     for (let item of cart) {
       const insertSoldProducts = await pool.query(
-        "INSERT INTO sale_items (sale_id, product_id, quantity, price) VALUES ($1,$2,$3,$4)",
+        "INSERT INTO sale_items (sale_id, product_id, sold_quantity, sold_price) VALUES ($1,$2,$3,$4)",
         [salesId, item.id, item.sold_quantity, item.price],
       );
     }
+  } catch (err) {
+    console.error(err);
+  }
+});
+app.post("/api/sold_products/refund/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateStatus = await pool.query(
+      "UPDATE sale_items SET status = 'refunded' WHERE id = $1",
+      [id],
+    );
+    const sale_items = await pool.query(
+      "SELECT * FROM sale_items WHERE id = $1",
+      [id],
+    );
+    const refund = await pool.query(
+      "INSERT INTO sale_refund_items (refund_id) VALUES ($1)",
+      [id],
+    );
+    const updateProductStock = await pool.query(
+      "UPDATE products SET quantity =quantity + $1 WHERE id = $2",
+      [sale_items.rows[0].sold_quantity, sale_items.rows[0].product_id],
+    );
   } catch (err) {
     console.error(err);
   }

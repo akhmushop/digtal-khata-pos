@@ -29,9 +29,11 @@ export const Sales = () => {
     }
   };
   const handleSingleReturn = (soldArray, item) => {
-    restoreReturnProduct(item.id, item.sold_quantity);
-    returnSingleItems(item.id, identifyArray, soldArray.items.length);
-    removeProduct();
+    // restoreReturnProduct(item.id, item.sold_quantity);
+    if (
+      window.confirm(`Do you want to refund this product ${item.product_name}`)
+    )
+      returnSingleItems(item.id, item.sale_items_id);
   };
   const handleMoreInfo = (item) => {
     setDetailsProduct(item);
@@ -104,7 +106,7 @@ export const Sales = () => {
                       handleFullReturn(product);
                     }}
                   >
-                    Return
+                    Refunds
                   </button>
                 </td>
               </tr>
@@ -163,7 +165,7 @@ export const Sales = () => {
                             handleSingleReturn(soldArray, item);
                           }}
                         >
-                          Return
+                          Refund
                         </button>
                       </td>
                     </tr>
