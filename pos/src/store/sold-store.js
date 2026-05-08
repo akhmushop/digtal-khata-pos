@@ -65,10 +65,22 @@ export const useSoldStore = create((set) => ({
   addToSoldProduct: async (cart) => {
     axios.post("/sold_products", cart);
   },
-  returnSingleItems: async (id,sale_items_id) => {
-    axios.post(`/sold_products/refund/${sale_items_id}`);
+  returnSingleItems: async (item) => {
+    axios.post(`/sold_products/refund/${item.sale_items_id}`);
     set((state) => ({
-      soldProducts: state.soldProducts.filter((product) => product.id !== id),
+      soldProducts: state.soldProducts.filter((product) =>
+        product.sale_id === item.sale_id ? product.id !== item.id : product,
+      ),
     }));
+  },
+  returnProducts: async (id) => {
+    try {
+      axios.post(`/sold_products/refunds_all/${id}`);
+      set((state) => ({
+        soldProducts: state.soldProducts.filter((p) => p.sale_id !== id)
+      }))
+    } catch (err) {
+      console.error(err);
+    }
   },
 }));
