@@ -284,7 +284,7 @@ app.delete("/api/cart/remove_cart/:id", async (req, res) => {
 app.get("/api/sold_products", async (req, res) => {
   try {
     const sold_products = await pool.query(
-      "SELECT s.id AS sale_id,si.id AS sale_items_id,p.id,p.product_name,p.category, p.cost, p.price ,si.sold_quantity, si.sold_price, s.created_at FROM sale_items si JOIN sales s ON si.sale_id = s.id JOIN products p ON si.product_id = p.id WHERE si.status = 'completed'",
+      "SELECT s.id AS sale_id,si.id AS sale_items_id,p.id,p.product_name,p.category, p.cost, p.price ,si.sold_quantity, si.sold_price, s.created_at FROM sale_items si JOIN sales s ON si.sale_id = s.id JOIN products p ON si.product_id = p.id WHERE si.status = 'completed' AND s.status = 'completed'",
     );
     res.json(sold_products.rows);
   } catch (err) {
@@ -331,5 +331,20 @@ app.post("/api/sold_products/refund/:id", async (req, res) => {
     console.error(err);
   }
 });
+app.post("/api/sold_products/refunds_all/:id", async (req, res) => {
+  try {
+    const {id} = req.params
+    const items = await pool.query("SELECT * FROM sale_items WHERE sale_id=$1 AND status = 'completed'",[id])
+    await pool.query("INSERT INTO sale_refunds(sale_id) VALUES ($1)",[id])
+    for(let item of items.rows) {
+      await pool.query("UPDATE products SET quantity =quantity + $1 WHERE id = $2" ,[item.sold_quantity,item.product_id])
+      await pool.query("UPDATE sale_items SET status = 'refunded' WHERE sale_id  = $1",[item.sale_id])
+    }
+    await pool.query("UPDATE sales SET status = 'refunded' WHERE id = $1",[id])
+    
+  } catch (err) {
+    console.error(err)
+  }
+})
 
 app.listen(PORT, () => console.log(`server is running on PORT ${PORT}`));

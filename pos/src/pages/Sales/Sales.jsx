@@ -22,9 +22,9 @@ export const Sales = () => {
   };
   const handleFullReturn = (product) => {
     if (window.confirm("Do you want to return")) {
-      product.items.map((p) => {
-        restoreReturnProduct(p.id, p.sold_quantity);
-      });
+      // product.items.map((p) => {
+      //   restoreReturnProduct(p.id, p.sold_quantity);
+      // });
       returnProducts(product.id);
     }
   };
@@ -33,7 +33,7 @@ export const Sales = () => {
     if (
       window.confirm(`Do you want to refund this product ${item.product_name}`)
     )
-      returnSingleItems(item.id, item.sale_items_id);
+      returnSingleItems(item);
   };
   const handleMoreInfo = (item) => {
     setDetailsProduct(item);
