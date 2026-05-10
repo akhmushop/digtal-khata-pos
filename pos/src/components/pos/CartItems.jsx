@@ -72,7 +72,7 @@ const {products,addProductQuantityToCart,removeProductQuantityToCart,addCustomPr
                   <div
                     onClick={() => {
                       addProductQuantityToCart(items.id,products);
-                      removeCartQuantity(items.id,items.sold_quantity);
+                      removeCartQuantity(items.id);
                     }}
                     className="cursor-pointer"
                   >
@@ -102,7 +102,7 @@ const {products,addProductQuantityToCart,removeProductQuantityToCart,addCustomPr
                   <div
                     onClick={() => {
                       removeProductQuantityToCart(items.id,products);
-                      addCartQuantity(items.id,items.sold_quantity);
+                      addCartQuantity(items.id);
                     }}
                     className="cursor-pointer"
                   >

@@ -44,11 +44,9 @@ const router = createBrowserRouter([
 ]);
 function App() {
   const { getProducts } = useProductStore();
-  const { getCart } = useCartStore();
   const { getSoldProducts } = useSoldStore();
   useEffect(() => {
     getProducts();
-    getCart();
     getSoldProducts();
   }, []);
   return <RouterProvider router={router} />;
