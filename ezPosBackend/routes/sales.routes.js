@@ -23,6 +23,10 @@ router.post("/api/sold_products", async (req, res) => {
         "INSERT INTO sale_items (sale_id, product_id, sold_quantity, sold_price) VALUES ($1,$2,$3,$4)",
         [salesId, item.id, item.sold_quantity, item.price],
       );
+      const updateProductQuantity = await pool.query(
+        "UPDATE products SET quantity = quantity - $1 WHERE id = $2",
+        [item.sold_quantity, item.id],
+      );
     }
   } catch (err) {
     console.error(err);
