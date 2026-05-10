@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useProductStore } from "../../store/product-store";
 import { useCartStore } from "../../store/cart-store";
 export function ProductList({ search }) {
@@ -22,7 +22,7 @@ export function ProductList({ search }) {
                 onClick={() => {
                   if (product.quantity <= 0) return;
                   addToCart(product);
-                  removeProductQuantity(product.id, product.quantity);
+                  removeProductQuantity(product.id);
                 }}
                 className={`select-none relative h-60 bg-zuccini-300 rounded-sm flex flex-col items-center justify-between py-2 
   ${

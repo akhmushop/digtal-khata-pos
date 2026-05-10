@@ -9,7 +9,7 @@ import { useCartStore } from "../../store/cart-store";
 import { useSoldStore } from "../../store/sold-store";
 
 export default function CartItems() {
-const {products,addProductQuantityToCart,removeProductQuantityToCart,addCustomProductQuantityToCart,restoreSingleProductQuantityToCart} = useProductStore();
+const {addProductQuantityToCart,removeProductQuantityToCart,addCustomProductQuantityToCart,restoreSingleProductQuantityToCart} = useProductStore();
   const {cart,addCartQuantity,removeCartQuantity,removeCartItem,addCustomCartQuantity} = useCartStore();
   const [editQuantityId, setEditQuantityId] = useState(null);
   const [customQuantity, setCustomQuantity] = useState(null);
@@ -29,7 +29,7 @@ const {products,addProductQuantityToCart,removeProductQuantityToCart,addCustomPr
         const newQuantity = Number(customQuantity);
         if (!isNaN(newQuantity) && newQuantity > 0) {
           addCustomCartQuantity(items.id,newQuantity ); // Send the difference to update
-          addCustomProductQuantityToCart(items.id, newQuantity, items.sold_quantity, products);
+          addCustomProductQuantityToCart(items.id, newQuantity, items.sold_quantity);
         }
         setCustomQuantity(null);
         setEditQuantityId(null);
@@ -71,7 +71,7 @@ const {products,addProductQuantityToCart,removeProductQuantityToCart,addCustomPr
                 <div className="flex text-2xl gap-x-4 items-center pr-5  ">
                   <div
                     onClick={() => {
-                      addProductQuantityToCart(items.id,products);
+                      addProductQuantityToCart(items.id);
                       removeCartQuantity(items.id);
                     }}
                     className="cursor-pointer"
@@ -101,7 +101,7 @@ const {products,addProductQuantityToCart,removeProductQuantityToCart,addCustomPr
                   </span>
                   <div
                     onClick={() => {
-                      removeProductQuantityToCart(items.id,products);
+                      removeProductQuantityToCart(items.id);
                       addCartQuantity(items.id);
                     }}
                     className="cursor-pointer"
@@ -111,7 +111,7 @@ const {products,addProductQuantityToCart,removeProductQuantityToCart,addCustomPr
                   <div
                     className="cursor-pointer"
                     onClick={() => {
-                      restoreSingleProductQuantityToCart(items.id, items.sold_quantity,products);
+                      restoreSingleProductQuantityToCart(items.id, items.sold_quantity);
                       removeCartItem(items.id);
                     }}
                   >

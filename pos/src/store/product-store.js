@@ -481,107 +481,56 @@ export const useProductStore = create((set) => ({
       set({ error: err.message, loading: false });
     }
   },
-  removeProductQuantity: async (id, quantity) => {
-    try {
-      axios.put(`/products/${id}`, { quantity });
-      set((state) => ({
-        products: state.products.map((product) =>
-          product.id === id
-            ? {
-                ...product,
-                quantity: product.quantity - 1,
-              }
-            : product,
-        ),
-      }));
-    } catch (err) {
-      console.error(err);
-    }
-  },
-  removeProductQuantityToCart: async (id, products) => {
-    try {
-      const findProduct = products.find((p) => p.id === id);
-      axios.put(`products/remove/${id}`, { quantity: findProduct.quantity });
-      set((state) => ({
-        products: state.products.map((p) =>
-          p.id === id ? { ...p, quantity: p.quantity - 1 } : p,
-        ),
-      }));
-    } catch (err) {
-      console.error(err);
-    }
-  },
-  addProductQuantityToCart: async (id, products) => {
-    try {
-      const findProduct = products.find((p) => p.id === id);
-      axios.put(`products/add/${id}`, { quantity: findProduct.quantity });
-      set((state) => ({
-        products: state.products.map((p) =>
-          p.id === id ? { ...p, quantity: p.quantity + 1 } : p,
-        ),
-      }));
-    } catch (err) {
-      console.error(err);
-    }
-  },
-  restoreSingleProductQuantityToCart: async (id, sold_quantity, products) => {
-    try {
-      const findProduct = products.find((p) => p.id === id);
-      axios.put(`products/restore/${id}`, {
-        sold_quantity: sold_quantity,
-        quantity: findProduct.quantity,
-      });
-      set((state) => ({
-        products: state.products.map((p) => {
-          if (p.id === id) {
-            return {
-              ...p,
-              quantity: p.quantity + sold_quantity,
-            };
-          }
-          return p;
-        }),
-      }));
-    } catch (err) {
-      console.error(err);
-    }
-  },
-  addCustomProductQuantityToCart: async (
-    id,
-    customQuantity,
-    sold_quantity,
-    products,
-  ) => {
-    try {
-      const findProduct = products.find((p) => p.id === id);
-      axios.put(`products/custom/${id}`, {
-        new_quantity: customQuantity,
-        prev_quantity: sold_quantity,
-        products_quantity: findProduct.quantity,
-      });
-      set((state) => ({
-        products: state.products.map((p) =>
-          p.id === id
-            ? { ...p, quantity: p.quantity - (customQuantity - sold_quantity) }
-            : p,
-        ),
-      }));
-    } catch (err) {
-      console.error(err);
-    }
-  },
-  restoreAllProductQuantityToCart: async (id, sold_quantity, products) => {
-    try {
-      const findProduct = products.find((p) => p.id === id);
-      axios.put(`products/restore_all/${id}`, {
-        sold_quantity: sold_quantity,
-        products_quantity: findProduct.quantity,
-      });
-    } catch (err) {
-      console.error(err);
-    }
-  },
-  updateStock: async (id, newStock) => {
+  removeProductQuantity: (id) =>
+    set((state) => ({
+      products: state.products.map((product) =>
+        product.id === id
+          ? {
+              ...product,
+              quantity: product.quantity - 1,
+            }
+          : product,
+      ),
+    })),
+  removeProductQuantityToCart: (id) =>
+    set((state) => ({
+      products: state.products.map((p) =>
+        p.id === id ? { ...p, quantity: p.quantity - 1 } : p,
+      ),
+    })),
+  addProductQuantityToCart: (id) =>
+    set((state) => ({
+      products: state.products.map((p) =>
+        p.id === id ? { ...p, quantity: p.quantity + 1 } : p,
+      ),
+    })),
+  restoreSingleProductQuantityToCart: (id, sold_quantity) =>
+    set((state) => ({
+      products: state.products.map((p) => {
+        if (p.id === id) {
+          return {
+            ...p,
+            quantity: p.quantity + sold_quantity,
+          };
+        }
+        return p;
+      }),
+    })),
+  addCustomProductQuantityToCart: (id, customQuantity, sold_quantity) =>
+    set((state) => ({
+      products: state.products.map((p) =>
+        p.id === id
+          ? { ...p, quantity: p.quantity - (customQuantity - sold_quantity) }
+          : p,
+      ),
+    })),
+  restoreAllProductQuantityToCart: (id, sold_quantity) =>
+    set((state) => ({
+      products: state.products.map((p) =>
+        p.id === id ? { ...p, quantity: p.quantity + sold_quantity } : p,
+      ),
+    })),
+  updateStock: (id, newStock) => {
     try {
       set((state) => {
         const findProduct = state.products.find((p) => p.id === id);
@@ -613,60 +562,35 @@ export const useProductStore = create((set) => ({
       console.error(err);
     }
   },
-  addToProduct: async (product) => {
-    try {
-      axios.post(`/products`, product);
-      set((state) => ({
-        products: [...state.products, product],
-      }));
-    } catch (err) {
-      console.log(err);
-    }
-  },
-  removeProduct: async (id) => {
-    try {
-      axios.delete(`products/remove_product/${id}`)
-      set((state) => ({
-        products: state.products.filter((p) => p.id !== id),
-      }));
-    } catch (err) {
-      console.error(err);
-    }
-  },
-  duplicateProduct: async (product) => {
-    try {
-      axios.post(`products/duplicate-product/${product.id}`)
-      set((state) => ({
-        products: [
-          ...state.products,
-          {
-            ...product,
-            product_name: `${product.product_name}(copy)`,
-            barcode: `${product.barcode}(copy)`,
-          },
-        ],
-      }));
-    } catch (err) {
-      console.error(err);
-    }
-  },
-  updateProduct: async (id,updatedProduct) => {
-    try {
-      axios.patch(`/products/updated_product/${id}`,updatedProduct)
-      console.log(updatedProduct)
-      set((state) => ({
-        products: state.products.map((p)=>{
-          if(p.id === id){
-            return{
+  addToProduct: (product) =>
+    set((state) => ({
+      products: [...state.products, product],
+    })),
+  removeProduct: (id) =>
+    set((state) => ({
+      products: state.products.filter((p) => p.id !== id),
+    })),
+  duplicateProduct: (product) =>
+    set((state) => ({
+      products: [
+        ...state.products,
+        {
+          ...product,
+          product_name: `${product.product_name}(copy)`,
+          barcode: `${product.barcode}(copy)`,
+        },
+      ],
+    })),
+  updateProduct: (id, updatedProduct) =>
+    set((state) => ({
+      products: state.products.map((p) => {
+        if (p.id === id) {
+          return {
             ...p,
-            ...updatedProduct
-          }
-          }
-          return p
-        })
-      }))
-    } catch (err) {
-      console.error(err);
-    }
-  },
+            ...updatedProduct,
+          };
+        }
+        return p;
+      }),
+    })),
 }));
