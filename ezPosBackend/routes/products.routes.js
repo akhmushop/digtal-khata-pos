@@ -1,4 +1,4 @@
-import express from "express";
+import express, { json } from "express";
 import { pool } from "../config/db.js";
 const router = express.Router();
 
@@ -14,7 +14,7 @@ router.post("/api/products", async (req, res) => {
   try {
     const product = req.body;
     const keys = Object.keys(product);
-    const values = Object.values(product);
+    const values = Object.values(product).map((value) => typeof value === "object" ? JSON.stringify(value) : value);
     const columns = keys.join(",");
     const placeholders = keys.map((_, i) => `$${i + 1}`).join(",");
     const newProduct = await pool.query(
@@ -159,7 +159,9 @@ router.patch("/api/products/updated_product/:id", async (req, res) => {
       return res.status(400).json({ error: "No fields to update" });
     }
     const keys = Object.keys(update_product);
-    const values = Object.values(update_product);
+    const values = Object.values(update_product).map((value) =>
+      typeof value ===  "object" ? JSON.stringify(value) : value,
+    );
     const setClause = keys.map((key, i) => `${key} = $${i + 1}`).join(", ");
     values.push(id);
     const result = await pool.query(
