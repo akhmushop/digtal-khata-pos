@@ -62,8 +62,9 @@ export const useSoldStore = create((set) => ({
       set({ error: err.message, loading: false });
     }
   },
-  addToSoldProduct: async (cart) => {
-    axios.post("/sold_products", cart);
+  addToSoldProduct: async (cart,cashForm) => {
+    
+    axios.post("/sold_products", {cart:cart ,cashForm:cashForm});
   },
   returnSingleItems: async (item) => {
     axios.post(`/sold_products/refund/${item.sale_items_id}`);

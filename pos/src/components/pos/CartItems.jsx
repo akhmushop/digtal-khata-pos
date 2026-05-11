@@ -9,15 +9,29 @@ import { useCartStore } from "../../store/cart-store";
 import { useSoldStore } from "../../store/sold-store";
 
 export default function CartItems() {
-const {addProductQuantityToCart,removeProductQuantityToCart,addCustomProductQuantityToCart,restoreSingleProductQuantityToCart} = useProductStore();
-  const {cart,addCartQuantity,removeCartQuantity,removeCartItem,addCustomCartQuantity} = useCartStore();
+  const {
+    addProductQuantityToCart,
+    removeProductQuantityToCart,
+    addCustomProductQuantityToCart,
+    restoreSingleProductQuantityToCart,
+  } = useProductStore();
+  const {
+    cart,
+    addCartQuantity,
+    removeCartQuantity,
+    removeCartItem,
+    addCustomCartQuantity,
+  } = useCartStore();
   const [editQuantityId, setEditQuantityId] = useState(null);
   const [customQuantity, setCustomQuantity] = useState(null);
   const editQuantityRef = useRef(null);
   // ClickOutSideToSaveCustomQuantity
   useEffect(() => {
     const clickOutside = (event) => {
-      if (editQuantityRef.current && !editQuantityRef.current.contains(event.target)) {
+      if (
+        editQuantityRef.current &&
+        !editQuantityRef.current.contains(event.target)
+      ) {
         setEditQuantityId(null);
       }
       const items = cart.find((p) => p.id === editQuantityId);
@@ -28,8 +42,12 @@ const {addProductQuantityToCart,removeProductQuantityToCart,addCustomProductQuan
       ) {
         const newQuantity = Number(customQuantity);
         if (!isNaN(newQuantity) && newQuantity > 0) {
-          addCustomCartQuantity(items.id,newQuantity ); // Send the difference to update
-          addCustomProductQuantityToCart(items.id, newQuantity, items.sold_quantity);
+          addCustomCartQuantity(items.id, newQuantity); // Send the difference to update
+          addCustomProductQuantityToCart(
+            items.id,
+            newQuantity,
+            items.sold_quantity,
+          );
         }
         setCustomQuantity(null);
         setEditQuantityId(null);
@@ -39,7 +57,13 @@ const {addProductQuantityToCart,removeProductQuantityToCart,addCustomProductQuan
     return () => {
       document.removeEventListener("mousedown", clickOutside);
     };
-  }, [cart, customQuantity, editQuantityId, addCustomCartQuantity, addCustomProductQuantityToCart]);
+  }, [
+    cart,
+    customQuantity,
+    editQuantityId,
+    addCustomCartQuantity,
+    addCustomProductQuantityToCart,
+  ]);
   // ClickOutSideToSaveCustomQuantity
 
   return (
@@ -49,7 +73,7 @@ const {addProductQuantityToCart,removeProductQuantityToCart,addCustomProductQuan
         {cart.map((items) => {
           return (
             <div
-              key={items.barcode}
+              key={items.id}
               className="h-20 m-2 bg-zuccini-300 rounded-xl flex items-center select-none"
             >
               <div className="flex items-center w-full justify-between">
@@ -111,7 +135,10 @@ const {addProductQuantityToCart,removeProductQuantityToCart,addCustomProductQuan
                   <div
                     className="cursor-pointer"
                     onClick={() => {
-                      restoreSingleProductQuantityToCart(items.id, items.sold_quantity);
+                      restoreSingleProductQuantityToCart(
+                        items.id,
+                        items.sold_quantity,
+                      );
                       removeCartItem(items.id);
                     }}
                   >
@@ -174,22 +201,24 @@ function CartCalculation() {
     amount: "0",
     note: "",
   });
-  const [cashForm, setCashForm] = useState({
-    discount: "0",
-    amountReceived: "0",
-    change: "0",
-    payable: "0",
-    originalPayable: "0",
+  const initialCashFrom = {
+    discount: 0,
+    amountReceived: 0,
+    change: 0,
+    final_total: 0,
     note: "",
-  });
+  };
+  const [cashForm, setCashForm] = useState(initialCashFrom);
+
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isCashModalOpen, setIsCashModalOpen] = useState(false);
   const handleCashTk = () => {
     const total = subTotal + vat;
     setCashForm((prev) => ({
       ...prev,
-      payable: total,
-      originalPayable: total,
+      sub_total:subTotal,
+      vat:vat,
+      final_total:total,
     }));
     setIsCashModalOpen(true);
     setTimeout(() => setIsOpen(true), 30);
@@ -307,6 +336,7 @@ function CartCalculation() {
             setIsCashModalOpen={setIsCashModalOpen}
             cashForm={cashForm}
             setCashForm={setCashForm}
+            initialCashFrom={initialCashFrom}
           />
         )}
         <button
@@ -539,6 +569,7 @@ function CashModal({
   setIsCashModalOpen,
   cashForm,
   setCashForm,
+  initialCashFrom,
 }) {
   const addToSoldProduct = useSoldStore((state) => state.addToSoldProduct);
   const cart = useCartStore((state) => state.cart);
@@ -546,19 +577,32 @@ function CashModal({
   const handelClose = () => {
     setTimeout(() => setIsCashModalOpen(false), 300);
     setIsOpen(false);
+    setCashForm(initialCashFrom);
   };
   const handleCashChange = (id, value) => {
     setCashForm((prev) => {
       const updated = { ...prev, [id]: value };
       // payable AFTER discount
-      const originalPayable = prev.originalPayable || prev.payable;
-      updated.payable = Number(originalPayable) - Number(updated.discount);
+      updated.final_total = Number(prev.final_total) - Number(updated.discount);
       // change = amountReceived - payable
       const calculatedChange =
-        Number(updated.amountReceived) - Number(updated.payable);
+        Number(updated.amountReceived) - Number(updated.final_total);
       updated.change = calculatedChange < 0 ? 0 : calculatedChange;
       return updated;
     });
+  };
+  const handlePay = () => {
+    if (
+      cashForm.amountReceived > 0 &&
+      cashForm.amountReceived > cashForm.final_total
+    ) {
+      addToSoldProduct(cart,cashForm);
+      resetCart();
+      handelClose();
+      setCashForm(initialCashFrom);
+    } else {
+      alert("add money");
+    }
   };
   return (
     <PopupModal isOpen={isOpen} handelClose={handelClose} className="w-150 p-6">
@@ -582,7 +626,7 @@ function CashModal({
           <PeerInput
             id="change"
             peerName="Change"
-            value={cashForm.change}
+            value={cashForm.change.toFixed(2)}
             onChange={handleCashChange}
           />
         </div>
@@ -596,7 +640,7 @@ function CashModal({
           <PeerInput
             id="payable"
             peerName="Payable Amount"
-            value={cashForm.payable}
+            value={cashForm.final_total.toFixed(2)}
             onChange={handleCashChange}
           />
         </div>
@@ -608,22 +652,7 @@ function CashModal({
           onChange={handleCashChange}
         />
         <button
-          onClick={() => {
-            if (
-              cashForm.amountReceived > 0 &&
-              cashForm.amountReceived > cashForm.payable
-            ) {
-              addToSoldProduct(cart);
-              resetCart();
-              handelClose();
-              console.log(cashForm);
-              cashForm.amountReceived = 0;
-              cashForm.change = 0;
-              cashForm.discount = 0;
-            } else {
-              alert("add money");
-            }
-          }}
+          onClick={handlePay}
           className="w-full  py-5 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition"
         >
           PAY

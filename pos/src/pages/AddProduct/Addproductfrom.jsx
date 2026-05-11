@@ -205,8 +205,10 @@ const ProductStockForm = () => {
     const productData = {
       ...(editingProduct ? editingProduct : {}),
       ...formData,
+      flat_discount: Number(formData.flat_discount),
+      discount_percent: Number(formData.discount_percent),
       tags: JSON.stringify(tagsArray),
-      final_price: finalPrice.toFixed(2),
+      final_price: finalPrice,
       image: imagePreview,
       created_at: new Date().toISOString(),
     };
@@ -215,7 +217,7 @@ const ProductStockForm = () => {
       const changed = {};
       Object.keys(productData).forEach((key) => {
         if (productData[key] !== editingProduct[key]) {
-          changed[key] = productData[key];
+          changed[key] = productData[key] === "" ? 0 : productData[key];
         }
       });
       if (Object.keys(changed).length === 0) {
@@ -234,7 +236,7 @@ const ProductStockForm = () => {
           replace: true,
         });
       }
-      updateProduct(editingProduct.id,changed);
+      updateProduct(editingProduct.id, changed);
     } else {
       addToProduct(productData);
       // Show success message

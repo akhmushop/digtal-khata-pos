@@ -562,10 +562,16 @@ export const useProductStore = create((set) => ({
       console.error(err);
     }
   },
-  addToProduct: (product) =>
-    set((state) => ({
-      products: [...state.products, product],
-    })),
+  addToProduct: async (product) => {
+    try {
+      axios.post(`/products`, product);
+      set((state) => ({
+        products: [...state.products, product],
+      }));
+    } catch (err) {
+      console.log(err);
+    }
+  },
   removeProduct: (id) =>
     set((state) => ({
       products: state.products.filter((p) => p.id !== id),
@@ -581,16 +587,23 @@ export const useProductStore = create((set) => ({
         },
       ],
     })),
-  updateProduct: (id, updatedProduct) =>
-    set((state) => ({
-      products: state.products.map((p) => {
-        if (p.id === id) {
-          return {
-            ...p,
-            ...updatedProduct,
-          };
-        }
-        return p;
-      }),
-    })),
+  updateProduct: async (id, updatedProduct) => {
+    try {
+      axios.patch(`/products/updated_product/${id}`, updatedProduct);
+      console.log(updatedProduct);
+      set((state) => ({
+        products: state.products.map((p) => {
+          if (p.id === id) {
+            return {
+              ...p,
+              ...updatedProduct,
+            };
+          }
+          return p;
+        }),
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  },
 }));
