@@ -13,9 +13,16 @@ router.get("/api/sold_products", async (req, res) => {
 });
 router.post("/api/sold_products", async (req, res) => {
   try {
-    const cart = req.body;
+    const { cart, cashForm } = req.body;
     const insertSale = await pool.query(
-      "INSERT INTO sales DEFAULT VALUES RETURNING id",
+      "INSERT INTO sales (discount,final_total,subtotal,vat,note) VALUES ($1,$2,$3,$4,$5) RETURNING id",
+      [
+        cashForm.discount,
+        cashForm.final_total,
+        cashForm.subtotal,
+        cashForm.vat,
+        cashForm.note,
+      ],
     );
     const salesId = insertSale.rows[0].id;
     for (let item of cart) {
@@ -28,6 +35,7 @@ router.post("/api/sold_products", async (req, res) => {
         [item.sold_quantity, item.id],
       );
     }
+    console.log(cart, cashForm);
   } catch (err) {
     console.error(err);
   }

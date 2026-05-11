@@ -216,9 +216,9 @@ function CartCalculation() {
     const total = subTotal + vat;
     setCashForm((prev) => ({
       ...prev,
-      sub_total:subTotal,
-      vat:vat,
-      final_total:total,
+      sub_total: subTotal,
+      vat: vat,
+      final_total: total,
     }));
     setIsCashModalOpen(true);
     setTimeout(() => setIsOpen(true), 30);
@@ -583,7 +583,8 @@ function CashModal({
     setCashForm((prev) => {
       const updated = { ...prev, [id]: value };
       // payable AFTER discount
-      updated.final_total = Number(prev.final_total) - Number(updated.discount);
+      const baseTotal = Number(prev.sub_total) + Number(prev.vat);
+      updated.final_total = baseTotal - Number(updated.discount);
       // change = amountReceived - payable
       const calculatedChange =
         Number(updated.amountReceived) - Number(updated.final_total);
@@ -596,7 +597,7 @@ function CashModal({
       cashForm.amountReceived > 0 &&
       cashForm.amountReceived > cashForm.final_total
     ) {
-      addToSoldProduct(cart,cashForm);
+      addToSoldProduct(cart, cashForm);
       resetCart();
       handelClose();
       setCashForm(initialCashFrom);
