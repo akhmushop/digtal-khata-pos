@@ -27,8 +27,8 @@ router.post("/api/sold_products", async (req, res) => {
     const salesId = insertSale.rows[0].id;
     for (let item of cart) {
       const insertSoldProducts = await pool.query(
-        "INSERT INTO sale_items (sale_id, product_id, sold_quantity, sold_price) VALUES ($1,$2,$3,$4)",
-        [salesId, item.id, item.sold_quantity, item.price],
+        "INSERT INTO sale_items (sale_id, product_id, sold_quantity, sold_price,product_name_at_sale,cost_at_sale) VALUES ($1,$2,$3,$4,$5,$6)",
+        [salesId, item.id, item.sold_quantity, item.final_price,item.product_name,item.cost],
       );
       const updateProductQuantity = await pool.query(
         "UPDATE products SET quantity = quantity - $1 WHERE id = $2",
