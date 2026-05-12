@@ -530,14 +530,14 @@ export const useProductStore = create((set) => ({
         p.id === id ? { ...p, quantity: p.quantity + sold_quantity } : p,
       ),
     })),
-  updateStock: (id, newStock) => {
+  updateStock: async (id, newStock) => {
     try {
       set((state) => {
         const findProduct = state.products.find((p) => p.id === id);
         const status =
           newStock === 0
             ? "Out of Stock"
-            : newStock <= findProduct.alertquantity
+            : newStock <= findProduct.alert_quantity
               ? "Low-Stock"
               : "In-Stock";
 
@@ -572,21 +572,33 @@ export const useProductStore = create((set) => ({
       console.log(err);
     }
   },
-  removeProduct: (id) =>
-    set((state) => ({
-      products: state.products.filter((p) => p.id !== id),
-    })),
-  duplicateProduct: (product) =>
-    set((state) => ({
-      products: [
-        ...state.products,
-        {
-          ...product,
-          product_name: `${product.product_name}(copy)`,
-          barcode: `${product.barcode}(copy)`,
-        },
-      ],
-    })),
+  removeProduct: async (id) => {
+    try {
+      axios.delete(`products/remove_product/${id}`)
+      set((state) => ({
+        products: state.products.filter((p) => p.id !== id),
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  },
+  duplicateProduct: async (product) => {
+    try {
+      axios.post(`products/duplicate-product/${product.id}`,product)
+      set((state) => ({
+        products: [
+          ...state.products,
+          {
+            ...product,
+            product_name: `${product.product_name}(copy)`,
+            barcode: `${product.barcode}(copy)`,
+          },
+        ],
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  },
   updateProduct: async (id, updatedProduct) => {
     try {
       axios.patch(`/products/updated_product/${id}`, updatedProduct);
