@@ -14,7 +14,9 @@ router.post("/api/products", async (req, res) => {
   try {
     const product = req.body;
     const keys = Object.keys(product);
-    const values = Object.values(product).map((value) => typeof value === "object" ? JSON.stringify(value) : value);
+    const values = Object.values(product).map((value) =>
+      typeof value === "object" ? JSON.stringify(value) : value,
+    );
     const columns = keys.join(",");
     const placeholders = keys.map((_, i) => `$${i + 1}`).join(",");
     const newProduct = await pool.query(
@@ -160,7 +162,7 @@ router.patch("/api/products/updated_product/:id", async (req, res) => {
     }
     const keys = Object.keys(update_product);
     const values = Object.values(update_product).map((value) =>
-      typeof value ===  "object" ? JSON.stringify(value) : value,
+      typeof value === "object" ? JSON.stringify(value) : value,
     );
     const setClause = keys.map((key, i) => `${key} = $${i + 1}`).join(", ");
     values.push(id);
@@ -168,6 +170,16 @@ router.patch("/api/products/updated_product/:id", async (req, res) => {
       `UPDATE products SET ${setClause} WHERE id = $${values.length}`,
       values,
     );
+  } catch (err) {
+    console.error(err);
+  }
+});
+router.get("/api/products/products_info", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT COUNT(*) FILTER(WHERE products.quantity >0 AND products.quantity <= products.alert_quantity) AS low_stock ,COUNT(*) FILTER(WHERE products.quantity <=0) AS stock_out ,SUM (products.quantity)  AS total_items,SUM (products.quantity * products.cost) AS total_valuation FROM products",
+    );
+    res.json(result.rows);
   } catch (err) {
     console.error(err);
   }
