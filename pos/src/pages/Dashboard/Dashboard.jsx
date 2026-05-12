@@ -26,7 +26,7 @@ import {
   MoreVertical,
 } from "lucide-react";
 import Sidebar from "../../components/Sidebar";
-import { useProductStore } from "../../store/product-store";
+import { useProductsInfoStore } from "../../store/product-store";
 import { useSoldStore } from "../../store/sold-store";
 
 const DashboardComponent = () => {
@@ -41,33 +41,10 @@ const DashboardComponent = () => {
       maximumFractionDigits: 2,
     }).format(value);
   };
-  const products = useProductStore((state) => state.products);
   const soldProducts = useSoldStore((state) => state.soldProducts);
-  // alert products start
-  const alertProducts = products.filter(
-    (item) => item.quantity <= item.alert_quantity,
-  );
-  //alert products end
-
-  //out of stocks start
-  const stockOutProducts = products.filter((item) => item.quantity <= 0);
-  //out of stocks end
-
-  // total items start
-  const totalItems = products.reduce((sum, item) => sum + item.quantity, 0);
-
-  // total items end
-
-  //total valuation start
-  const totalValuation = products.reduce(
-    (sum, item) => sum + item.quantity * item.cost,
-    0,
-  );
-
-  //total valuation end
-
+  const { productsInfo } = useProductsInfoStore();
   // sold items start
-  const soldProductsItems = soldProducts
+  const soldProductsItems = soldProducts;
   const totalSoldItems = soldProductsItems.reduce(
     (sum, item) => sum + item.sold_quantity,
     0,
@@ -292,7 +269,7 @@ const DashboardComponent = () => {
                   Alert Products
                 </p>
                 <p className="text-2xl font-bold text-orange-600 mt-2">
-                  {alertProducts.length}
+                  {productsInfo.low_stock}
                 </p>
               </div>
               <div className="p-3 bg-orange-50 rounded-lg">
@@ -308,7 +285,7 @@ const DashboardComponent = () => {
                   Out of Stocks
                 </p>
                 <p className="text-2xl font-bold text-yellow-600 mt-2">
-                  {stockOutProducts.length}
+                  {productsInfo.stock_out}
                 </p>
               </div>
               <div className="p-3 bg-yellow-50 rounded-lg">
@@ -351,7 +328,7 @@ const DashboardComponent = () => {
               <div>
                 <p className="text-sm font-medium text-blue-700">Total Items</p>
                 <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {totalItems}
+                  {productsInfo.total_items}
                 </p>
                 <p className="text-xs text-blue-600 mt-1">Current Total</p>
               </div>
@@ -366,7 +343,7 @@ const DashboardComponent = () => {
                   Total Valuation
                 </p>
                 <p className="text-2xl font-bold text-gray-900 mt-2">
-                  {totalValuation.toFixed(2)}
+                  {productsInfo.total_valuation?.toFixed(2)}
                 </p>
               </div>
               <TrendingUp className="w-10 h-10 text-amber-600 opacity-70" />

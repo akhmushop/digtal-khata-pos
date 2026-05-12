@@ -574,7 +574,7 @@ export const useProductStore = create((set) => ({
   },
   removeProduct: async (id) => {
     try {
-      axios.delete(`products/remove_product/${id}`)
+      axios.delete(`products/remove_product/${id}`);
       set((state) => ({
         products: state.products.filter((p) => p.id !== id),
       }));
@@ -584,7 +584,7 @@ export const useProductStore = create((set) => ({
   },
   duplicateProduct: async (product) => {
     try {
-      axios.post(`products/duplicate-product/${product.id}`,product)
+      axios.post(`products/duplicate-product/${product.id}`, product);
       set((state) => ({
         products: [
           ...state.products,
@@ -616,6 +616,20 @@ export const useProductStore = create((set) => ({
       }));
     } catch (err) {
       console.error(err);
+    }
+  },
+}));
+export const useProductsInfoStore = create((set) => ({
+  productsInfo: {},
+  loading: false,
+  error: null,
+  getProductsInfo: async () => {
+    set({ loading: true });
+    try {
+      const res = await axios.get("/products/products_info");
+      set({ productsInfo: res.data[0], loading: false });
+    } catch (err) {
+      set({ error: err.message, loading: false });
     }
   },
 }));
