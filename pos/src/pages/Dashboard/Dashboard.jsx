@@ -26,53 +26,47 @@ import {
   MoreVertical,
 } from "lucide-react";
 import Sidebar from "../../components/Sidebar";
-import { useProductsInfoStore } from "../../store/product-store";
-import { useSoldStore } from "../../store/sold-store";
 import axios from "../../axios";
 
 const DashboardComponent = () => {
   const [soldProductsSummery, setSoldProductsSummery] = useState({});
+  const [productsSummery, setProductsSummery] = useState({});
+  const [topItemsByGross, setTopItemsByGross] = useState({});
   const [top_sold_products_by_category, setTop_sold_products_by_category] =
     useState({});
   const [profitByCategory, setProfitByCategory] = useState({});
   const getDashboardSummery = async () => {
-    const res = await axios.get("/sold_products/dashboard_summery");
+    const res = await axios.get("/dashboard_summery");
     setSoldProductsSummery(res.data.sold_products_summery);
     setTop_sold_products_by_category(res.data.top_sold_products_by_category);
     setProfitByCategory(res.data.profitByCategory);
+    setTopItemsByGross(res.data.topItemsByGross);
+    setProductsSummery(res.data.productsSummery[0]);
   };
   useEffect(() => {
     getDashboardSummery();
   }, []);
 
-  console.log(
-    Object.values(profitByCategory).map((item) => {
-      console.log(item);
-    }),
-  );
-  const salesData = Object.values(soldProductsSummery).map((item) => {
-    return {
-      month: item.month_name,
-      Sales: item.monthly_total_sales,
-      Cash: item.monthly_total_sales,
-    };
-  });
   const formatCurrency = (value) => {
     return new Intl.NumberFormat("en-US", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(value);
   };
-  const soldProducts = useSoldStore((state) => state.soldProducts);
-  const { productsInfo } = useProductsInfoStore();
   // sold items start
-  const soldProductsItems = soldProducts;
   const currentMonthSoldSummery =
     soldProductsSummery[soldProductsSummery.length - 1];
 
   // sold items end
 
   // sales overview start
+    const salesData = Object.values(soldProductsSummery).map((item) => {
+    return {
+      month: item.month_name,
+      Sales: item.monthly_total_sales,
+      Cash: item.monthly_total_sales,
+    };
+  });
   const [range, setRange] = useState("3");
   const filteredData = salesData.slice(-Number(range));
   // sales overview end
@@ -87,57 +81,6 @@ const DashboardComponent = () => {
       color: colors[index % colors.length],
     };
   });
-  // performance table end
-
-  //top items gross start
-  const salesByProductByMonth = soldProductsItems.reduce((acc, item) => {
-    const date = new Date(item.created_at);
-    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-    const productName = item.product_name || item.category || "Unknown";
-    const gross = (item.sold_quantity || 0) * (item.price || 0);
-    if (!acc[monthKey]) {
-      acc[monthKey] = {};
-    }
-    acc[monthKey][productName] = (acc[monthKey][productName] || 0) + gross;
-    return acc;
-  }, {});
-
-  const allTimeGrossByProduct = soldProductsItems.reduce((acc, item) => {
-    const productName = item.product_name || item.category || "Unknown";
-    const gross = (item.sold_quantity || 0) * (item.price || 0);
-    acc[productName] = (acc[productName] || 0) + gross;
-    return acc;
-  }, {});
-
-  const productMonthKeys = Object.keys(salesByProductByMonth).sort();
-  const latestProductMonth = productMonthKeys.at(-1);
-  const previousProductMonth = productMonthKeys.slice(-2, -1)[0];
-
-  const currentMonthProductGross = latestProductMonth
-    ? salesByProductByMonth[latestProductMonth]
-    : {};
-  const previousMonthProductGross = previousProductMonth
-    ? salesByProductByMonth[previousProductMonth]
-    : {};
-  const grossSource =
-    Object.keys(currentMonthProductGross).length > 0
-      ? currentMonthProductGross
-      : allTimeGrossByProduct;
-  const trendBase = Object.keys(currentMonthProductGross).length
-    ? previousMonthProductGross
-    : {};
-  const topGrossItems = Object.entries(grossSource)
-    .map(([product, gross]) => {
-      const previousGross = trendBase[product] || 0;
-      return {
-        product,
-        gross,
-        trend: gross >= previousGross ? "up" : "down",
-      };
-    })
-    .sort((a, b) => b.gross - a.gross)
-    .slice(0, 5);
-  //top items gross end
   return (
     <div className="flex">
       <div className="fixed left-0 top-0 h-screen z-40">
@@ -161,7 +104,7 @@ const DashboardComponent = () => {
                   Alert Products
                 </p>
                 <p className="text-2xl font-bold text-orange-600 mt-2">
-                  {productsInfo.low_stock}
+                  {productsSummery.low_stock}
                 </p>
               </div>
               <div className="p-3 bg-orange-50 rounded-lg">
@@ -177,7 +120,7 @@ const DashboardComponent = () => {
                   Out of Stocks
                 </p>
                 <p className="text-2xl font-bold text-yellow-600 mt-2">
-                  {productsInfo.stock_out}
+                  {productsSummery.stock_out}
                 </p>
               </div>
               <div className="p-3 bg-yellow-50 rounded-lg">
@@ -220,7 +163,7 @@ const DashboardComponent = () => {
               <div>
                 <p className="text-sm font-medium text-blue-700">Total Items</p>
                 <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {productsInfo.total_items}
+                  {productsSummery.total_items}
                 </p>
                 <p className="text-xs text-blue-600 mt-1">Current Total</p>
               </div>
@@ -235,7 +178,7 @@ const DashboardComponent = () => {
                   Total Valuation
                 </p>
                 <p className="text-2xl font-bold text-gray-900 mt-2">
-                  {productsInfo.total_valuation?.toFixed(2)}
+                  {productsSummery.total_valuation?.toFixed(2)}
                 </p>
               </div>
               <TrendingUp className="w-10 h-10 text-amber-600 opacity-70" />
@@ -464,8 +407,8 @@ const DashboardComponent = () => {
               </button>
             </div>
             <div className="space-y-4">
-              {topGrossItems.length > 0 ? (
-                topGrossItems.map((item, index) => (
+              {topItemsByGross?.length > 0 ? (
+                Object.values(topItemsByGross).map((item, index) => (
                   <div
                     key={index}
                     className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg"
@@ -482,10 +425,10 @@ const DashboardComponent = () => {
                           <TrendingDown className="w-4 h-4 text-red-600" />
                         )}
                       </div>
-                      <span className="font-medium">{item.product}</span>
+                      <span className="font-medium">{item.product_name}</span>
                     </div>
                     <span className="font-bold">
-                      TK {formatCurrency(item.gross)}
+                      TK {formatCurrency(item.current_month_gross)}
                     </span>
                   </div>
                 ))

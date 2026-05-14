@@ -174,14 +174,4 @@ router.patch("/api/products/updated_product/:id", async (req, res) => {
     console.error(err);
   }
 });
-router.get("/api/products/products_info", async (req, res) => {
-  try {
-    const result = await pool.query(
-      "SELECT COUNT(*) FILTER(WHERE products.quantity >0 AND products.quantity <= products.alert_quantity) AS low_stock ,COUNT(*) FILTER(WHERE products.quantity <=0) AS stock_out ,SUM (products.quantity)  AS total_items,SUM (products.quantity * products.cost) AS total_valuation FROM products",
-    );
-    res.json(result.rows);
-  } catch (err) {
-    console.error(err);
-  }
-});
 export default router;
