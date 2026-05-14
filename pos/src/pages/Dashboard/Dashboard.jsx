@@ -26,33 +26,34 @@ import {
   MoreVertical,
 } from "lucide-react";
 import Sidebar from "../../components/Sidebar";
-import {
-  useProductsInfoStore,
-} from "../../store/product-store";
+import { useProductsInfoStore } from "../../store/product-store";
 import { useSoldStore } from "../../store/sold-store";
 import axios from "../../axios";
 
 const DashboardComponent = () => {
-  const [soldProductsSummery, setSoldProductsSummery] = useState({})
+  const [soldProductsSummery, setSoldProductsSummery] = useState({});
+  const [top_sold_products_by_category, setTop_sold_products_by_category] =
+    useState([]);
   const getSoldProductsSummery = async () => {
-    const res = await axios.get('/sold_products/sold_products_summery')
-    setSoldProductsSummery(res.data)
-  }
-  useEffect( () => {
-    getSoldProductsSummery()
-  },[])
+    const res = await axios.get("/sold_products/sold_products_summery");
+    setSoldProductsSummery(res.data);
+  };
+  const getTop_sold_products_by_category = async () => {
+    const res = await axios.get("/sold_products/sold_products_summery/top_sold_products_by_category");
+    setTop_sold_products_by_category(res.data);
+  };
+  useEffect(() => {
+    getSoldProductsSummery();
+    getTop_sold_products_by_category();
+  }, []);
+  
   const salesData = Object.values(soldProductsSummery).map((item) => {
-    return{
-      month:item.month_name,
-      Sales:item.monthly_total_sales,
-      Cash:item.monthly_total_sales
-    }
-  })
-  const [dateRange, setDateRange] = useState({
-    start: "2023-12-26",
-    end: "2025-12-26",
+    return {
+      month: item.month_name,
+      Sales: item.monthly_total_sales,
+      Cash: item.monthly_total_sales,
+    };
   });
-
   const formatCurrency = (value) => {
     return new Intl.NumberFormat("en-US", {
       minimumFractionDigits: 2,
@@ -63,35 +64,25 @@ const DashboardComponent = () => {
   const { productsInfo } = useProductsInfoStore();
   // sold items start
   const soldProductsItems = soldProducts;
-  const currentMonthSoldSummery =soldProductsSummery[soldProductsSummery.length -1]
+  const currentMonthSoldSummery =
+    soldProductsSummery[soldProductsSummery.length - 1];
 
   // sold items end
 
   // sales overview start
   const [range, setRange] = useState("3");
   const filteredData = salesData.slice(-Number(range));
-  const totalSales = soldProductsItems.reduce(
-    (sum, item) => sum + item.sold_quantity * item.sold_price,
-    0,
-  );
   // sales overview end
   // performance table Start
-  const categoryCount = soldProductsItems.reduce((acc, item) => {
-    const category = item.category;
-    acc[category] = (acc[category] || 0) + item.sold_quantity;
-    return acc;
-  }, {});
   const colors = ["#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#8b5cf6"];
-  const topSoldProduct = Object.entries(categoryCount).map(
-    ([category, quantity], index) => ({
-      category,
-      quantity,
-      color: colors[index % colors.length],
-    }),
-  );
-  const topSoldFive = [...topSoldProduct]
-    .sort((a, b) => b.quantity - a.quantity)
-    .slice(0, 5);
+  const topSoldProductByCategory = Object.values(top_sold_products_by_category).map((item,index) => {
+    return {
+      category:item.category,
+      quantity:item.sold_items_by_category,
+      color:colors[index % colors.length]
+
+    }
+  })
   // performance table end
   //top profit start
   const monthlyProfitByCategory = soldProductsItems.reduce((acc, item) => {
@@ -196,16 +187,6 @@ const DashboardComponent = () => {
             <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
             <p className="text-gray-600">Welcome to your business dashboard</p>
           </div>
-          <div className="flex items-center space-x-4">
-            <button className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-              <Calendar className="w-4 h-4 mr-2" />
-              {dateRange.start} - {dateRange.end}
-            </button>
-            <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-              <Download className="w-4 h-4 mr-2" />
-              Export Report
-            </button>
-          </div>
         </div>
 
         {/* Alert Cards */}
@@ -308,7 +289,8 @@ const DashboardComponent = () => {
                   {currentMonthSoldSummery?.monthly_sold_items}
                 </p>
                 <p className="text-xs text-emerald-600 mt-1">
-                  {currentMonthSoldSummery?.monthly_percentage_change} from last month
+                  {currentMonthSoldSummery?.monthly_percentage_change} from last
+                  month
                 </p>
               </div>
               <ShoppingCart className="w-10 h-10 text-emerald-600 opacity-70" />
@@ -407,14 +389,18 @@ const DashboardComponent = () => {
               <div className="w-3 h-3 bg-amber-500 rounded-full mr-3"></div>
               <div>
                 <p className="text-sm font-medium text-gray-600">Sales</p>
-                <p className="font-bold">TK {currentMonthSoldSummery?.monthly_total_sales}</p>
+                <p className="font-bold">
+                  TK {currentMonthSoldSummery?.monthly_total_sales}
+                </p>
               </div>
             </div>
             <div className="flex items-center p-3 bg-emerald-50 rounded-lg">
               <div className="w-3 h-3 bg-emerald-500 rounded-full mr-3"></div>
               <div>
                 <p className="text-sm font-medium text-gray-600">Cash</p>
-                <p className="font-bold">TK {currentMonthSoldSummery?.monthly_total_sales}</p>
+                <p className="font-bold">
+                  TK {currentMonthSoldSummery?.monthly_total_sales}
+                </p>
               </div>
             </div>
             <div className="flex items-center p-3 bg-blue-50 rounded-lg">
@@ -447,7 +433,7 @@ const DashboardComponent = () => {
               </button>
             </div>
             <div className="space-y-4">
-              {topSoldFive.map((item, index) => (
+              {topSoldProductByCategory.map((item, index) => (
                 <div
                   key={index}
                   className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg"
