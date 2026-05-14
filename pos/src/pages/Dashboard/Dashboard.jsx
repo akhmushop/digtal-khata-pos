@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -26,10 +26,28 @@ import {
   MoreVertical,
 } from "lucide-react";
 import Sidebar from "../../components/Sidebar";
-import { useProductsInfoStore } from "../../store/product-store";
+import {
+  useProductsInfoStore,
+} from "../../store/product-store";
 import { useSoldStore } from "../../store/sold-store";
+import axios from "../../axios";
 
 const DashboardComponent = () => {
+  const [soldProductsSummery, setSoldProductsSummery] = useState({})
+  const getSoldProductsSummery = async () => {
+    const res = await axios.get('/sold_products/sold_products_summery')
+    setSoldProductsSummery(res.data)
+  }
+  useEffect( () => {
+    getSoldProductsSummery()
+  },[])
+  const salesData = Object.values(soldProductsSummery).map((item) => {
+    return{
+      month:item.month_name,
+      Sales:item.monthly_total_sales,
+      Cash:item.monthly_total_sales
+    }
+  })
   const [dateRange, setDateRange] = useState({
     start: "2023-12-26",
     end: "2025-12-26",
@@ -45,81 +63,11 @@ const DashboardComponent = () => {
   const { productsInfo } = useProductsInfoStore();
   // sold items start
   const soldProductsItems = soldProducts;
-  const totalSoldItems = soldProductsItems.reduce(
-    (sum, item) => sum + item.sold_quantity,
-    0,
-  );
-  const monthlySold = soldProductsItems.reduce((acc, item) => {
-    const date = new Date(item.created_at);
-    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-    if (!acc[monthKey]) {
-      acc[monthKey] = 0;
-    }
-    acc[monthKey] += item.sold_quantity;
-    return acc;
-  }, {});
-  const monthlyTotalSales = soldProductsItems.reduce((acc, item) => {
-    const date = new Date(item.created_at);
-    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-    if (!acc[monthKey]) {
-      acc[monthKey] = 0;
-    }
-    acc[monthKey] += item.sold_quantity * item.price;
+  const currentMonthSoldSummery =soldProductsSummery[soldProductsSummery.length -1]
 
-    return acc;
-  }, {});
-  const monthlyTotals = {
-    "2026-01": 150,
-    "2026-02": 275,
-    "2026-03": 300,
-    "2026-04": 400,
-    "2026-05": 700,
-    "2026-06": 500,
-    "2026-07": 800,
-    "2026-08": 400,
-  };
-  const month = Object.entries(monthlyTotals)
-    .sort()
-    .map(([month, total], index, arr) => {
-      let percentageChange = null;
-      if (index > 0) {
-        const prevTotal = arr[index - 1][1];
-        percentageChange = ((total - prevTotal) / prevTotal) * 100;
-      }
-      const [year, monthNum] = month.split("-");
-      const date = new Date(year, monthNum - 1);
-      const monthName = date.toLocaleDateString("default", { month: "short" });
-      return {
-        month,
-        total,
-        percentageChange:
-          percentageChange !== null
-            ? (percentageChange > 0 ? "+" : "") +
-              percentageChange.toFixed(2) +
-              "%"
-            : "N/A",
-        monthName,
-      };
-    });
   // sold items end
 
   // sales overview start
-  const percentageChange = month.at(-1)?.percentageChange;
-  const monthName = month.map((item) => item.monthName);
-  const lastThreeMonth = monthName.slice(-3);
-
-  const salesData = Object.entries(monthlyTotals).map(([month, total]) => {
-    const [year, monthNum] = month.split("-");
-    const date = new Date(year, monthNum - 1);
-    const monthName = date.toLocaleDateString("default", { month: "short" });
-    return {
-      month: monthName,
-      Sales: total,
-      Cash: total * 0.5,
-      Inventory: 17000,
-      Expenses: 18000,
-    };
-  });
   const [range, setRange] = useState("3");
   const filteredData = salesData.slice(-Number(range));
   const totalSales = soldProductsItems.reduce(
@@ -357,10 +305,10 @@ const DashboardComponent = () => {
                   Sold Items
                 </p>
                 <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {totalSoldItems}
+                  {currentMonthSoldSummery?.monthly_sold_items}
                 </p>
                 <p className="text-xs text-emerald-600 mt-1">
-                  {percentageChange} from last month
+                  {currentMonthSoldSummery?.monthly_percentage_change} from last month
                 </p>
               </div>
               <ShoppingCart className="w-10 h-10 text-emerald-600 opacity-70" />
@@ -459,14 +407,14 @@ const DashboardComponent = () => {
               <div className="w-3 h-3 bg-amber-500 rounded-full mr-3"></div>
               <div>
                 <p className="text-sm font-medium text-gray-600">Sales</p>
-                <p className="font-bold">TK {totalSales.toFixed(2)}</p>
+                <p className="font-bold">TK {currentMonthSoldSummery?.monthly_total_sales}</p>
               </div>
             </div>
             <div className="flex items-center p-3 bg-emerald-50 rounded-lg">
               <div className="w-3 h-3 bg-emerald-500 rounded-full mr-3"></div>
               <div>
                 <p className="text-sm font-medium text-gray-600">Cash</p>
-                <p className="font-bold">TK {(totalSales * 0.5).toFixed(2)}</p>
+                <p className="font-bold">TK {currentMonthSoldSummery?.monthly_total_sales}</p>
               </div>
             </div>
             <div className="flex items-center p-3 bg-blue-50 rounded-lg">
@@ -595,36 +543,6 @@ const DashboardComponent = () => {
                   No sales data available yet.
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-
-        {/* Summary Section */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-sm p-6">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="text-white mb-4 md:mb-0">
-              <h2 className="text-xl font-bold mb-2">Business Summary</h2>
-              <p className="opacity-90">
-                Complete overview of your business performance
-              </p>
-            </div>
-            <div className="flex space-x-4">
-              <input
-                type="date"
-                value={dateRange.start}
-                onChange={(e) =>
-                  setDateRange({ ...dateRange, start: e.target.value })
-                }
-                className="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white"
-              />
-              <input
-                type="date"
-                value={dateRange.end}
-                onChange={(e) =>
-                  setDateRange({ ...dateRange, end: e.target.value })
-                }
-                className="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white"
-              />
             </div>
           </div>
         </div>
