@@ -619,17 +619,3 @@ export const useProductStore = create((set) => ({
     }
   },
 }));
-export const useProductsInfoStore = create((set) => ({
-  productsInfo: {},
-  loading: false,
-  error: null,
-  getProductsInfo: async () => {
-    set({ loading: true });
-    try {
-      const res = await axios.get("/products/products_info");
-      set({ productsInfo: res.data[0], loading: false });
-    } catch (err) {
-      set({ error: err.message, loading: false });
-    }
-  },
-}));
