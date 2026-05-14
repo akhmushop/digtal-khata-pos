@@ -33,20 +33,23 @@ import axios from "../../axios";
 const DashboardComponent = () => {
   const [soldProductsSummery, setSoldProductsSummery] = useState({});
   const [top_sold_products_by_category, setTop_sold_products_by_category] =
-    useState([]);
-  const getSoldProductsSummery = async () => {
-    const res = await axios.get("/sold_products/sold_products_summery");
-    setSoldProductsSummery(res.data);
-  };
-  const getTop_sold_products_by_category = async () => {
-    const res = await axios.get("/sold_products/sold_products_summery/top_sold_products_by_category");
-    setTop_sold_products_by_category(res.data);
+    useState({});
+  const [profitByCategory, setProfitByCategory] = useState({});
+  const getDashboardSummery = async () => {
+    const res = await axios.get("/sold_products/dashboard_summery");
+    setSoldProductsSummery(res.data.sold_products_summery);
+    setTop_sold_products_by_category(res.data.top_sold_products_by_category);
+    setProfitByCategory(res.data.profitByCategory);
   };
   useEffect(() => {
-    getSoldProductsSummery();
-    getTop_sold_products_by_category();
+    getDashboardSummery();
   }, []);
-  
+
+  console.log(
+    Object.values(profitByCategory).map((item) => {
+      console.log(item);
+    }),
+  );
   const salesData = Object.values(soldProductsSummery).map((item) => {
     return {
       month: item.month_name,
@@ -75,56 +78,16 @@ const DashboardComponent = () => {
   // sales overview end
   // performance table Start
   const colors = ["#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#8b5cf6"];
-  const topSoldProductByCategory = Object.values(top_sold_products_by_category).map((item,index) => {
+  const topSoldProductByCategory = Object.values(
+    top_sold_products_by_category,
+  ).map((item, index) => {
     return {
-      category:item.category,
-      quantity:item.sold_items_by_category,
-      color:colors[index % colors.length]
-
-    }
-  })
+      category: item.category,
+      quantity: item.sold_items_by_category,
+      color: colors[index % colors.length],
+    };
+  });
   // performance table end
-  //top profit start
-  const monthlyProfitByCategory = soldProductsItems.reduce((acc, item) => {
-    const date = new Date(item.created_at);
-    const category = item.category;
-    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-    const price = item.price || 0;
-    const cost = item.cost || 0;
-    const quantity = item.sold_quantity || 1;
-    const profit = (price - cost) * quantity;
-
-    if (!acc[monthKey]) {
-      acc[monthKey] = {};
-    }
-
-    acc[monthKey][category] = (acc[monthKey][category] || 0) + profit;
-    return acc;
-  }, {});
-  const lastMonthKey = Object.keys(monthlyProfitByCategory).sort().slice(-1)[0];
-  const lastMonthProfitByCategory = lastMonthKey
-    ? monthlyProfitByCategory[lastMonthKey]
-    : {};
-  const totalProfitLastMonth = Object.values(lastMonthProfitByCategory).reduce(
-    (sum, profit) => sum + profit,
-    0,
-  );
-  const lastMonthProfitByCategoryPercentage = Object.entries(
-    lastMonthProfitByCategory,
-  ).map(([category, profit]) => ({
-    category,
-    profit,
-    percentage:
-      totalProfitLastMonth && totalProfitLastMonth !== 0
-        ? (profit / totalProfitLastMonth) * 100
-        : 0,
-  }));
-  const topProfitData = lastMonthProfitByCategoryPercentage.length
-    ? [...lastMonthProfitByCategoryPercentage]
-        .sort((a, b) => b.profit - a.profit)
-        .slice(0, 5)
-    : [];
-  //top profit end
 
   //top items gross start
   const salesByProductByMonth = soldProductsItems.reduce((acc, item) => {
@@ -460,7 +423,7 @@ const DashboardComponent = () => {
               </button>
             </div>
             <div className="space-y-4">
-              {topProfitData.map((item, index) => (
+              {Object.values(profitByCategory).map((item, index) => (
                 <div
                   key={index}
                   className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg"
@@ -473,17 +436,19 @@ const DashboardComponent = () => {
                       <p className="font-medium">{item.category}</p>
                       <p
                         className={`text-xs ${
-                          item.percentage >= 0
+                          item.growth_percentage >= 0
                             ? "text-green-600"
                             : "text-red-600"
                         }`}
                       >
-                        {item.percentage.toFixed(2)}%
+                        {item.growth_percentage
+                          ? `${item.growth_percentage}%`
+                          : "N/A"}
                       </p>
                     </div>
                   </div>
                   <span className="font-bold">
-                    TK {formatCurrency(item.profit)}
+                    TK {formatCurrency(item.current_month_profit)}
                   </span>
                 </div>
               ))}
