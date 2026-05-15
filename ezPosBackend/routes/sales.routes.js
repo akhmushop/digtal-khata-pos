@@ -103,6 +103,7 @@ router.get("/api/dashboard_summary", async (req, res) => {
       profitByCategory,
       topItemsByGross,
       productsSummary,
+      totalSales
     ] = await Promise.all([
       await pool.query(
         "SELECT TO_CHAR(created_at,'Mon') AS month,COALESCE(SUM(final_total),0) AS sales ,COALESCE(SUM (CASE WHEN payment_status = 'paid' THEN final_total ELSE 0 END),0) AS cash FROM sales GROUP BY DATE_TRUNC('month',created_at),TO_CHAR(created_at,'Mon')ORDER BY DATE_TRUNC('month',created_at) LIMIT 12",
@@ -119,6 +120,9 @@ router.get("/api/dashboard_summary", async (req, res) => {
       await pool.query(
         "SELECT COUNT(*) FILTER(WHERE products.quantity >0 AND products.quantity <= products.alert_quantity) AS low_stock ,COUNT(*) FILTER(WHERE products.quantity <=0) AS stock_out ,SUM (products.quantity)  AS total_items,SUM (products.quantity * products.cost) AS total_valuation FROM products",
       ),
+      await pool.query(
+        "WITH sales_summary AS (SELECT COALESCE(SUM( CASE WHEN DATE_TRUNC('month' ,created_at) = DATE_TRUNC('month',CURRENT_DATE) THEN final_total ELSE 0 END),0) AS current_sales,COALESCE(SUM(CASE WHEN DATE_TRUNC('month' ,created_at) = DATE_TRUNC('month',CURRENT_DATE - INTERVAL '1 month')THEN final_total ELSE 0 END),0)AS prev_sales FROM  sales)SELECT current_sales,CASE WHEN prev_sales = 0 THEN 0 ELSE ROUND(((current_sales - prev_sales) / prev_sales) *100,2)END AS 	sales_growth FROM sales_summary",
+      ),
     ]);
 
     res.json({
@@ -127,6 +131,7 @@ router.get("/api/dashboard_summary", async (req, res) => {
       profitByCategory: profitByCategory.rows,
       topItemsByGross: topItemsByGross.rows,
       productsSummary: productsSummary.rows,
+      totalSales:totalSales.rows
     });
   } catch (err) {
     console.error(err);
