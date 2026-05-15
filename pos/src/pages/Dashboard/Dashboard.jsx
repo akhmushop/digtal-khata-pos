@@ -29,24 +29,34 @@ import Sidebar from "../../components/Sidebar";
 import axios from "../../axios";
 
 const DashboardComponent = () => {
-  const [salesOverview, setSalesOverview] = useState({});
-  const [productsSummery, setProductsSummery] = useState({});
-  const [topItemsByGross, setTopItemsByGross] = useState({});
-  const [top_sold_products_by_category, setTop_sold_products_by_category] =
-    useState({});
-  const [profitByCategory, setProfitByCategory] = useState({});
+  const [dashboard, setDashboard] = useState({
+    salesOverview: {},
+    productsSummary: {},
+    topItemsByGross: {},
+    totalSales: {},
+    topSoldProductsByCategory: {},
+    profitByCategory: {},
+  });
   const getDashboardSummary = async () => {
-    const res = await axios.get("/dashboard_summary");
-    setSalesOverview(res.data.salesOverview);
-    setTop_sold_products_by_category(res.data.top_sold_products_by_category);
-    setProfitByCategory(res.data.profitByCategory);
-    setTopItemsByGross(res.data.topItemsByGross);
-    setProductsSummery(res.data.productsSummary[0]);
+    try {
+      const res = await axios.get("/dashboard_summary");
+
+      setDashboard({
+        salesOverview: res.data.salesOverview || {},
+        productsSummary: res.data.productsSummary?.[0] || {},
+        topItemsByGross: res.data.topItemsByGross || {},
+        totalSales: res.data.totalSales?.[0] || {},
+        topSoldProductsByCategory: res.data.top_sold_products_by_category || {},
+        profitByCategory: res.data.profitByCategory || {},
+        topSales: res.data.topSales?.[0] || {},
+      });
+    } catch (error) {
+      console.error("Dashboard error:", error);
+    }
   };
   useEffect(() => {
     getDashboardSummary();
   }, []);
-
   const formatCurrency = (value) => {
     return new Intl.NumberFormat("en-US", {
       minimumFractionDigits: 2,
@@ -54,17 +64,20 @@ const DashboardComponent = () => {
     }).format(value);
   };
   // sold items start
-  const currentMonthSoldSummary = salesOverview[salesOverview.length - 1];
+  const currentMonthSoldSummary =
+    dashboard.salesOverview[dashboard.salesOverview.length - 1];
 
   // sold items end
   // sales overview start
   const [range, setRange] = useState("3");
-  const filteredData = Object.values(salesOverview).slice(-Number(range));
+  const filteredData = Object.values(dashboard.salesOverview).slice(
+    -Number(range),
+  );
   // sales overview end
   // performance table Start
   const colors = ["#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#8b5cf6"];
   const topSoldProductByCategory = Object.values(
-    top_sold_products_by_category,
+    dashboard.topSoldProductsByCategory,
   ).map((item, index) => {
     return {
       category: item.category,
@@ -93,9 +106,14 @@ const DashboardComponent = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Total Sales</p>
               <p className="font-bold">
-                TK {currentMonthSoldSummary?.monthly_total_sales}
+                TK {formatCurrency(dashboard.totalSales.current_sales)}
               </p>
-              <p className="text-xs">200.00 from last month</p>
+              <p className="text-xs">
+                {dashboard.totalSales.sales_growth
+                  ? `${dashboard.totalSales.sales_growth > 100 ? "++" : "+"}${dashboard.totalSales.sales_growth}`
+                  : "N/A"}{" "}
+                % from last month
+              </p>
             </div>
           </div>
           <div className="flex items-center p-3 bg-emerald-50 rounded-lg">
@@ -198,9 +216,7 @@ const DashboardComponent = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-blue-700">Net Profit</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {productsSummery.total_items}
-                </p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">1</p>
               </div>
               <Package className="w-10 h-10 text-blue-600 opacity-70" />
             </div>
@@ -219,9 +235,7 @@ const DashboardComponent = () => {
                 <p className="text-sm font-medium text-amber-700">
                   Invoice Due
                 </p>
-                <p className="text-2xl font-bold text-gray-900 mt-2">
-                  {productsSummery.total_valuation?.toFixed(2)}
-                </p>
+                <p className="text-2xl font-bold text-gray-900 mt-2">1</p>
               </div>
               <TrendingUp className="w-10 h-10 text-amber-600 opacity-70" />
             </div>
@@ -358,27 +372,27 @@ const DashboardComponent = () => {
           />
           {/* Top Profit */}
           <TopProfitByCategory
-            profitByCategory={profitByCategory}
+            profitByCategory={dashboard.profitByCategory}
             formatCurrency={formatCurrency}
           />
           {/* Top Items */}
           <TopItemsByGross
-            topItemsByGross={topItemsByGross}
+            topItemsByGross={dashboard.topItemsByGross}
             formatCurrency={formatCurrency}
           />
           {/* Top Selling Products */}
           <TopSellingProducts
-            topItemsByGross={topItemsByGross}
+            topItemsByGross={dashboard.topItemsByGross}
             formatCurrency={formatCurrency}
           />
           {/* Low Stock Alert */}
           <LowStockAlert
-            topItemsByGross={topItemsByGross}
+            topItemsByGross={dashboard.topItemsByGross}
             formatCurrency={formatCurrency}
           />
           {/* Recent Sales */}
           <RecentSales
-            topItemsByGross={topItemsByGross}
+            topItemsByGross={dashboard.topItemsByGross}
             formatCurrency={formatCurrency}
           />
         </div>
