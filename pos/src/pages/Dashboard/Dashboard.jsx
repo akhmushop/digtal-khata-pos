@@ -60,7 +60,7 @@ const DashboardComponent = () => {
   // sold items end
 
   // sales overview start
-    const salesData = Object.values(soldProductsSummery).map((item) => {
+  const salesData = Object.values(soldProductsSummery).map((item) => {
     return {
       month: item.month_name,
       Sales: item.monthly_total_sales,
@@ -95,8 +95,53 @@ const DashboardComponent = () => {
           </div>
         </div>
 
-        {/* Alert Cards */}
+        {/* sale info */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="flex items-center p-3 bg-amber-50 rounded-lg">
+            <div className="w-3 h-3 bg-amber-500 rounded-full mr-3"></div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Sales</p>
+              <p className="font-bold">
+                TK {currentMonthSoldSummery?.monthly_total_sales}
+              </p>
+              <p className="text-xs">200.00 from last month</p>
+            </div>
+          </div>
+          <div className="flex items-center p-3 bg-emerald-50 rounded-lg">
+            <div className="w-3 h-3 bg-emerald-500 rounded-full mr-3"></div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">
+                Total Sales Return
+              </p>
+              <p className="font-bold">
+                TK {currentMonthSoldSummery?.monthly_total_sales}
+              </p>
+              <p className="text-xs">200.00 from last month</p>
+            </div>
+          </div>
+          <div className="flex items-center p-3 bg-blue-50 rounded-lg">
+            <div className="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">
+                Total Purchase
+              </p>
+              <p className="font-bold">Rs 0.00</p>
+              <p className="text-xs">200.00 from last month</p>
+            </div>
+          </div>
+          <div className="flex items-center p-3 bg-rose-50 rounded-lg">
+            <div className="w-3 h-3 bg-rose-500 rounded-full mr-3"></div>
+            <div>
+              <p className="text-sm font-medium text-gray-600">
+                Total Purchase Return
+              </p>
+              <p className="font-bold">Rs 0.00</p>
+              <p className="text-xs">200.00 from last month</p>
+            </div>
+          </div>
+        </div>
+        {/* Alert Cards */}
+        {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow-sm p-6 border border-orange-100">
             <div className="flex items-center justify-between">
               <div>
@@ -154,20 +199,26 @@ const DashboardComponent = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Main Metrics */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-sm p-6 border border-blue-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-blue-700">Total Items</p>
+                <p className="text-sm font-medium text-blue-700">Net Profit</p>
                 <p className="text-3xl font-bold text-gray-900 mt-2">
                   {productsSummery.total_items}
                 </p>
-                <p className="text-xs text-blue-600 mt-1">Current Total</p>
               </div>
               <Package className="w-10 h-10 text-blue-600 opacity-70" />
+            </div>
+            <div className="flex justify-between mt-2">
+              <p className="text-xs mt-1">
+                {currentMonthSoldSummery?.monthly_percentage_change} from last
+                month
+              </p>
+              <button className="hover:cursor-pointer">View All</button>
             </div>
           </div>
 
@@ -175,7 +226,7 @@ const DashboardComponent = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-amber-700">
-                  Total Valuation
+                  Invoice Due
                 </p>
                 <p className="text-2xl font-bold text-gray-900 mt-2">
                   {productsSummery.total_valuation?.toFixed(2)}
@@ -183,23 +234,33 @@ const DashboardComponent = () => {
               </div>
               <TrendingUp className="w-10 h-10 text-amber-600 opacity-70" />
             </div>
+            <div className="flex justify-between mt-2">
+              <p className="text-xs mt-1">
+                {currentMonthSoldSummery?.monthly_percentage_change} from last
+                month
+              </p>
+              <button className="hover:cursor-pointer">View All</button>
+            </div>
           </div>
 
           <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl shadow-sm p-6 border border-emerald-200">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-emerald-700">
-                  Sold Items
+                  Total Expenses
                 </p>
                 <p className="text-3xl font-bold text-gray-900 mt-2">
                   {currentMonthSoldSummery?.monthly_sold_items}
                 </p>
-                <p className="text-xs text-emerald-600 mt-1">
-                  {currentMonthSoldSummery?.monthly_percentage_change} from last
-                  month
-                </p>
               </div>
               <ShoppingCart className="w-10 h-10 text-emerald-600 opacity-70" />
+            </div>
+            <div className="flex justify-between mt-2">
+              <p className="text-xs mt-1">
+                {currentMonthSoldSummery?.monthly_percentage_change} from last
+                month
+              </p>
+              <button className="hover:cursor-pointer">View All</button>
             </div>
           </div>
 
@@ -207,13 +268,20 @@ const DashboardComponent = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-rose-700">
-                  Customer Advance
+                  Total Payment Returns
                 </p>
                 <p className="text-2xl font-bold text-gray-900 mt-2">
-                  -147,000.00 Rs
+                  147,000.00
                 </p>
               </div>
               <TrendingDown className="w-10 h-10 text-rose-600 opacity-70" />
+            </div>
+            <div className="flex justify-between mt-2">
+              <p className="text-xs mt-1">
+                {currentMonthSoldSummery?.monthly_percentage_change} from last
+                month
+              </p>
+              <button className="hover:cursor-pointer">View All</button>
             </div>
           </div>
         </div>
@@ -289,156 +357,23 @@ const DashboardComponent = () => {
               />
             </AreaChart>
           </ResponsiveContainer>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-            <div className="flex items-center p-3 bg-amber-50 rounded-lg">
-              <div className="w-3 h-3 bg-amber-500 rounded-full mr-3"></div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">Sales</p>
-                <p className="font-bold">
-                  TK {currentMonthSoldSummery?.monthly_total_sales}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center p-3 bg-emerald-50 rounded-lg">
-              <div className="w-3 h-3 bg-emerald-500 rounded-full mr-3"></div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">Cash</p>
-                <p className="font-bold">
-                  TK {currentMonthSoldSummery?.monthly_total_sales}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center p-3 bg-blue-50 rounded-lg">
-              <div className="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Inventory Purchase
-                </p>
-                <p className="font-bold">Rs 0.00</p>
-              </div>
-            </div>
-            <div className="flex items-center p-3 bg-rose-50 rounded-lg">
-              <div className="w-3 h-3 bg-rose-500 rounded-full mr-3"></div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">Expenses</p>
-                <p className="font-bold">Rs 0.00</p>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Performance Tables */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Top Sold Products */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="font-bold text-gray-900">Top Sold Products</h3>
-              <button className="text-gray-400 hover:text-gray-600">
-                <MoreVertical className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              {topSoldProductByCategory.map((item, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg"
-                >
-                  <div className="flex items-center">
-                    <div
-                      className="w-3 h-3 rounded-full mr-3"
-                      style={{ backgroundColor: item.color }}
-                    ></div>
-                    <span className="font-medium">{item.category}</span>
-                  </div>
-                  <span className="font-bold">{item.quantity}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
+          <TopSoldProductsByCategory topSoldProductByCategory={topSoldProductByCategory} />
           {/* Top Profit */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="font-bold text-gray-900">Top Profit</h3>
-              <button className="text-gray-400 hover:text-gray-600">
-                <MoreVertical className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              {Object.values(profitByCategory).map((item, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg"
-                >
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                      <DollarSign className="w-4 h-4 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium">{item.category}</p>
-                      <p
-                        className={`text-xs ${
-                          item.growth_percentage >= 0
-                            ? "text-green-600"
-                            : "text-red-600"
-                        }`}
-                      >
-                        {item.growth_percentage
-                          ? `${item.growth_percentage}%`
-                          : "N/A"}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="font-bold">
-                    TK {formatCurrency(item.current_month_profit)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
+          <TopProfitByCategory profitByCategory={profitByCategory} formatCurrency={formatCurrency} />
           {/* Top Items */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="font-bold text-gray-900">Top Items by Gross</h3>
-              <button className="text-gray-400 hover:text-gray-600">
-                <MoreVertical className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              {topItemsByGross?.length > 0 ? (
-                Object.values(topItemsByGross).map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg"
-                  >
-                    <div className="flex items-center">
-                      <div
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 ${
-                          item.trend === "up" ? "bg-green-100" : "bg-red-100"
-                        }`}
-                      >
-                        {item.trend === "up" ? (
-                          <TrendingUp className="w-4 h-4 text-green-600" />
-                        ) : (
-                          <TrendingDown className="w-4 h-4 text-red-600" />
-                        )}
-                      </div>
-                      <span className="font-medium">{item.product_name}</span>
-                    </div>
-                    <span className="font-bold">
-                      TK {formatCurrency(item.current_month_gross)}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <div className="text-sm text-gray-500">
-                  No sales data available yet.
-                </div>
-              )}
-            </div>
-          </div>
+          <TopItemsByGross topItemsByGross={topItemsByGross} formatCurrency={formatCurrency} />
+          {/* Top Selling Products */}
+          <TopSellingProducts topItemsByGross={topItemsByGross} formatCurrency={formatCurrency} />
+          {/* Low Stock Alert */}
+          <LowStockAlert topItemsByGross={topItemsByGross} formatCurrency={formatCurrency} />
+          {/* Recent Sales */}
+          <RecentSales topItemsByGross={topItemsByGross} formatCurrency={formatCurrency} />
+          
         </div>
       </div>
     </div>
@@ -446,3 +381,254 @@ const DashboardComponent = () => {
 };
 
 export default DashboardComponent;
+
+const TopSoldProductsByCategory = ({topSoldProductByCategory}) => {
+  return (
+    <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="font-bold text-gray-900">Top Sold Products</h3>
+        <button className="text-gray-400 hover:text-gray-600">
+          <MoreVertical className="w-5 h-5" />
+        </button>
+      </div>
+      <div className="space-y-4">
+        {topSoldProductByCategory.map((item, index) => (
+          <div
+            key={index}
+            className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg"
+          >
+            <div className="flex items-center">
+              <div
+                className="w-3 h-3 rounded-full mr-3"
+                style={{ backgroundColor: item.color }}
+              ></div>
+              <span className="font-medium">{item.category}</span>
+            </div>
+            <span className="font-bold">{item.quantity}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+const TopProfitByCategory = ({profitByCategory,formatCurrency}) => {
+  return (
+    <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="font-bold text-gray-900">Top Profit</h3>
+        <button className="text-gray-400 hover:text-gray-600">
+          <MoreVertical className="w-5 h-5" />
+        </button>
+      </div>
+      <div className="space-y-4">
+        {Object.values(profitByCategory).map((item, index) => (
+          <div
+            key={index}
+            className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg"
+          >
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                <DollarSign className="w-4 h-4 text-blue-600" />
+              </div>
+              <div>
+                <p className="font-medium">{item.category}</p>
+                <p
+                  className={`text-xs ${
+                    item.growth_percentage >= 0
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }`}
+                >
+                  {item.growth_percentage
+                    ? `${item.growth_percentage}%`
+                    : "N/A"}
+                </p>
+              </div>
+            </div>
+            <span className="font-bold">
+              TK {formatCurrency(item.current_month_profit)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+const TopItemsByGross = ({topItemsByGross,formatCurrency}) => {
+  return (
+    <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="font-bold text-gray-900">Top Items by Gross</h3>
+        <button className="text-gray-400 hover:text-gray-600">
+          <MoreVertical className="w-5 h-5" />
+        </button>
+      </div>
+      <div className="space-y-4">
+        {topItemsByGross?.length > 0 ? (
+          Object.values(topItemsByGross).map((item, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg"
+            >
+              <div className="flex items-center">
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 ${
+                    item.trend === "up" ? "bg-green-100" : "bg-red-100"
+                  }`}
+                >
+                  {item.trend === "up" ? (
+                    <TrendingUp className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <TrendingDown className="w-4 h-4 text-red-600" />
+                  )}
+                </div>
+                <span className="font-medium">{item.product_name}</span>
+              </div>
+              <span className="font-bold">
+                TK {formatCurrency(item.current_month_gross)}
+              </span>
+            </div>
+          ))
+        ) : (
+          <div className="text-sm text-gray-500">
+            No sales data available yet.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+const TopSellingProducts = ({topItemsByGross,formatCurrency}) => {
+  return (
+    <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="font-bold text-gray-900">Top Selling Products</h3>
+        <button className="text-gray-400 hover:text-gray-600">
+          <MoreVertical className="w-5 h-5" />
+        </button>
+      </div>
+      <div className="space-y-4">
+        {topItemsByGross?.length > 0 ? (
+          Object.values(topItemsByGross).map((item, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg"
+            >
+              <div className="flex items-center">
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 ${
+                    item.trend === "up" ? "bg-green-100" : "bg-red-100"
+                  }`}
+                >
+                  {item.trend === "up" ? (
+                    <TrendingUp className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <TrendingDown className="w-4 h-4 text-red-600" />
+                  )}
+                </div>
+                <span className="font-medium">{item.product_name}</span>
+              </div>
+              <span className="font-bold">
+                TK {formatCurrency(item.current_month_gross)}
+              </span>
+            </div>
+          ))
+        ) : (
+          <div className="text-sm text-gray-500">
+            No sales data available yet.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+const LowStockAlert = ({topItemsByGross,formatCurrency}) => {
+  return (
+    <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="font-bold text-gray-900">Low Stock Alert</h3>
+        <button className="text-gray-400 hover:text-gray-600">
+          <MoreVertical className="w-5 h-5" />
+        </button>
+      </div>
+      <div className="space-y-4">
+        {topItemsByGross?.length > 0 ? (
+          Object.values(topItemsByGross).map((item, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg"
+            >
+              <div className="flex items-center">
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 ${
+                    item.trend === "up" ? "bg-green-100" : "bg-red-100"
+                  }`}
+                >
+                  {item.trend === "up" ? (
+                    <TrendingUp className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <TrendingDown className="w-4 h-4 text-red-600" />
+                  )}
+                </div>
+                <span className="font-medium">{item.product_name}</span>
+              </div>
+              <span className="font-bold">
+                TK {formatCurrency(item.current_month_gross)}
+              </span>
+            </div>
+          ))
+        ) : (
+          <div className="text-sm text-gray-500">
+            No sales data available yet.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+const RecentSales = ({topItemsByGross,formatCurrency}) => {
+  return (
+    <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="font-bold text-gray-900">Recent Sales</h3>
+        <button className="text-gray-400 hover:text-gray-600">
+          <MoreVertical className="w-5 h-5" />
+        </button>
+      </div>
+      <div className="space-y-4">
+        {topItemsByGross?.length > 0 ? (
+          Object.values(topItemsByGross).map((item, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg"
+            >
+              <div className="flex items-center">
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 ${
+                    item.trend === "up" ? "bg-green-100" : "bg-red-100"
+                  }`}
+                >
+                  {item.trend === "up" ? (
+                    <TrendingUp className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <TrendingDown className="w-4 h-4 text-red-600" />
+                  )}
+                </div>
+                <span className="font-medium">{item.product_name}</span>
+              </div>
+              <span className="font-bold">
+                TK {formatCurrency(item.current_month_gross)}
+              </span>
+            </div>
+          ))
+        ) : (
+          <div className="text-sm text-gray-500">
+            No sales data available yet.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+
