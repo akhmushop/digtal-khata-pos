@@ -98,14 +98,14 @@ router.post("/api/sold_products/refunds_all/:id", async (req, res) => {
 router.get("/api/dashboard_summary", async (req, res) => {
   try {
     const [
-      sold_products_summary,
+      salesOverview,
       top_sold_products_by_category,
       profitByCategory,
       topItemsByGross,
       productsSummary,
     ] = await Promise.all([
       await pool.query(
-        "WITH prev_monthly_summary AS (SELECT DATE_TRUNC('month',s.created_at) AS month, TO_CHAR(s.created_at,'Mon') AS month_name, SUM(si.sold_quantity) AS monthly_sold_items ,SUM(si.sold_quantity * si.sold_price) AS monthly_total_sales FROM sale_items si JOIN sales s ON si.sale_id = s.id GROUP BY DATE_TRUNC('month',s.created_at) ,TO_CHAR(s.created_at,'Mon')ORDER BY month),with_lag AS (SELECT month,month_name,monthly_sold_items,monthly_total_sales,LAG(monthly_sold_items) OVER(ORDER BY month)AS prev_monthly_sold_items FROM prev_monthly_summary)SELECT month,month_name,monthly_sold_items ,monthly_total_sales,prev_monthly_sold_items ,ROUND((monthly_sold_items - prev_monthly_sold_items) /NULLIF(prev_monthly_sold_items,0) * 100 ,2) AS monthly_percentage_change FROM with_lag ORDER BY month ",
+        "SELECT TO_CHAR(created_at,'Mon') AS month,COALESCE(SUM(final_total),0) AS sales ,COALESCE(SUM (CASE WHEN payment_status = 'paid' THEN final_total ELSE 0 END),0) AS cash FROM sales GROUP BY DATE_TRUNC('month',created_at),TO_CHAR(created_at,'Mon')ORDER BY DATE_TRUNC('month',created_at) LIMIT 12",
       ),
       await pool.query(
         "SELECT p.category , COALESCE(SUM(si.sold_quantity),0) AS sold_items_by_category FROM products p LEFT JOIN (SELECT si.product_id , si.sold_quantity FROM sale_items si JOIN sales s ON si.sale_id = s.id WHERE DATE_TRUNC('month',s.created_at) = DATE_TRUNC('month', CURRENT_DATE -INTERVAL '1 month')) si ON si.product_id = p.id GROUP BY p.category ORDER BY sold_items_by_category DESC LIMIT 5",
@@ -122,7 +122,7 @@ router.get("/api/dashboard_summary", async (req, res) => {
     ]);
 
     res.json({
-      sold_products_summary: sold_products_summary.rows,
+      salesOverview: salesOverview.rows,
       top_sold_products_by_category: top_sold_products_by_category.rows,
       profitByCategory: profitByCategory.rows,
       topItemsByGross: topItemsByGross.rows,
