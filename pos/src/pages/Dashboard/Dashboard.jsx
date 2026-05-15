@@ -49,6 +49,7 @@ const DashboardComponent = () => {
         topSoldProductsByCategory: res.data.top_sold_products_by_category || {},
         profitByCategory: res.data.profitByCategory || {},
         topSales: res.data.topSales?.[0] || {},
+        netProfit: res.data.netProfit?.[0] || {},
       });
     } catch (error) {
       console.error("Dashboard error:", error);
@@ -67,6 +68,7 @@ const DashboardComponent = () => {
   const currentMonthSoldSummary =
     dashboard.salesOverview[dashboard.salesOverview.length - 1];
 
+  console.log(dashboard.netProfit);
   // sold items end
   // sales overview start
   const [range, setRange] = useState("3");
@@ -216,14 +218,18 @@ const DashboardComponent = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-blue-700">Net Profit</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">1</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">
+                  {formatCurrency(dashboard.netProfit?.current_profit)}
+                </p>
               </div>
               <Package className="w-10 h-10 text-blue-600 opacity-70" />
             </div>
             <div className="flex justify-between mt-2">
-              <p className="text-xs mt-1">
-                {currentMonthSoldSummary?.monthly_percentage_change} from last
-                month
+              <p className="text-xs">
+                {dashboard.totalSales.sales_growth
+                  ? `${dashboard.netProfit.profit_growth > 100 ? "++" : "+"}${dashboard.netProfit.profit_growth}`
+                  : "N/A"}{" "}
+                % from last month
               </p>
               <button className="hover:cursor-pointer">View All</button>
             </div>

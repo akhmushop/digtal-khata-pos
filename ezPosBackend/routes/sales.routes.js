@@ -103,7 +103,8 @@ router.get("/api/dashboard_summary", async (req, res) => {
       profitByCategory,
       topItemsByGross,
       productsSummary,
-      totalSales
+      totalSales,
+      netProfit,
     ] = await Promise.all([
       await pool.query(
         "SELECT TO_CHAR(created_at,'Mon') AS month,COALESCE(SUM(final_total),0) AS sales ,COALESCE(SUM (CASE WHEN payment_status = 'paid' THEN final_total ELSE 0 END),0) AS cash FROM sales GROUP BY DATE_TRUNC('month',created_at),TO_CHAR(created_at,'Mon')ORDER BY DATE_TRUNC('month',created_at) LIMIT 12",
@@ -123,6 +124,9 @@ router.get("/api/dashboard_summary", async (req, res) => {
       await pool.query(
         "WITH sales_summary AS (SELECT COALESCE(SUM( CASE WHEN DATE_TRUNC('month' ,created_at) = DATE_TRUNC('month',CURRENT_DATE) THEN final_total ELSE 0 END),0) AS current_sales,COALESCE(SUM(CASE WHEN DATE_TRUNC('month' ,created_at) = DATE_TRUNC('month',CURRENT_DATE - INTERVAL '1 month')THEN final_total ELSE 0 END),0)AS prev_sales FROM  sales)SELECT current_sales,CASE WHEN prev_sales = 0 THEN 0 ELSE ROUND(((current_sales - prev_sales) / prev_sales) *100,2)END AS 	sales_growth FROM sales_summary",
       ),
+      await pool.query(
+        "WITH profit_summary AS(SELECT COALESCE(SUM(CASE WHEN DATE_TRUNC('month' ,s.created_at) = DATE_TRUNC('month',CURRENT_DATE)THEN si.sold_price - si.cost_at_sale ELSE 0 END),0) AS current_profit ,COALESCE(SUM(CASE WHEN DATE_TRUNC('month' ,s.created_at) = DATE_TRUNC('month',CURRENT_DATE - INTERVAL '1 month')THEN si.sold_price - si.cost_at_sale ELSE 0 END),0) AS prev_profit FROM sale_items si JOIN sales s ON si.sale_id = s.id)SELECT current_profit ,CASE WHEN prev_profit = 0 THEN 0 ELSE ROUND(((current_profit - prev_profit)/prev_profit)*100,2) END AS profit_growth FROM profit_summary",
+      ),
     ]);
 
     res.json({
@@ -131,7 +135,8 @@ router.get("/api/dashboard_summary", async (req, res) => {
       profitByCategory: profitByCategory.rows,
       topItemsByGross: topItemsByGross.rows,
       productsSummary: productsSummary.rows,
-      totalSales:totalSales.rows
+      totalSales: totalSales.rows,
+      netProfit: netProfit.rows,
     });
   } catch (err) {
     console.error(err);
