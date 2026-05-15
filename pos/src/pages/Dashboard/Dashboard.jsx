@@ -29,7 +29,7 @@ import Sidebar from "../../components/Sidebar";
 import axios from "../../axios";
 
 const DashboardComponent = () => {
-  const [soldProductsSummary, setSoldProductsSummary] = useState({});
+  const [salesOverview, setSalesOverview] = useState({});
   const [productsSummery, setProductsSummery] = useState({});
   const [topItemsByGross, setTopItemsByGross] = useState({});
   const [top_sold_products_by_category, setTop_sold_products_by_category] =
@@ -37,7 +37,7 @@ const DashboardComponent = () => {
   const [profitByCategory, setProfitByCategory] = useState({});
   const getDashboardSummary = async () => {
     const res = await axios.get("/dashboard_summary");
-    setSoldProductsSummary(res.data.sold_products_summary);
+    setSalesOverview(res.data.salesOverview);
     setTop_sold_products_by_category(res.data.top_sold_products_by_category);
     setProfitByCategory(res.data.profitByCategory);
     setTopItemsByGross(res.data.topItemsByGross);
@@ -54,21 +54,12 @@ const DashboardComponent = () => {
     }).format(value);
   };
   // sold items start
-  const currentMonthSoldSummary =
-    soldProductsSummary[soldProductsSummary.length - 1];
+  const currentMonthSoldSummary = salesOverview[salesOverview.length - 1];
 
   // sold items end
-
   // sales overview start
-  const salesData = Object.values(soldProductsSummary).map((item) => {
-    return {
-      month: item.month_name,
-      Sales: item.monthly_total_sales,
-      Cash: item.monthly_total_sales,
-    };
-  });
   const [range, setRange] = useState("3");
-  const filteredData = salesData.slice(-Number(range));
+  const filteredData = Object.values(salesOverview).slice(-Number(range));
   // sales overview end
   // performance table Start
   const colors = ["#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#8b5cf6"];
@@ -343,14 +334,14 @@ const DashboardComponent = () => {
               <Legend />
               <Area
                 type="monotone"
-                dataKey="Sales"
+                dataKey="sales"
                 stroke="#f59e0b"
                 fill="url(#colorSales)"
                 strokeWidth={2}
               />
               <Area
                 type="monotone"
-                dataKey="Cash"
+                dataKey="cash"
                 stroke="#10b981"
                 fill="url(#colorCash)"
                 strokeWidth={2}
@@ -362,18 +353,34 @@ const DashboardComponent = () => {
         {/* Performance Tables */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Top Sold Products */}
-          <TopSoldProductsByCategory topSoldProductByCategory={topSoldProductByCategory} />
+          <TopSoldProductsByCategory
+            topSoldProductByCategory={topSoldProductByCategory}
+          />
           {/* Top Profit */}
-          <TopProfitByCategory profitByCategory={profitByCategory} formatCurrency={formatCurrency} />
+          <TopProfitByCategory
+            profitByCategory={profitByCategory}
+            formatCurrency={formatCurrency}
+          />
           {/* Top Items */}
-          <TopItemsByGross topItemsByGross={topItemsByGross} formatCurrency={formatCurrency} />
+          <TopItemsByGross
+            topItemsByGross={topItemsByGross}
+            formatCurrency={formatCurrency}
+          />
           {/* Top Selling Products */}
-          <TopSellingProducts topItemsByGross={topItemsByGross} formatCurrency={formatCurrency} />
+          <TopSellingProducts
+            topItemsByGross={topItemsByGross}
+            formatCurrency={formatCurrency}
+          />
           {/* Low Stock Alert */}
-          <LowStockAlert topItemsByGross={topItemsByGross} formatCurrency={formatCurrency} />
+          <LowStockAlert
+            topItemsByGross={topItemsByGross}
+            formatCurrency={formatCurrency}
+          />
           {/* Recent Sales */}
-          <RecentSales topItemsByGross={topItemsByGross} formatCurrency={formatCurrency} />
-          
+          <RecentSales
+            topItemsByGross={topItemsByGross}
+            formatCurrency={formatCurrency}
+          />
         </div>
       </div>
     </div>
@@ -382,7 +389,7 @@ const DashboardComponent = () => {
 
 export default DashboardComponent;
 
-const TopSoldProductsByCategory = ({topSoldProductByCategory}) => {
+const TopSoldProductsByCategory = ({ topSoldProductByCategory }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex justify-between items-center mb-6">
@@ -411,7 +418,7 @@ const TopSoldProductsByCategory = ({topSoldProductByCategory}) => {
     </div>
   );
 };
-const TopProfitByCategory = ({profitByCategory,formatCurrency}) => {
+const TopProfitByCategory = ({ profitByCategory, formatCurrency }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex justify-between items-center mb-6">
@@ -454,7 +461,7 @@ const TopProfitByCategory = ({profitByCategory,formatCurrency}) => {
     </div>
   );
 };
-const TopItemsByGross = ({topItemsByGross,formatCurrency}) => {
+const TopItemsByGross = ({ topItemsByGross, formatCurrency }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex justify-between items-center mb-6">
@@ -498,7 +505,7 @@ const TopItemsByGross = ({topItemsByGross,formatCurrency}) => {
     </div>
   );
 };
-const TopSellingProducts = ({topItemsByGross,formatCurrency}) => {
+const TopSellingProducts = ({ topItemsByGross, formatCurrency }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex justify-between items-center mb-6">
@@ -542,7 +549,7 @@ const TopSellingProducts = ({topItemsByGross,formatCurrency}) => {
     </div>
   );
 };
-const LowStockAlert = ({topItemsByGross,formatCurrency}) => {
+const LowStockAlert = ({ topItemsByGross, formatCurrency }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex justify-between items-center mb-6">
@@ -586,7 +593,7 @@ const LowStockAlert = ({topItemsByGross,formatCurrency}) => {
     </div>
   );
 };
-const RecentSales = ({topItemsByGross,formatCurrency}) => {
+const RecentSales = ({ topItemsByGross, formatCurrency }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex justify-between items-center mb-6">
@@ -630,5 +637,3 @@ const RecentSales = ({topItemsByGross,formatCurrency}) => {
     </div>
   );
 };
-
-
