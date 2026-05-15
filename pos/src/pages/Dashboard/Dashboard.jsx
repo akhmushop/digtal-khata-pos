@@ -29,22 +29,22 @@ import Sidebar from "../../components/Sidebar";
 import axios from "../../axios";
 
 const DashboardComponent = () => {
-  const [soldProductsSummery, setSoldProductsSummery] = useState({});
+  const [soldProductsSummary, setSoldProductsSummary] = useState({});
   const [productsSummery, setProductsSummery] = useState({});
   const [topItemsByGross, setTopItemsByGross] = useState({});
   const [top_sold_products_by_category, setTop_sold_products_by_category] =
     useState({});
   const [profitByCategory, setProfitByCategory] = useState({});
-  const getDashboardSummery = async () => {
-    const res = await axios.get("/dashboard_summery");
-    setSoldProductsSummery(res.data.sold_products_summery);
+  const getDashboardSummary = async () => {
+    const res = await axios.get("/dashboard_summary");
+    setSoldProductsSummary(res.data.sold_products_summary);
     setTop_sold_products_by_category(res.data.top_sold_products_by_category);
     setProfitByCategory(res.data.profitByCategory);
     setTopItemsByGross(res.data.topItemsByGross);
-    setProductsSummery(res.data.productsSummery[0]);
+    setProductsSummery(res.data.productsSummary[0]);
   };
   useEffect(() => {
-    getDashboardSummery();
+    getDashboardSummary();
   }, []);
 
   const formatCurrency = (value) => {
@@ -54,13 +54,13 @@ const DashboardComponent = () => {
     }).format(value);
   };
   // sold items start
-  const currentMonthSoldSummery =
-    soldProductsSummery[soldProductsSummery.length - 1];
+  const currentMonthSoldSummary =
+    soldProductsSummary[soldProductsSummary.length - 1];
 
   // sold items end
 
   // sales overview start
-  const salesData = Object.values(soldProductsSummery).map((item) => {
+  const salesData = Object.values(soldProductsSummary).map((item) => {
     return {
       month: item.month_name,
       Sales: item.monthly_total_sales,
@@ -102,7 +102,7 @@ const DashboardComponent = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Total Sales</p>
               <p className="font-bold">
-                TK {currentMonthSoldSummery?.monthly_total_sales}
+                TK {currentMonthSoldSummary?.monthly_total_sales}
               </p>
               <p className="text-xs">200.00 from last month</p>
             </div>
@@ -114,7 +114,7 @@ const DashboardComponent = () => {
                 Total Sales Return
               </p>
               <p className="font-bold">
-                TK {currentMonthSoldSummery?.monthly_total_sales}
+                TK {currentMonthSoldSummary?.monthly_total_sales}
               </p>
               <p className="text-xs">200.00 from last month</p>
             </div>
@@ -215,7 +215,7 @@ const DashboardComponent = () => {
             </div>
             <div className="flex justify-between mt-2">
               <p className="text-xs mt-1">
-                {currentMonthSoldSummery?.monthly_percentage_change} from last
+                {currentMonthSoldSummary?.monthly_percentage_change} from last
                 month
               </p>
               <button className="hover:cursor-pointer">View All</button>
@@ -236,7 +236,7 @@ const DashboardComponent = () => {
             </div>
             <div className="flex justify-between mt-2">
               <p className="text-xs mt-1">
-                {currentMonthSoldSummery?.monthly_percentage_change} from last
+                {currentMonthSoldSummary?.monthly_percentage_change} from last
                 month
               </p>
               <button className="hover:cursor-pointer">View All</button>
@@ -250,14 +250,14 @@ const DashboardComponent = () => {
                   Total Expenses
                 </p>
                 <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {currentMonthSoldSummery?.monthly_sold_items}
+                  {currentMonthSoldSummary?.monthly_sold_items}
                 </p>
               </div>
               <ShoppingCart className="w-10 h-10 text-emerald-600 opacity-70" />
             </div>
             <div className="flex justify-between mt-2">
               <p className="text-xs mt-1">
-                {currentMonthSoldSummery?.monthly_percentage_change} from last
+                {currentMonthSoldSummary?.monthly_percentage_change} from last
                 month
               </p>
               <button className="hover:cursor-pointer">View All</button>
@@ -278,7 +278,7 @@ const DashboardComponent = () => {
             </div>
             <div className="flex justify-between mt-2">
               <p className="text-xs mt-1">
-                {currentMonthSoldSummery?.monthly_percentage_change} from last
+                {currentMonthSoldSummary?.monthly_percentage_change} from last
                 month
               </p>
               <button className="hover:cursor-pointer">View All</button>

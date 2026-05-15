@@ -95,14 +95,14 @@ router.post("/api/sold_products/refunds_all/:id", async (req, res) => {
     console.error(err);
   }
 });
-router.get("/api/dashboard_summery", async (req, res) => {
+router.get("/api/dashboard_summary", async (req, res) => {
   try {
     const [
-      sold_products_summery,
+      sold_products_summary,
       top_sold_products_by_category,
       profitByCategory,
       topItemsByGross,
-      productsSummery,
+      productsSummary,
     ] = await Promise.all([
       await pool.query(
         "WITH prev_monthly_summary AS (SELECT DATE_TRUNC('month',s.created_at) AS month, TO_CHAR(s.created_at,'Mon') AS month_name, SUM(si.sold_quantity) AS monthly_sold_items ,SUM(si.sold_quantity * si.sold_price) AS monthly_total_sales FROM sale_items si JOIN sales s ON si.sale_id = s.id GROUP BY DATE_TRUNC('month',s.created_at) ,TO_CHAR(s.created_at,'Mon')ORDER BY month),with_lag AS (SELECT month,month_name,monthly_sold_items,monthly_total_sales,LAG(monthly_sold_items) OVER(ORDER BY month)AS prev_monthly_sold_items FROM prev_monthly_summary)SELECT month,month_name,monthly_sold_items ,monthly_total_sales,prev_monthly_sold_items ,ROUND((monthly_sold_items - prev_monthly_sold_items) /NULLIF(prev_monthly_sold_items,0) * 100 ,2) AS monthly_percentage_change FROM with_lag ORDER BY month ",
@@ -122,11 +122,11 @@ router.get("/api/dashboard_summery", async (req, res) => {
     ]);
 
     res.json({
-      sold_products_summery: sold_products_summery.rows,
+      sold_products_summary: sold_products_summary.rows,
       top_sold_products_by_category: top_sold_products_by_category.rows,
       profitByCategory: profitByCategory.rows,
       topItemsByGross: topItemsByGross.rows,
-      productsSummery: productsSummery.rows,
+      productsSummary: productsSummary.rows,
     });
   } catch (err) {
     console.error(err);
