@@ -48,7 +48,7 @@ const DashboardComponent = () => {
         totalSales: res.data.totalSales?.[0] || {},
         topSoldProductsByCategory: res.data.top_sold_products_by_category || {},
         profitByCategory: res.data.profitByCategory || {},
-        topSales: res.data.topSales?.[0] || {},
+        salesSummary: res.data.salesSummary?.[0] || {},
         netProfit: res.data.netProfit?.[0] || {},
       });
     } catch (error) {
@@ -103,33 +103,22 @@ const DashboardComponent = () => {
 
         {/* sale info */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="flex items-center p-3 bg-amber-50 rounded-lg">
-            <div className="w-3 h-3 bg-amber-500 rounded-full mr-3"></div>
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Sales</p>
-              <p className="font-bold">
-                TK {formatCurrency(dashboard.totalSales.current_sales)}
-              </p>
-              <p className="text-xs">
-                {dashboard.totalSales.sales_growth
-                  ? `${dashboard.totalSales.sales_growth > 100 ? "++" : "+"}${dashboard.totalSales.sales_growth}`
-                  : "N/A"}{" "}
-                % from last month
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center p-3 bg-emerald-50 rounded-lg">
-            <div className="w-3 h-3 bg-emerald-500 rounded-full mr-3"></div>
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                Total Sales Return
-              </p>
-              <p className="font-bold">
-                TK {currentMonthSoldSummary?.monthly_total_sales}
-              </p>
-              <p className="text-xs">200.00 from last month</p>
-            </div>
-          </div>
+          {/* total Sales */}
+          <SummaryCard
+            bg={"bg-amber-50"}
+            circleBg={"bg-amber-500"}
+            title={"Total Sales"}
+            total={formatCurrency(dashboard.salesSummary?.current_net_sales)}
+            growth={dashboard.salesSummary?.sales_growth}
+          />
+          {/* total sales return */}
+          <SummaryCard
+            bg={"bg-emerald-50"}
+            circleBg={"bg-emerald-500"}
+            title={"Total Sales Return"}
+            total={formatCurrency(dashboard.salesSummary?.current_return)}
+            growth={dashboard.salesSummary?.return_growth}
+          />
           <div className="flex items-center p-3 bg-blue-50 rounded-lg">
             <div className="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
             <div>
@@ -409,6 +398,21 @@ const DashboardComponent = () => {
 
 export default DashboardComponent;
 
+const SummaryCard = ({ bg, circleBg, title, total, growth }) => {
+  return (
+    <div className={`flex items-center p-3 ${bg} rounded-lg`}>
+      <div className={`w-3 h-3 ${circleBg} rounded-full mr-3`}></div>
+      <div>
+        <p className="text-sm font-medium text-gray-600">{title}</p>
+        <p className="font-bold">TK {total}</p>
+        <p className="text-xs">
+          {growth ? `${growth > 100 ? "++" : "+"}${growth}` : "N/A"} % from last
+          month
+        </p>
+      </div>
+    </div>
+  );
+};
 const TopSoldProductsByCategory = ({ topSoldProductByCategory }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
