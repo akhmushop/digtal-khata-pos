@@ -87,6 +87,74 @@ const DashboardComponent = () => {
       color: colors[index % colors.length],
     };
   });
+  const bigSummaryCards = [
+    {
+      title: "Net Profit",
+      total: dashboard.netProfit?.current_profit,
+      growth: dashboard.netProfit?.profit_growth,
+      bg: "bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200",
+      icon: Package,
+      iconColor: "text-blue-600",
+      titleColor: "text-blue-700",
+    },
+    {
+      title: "Invoice Due",
+      total: 10000,
+      growth: 11,
+      bg: "bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200",
+      icon: TrendingUp,
+      iconColor: "text-amber-600",
+      titleColor: "text-amber-700",
+    },
+    {
+      title: "Total Expenses",
+      total: 20000,
+      growth: 10,
+      bg: "bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200",
+      icon: ShoppingCart,
+      iconColor: "text-emerald-600",
+      titleColor: "text-emerald-700",
+    },
+    {
+      title: "Total Payment Returns",
+      total: 77852,
+      growth: 45,
+      bg: "bg-gradient-to-br from-rose-50 to-rose-100 border border-rose-200",
+      icon: TrendingDown,
+      iconColor: "text-rose-600",
+      titleColor: "text-rose-700",
+    },
+  ];
+  const summaryCards = [
+    {
+      bg: "bg-amber-50",
+      circleBg: "bg-amber-500",
+      title: "Total Sales",
+      total: dashboard.salesSummary?.current_net_sales,
+      growth: dashboard.salesSummary?.sales_growth,
+    },
+    {
+      bg: "bg-emerald-50",
+      circleBg: "bg-emerald-500",
+      title: "Total Sales Return",
+      total: dashboard.salesSummary?.current_return,
+      growth: dashboard.salesSummary?.return_growth,
+    },
+    {
+      bg: "bg-blue-50",
+      circleBg: "bg-blue-500",
+      title: "Total Purchase",
+      total: 100025,
+      growth: 11,
+    },
+    {
+      bg: "bg-rose-50",
+      circleBg: "bg-rose-500",
+      title: "Total Purchase Return",
+      total: 64654,
+      growth: 15,
+    },
+  ];
   return (
     <div className="flex">
       <div className="fixed left-0 top-0 h-screen z-40">
@@ -103,44 +171,17 @@ const DashboardComponent = () => {
 
         {/* sale info */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* total Sales */}
-          <SummaryCard
-            bg={"bg-amber-50"}
-            circleBg={"bg-amber-500"}
-            title={"Total Sales"}
-            total={formatCurrency(dashboard.salesSummary?.current_net_sales)}
-            growth={dashboard.salesSummary?.sales_growth}
-          />
-          {/* total sales return */}
-          <SummaryCard
-            bg={"bg-emerald-50"}
-            circleBg={"bg-emerald-500"}
-            title={"Total Sales Return"}
-            total={formatCurrency(dashboard.salesSummary?.current_return)}
-            growth={dashboard.salesSummary?.return_growth}
-          />
-          <div className="flex items-center p-3 bg-blue-50 rounded-lg">
-            <div className="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                Total Purchase
-              </p>
-              <p className="font-bold">Rs 0.00</p>
-              <p className="text-xs">200.00 from last month</p>
-            </div>
-          </div>
-          <div className="flex items-center p-3 bg-rose-50 rounded-lg">
-            <div className="w-3 h-3 bg-rose-500 rounded-full mr-3"></div>
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                Total Purchase Return
-              </p>
-              <p className="font-bold">Rs 0.00</p>
-              <p className="text-xs">200.00 from last month</p>
-            </div>
-          </div>
+          {summaryCards.map((value, index) => (
+            <SummaryCard
+              key={index}
+              value={value}
+              formatCurrency={formatCurrency}
+            />
+          ))}
         </div>
+
         {/* Alert Cards */}
+
         {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow-sm p-6 border border-orange-100">
             <div className="flex items-center justify-between">
@@ -203,87 +244,13 @@ const DashboardComponent = () => {
 
         {/* Main Metrics */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-sm p-6 border border-blue-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-blue-700">Net Profit</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {formatCurrency(dashboard.netProfit?.current_profit)}
-                </p>
-              </div>
-              <Package className="w-10 h-10 text-blue-600 opacity-70" />
-            </div>
-            <div className="flex justify-between mt-2">
-              <p className="text-xs">
-                {dashboard.totalSales.sales_growth
-                  ? `${dashboard.netProfit.profit_growth > 100 ? "++" : "+"}${dashboard.netProfit.profit_growth}`
-                  : "N/A"}{" "}
-                % from last month
-              </p>
-              <button className="hover:cursor-pointer">View All</button>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl shadow-sm p-6 border border-amber-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-amber-700">
-                  Invoice Due
-                </p>
-                <p className="text-2xl font-bold text-gray-900 mt-2">1</p>
-              </div>
-              <TrendingUp className="w-10 h-10 text-amber-600 opacity-70" />
-            </div>
-            <div className="flex justify-between mt-2">
-              <p className="text-xs mt-1">
-                {currentMonthSoldSummary?.monthly_percentage_change} from last
-                month
-              </p>
-              <button className="hover:cursor-pointer">View All</button>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl shadow-sm p-6 border border-emerald-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-emerald-700">
-                  Total Expenses
-                </p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {currentMonthSoldSummary?.monthly_sold_items}
-                </p>
-              </div>
-              <ShoppingCart className="w-10 h-10 text-emerald-600 opacity-70" />
-            </div>
-            <div className="flex justify-between mt-2">
-              <p className="text-xs mt-1">
-                {currentMonthSoldSummary?.monthly_percentage_change} from last
-                month
-              </p>
-              <button className="hover:cursor-pointer">View All</button>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-rose-50 to-rose-100 rounded-xl shadow-sm p-6 border border-rose-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-rose-700">
-                  Total Payment Returns
-                </p>
-                <p className="text-2xl font-bold text-gray-900 mt-2">
-                  147,000.00
-                </p>
-              </div>
-              <TrendingDown className="w-10 h-10 text-rose-600 opacity-70" />
-            </div>
-            <div className="flex justify-between mt-2">
-              <p className="text-xs mt-1">
-                {currentMonthSoldSummary?.monthly_percentage_change} from last
-                month
-              </p>
-              <button className="hover:cursor-pointer">View All</button>
-            </div>
-          </div>
+          {bigSummaryCards.map((value, index) => (
+            <BigSummaryCard
+              key={index}
+              value={value}
+              formatCurrency={formatCurrency}
+            />
+          ))}
         </div>
 
         {/* Sales Chart Section */}
@@ -398,17 +365,46 @@ const DashboardComponent = () => {
 
 export default DashboardComponent;
 
-const SummaryCard = ({ bg, circleBg, title, total, growth }) => {
+const SummaryCard = ({ value, formatCurrency }) => {
   return (
-    <div className={`flex items-center p-3 ${bg} rounded-lg`}>
-      <div className={`w-3 h-3 ${circleBg} rounded-full mr-3`}></div>
+    <div className={`flex items-center p-3 ${value.bg} rounded-lg`}>
+      <div className={`w-3 h-3 ${value.circleBg} rounded-full mr-3`}></div>
       <div>
-        <p className="text-sm font-medium text-gray-600">{title}</p>
-        <p className="font-bold">TK {total}</p>
+        <p className="text-sm font-medium text-gray-600">{value.title}</p>
+        <p className="font-bold">TK {formatCurrency(value.total)}</p>
         <p className="text-xs">
-          {growth ? `${growth > 100 ? "++" : "+"}${growth}` : "N/A"} % from last
-          month
+          {value.growth
+            ? `${value.growth > 100 ? "++" : "+"}${value.growth}`
+            : "N/A"}{" "}
+          % from last month
         </p>
+      </div>
+    </div>
+  );
+};
+const BigSummaryCard = ({ value, formatCurrency }) => {
+  const Icon = value.icon;
+  return (
+    <div className={`${value.bg} rounded-xl shadow-sm p-6`}>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className={`text-sm font-medium ${value.titleColor}`}>
+            {value.title}
+          </p>
+          <p className="text-3xl font-bold text-gray-900 mt-2">
+            {formatCurrency(value.total)}
+          </p>
+        </div>
+        <Icon className={`w-10 h-10 ${value.iconColor} opacity-70`} />
+      </div>
+      <div className="flex justify-between mt-2">
+        <p className="text-xs">
+          {value.growth
+            ? `${value.growth > 100 ? "++" : "+"}${value.growth}`
+            : "N/A"}{" "}
+          % from last month
+        </p>
+        <button className="hover:cursor-pointer">View All</button>
       </div>
     </div>
   );
