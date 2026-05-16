@@ -135,7 +135,7 @@ router.get("/api/dashboard_summary", async (req, res) => {
       profitByCategory,
       topItemsByGross,
       productsSummary,
-      totalSales,
+      salesSummary,
       netProfit,
     ] = await Promise.all([
       await pool.query(
@@ -154,7 +154,7 @@ router.get("/api/dashboard_summary", async (req, res) => {
         "SELECT COUNT(*) FILTER(WHERE products.quantity >0 AND products.quantity <= products.alert_quantity) AS low_stock ,COUNT(*) FILTER(WHERE products.quantity <=0) AS stock_out ,SUM (products.quantity)  AS total_items,SUM (products.quantity * products.cost) AS total_valuation FROM products",
       ),
       await pool.query(
-        "WITH sales_summary AS (SELECT COALESCE(SUM( CASE WHEN DATE_TRUNC('month' ,created_at) = DATE_TRUNC('month',CURRENT_DATE) THEN final_total ELSE 0 END),0) AS current_sales,COALESCE(SUM(CASE WHEN DATE_TRUNC('month' ,created_at) = DATE_TRUNC('month',CURRENT_DATE - INTERVAL '1 month')THEN final_total ELSE 0 END),0)AS prev_sales FROM  sales)SELECT current_sales,CASE WHEN prev_sales = 0 THEN 0 ELSE ROUND(((current_sales - prev_sales) / prev_sales) *100,2)END AS 	sales_growth FROM sales_summary",
+        "WITH sales_summary AS (SELECT COALESCE(SUM(CASE WHEN DATE_TRUNC('month' ,created_at) = DATE_TRUNC('month',CURRENT_DATE) THEN final_total ELSE 0 END),0)AS current_sales,COALESCE(SUM(CASE WHEN DATE_TRUNC('month' ,created_at) = DATE_TRUNC('month',CURRENT_DATE - INTERVAL '1 month')THEN final_total ELSE 0 END),0)AS prev_sales FROM sales),return_summary AS(SELECT COALESCE(SUM(CASE WHEN DATE_TRUNC('month' ,created_at) = DATE_TRUNC('month',CURRENT_DATE)THEN refund_total ELSE 0 END),0) AS current_return,COALESCE(SUM(CASE WHEN DATE_TRUNC('month' ,created_at) = DATE_TRUNC('month',CURRENT_DATE - INTERVAL '1 month')THEN refund_total ELSE 0 END),0) AS prev_return FROM sale_refunds)SELECT  ss.current_sales - rs.current_return AS current_net_sales,CASE WHEN (ss.prev_sales - rs.prev_return) = 0 THEN 0 ELSE ROUND(((ss.current_sales-rs.current_return) - (ss.prev_sales-rs.prev_return)) / (ss.prev_sales-rs.prev_return) *100,2)END AS sales_growth ,rs.current_return,CASE WHEN (ss.prev_sales - rs.prev_return) = 0 THEN 0 ELSE ROUND(((rs.current_return) - (rs.prev_return)) / (rs.prev_return) *100,2)END AS return_growth FROM sales_summary ss ,return_summary rs",
       ),
       await pool.query(
         "WITH profit_summary AS(SELECT COALESCE(SUM(CASE WHEN DATE_TRUNC('month' ,s.created_at) = DATE_TRUNC('month',CURRENT_DATE)THEN si.sold_price - si.cost_at_sale ELSE 0 END),0) AS current_profit ,COALESCE(SUM(CASE WHEN DATE_TRUNC('month' ,s.created_at) = DATE_TRUNC('month',CURRENT_DATE - INTERVAL '1 month')THEN si.sold_price - si.cost_at_sale ELSE 0 END),0) AS prev_profit FROM sale_items si JOIN sales s ON si.sale_id = s.id)SELECT current_profit ,CASE WHEN prev_profit = 0 THEN 0 ELSE ROUND(((current_profit - prev_profit)/prev_profit)*100,2) END AS profit_growth FROM profit_summary",
@@ -167,7 +167,7 @@ router.get("/api/dashboard_summary", async (req, res) => {
       profitByCategory: profitByCategory.rows,
       topItemsByGross: topItemsByGross.rows,
       productsSummary: productsSummary.rows,
-      totalSales: totalSales.rows,
+      salesSummary: salesSummary.rows,
       netProfit: netProfit.rows,
     });
   } catch (err) {
@@ -175,80 +175,5 @@ router.get("/api/dashboard_summary", async (req, res) => {
   }
 });
 
-// router.get(
-//   "/api/sold_products/sold_products_summery/top_sold_products_by_category",
-//   async (req, res) => {
-//     try {
-//       const result = await pool.query("");
-//       res.json(result.rows);
-//     } catch (err) {
-//       console.error(err);
-//     }
-//   },
-// );
-// WITH prev_monthly_summary AS (SELECT DATE_TRUNC('month',s.created_at) AS month, TO_CHAR(s.created_at,'Mon')
-// AS month_name,
-// SUM(si.sold_quantity) AS monthly_sold_items ,
-// SUM(si.sold_quantity * si.sold_price) AS monthly_total_sales
-// FROM sale_items si JOIN sales s ON si.sale_id = s.id
-// GROUP BY DATE_TRUNC('month',s.created_at) ,TO_CHAR(s.created_at,'Mon')
-// ORDER BY month),
-// with_lag AS (SELECT month,month_name,monthly_sold_items,monthly_total_sales,LAG(monthly_sold_items) OVER(ORDER BY month)
-// AS prev_monthly_sold_items
-//  FROM prev_monthly_summary)
-// SELECT month,month_name,monthly_sold_items ,monthly_total_sales,prev_monthly_sold_items ,ROUND(
-// (monthly_sold_items - prev_monthly_sold_items) /NULLIF(prev_monthly_sold_items,0) * 100 ,2
-// ) AS monthly_percentage_change FROM with_lag WHERE month = DATE_TRUNC('month', CURRENT_DATE -INTERVAL '1 month')
-
-// SELECT p.category , COALESCE(SUM(si.sold_quantity),0) AS sold_items_by_category
-// FROM products p
-// LEFT JOIN (
-// 	SELECT si.product_id , si.sold_quantity
-// 	FROM sale_items si
-// 	JOIN sales s ON si.sale_id = s.id
-// 	WHERE DATE_TRUNC('month',s.created_at) = DATE_TRUNC('month', CURRENT_DATE -INTERVAL '1 month')
-// 	) si ON si.product_id = p.id
-// GROUP BY p.category
-// ORDER BY sold_items_by_category DESC
-// LIMIT 5
-
-// SELECT p.category ,COALESCE(SUM((si.sold_price - si.cost_at_sale) * si.sold_quantity),0) AS profit_by_category
-// FROM products p
-// 	LEFT JOIN(
-// 	SELECT si.product_id,si.sold_price,si.cost_at_sale,si.sold_quantity
-// 	FROM sale_items si
-// 	JOIN sales s ON  si.sale_id = s.id
-// 	WHERE DATE_TRUNC('month',s.created_at) = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')
-// 	) si ON si.product_id = p.id
-// GROUP BY p.category
-// ORDER BY profit_by_category DESC
-// LIMIT 5
-
-// WITH current_month AS (
-// 	SELECT p.category ,SUM((si.sold_price - si.cost_at_sale) * si.sold_quantity) AS current_profit
-// 	FROM products p
-// 	JOIN sale_items si ON si.product_id = p.id
-// 	JOIN sales s ON  si.sale_id = s.id
-// 	WHERE DATE_TRUNC('month',s.created_at) = DATE_TRUNC('month', CURRENT_DATE)
-// 	GROUP BY p.category
-// 	),
-// last_month AS(
-// 	SELECT p.category ,SUM((si.sold_price - si.cost_at_sale) * si.sold_quantity) AS last_profit
-// 	FROM products p
-// 	JOIN sale_items si ON si.product_id = p.id
-// 	JOIN sales s ON  si.sale_id = s.id
-// 	WHERE DATE_TRUNC('month',s.created_at) = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')
-// 	GROUP BY p.category
-// )
-// SELECT COALESCE(c.category, l.category) AS category,
-// COALESCE (c.current_profit, 0) AS current_month_profit,
-// COALESCE (l.last_profit,0) AS last_month_profit,
-// ROUND(
-
-//   ((COALESCE(c.current_profit,0) - COALESCE(l.last_profit,0)) / NULLIF(COALESCE(l.last_profit,0),0)) * 100,2
-// ) AS growth_percentage
-
-// FROM current_month c FULL JOIN last_month l ON c.category = l.category
-// ORDER BY current_month_profit DESC
 
 export default router;
