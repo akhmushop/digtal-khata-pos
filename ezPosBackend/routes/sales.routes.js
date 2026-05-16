@@ -58,13 +58,27 @@ router.post("/api/sold_products/refund/:id", async (req, res) => {
       "SELECT * FROM sale_items WHERE id = $1",
       [id],
     );
+    const saleItem = sale_items.rows[0];
+    const refundTotal = saleItem.sold_price * saleItem.sold_quantity;
     const refund = await pool.query(
-      "INSERT INTO sale_refund_items (refund_id) VALUES ($1)",
-      [id],
+      "INSERT INTO sale_refunds (sale_id ,refund_total) VALUES ($1,$2) RETURNING id",
+      [saleItem.sale_id, refundTotal],
+    );
+    const refundId = refund.rows[0].id;
+    await pool.query(
+      "INSERT INTO sale_refund_items (refund_id ,sale_item_id,product_id,quantity,refund_price,refund_total) VALUES($1,$2,$3,$4,$5,$6)",
+      [
+        refundId,
+        saleItem.id,
+        saleItem.product_id,
+        saleItem.sold_quantity,
+        saleItem.sold_price,
+        refundTotal,
+      ],
     );
     const updateProductStock = await pool.query(
       "UPDATE products SET quantity =quantity + $1 WHERE id = $2",
-      [sale_items.rows[0].sold_quantity, sale_items.rows[0].product_id],
+      [saleItem.sold_quantity, saleItem.product_id],
     );
   } catch (err) {
     console.error(err);
