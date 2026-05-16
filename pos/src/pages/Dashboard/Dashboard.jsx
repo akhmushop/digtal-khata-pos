@@ -64,10 +64,6 @@ const DashboardComponent = () => {
       maximumFractionDigits: 2,
     }).format(value);
   };
-  // sold items start
-  const currentMonthSoldSummary =
-    dashboard.salesOverview[dashboard.salesOverview.length - 1];
-
   console.log(dashboard.netProfit);
   // sold items end
   // sales overview start
@@ -90,7 +86,7 @@ const DashboardComponent = () => {
   const bigSummaryCards = [
     {
       title: "Net Profit",
-      total: dashboard.netProfit?.current_profit,
+      total: dashboard.netProfit?.current_net_profit,
       growth: dashboard.netProfit?.profit_growth,
       bg: "bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200",
       icon: Package,

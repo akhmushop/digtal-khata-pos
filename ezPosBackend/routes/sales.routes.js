@@ -157,7 +157,65 @@ router.get("/api/dashboard_summary", async (req, res) => {
         "WITH sales_summary AS (SELECT COALESCE(SUM(CASE WHEN DATE_TRUNC('month' ,created_at) = DATE_TRUNC('month',CURRENT_DATE) THEN final_total ELSE 0 END),0)AS current_sales,COALESCE(SUM(CASE WHEN DATE_TRUNC('month' ,created_at) = DATE_TRUNC('month',CURRENT_DATE - INTERVAL '1 month')THEN final_total ELSE 0 END),0)AS prev_sales FROM sales),return_summary AS(SELECT COALESCE(SUM(CASE WHEN DATE_TRUNC('month' ,created_at) = DATE_TRUNC('month',CURRENT_DATE)THEN refund_total ELSE 0 END),0) AS current_return,COALESCE(SUM(CASE WHEN DATE_TRUNC('month' ,created_at) = DATE_TRUNC('month',CURRENT_DATE - INTERVAL '1 month')THEN refund_total ELSE 0 END),0) AS prev_return FROM sale_refunds)SELECT  ss.current_sales - rs.current_return AS current_net_sales,CASE WHEN (ss.prev_sales - rs.prev_return) = 0 THEN 0 ELSE ROUND(((ss.current_sales-rs.current_return) - (ss.prev_sales-rs.prev_return)) / (ss.prev_sales-rs.prev_return) *100,2)END AS sales_growth ,rs.current_return,CASE WHEN (ss.prev_sales - rs.prev_return) = 0 THEN 0 ELSE ROUND(((rs.current_return) - (rs.prev_return)) / (rs.prev_return) *100,2)END AS return_growth FROM sales_summary ss ,return_summary rs",
       ),
       await pool.query(
-        "WITH profit_summary AS(SELECT COALESCE(SUM(CASE WHEN DATE_TRUNC('month' ,s.created_at) = DATE_TRUNC('month',CURRENT_DATE)THEN si.sold_price - si.cost_at_sale ELSE 0 END),0) AS current_profit ,COALESCE(SUM(CASE WHEN DATE_TRUNC('month' ,s.created_at) = DATE_TRUNC('month',CURRENT_DATE - INTERVAL '1 month')THEN si.sold_price - si.cost_at_sale ELSE 0 END),0) AS prev_profit FROM sale_items si JOIN sales s ON si.sale_id = s.id)SELECT current_profit ,CASE WHEN prev_profit = 0 THEN 0 ELSE ROUND(((current_profit - prev_profit)/prev_profit)*100,2) END AS profit_growth FROM profit_summary",
+        `WITH PROFIT_SUMMARY AS (
+    SELECT COALESCE(
+            SUM(
+                CASE
+                    WHEN DATE_TRUNC('month', S.CREATED_AT) = DATE_TRUNC('month', CURRENT_DATE) THEN (SI.SOLD_PRICE - SI.COST_AT_SALE) * SI.SOLD_QUANTITY
+                    ELSE 0
+                END
+            ),
+            0
+        ) AS CURRENT_PROFIT,
+        COALESCE(
+            SUM(
+                CASE
+                    WHEN DATE_TRUNC('month', S.CREATED_AT) = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month') THEN (SI.SOLD_PRICE - SI.COST_AT_SALE) * SI.SOLD_QUANTITY
+                    ELSE 0
+                END
+            ),
+            0
+        ) AS PREV_PROFIT
+    FROM SALE_ITEMS SI
+        JOIN SALES S ON SI.SALE_ID = S.ID
+),
+REFUND_SUMMARY AS (
+    SELECT COALESCE(
+            SUM(
+                CASE
+                    WHEN DATE_TRUNC('month', SR.CREATED_AT) = DATE_TRUNC('month', CURRENT_DATE) THEN (SI.SOLD_PRICE - SI.COST_AT_SALE) * SI.SOLD_QUANTITY
+                    ELSE 0
+                END
+            ),
+            0
+        ) AS CURRENT_REFUND_PROFIT,
+        COALESCE(
+            SUM(
+                CASE
+                    WHEN DATE_TRUNC('month', SR.CREATED_AT) = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month') THEN (SI.SOLD_PRICE - SI.COST_AT_SALE) * SI.SOLD_QUANTITY
+                    ELSE 0
+                END
+            ),
+            0
+        ) AS PREV_REFUND_PROFIT
+    FROM SALE_REFUNDS SR
+        JOIN SALE_REFUND_ITEMS SRI ON SRI.REFUND_ID = SR.ID
+        JOIN SALE_ITEMS SI ON SRI.SALE_ITEM_ID = SI.ID
+)
+SELECT PS.CURRENT_PROFIT - RS.CURRENT_REFUND_PROFIT AS CURRENT_NET_PROFIT,
+    CASE
+        WHEN PS.PREV_PROFIT - RS.PREV_REFUND_PROFIT = 0 THEN 0
+        ELSE ROUND(
+            (
+                (
+                    (PS.CURRENT_PROFIT - RS.CURRENT_REFUND_PROFIT) - (PS.PREV_PROFIT - RS.PREV_REFUND_PROFIT)
+                ) / (PS.PREV_PROFIT - RS.PREV_REFUND_PROFIT)
+            ) * 100,
+            2
+        )
+    END AS PROFIT_GROWTH
+FROM PROFIT_SUMMARY PS,
+    REFUND_SUMMARY RS`,
       ),
     ]);
 
@@ -174,6 +232,5 @@ router.get("/api/dashboard_summary", async (req, res) => {
     console.error(err);
   }
 });
-
 
 export default router;
