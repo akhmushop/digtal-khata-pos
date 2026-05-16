@@ -64,11 +64,11 @@ router.post("/api/sold_products/refund/:id", async (req, res) => {
       "INSERT INTO sale_refunds (sale_id ,refund_total) VALUES ($1,$2) RETURNING id",
       [saleItem.sale_id, refundTotal],
     );
-    const refundId = refund.rows[0].id;
+    const saleRefundsId = refund.rows[0].id;
     await pool.query(
       "INSERT INTO sale_refund_items (refund_id ,sale_item_id,product_id,quantity,refund_price,refund_total) VALUES($1,$2,$3,$4,$5,$6)",
       [
-        refundId,
+        saleRefundsId,
         saleItem.id,
         saleItem.product_id,
         saleItem.sold_quantity,
@@ -91,8 +91,26 @@ router.post("/api/sold_products/refunds_all/:id", async (req, res) => {
       "SELECT * FROM sale_items WHERE sale_id=$1 AND status = 'completed'",
       [id],
     );
-    await pool.query("INSERT INTO sale_refunds(sale_id) VALUES ($1)", [id]);
+    const refundTotal = items.rows.reduce(
+      (total, item) => total + item.sold_price * item.sold_quantity,
+      0,
+    );
+    const saleRefundsId = await pool.query(
+      "INSERT INTO sale_refunds (sale_id ,refund_total) VALUES ($1,$2) RETURNING id",
+      [id, refundTotal],
+    );
     for (let item of items.rows) {
+      await pool.query(
+        "INSERT INTO sale_refund_items (refund_id ,sale_item_id,product_id,quantity,refund_price,refund_total) VALUES($1,$2,$3,$4,$5,$6)",
+        [
+          saleRefundsId.rows[0].id,
+          item.id,
+          item.product_id,
+          item.sold_quantity,
+          item.sold_price,
+          item.sold_price * item.sold_quantity,
+        ],
+      );
       await pool.query(
         "UPDATE products SET quantity =quantity + $1 WHERE id = $2",
         [item.sold_quantity, item.product_id],
