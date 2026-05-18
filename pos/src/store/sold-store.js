@@ -63,7 +63,6 @@ export const useSoldStore = create((set) => ({
     }
   },
   addToSoldProduct: async (cart,cashForm) => {
-    
     axios.post("/sold_products", {cart:cart ,cashForm:cashForm});
   },
   returnSingleItems: async (item) => {
