@@ -35,10 +35,10 @@ router.post("/api/sold_products", async (req, res) => {
       [discount, final_total, subtotal, vat, note, payment_status, due_amount],
     );
     const salesId = insertSale.rows[0].id;
-    await pool.query(
+    if(paid_amount >  0){await pool.query(
       "INSERT INTO sale_payments (sale_id,paid_amount,payment_method) VALUES($1,$2,$3)",
       [salesId, paid_amount, payment_method],
-    );
+    )}
     for (let item of cart) {
       const { id, sold_quantity, final_price, product_name, cost } = item;
       const insertSoldProducts = await pool.query(
