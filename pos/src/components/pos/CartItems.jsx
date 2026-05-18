@@ -195,20 +195,16 @@ function CartCalculation() {
     localStorage.setItem("holdCart", JSON.stringify(holdCartItems));
   }, [holdCartItems]);
   const [showHoldItems, setShowHoldItems] = useState(false);
-  const [paymentForm, setPaymentForm] = useState({
-    discount: "0",
-    total: "0",
-    amount: "0",
-    note: "",
-  });
   const initialCashFrom = {
     discount: 0,
     amountReceived: 0,
     change: 0,
     final_total: 0,
+    paid_amount: 0,
     note: "",
   };
   const [cashForm, setCashForm] = useState(initialCashFrom);
+  const [paymentMethod, setPaymentMethod] = useState("Cash");
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isCashModalOpen, setIsCashModalOpen] = useState(false);
@@ -225,13 +221,48 @@ function CartCalculation() {
   };
   const handlePayment = () => {
     const total = subTotal + vat;
-    setPaymentForm((prev) => ({ ...prev, amount: total }));
-    setPaymentForm((prev) => ({ ...prev, total: total }));
+    setCashForm((prev) => ({
+      ...prev,
+      sub_total: subTotal,
+      vat: vat,
+      final_total: total,
+      due_amount: total,
+    }));
     setIsOpen(false);
     setIsPaymentModalOpen(true);
     setTimeout(() => setIsOpen(true), 10);
   };
+  const handleCashChange = (id, value) => {
+    setCashForm((prev) => {
+      const updated = { ...prev, [id]: value };
+      // payable AFTER discount
+      const baseTotal = Number(prev.sub_total) + Number(prev.vat);
+      updated.final_total = baseTotal - Number(updated.discount);
+      // change = amountReceived - payable
+      const calculateDueAmount = updated.final_total - updated.paid_amount;
+      updated.due_amount = calculateDueAmount;
+      const calculatedChange =
+        Number(updated.amountReceived) - Number(updated.final_total);
+      updated.change = calculatedChange < 0 ? 0 : calculatedChange;
 
+      return updated;
+    });
+  };
+  const addToSoldProduct = useSoldStore((state) => state.addToSoldProduct);
+  const resetCart = useCartStore((state) => state.resetCart);
+  const handlePay = (handelClose) => {
+    if (
+      cashForm.amountReceived > 0 &&
+      cashForm.amountReceived > cashForm.final_total
+    ) {
+      addToSoldProduct(cart, cashForm);
+      resetCart();
+      handelClose();
+      setCashForm(initialCashFrom);
+    } else {
+      alert("add money");
+    }
+  };
   return (
     <div className="p-5">
       <CartTextModal
@@ -312,8 +343,12 @@ function CartCalculation() {
         </div>
         {isPaymentModalOpen && (
           <PaymentModal
-            paymentForm={paymentForm}
-            setPaymentForm={setPaymentForm}
+            handlePay={handlePay}
+            paymentMethod={paymentMethod}
+            setPaymentMethod={setPaymentMethod}
+            handleCashChange={handleCashChange}
+            cashForm={cashForm}
+            setCashForm={setCashForm}
             isOpen={isOpen}
             setIsPaymentModalOpen={setIsPaymentModalOpen}
             setIsOpen={setIsOpen}
@@ -329,8 +364,10 @@ function CartCalculation() {
         </button>
         {isCashModalOpen && (
           <CashModal
-            paymentForm={paymentForm}
-            setPaymentForm={setPaymentForm}
+            handlePay={handlePay}
+            handleCashChange={handleCashChange}
+            cashForm={cashForm}
+            setCashForm={setCashForm}
             isOpen={isOpen}
             setIsOpen={setIsOpen}
             setIsCashModalOpen={setIsCashModalOpen}
@@ -457,6 +494,7 @@ function PeerInput({ id, peerName, value, onChange }) {
   return (
     <div className="relative">
       <input
+        disabled={id === "final_total" || id === "due_amount"}
         onFocus={(e) => {
           e.target.select();
         }}
@@ -481,24 +519,21 @@ function PeerInput({ id, peerName, value, onChange }) {
   );
 }
 function PaymentModal({
-  paymentForm,
-  setPaymentForm,
+  handleCashChange,
+  cashForm,
+  setCashForm,
   isOpen,
   setIsPaymentModalOpen,
   setIsOpen,
+  paymentMethod,
+  setPaymentMethod,
+  handlePay,
 }) {
   const handelClose = () => {
     setTimeout(() => setIsPaymentModalOpen(false), 300);
     setIsOpen(false);
   };
-  const handlePaymentChange = (id, value) => {
-    setPaymentForm((prev) => {
-      const updated = { ...prev, [id]: value };
-      updated.total = Number(updated.amount) - Number(updated.discount);
-      return updated;
-    });
-  };
-
+  const methods = ["Cash", "Mobile", "Card"];
   return (
     <PopupModal isOpen={isOpen} handelClose={handelClose} className="w-150 p-6">
       <div className="flex justify-between mb-5">
@@ -513,45 +548,60 @@ function PaymentModal({
       <div className="space-y-5">
         <div className="grid grid-cols-2 gap-5">
           <PeerInput
-            id="discount"
-            peerName="Discount"
-            value={paymentForm.discount}
-            onChange={handlePaymentChange}
+            id="paid_amount"
+            peerName="Paid Amount"
+            value={cashForm.paid_amount}
+            onChange={handleCashChange}
           />
           <PeerInput
-            id="total"
-            peerName="Total"
-            value={paymentForm.total}
-            onChange={handlePaymentChange}
+            id="final_total"
+            peerName="Final Total"
+            value={cashForm.final_total}
+            onChange={handleCashChange}
           />
         </div>
-        <PeerInput
-          id="amount"
-          peerName="Amount"
-          value={paymentForm.amount}
-          onChange={handlePaymentChange}
-        />
+        <div className="grid grid-cols-2 gap-5">
+          <PeerInput
+            id="discount"
+            peerName="Discount"
+            value={cashForm.discount}
+            onChange={handleCashChange}
+          />
+          <PeerInput
+            id="due_amount"
+            peerName="Due Amount"
+            value={cashForm.due_amount}
+            onChange={handleCashChange}
+          />
+        </div>
         <div className="grid grid-cols-3 gap-3">
-          <button className="py-2 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition">
-            Cash
-          </button>
-          <button className="py-2 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition">
-            Cheque
-          </button>
-          <button className="py-2 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition">
-            Card
-          </button>
+          {methods.map((method) => (
+            <button
+              key={method}
+              onClick={() => setPaymentMethod(method)}
+              className={`py-2 border rounded transition hover:cursor-pointer
+            ${
+              paymentMethod === method
+                ? "bg-blue-500 text-white border-blue-500"
+                : "border-gray-300 hover:bg-gray-50 active:bg-gray-100"
+            }
+          `}
+            >
+              {method}
+            </button>
+          ))}
         </div>
         <PeerInput
           id="note"
           peerName="Note"
-          value={paymentForm.note}
-          onChange={handlePaymentChange}
+          value={cashForm.note}
+          onChange={handleCashChange}
         />
         <button
           onClick={() => {
-            console.log(paymentForm);
-            paymentForm.discount = 0;
+            const updated = { ...cashForm, paymentMethod: paymentMethod };
+            console.log(updated);
+            setCashForm(updated);
             handelClose();
           }}
           className="w-full  py-5 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition"
@@ -564,46 +614,19 @@ function PaymentModal({
 }
 
 function CashModal({
+  handleCashChange,
   isOpen,
   setIsOpen,
   setIsCashModalOpen,
   cashForm,
   setCashForm,
   initialCashFrom,
+  handlePay,
 }) {
-  const addToSoldProduct = useSoldStore((state) => state.addToSoldProduct);
-  const cart = useCartStore((state) => state.cart);
-  const resetCart = useCartStore((state) => state.resetCart);
   const handelClose = () => {
     setTimeout(() => setIsCashModalOpen(false), 300);
     setIsOpen(false);
     setCashForm(initialCashFrom);
-  };
-  const handleCashChange = (id, value) => {
-    setCashForm((prev) => {
-      const updated = { ...prev, [id]: value };
-      // payable AFTER discount
-      const baseTotal = Number(prev.sub_total) + Number(prev.vat);
-      updated.final_total = baseTotal - Number(updated.discount);
-      // change = amountReceived - payable
-      const calculatedChange =
-        Number(updated.amountReceived) - Number(updated.final_total);
-      updated.change = calculatedChange < 0 ? 0 : calculatedChange;
-      return updated;
-    });
-  };
-  const handlePay = () => {
-    if (
-      cashForm.amountReceived > 0 &&
-      cashForm.amountReceived > cashForm.final_total
-    ) {
-      addToSoldProduct(cart, cashForm);
-      resetCart();
-      handelClose();
-      setCashForm(initialCashFrom);
-    } else {
-      alert("add money");
-    }
   };
   return (
     <PopupModal isOpen={isOpen} handelClose={handelClose} className="w-150 p-6">
@@ -639,8 +662,8 @@ function CashModal({
             onChange={handleCashChange}
           />
           <PeerInput
-            id="payable"
-            peerName="Payable Amount"
+            id="final_total"
+            peerName="Final Total"
             value={cashForm.final_total.toFixed(2)}
             onChange={handleCashChange}
           />
@@ -653,7 +676,7 @@ function CashModal({
           onChange={handleCashChange}
         />
         <button
-          onClick={handlePay}
+          onClick={() => handlePay(handelClose)}
           className="w-full  py-5 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition"
         >
           PAY
