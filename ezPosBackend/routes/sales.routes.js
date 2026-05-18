@@ -14,35 +14,42 @@ router.get("/api/sold_products", async (req, res) => {
 router.post("/api/sold_products", async (req, res) => {
   try {
     const { cart, cashForm } = req.body;
+    const {
+      final_total,
+      paid_amount,
+      discount,
+      subtotal,
+      vat,
+      note,
+      payment_method,
+    } = cashForm;
+    const due_amount = final_total - paid_amount;
+    const getPaymentStatus = (paid, due) => {
+      if (due <= 0) return "paid";
+      if (paid > 0 && due > 0) return "partial";
+      if (paid === 0) return "unpaid";
+    };
+    const payment_status = getPaymentStatus(paid_amount, due_amount);
     const insertSale = await pool.query(
-      "INSERT INTO sales (discount,final_total,subtotal,vat,note) VALUES ($1,$2,$3,$4,$5) RETURNING id",
-      [
-        cashForm.discount,
-        cashForm.final_total,
-        cashForm.subtotal,
-        cashForm.vat,
-        cashForm.note,
-      ],
+      "INSERT INTO sales (discount,final_total,subtotal,vat,note,payment_status,due_amount) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id",
+      [discount, final_total, subtotal, vat, note, payment_status, due_amount],
     );
     const salesId = insertSale.rows[0].id;
+    await pool.query(
+      "INSERT INTO sale_payments (sale_id,paid_amount,payment_method) VALUES($1,$2,$3)",
+      [salesId, paid_amount, payment_method],
+    );
     for (let item of cart) {
+      const { id, sold_quantity, final_price, product_name, cost } = item;
       const insertSoldProducts = await pool.query(
         "INSERT INTO sale_items (sale_id, product_id, sold_quantity, sold_price,product_name_at_sale,cost_at_sale) VALUES ($1,$2,$3,$4,$5,$6)",
-        [
-          salesId,
-          item.id,
-          item.sold_quantity,
-          item.final_price,
-          item.product_name,
-          item.cost,
-        ],
+        [salesId, id, sold_quantity, final_price, product_name, cost],
       );
       const updateProductQuantity = await pool.query(
         "UPDATE products SET quantity = quantity - $1 WHERE id = $2",
-        [item.sold_quantity, item.id],
+        [sold_quantity, id],
       );
     }
-    console.log(cart, cashForm);
   } catch (err) {
     console.error(err);
   }

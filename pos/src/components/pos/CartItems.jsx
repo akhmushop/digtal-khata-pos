@@ -202,6 +202,7 @@ function CartCalculation() {
     final_total: 0,
     paid_amount: 0,
     note: "",
+    due_amount: 0,
   };
   const [cashForm, setCashForm] = useState(initialCashFrom);
   const [paymentMethod, setPaymentMethod] = useState("Cash");
@@ -212,7 +213,7 @@ function CartCalculation() {
     const total = subTotal + vat;
     setCashForm((prev) => ({
       ...prev,
-      sub_total: subTotal,
+      subtotal: subTotal,
       vat: vat,
       final_total: total,
     }));
@@ -223,7 +224,7 @@ function CartCalculation() {
     const total = subTotal + vat;
     setCashForm((prev) => ({
       ...prev,
-      sub_total: subTotal,
+      subtotal: subTotal,
       vat: vat,
       final_total: total,
       due_amount: total,
@@ -236,7 +237,7 @@ function CartCalculation() {
     setCashForm((prev) => {
       const updated = { ...prev, [id]: value };
       // payable AFTER discount
-      const baseTotal = Number(prev.sub_total) + Number(prev.vat);
+      const baseTotal = Number(prev.subtotal) + Number(prev.vat);
       updated.final_total = baseTotal - Number(updated.discount);
       // change = amountReceived - payable
       const calculateDueAmount = updated.final_total - updated.paid_amount;
@@ -250,17 +251,33 @@ function CartCalculation() {
   };
   const addToSoldProduct = useSoldStore((state) => state.addToSoldProduct);
   const resetCart = useCartStore((state) => state.resetCart);
-  const handlePay = (handelClose) => {
-    if (
-      cashForm.amountReceived > 0 &&
-      cashForm.amountReceived > cashForm.final_total
-    ) {
-      addToSoldProduct(cart, cashForm);
+  const handlePay = (handelClose, click) => {
+    const updatedCash = {
+      ...cashForm,
+      paid_amount: cashForm.final_total,
+      payment_method: "Cash",
+    };
+    const updatedPayment = {
+      ...cashForm,
+      payment_method: paymentMethod,
+    };
+    if (click === "cash") {
+      if (
+        cashForm.amountReceived > 0 &&
+        cashForm.amountReceived > cashForm.final_total
+      ) {
+        addToSoldProduct(cart, updatedCash);
+        resetCart();
+        handelClose();
+        setCashForm(initialCashFrom);
+      } else {
+        alert("add money");
+      }
+    } else if (click === "payments") {
+      addToSoldProduct(cart, updatedPayment);
       resetCart();
       handelClose();
       setCashForm(initialCashFrom);
-    } else {
-      alert("add money");
     }
   };
   return (
@@ -343,6 +360,7 @@ function CartCalculation() {
         </div>
         {isPaymentModalOpen && (
           <PaymentModal
+          initialCashFrom={initialCashFrom}
             handlePay={handlePay}
             paymentMethod={paymentMethod}
             setPaymentMethod={setPaymentMethod}
@@ -481,6 +499,7 @@ function PeerInput({ id, peerName, value, onChange }) {
     const rawValue = e.target.value;
 
     // NOTE field does not need number filtering
+
     if (id === "note") {
       onChange(id, rawValue);
       return;
@@ -489,7 +508,7 @@ function PeerInput({ id, peerName, value, onChange }) {
     // Number only
     const onlyNumber = rawValue.replace(/\D/g, "");
     const finalValue = onlyNumber === "" ? "0" : onlyNumber;
-    onChange(id, finalValue);
+    onChange(id, Number(finalValue));
   };
   return (
     <div className="relative">
@@ -528,10 +547,12 @@ function PaymentModal({
   paymentMethod,
   setPaymentMethod,
   handlePay,
+  initialCashFrom
 }) {
   const handelClose = () => {
     setTimeout(() => setIsPaymentModalOpen(false), 300);
     setIsOpen(false);
+    setCashForm(initialCashFrom)
   };
   const methods = ["Cash", "Mobile", "Card"];
   return (
@@ -598,12 +619,7 @@ function PaymentModal({
           onChange={handleCashChange}
         />
         <button
-          onClick={() => {
-            const updated = { ...cashForm, paymentMethod: paymentMethod };
-            console.log(updated);
-            setCashForm(updated);
-            handelClose();
-          }}
+          onClick={() => handlePay(handelClose, "payments")}
           className="w-full  py-5 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition"
         >
           PAY
@@ -676,7 +692,7 @@ function CashModal({
           onChange={handleCashChange}
         />
         <button
-          onClick={() => handlePay(handelClose)}
+          onClick={() => handlePay(handelClose, "cash")}
           className="w-full  py-5 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition"
         >
           PAY
