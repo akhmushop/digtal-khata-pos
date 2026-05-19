@@ -3,19 +3,36 @@ import { RiUserAddFill, RiCloseLargeFill } from "react-icons/ri";
 import Sidebar from "../../components/Sidebar";
 export function AddCustomerModal() {
   const [addCustomer, setAddCustomer] = useState(false);
-    const [saveCustomer, setSaveCustomer] = useState(() => {"walk-in customer"
-      try {
-        const savedCustomer = localStorage.getItem("customer");
-        return savedCustomer ? JSON.parse(savedCustomer) : [{ name: "walk-in customer", mobile: "" }];
-      } catch {
-        return [{ name: "walk-in customer", mobile: "" }];
-      }
-    });
-
+  const [saveCustomer, setSaveCustomer] = useState(() => {
+    "walk-in customer";
+    try {
+      const savedCustomer = localStorage.getItem("customer");
+      return savedCustomer
+        ? JSON.parse(savedCustomer)
+        : [{ name: "walk-in customer", mobile: "" }];
+    } catch {
+      return [{ name: "walk-in customer", mobile: "" }];
+    }
+  });
+  const [customer, setCustomer] = useState({
+    name: "",
+    phone: "",
+    address: "",
+  });
+  const handleOnchange = (e) => {
+    const { id, value } = e.target;
+    setCustomer((prev) => ({
+      ...prev,
+      [id]: id === "phone" ? value.replace(/\D/g, "").slice(0, 11) : value,
+    }));
+  };
+  console.log(customer);
   return (
-    <div className="flex">
-    <Sidebar />
-      <div>
+    <div className="grid grid-cols-12">
+      <div className="col-span-2">
+        <Sidebar />
+      </div>
+      {/* <div>
         <button
           onClick={() => {
             !addCustomer ? setAddCustomer(true) : setAddCustomer(false);
@@ -24,15 +41,56 @@ export function AddCustomerModal() {
         >
           <RiUserAddFill />
         </button>
+      </div> */}
+      <div className="col-span-10">
+        <h1 className="text-3xl">Add Customer</h1>
+        <div className="grid grid-cols-4 w-full gap-3">
+          <fieldset className="fieldset w-full col-span-2 ">
+            <legend className="fieldset-legend">Enter your Name</legend>
+            <input
+              id="name"
+              onChange={handleOnchange}
+              type="text"
+              className="input w-full"
+              placeholder="Name"
+            />
+          </fieldset>
+          <fieldset className="fieldset w-full col-span-2">
+            <legend className="fieldset-legend">Enter your Phone Number</legend>
+            <input
+              id="phone"
+              value={customer.phone}
+              onChange={handleOnchange}
+              type="text"
+              className="input w-full"
+              placeholder="Number"
+              maxLength={11}
+            />
+          </fieldset>
+          <fieldset className="fieldset w-full col-span-4">
+            <legend className="fieldset-legend">Enter your Address</legend>
+            <input
+              id="address"
+              onChange={handleOnchange}
+              type="text"
+              className="input w-full"
+              placeholder="Address"
+            />
+          </fieldset>
+          <div className="col-start-4 col-end-5 grid grid-cols-3 gap-3">
+            <button className="btn btn-warning col-span-1">Cancel</button>
+            <button className="btn btn-success col-span-2">Add Customer</button>
+          </div>
+        </div>
       </div>
 
-      {addCustomer && (
+      {/* {addCustomer && (
         <AddCustomer
           onClose={() => setAddCustomer(false)}
           saveCustomer={saveCustomer}
           setSaveCustomer={setSaveCustomer}
         />
-      )}
+      )} */}
     </div>
   );
 }
