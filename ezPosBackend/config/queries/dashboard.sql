@@ -172,4 +172,32 @@ GROUP BY S.ID,
     C.NAME,
     S.FINAL_TOTAL
 HAVING S.FINAL_TOTAL - COALESCE(SUM(SP.PAID_AMOUNT), 0) > 0
-ORDER BY DUE_AMOUNT DESC
+ORDER BY DUE_AMOUNT DESC;
+---MONTHLY DUE AND PERCENTAGE---
+WITH DUE AS (
+    SELECT COALESCE(
+            SUM(
+                CASE
+                    WHEN DATE_TRUNC('month', CREATED_AT) = DATE_TRUNC('month', CREATED_AT) THEN DUE_AMOUNT
+                    ELSE 0
+                END
+            ),
+            0
+        ) AS CURRENT_DUE,
+        COALESCE(
+            SUM(
+                CASE
+                    WHEN DATE_TRUNC('month', CREATED_AT) = DATE_TRUNC('month', CREATED_AT - INTERVAL '1 month') THEN DUE_AMOUNT
+                    ELSE 0
+                END
+            ),
+            0
+        ) AS PREV_DUE
+    FROM SALES
+)
+SELECT CURRENT_DUE,
+    CASE
+        WHEN PREV_DUE = 0 THEN 0
+        ELSE ROUND(((CURRENT_DUE - PREV_DUE) / PREV_DUE) * 100, 2)
+    END AS DUE_GROWTH
+FROM DUE

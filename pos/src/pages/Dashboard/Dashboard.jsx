@@ -50,6 +50,7 @@ const DashboardComponent = () => {
         profitByCategory: res.data.profitByCategory || {},
         salesSummary: res.data.salesSummary?.[0] || {},
         netProfit: res.data.netProfit?.[0] || {},
+        invoiceDue: res.data.invoiceDue?.[0] || {},
       });
     } catch (error) {
       console.error("Dashboard error:", error);
@@ -64,7 +65,7 @@ const DashboardComponent = () => {
       maximumFractionDigits: 2,
     }).format(value);
   };
-  console.log(dashboard.netProfit);
+  console.log(dashboard.invoiceDue);
   // sold items end
   // sales overview start
   const [range, setRange] = useState("3");
@@ -95,8 +96,8 @@ const DashboardComponent = () => {
     },
     {
       title: "Invoice Due",
-      total: 10000,
-      growth: 11,
+      total: dashboard.invoiceDue?.current_due,
+      growth: dashboard.invoiceDue?.due_growth,
       bg: "bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200",
       icon: TrendingUp,
       iconColor: "text-amber-600",

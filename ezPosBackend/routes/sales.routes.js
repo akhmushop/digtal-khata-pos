@@ -35,10 +35,12 @@ router.post("/api/sold_products", async (req, res) => {
       [discount, final_total, subtotal, vat, note, payment_status, due_amount],
     );
     const salesId = insertSale.rows[0].id;
-    if(paid_amount >  0){await pool.query(
-      "INSERT INTO sale_payments (sale_id,paid_amount,payment_method) VALUES($1,$2,$3)",
-      [salesId, paid_amount, payment_method],
-    )}
+    if (paid_amount > 0) {
+      await pool.query(
+        "INSERT INTO sale_payments (sale_id,paid_amount,payment_method) VALUES($1,$2,$3)",
+        [salesId, paid_amount, payment_method],
+      );
+    }
     for (let item of cart) {
       const { id, sold_quantity, final_price, product_name, cost } = item;
       const insertSoldProducts = await pool.query(
@@ -144,6 +146,7 @@ router.get("/api/dashboard_summary", async (req, res) => {
       productsSummary,
       salesSummary,
       netProfit,
+      invoiceDue,
     ] = await Promise.all([
       await pool.query(
         "SELECT TO_CHAR(created_at,'Mon') AS month,COALESCE(SUM(final_total),0) AS sales ,COALESCE(SUM (CASE WHEN payment_status = 'paid' THEN final_total ELSE 0 END),0) AS cash FROM sales GROUP BY DATE_TRUNC('month',created_at),TO_CHAR(created_at,'Mon')ORDER BY DATE_TRUNC('month',created_at) LIMIT 12",
@@ -224,6 +227,33 @@ SELECT PS.CURRENT_PROFIT - RS.CURRENT_REFUND_PROFIT AS CURRENT_NET_PROFIT,
 FROM PROFIT_SUMMARY PS,
     REFUND_SUMMARY RS`,
       ),
+      await pool.query(`WITH DUE AS (
+    SELECT COALESCE(
+            SUM(
+                CASE
+                    WHEN DATE_TRUNC('month', CREATED_AT) = DATE_TRUNC('month', CREATED_AT) THEN DUE_AMOUNT
+                    ELSE 0
+                END
+            ),
+            0
+        ) AS CURRENT_DUE,
+        COALESCE(
+            SUM(
+                CASE
+                    WHEN DATE_TRUNC('month', CREATED_AT) = DATE_TRUNC('month', CREATED_AT - INTERVAL '1 month') THEN DUE_AMOUNT
+                    ELSE 0
+                END
+            ),
+            0
+        ) AS PREV_DUE
+    FROM SALES
+)
+SELECT CURRENT_DUE,
+    CASE
+        WHEN PREV_DUE = 0 THEN 0
+        ELSE ROUND(((CURRENT_DUE - PREV_DUE) / PREV_DUE) * 100, 2)
+    END AS DUE_GROWTH
+FROM DUE`),
     ]);
 
     res.json({
@@ -234,6 +264,7 @@ FROM PROFIT_SUMMARY PS,
       productsSummary: productsSummary.rows,
       salesSummary: salesSummary.rows,
       netProfit: netProfit.rows,
+      invoiceDue: invoiceDue.rows,
     });
   } catch (err) {
     console.error(err);
