@@ -226,7 +226,7 @@ const ShowProductDetails = ({
                     <span className="font-semibold text-gray-700 w-28">
                       Product Name:
                     </span>
-                    <span className="text-gray-600 flex-1 break-words">
+                    <span className="text-gray-600 flex-1 wrap-break-word">
                       {product.product_name}
                     </span>
                   </div>
@@ -354,7 +354,7 @@ const ShowProductDetails = ({
                     <span className="font-semibold text-gray-700 w-28">
                       Tags:
                     </span>
-                    <span className="text-gray-600 flex-1 break-words">
+                    <span className="text-gray-600 flex-1 wrap-break-word">
                       {product.tags?.join(", ")}
                     </span>
                   </div>
@@ -363,7 +363,7 @@ const ShowProductDetails = ({
                     <span className="font-semibold text-gray-700 w-28">
                       Description:
                     </span>
-                    <span className="text-gray-600 flex-1 break-words">
+                    <span className="text-gray-600 flex-1 wrap-break-word">
                       {product.description}
                     </span>
                   </div>

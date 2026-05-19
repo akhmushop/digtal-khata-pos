@@ -275,7 +275,7 @@ const ProductStockForm = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Success Message */}
         {showSuccess && (
@@ -315,7 +315,7 @@ const ProductStockForm = () => {
               {/* Left Column - Form Fields */}
               <div className="lg:col-span-2 space-y-8">
                 {/* General Information Card */}
-                <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl border border-gray-200 p-6">
+                <div className="bg-linear-to-br from-white to-gray-50 rounded-xl border border-gray-200 p-6">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="p-2 bg-blue-50 rounded-lg">
                       <Package className="w-5 h-5 text-blue-600" />
@@ -444,7 +444,7 @@ const ProductStockForm = () => {
                 </div>
 
                 {/* Stock Information Card */}
-                <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl border border-gray-200 p-6">
+                <div className="bg-linear-to-br from-white to-gray-50 rounded-xl border border-gray-200 p-6">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="p-2 bg-green-50 rounded-lg">
                       <ShoppingBag className="w-5 h-5 text-green-600" />
@@ -629,7 +629,7 @@ const ProductStockForm = () => {
                 </div>
 
                 {/* Description Card */}
-                <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl border border-gray-200 p-6">
+                <div className="bg-linear-to-br from-white to-gray-50 rounded-xl border border-gray-200 p-6">
                   <h2 className="text-lg font-semibold text-gray-800 mb-4">
                     Product Description
                   </h2>
@@ -647,9 +647,9 @@ const ProductStockForm = () => {
               {/* Right Column - Image & Additional Info */}
               <div className="space-y-8">
                 {/* Manage Stock Card */}
-                <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl border border-gray-200 p-6">
+                <div className="bg-linear-to-br from-white to-gray-50 rounded-xl border border-gray-200 p-6">
                   <div className="text-center mb-6">
-                    <h2 className="text-xl font-bold text-green-700 bg-gradient-to-r from-green-50 to-emerald-50 py-3 rounded-xl border border-green-100">
+                    <h2 className="text-xl font-bold text-green-700 bg-linear-to-r from-green-50 to-emerald-50 py-3 rounded-xl border border-green-100">
                       MANAGE STOCK
                     </h2>
                   </div>
@@ -696,7 +696,7 @@ const ProductStockForm = () => {
                         </div>
                       ) : (
                         <div className="text-center">
-                          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full mb-4">
+                          <div className="inline-flex items-center justify-center w-20 h-20 bg-linear-to-br from-gray-100 to-gray-200 rounded-full mb-4">
                             <Image className="w-10 h-10 text-gray-400" />
                           </div>
                           <p className="text-sm font-medium text-gray-600 mb-2">
@@ -721,7 +721,7 @@ const ProductStockForm = () => {
                     onClick={() =>
                       document.getElementById("file-upload").click()
                     }
-                    className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow"
+                    className="w-full px-4 py-3 bg-linear-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow"
                   >
                     <Upload className="w-5 h-5" />
                     Upload Product Image
@@ -729,7 +729,7 @@ const ProductStockForm = () => {
                 </div>
 
                 {/* More Information Card */}
-                <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl border border-gray-200 p-6">
+                <div className="bg-linear-to-br from-white to-gray-50 rounded-xl border border-gray-200 p-6">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="p-2 bg-purple-50 rounded-lg">
                       <Grid className="w-5 h-5 text-purple-600" />
@@ -826,7 +826,7 @@ const ProductStockForm = () => {
                 </div>
 
                 {/* Save Actions */}
-                <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl border border-gray-200 p-6">
+                <div className="bg-linear-to-br from-white to-gray-50 rounded-xl border border-gray-200 p-6">
                   <div className="flex flex-col sm:flex-row gap-3">
                     <button
                       type="button"
@@ -839,7 +839,7 @@ const ProductStockForm = () => {
                     {editingProduct ? (
                       <button
                         type="submit"
-                        className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow"
+                        className="flex-1 px-4 py-3 bg-linear-to-r from-green-600 to-emerald-600 text-white font-medium rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow"
                       >
                         <Save className="w-5 h-5" />
                         Update Product
@@ -847,7 +847,7 @@ const ProductStockForm = () => {
                     ) : (
                       <button
                         type="submit"
-                        className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow"
+                        className="flex-1 px-4 py-3 bg-linear-to-r from-green-600 to-emerald-600 text-white font-medium rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow"
                       >
                         <Save className="w-5 h-5" />
                         Save Product
