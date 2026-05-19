@@ -359,7 +359,7 @@ const AdvancedPOSTable = () => {
     setIsOpen(false);
   };
   return (
-    <div className="h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 overflow-y-scroll">
+    <div className="h-screen bg-linear-to-br from-slate-50 to-slate-100 p-6 overflow-y-scroll">
       {showProductDetailsModal && (
         <PopupModal isOpen={isOpen} handelClose={handelClose}>
           <ShowProductDetails handelClose={handelClose} />
@@ -418,7 +418,7 @@ const AdvancedPOSTable = () => {
                 </button>
               </div>
               <div className="grid grid-cols-4 gap-4">
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
+                <div className="bg-linear-to-br from-blue-50 to-blue-100 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-blue-700">
                       Total Revenue
@@ -432,7 +432,7 @@ const AdvancedPOSTable = () => {
                     {percentageChange} from last month
                   </div>
                 </div>
-                <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg p-4">
+                <div className="bg-linear-to-br from-emerald-50 to-emerald-100 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-emerald-700">
                       Total Profit
@@ -446,7 +446,7 @@ const AdvancedPOSTable = () => {
                     Margin: {((totalProfit / totalValue) * 100).toFixed(1)}%
                   </div>
                 </div>
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4">
+                <div className="bg-linear-to-br from-purple-50 to-purple-100 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-purple-700">
                       Total Sales
@@ -460,7 +460,7 @@ const AdvancedPOSTable = () => {
                     Units sold this month
                   </div>
                 </div>
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4">
+                <div className="bg-linear-to-br from-orange-50 to-orange-100 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-orange-700">
                       Avg. Turnover
@@ -915,7 +915,7 @@ const AdvancedPOSTable = () => {
                       <div className="">
                         {/* <Package2 className="w-6 h-6 text-slate-400" /> */}
                         <img
-                          className="w-12 h-12 bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg flex items-center justify-center "
+                          className="w-12 h-12 bg-linear-to-br from-slate-100 to-slate-200 rounded-lg flex items-center justify-center "
                           src={product.image}
                           alt=""
                         />
@@ -1231,7 +1231,7 @@ const ShowProductDetails = ({ handelClose = { handelClose } }) => {
               <span className="font-semibold text-gray-700 w-28">
                 Product Name:
               </span>
-              <span className="text-gray-600 flex-1 break-words">
+              <span className="text-gray-600 flex-1 wrap-break-word">
                 {detailsProduct.product_name}
               </span>
             </div>
@@ -1351,7 +1351,7 @@ const ShowProductDetails = ({ handelClose = { handelClose } }) => {
 
             <div className="flex items-start">
               <span className="font-semibold text-gray-700 w-28">Tags:</span>
-              <span className="text-gray-600 flex-1 break-words">
+              <span className="text-gray-600 flex-1 wrap-break-word">
                 {detailsProduct.tags?.join(", ")}
               </span>
             </div>
@@ -1360,7 +1360,7 @@ const ShowProductDetails = ({ handelClose = { handelClose } }) => {
               <span className="font-semibold text-gray-700 w-28">
                 Description:
               </span>
-              <span className="text-gray-600 flex-1 break-words">
+              <span className="text-gray-600 flex-1 wrap-break-word">
                 {detailsProduct.description}
               </span>
             </div>
