@@ -1,32 +1,32 @@
 import React, { useState, useEffect } from "react";
 import { RiUserAddFill, RiCloseLargeFill } from "react-icons/ri";
 import Sidebar from "../../components/Sidebar";
+import { useCustomerStore } from "../../store/customer-store";
 export function AddCustomerModal() {
-  const [addCustomer, setAddCustomer] = useState(false);
-  const [saveCustomer, setSaveCustomer] = useState(() => {
-    "walk-in customer";
-    try {
-      const savedCustomer = localStorage.getItem("customer");
-      return savedCustomer
-        ? JSON.parse(savedCustomer)
-        : [{ name: "walk-in customer", mobile: "" }];
-    } catch {
-      return [{ name: "walk-in customer", mobile: "" }];
-    }
-  });
-  const [customer, setCustomer] = useState({
+  const { addCustomer, customers } = useCustomerStore();
+  const initialCustomerInfo = {
     name: "",
     phone: "",
     address: "",
-  });
+  };
+  const [customerInfo, setCustomerInfo] = useState(initialCustomerInfo);
   const handleOnchange = (e) => {
     const { id, value } = e.target;
-    setCustomer((prev) => ({
+    setCustomerInfo((prev) => ({
       ...prev,
       [id]: id === "phone" ? value.replace(/\D/g, "").slice(0, 11) : value,
     }));
   };
-  console.log(customer);
+  const handleAddCustomer = () => {
+    if (customerInfo.name === "" || customerInfo.phone === "") {
+      window.alert("Please fill all required fields");
+      return;
+    }
+    if (window.confirm("do you want to add customer")) {
+      addCustomer(customerInfo);
+      setCustomerInfo(initialCustomerInfo);
+    }
+  };
   return (
     <div className="grid grid-cols-12">
       <div className="col-span-2">
@@ -44,11 +44,12 @@ export function AddCustomerModal() {
       </div> */}
       <div className="col-span-10">
         <h1 className="text-3xl">Add Customer</h1>
-        <div className="grid grid-cols-4 w-full gap-3">
+        <div className="grid grid-cols-4 w-full gap-3 pr-10">
           <fieldset className="fieldset w-full col-span-2 ">
             <legend className="fieldset-legend">Enter your Name</legend>
             <input
               id="name"
+              value={customerInfo.name}
               onChange={handleOnchange}
               type="text"
               className="input w-full"
@@ -59,7 +60,7 @@ export function AddCustomerModal() {
             <legend className="fieldset-legend">Enter your Phone Number</legend>
             <input
               id="phone"
-              value={customer.phone}
+              value={customerInfo.phone}
               onChange={handleOnchange}
               type="text"
               className="input w-full"
@@ -71,6 +72,7 @@ export function AddCustomerModal() {
             <legend className="fieldset-legend">Enter your Address</legend>
             <input
               id="address"
+              value={customerInfo.address}
               onChange={handleOnchange}
               type="text"
               className="input w-full"
@@ -78,8 +80,20 @@ export function AddCustomerModal() {
             />
           </fieldset>
           <div className="col-start-4 col-end-5 grid grid-cols-3 gap-3">
-            <button className="btn btn-warning col-span-1">Cancel</button>
-            <button className="btn btn-success col-span-2">Add Customer</button>
+            <button
+              onClick={() => {
+                setCustomerInfo(initialCustomerInfo);
+              }}
+              className="btn btn-warning col-span-1"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAddCustomer}
+              className="btn btn-success col-span-2"
+            >
+              Add Customer
+            </button>
           </div>
         </div>
       </div>
