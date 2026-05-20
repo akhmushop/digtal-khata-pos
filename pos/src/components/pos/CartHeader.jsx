@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { RiCloseLargeFill, RiArrowDropDownFill } from "react-icons/ri";
 import { useCustomerStore } from "../../store/customer-store";
-export function CartHeader() {
-  const [inputValue, setInputValue] = useState("");
+export function CartHeader({ inputValue, setInputValue, initialInputValue }) {
   const [checked, setChecked] = useState(true);
   return (
     <>
@@ -25,12 +24,16 @@ export function CartHeader() {
           inputValue={inputValue}
           setInputValue={setInputValue}
           setChecked={setChecked}
+          initialInputValue={initialInputValue}
         />
         <div className="flex gap-1 col-span-3 items-center">
           <input
             type="checkbox"
             onChange={(e) => {
               setChecked(e.target.checked);
+              if (!checked) {
+                setInputValue(initialInputValue);
+              }
             }}
             checked={checked}
             className="checkbox checkbox-neutral checkbox-sm"
@@ -41,13 +44,18 @@ export function CartHeader() {
     </>
   );
 }
-function DropdownModal({ inputValue, setInputValue, setChecked }) {
+function DropdownModal({
+  inputValue,
+  setInputValue,
+  setChecked,
+  initialInputValue,
+}) {
   const { customers } = useCustomerStore();
   const filteredCustomers = customers.filter((customer) =>
-    customer.name.toLowerCase().includes(inputValue.toLowerCase()),
+    customer.name.toLowerCase().includes(inputValue.name.toLowerCase()),
   );
 
-  const [showCustomer, setShowCustomer] = useState(true);
+  const [showCustomer, setShowCustomer] = useState(false);
 
   const [hovered, setHovered] = useState(false);
   const inputRef = useRef(null);
@@ -62,6 +70,18 @@ function DropdownModal({ inputValue, setInputValue, setChecked }) {
       document.removeEventListener("mousedown", clickOutside);
     };
   }, []);
+  const handleInputChange = (e) => {
+    const { value } = e.target;
+    setInputValue((prev) => {
+      return {
+        ...prev,
+        name: value,
+      };
+    });
+    if (value === "") {
+      setChecked(true);
+    }
+  };
   return (
     <div
       onMouseEnter={() => setHovered(true)}
@@ -72,14 +92,8 @@ function DropdownModal({ inputValue, setInputValue, setChecked }) {
       <div className="relative">
         <input
           placeholder=""
-          value={inputValue}
-          onChange={(e) => {
-            const { value } = e.target;
-            setInputValue(value);
-            if (value === "") {
-              setChecked(true);
-            }
-          }}
+          value={inputValue.name}
+          onChange={handleInputChange}
           onClick={() => {
             setShowCustomer(!showCustomer);
           }}
@@ -90,7 +104,7 @@ function DropdownModal({ inputValue, setInputValue, setChecked }) {
         <label
           htmlFor="customer"
           className={`absolute left-3 mt-1  text-lg transition-all pointer-events-none ${
-            inputValue
+            inputValue.name
               ? "-top-4 text-sm text-blue-500 bg-zuccini-400"
               : "peer-focus:-top-4 peer-placeholder-shown:text-gray-700 peer-focus:text-blue-500 peer-focus:text-sm bg-zuccini-400 "
           }
@@ -110,7 +124,7 @@ function DropdownModal({ inputValue, setInputValue, setChecked }) {
         </div>
         <div
           onClick={() => {
-            setInputValue("");
+            setInputValue(initialInputValue);
             setChecked(true);
           }}
           className={`absolute right-7 top-2 cursor-pointer p-1 transition-all duration-300 hover:bg-amber-50 rounded-2xl ${
@@ -131,7 +145,7 @@ function DropdownModal({ inputValue, setInputValue, setChecked }) {
             return (
               <h1
                 onClick={() => {
-                  setInputValue(customer.name);
+                  setInputValue(customer);
                   setChecked(false);
                   setShowCustomer(false);
                 }}
