@@ -1,13 +1,16 @@
 import React, { useState, useRef, useEffect } from "react";
 import { RiCloseLargeFill, RiArrowDropDownFill } from "react-icons/ri";
+import { useCustomerStore } from "../../store/customer-store";
 export function CartHeader() {
+  const [inputValue, setInputValue] = useState("");
+  const [checked, setChecked] = useState(true);
   return (
     <>
-      <div className="px-5 gap-4 flex items-center  bg-zuccini-400  justify-around  h-17 rounded-md mx-2 mt-2 sticky top-1">
-        <div className="relative w-full">
+      <div className="px-5 gap-4 grid grid-cols-12  items-center bg-zuccini-400   h-17 rounded-md mx-2 mt-2 sticky top-1">
+        <div className="relative  col-span-3">
           <input
             id="date"
-            className="h-10 pl-2 rounded-md border peer w-full   "
+            className="h-10 pl-2 rounded-md border peer w-full "
             type="date"
             defaultValue={new Date().toISOString().split("T")[0]}
           />
@@ -18,16 +21,33 @@ export function CartHeader() {
             Date
           </label>
         </div>
-        <DropdownModal />
+        <DropdownModal
+          inputValue={inputValue}
+          setInputValue={setInputValue}
+          setChecked={setChecked}
+        />
+        <div className="flex gap-1 col-span-3 items-center">
+          <input
+            type="checkbox"
+            onChange={(e) => {
+              setChecked(e.target.checked);
+            }}
+            checked={checked}
+            className="checkbox checkbox-neutral checkbox-sm"
+          />
+          <p>Walk-in Customer</p>
+        </div>
       </div>
     </>
   );
 }
-function DropdownModal() {
-  const saveCustomer = [{ name: "walk-in customer" }];
+function DropdownModal({ inputValue, setInputValue, setChecked }) {
+  const { customers } = useCustomerStore();
+  const filteredCustomers = customers.filter((customer) =>
+    customer.name.toLowerCase().includes(inputValue.toLowerCase()),
+  );
 
-  const [showCustomer, setShowCustomer] = useState(false);
-  const [inputValue, setInputValue] = useState(saveCustomer[0].name);
+  const [showCustomer, setShowCustomer] = useState(true);
 
   const [hovered, setHovered] = useState(false);
   const inputRef = useRef(null);
@@ -46,7 +66,7 @@ function DropdownModal() {
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="relative w-full"
+      className="relative w-full col-span-6"
       ref={inputRef}
     >
       <div className="relative">
@@ -54,7 +74,11 @@ function DropdownModal() {
           placeholder=""
           value={inputValue}
           onChange={(e) => {
-            setInputValue(e.target.value);
+            const { value } = e.target;
+            setInputValue(value);
+            if (value === "") {
+              setChecked(true);
+            }
           }}
           onClick={() => {
             setShowCustomer(!showCustomer);
@@ -87,6 +111,7 @@ function DropdownModal() {
         <div
           onClick={() => {
             setInputValue("");
+            setChecked(true);
           }}
           className={`absolute right-7 top-2 cursor-pointer p-1 transition-all duration-300 hover:bg-amber-50 rounded-2xl ${
             hovered ? "" : "hidden"
@@ -97,19 +122,21 @@ function DropdownModal() {
       </div>
 
       <div
-        className={` absolute h-70 overflow-y-scroll w-full  right-0  bg-gray-200 rounded-md border border-gray-400  ${
+        className={` absolute max-h-40 overflow-y-scroll no-scrollbar w-full  right-0  ${
           !showCustomer && "hidden"
         }   `}
       >
-        <div className=" w-full   ">
-          {saveCustomer.map((customer, index) => {
+        <div className=" w-full">
+          {filteredCustomers.map((customer, index) => {
             return (
               <h1
                 onClick={() => {
                   setInputValue(customer.name);
+                  setChecked(false);
+                  setShowCustomer(false);
                 }}
                 key={index}
-                className="border-b p-1 pl-4  hover:bg-gray-100 cursor-pointer"
+                className="border-b p-1 pl-4  hover:bg-gray-100 cursor-pointer bg-gray-200 rounded-md border border-gray-400 my-0.5"
               >
                 {customer.name}
               </h1>

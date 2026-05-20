@@ -1,8 +1,14 @@
 import { create } from "zustand";
-export const useCustomerStore = create((set) => ({
-  customers: [],
-  addCustomer: (customerInfo) =>
-    set((state) => ({
-      customers: [...state.customers, customerInfo],
-    })),
-}));
+import { persist } from "zustand/middleware";
+export const useCustomerStore = create(
+  persist((set) => ({
+    customers: [],
+    addCustomer: (customerInfo) =>
+      set((state) => ({
+        customers: [...state.customers, customerInfo],
+      })),
+  })),
+  {
+    name: "customers",
+  },
+);
