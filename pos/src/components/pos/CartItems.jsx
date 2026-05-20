@@ -8,7 +8,7 @@ import { useProductStore } from "../../store/product-store";
 import { useCartStore } from "../../store/cart-store";
 import { useSoldStore } from "../../store/sold-store";
 
-export default function CartItems() {
+export default function CartItems({ inputValue }) {
   const {
     addProductQuantityToCart,
     removeProductQuantityToCart,
@@ -65,10 +65,19 @@ export default function CartItems() {
     addCustomProductQuantityToCart,
   ]);
   // ClickOutSideToSaveCustomQuantity
-
+  const { name, phone, address } = inputValue;
   return (
     <div className="h-[calc(100vh-4.25rem)]">
       <div className="h-full overflow-scroll  no-scrollbar bg-zuccini-50">
+        {/* show customer info */}
+        {(name || phone) && (
+          <div className="grid grid-cols-2 m-2 ">
+            <h1 className="col-span-1 ">name: {name}</h1>
+            <h1 className="col-span-1">phone: {phone}</h1>
+            <h1 className="">address: {address}</h1>
+          </div>
+        )}
+
         {/* cartitem */}
         {cart.map((items) => {
           return (
@@ -360,7 +369,7 @@ function CartCalculation() {
         </div>
         {isPaymentModalOpen && (
           <PaymentModal
-          initialCashFrom={initialCashFrom}
+            initialCashFrom={initialCashFrom}
             handlePay={handlePay}
             paymentMethod={paymentMethod}
             setPaymentMethod={setPaymentMethod}
@@ -547,12 +556,12 @@ function PaymentModal({
   paymentMethod,
   setPaymentMethod,
   handlePay,
-  initialCashFrom
+  initialCashFrom,
 }) {
   const handelClose = () => {
     setTimeout(() => setIsPaymentModalOpen(false), 300);
     setIsOpen(false);
-    setCashForm(initialCashFrom)
+    setCashForm(initialCashFrom);
   };
   const methods = ["Cash", "Mobile", "Card"];
   return (

@@ -6,6 +6,12 @@ import { ProductList } from "../../components/pos/ProductList";
 import CartItems from "../../components/pos/CartItems";
 function Pos() {
   const [search, setSearch] = useState("");
+  const initialInputValue = {
+    name: "",
+    phone: "",
+    address: "",
+  };
+  const [inputValue, setInputValue] = useState(initialInputValue);
   return (
     <div className="flex h-screen overflow-hidden">
       <div className="w-5/8">
@@ -14,8 +20,12 @@ function Pos() {
       </div>
 
       <div className="w-3/8">
-        <CartHeader />
-        <CartItems />
+        <CartHeader
+          inputValue={inputValue}
+          setInputValue={setInputValue}
+          initialInputValue={initialInputValue}
+        />
+        <CartItems inputValue={inputValue} setInputValue={setInputValue} />
       </div>
     </div>
   );
