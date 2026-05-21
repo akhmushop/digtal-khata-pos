@@ -71,7 +71,7 @@ export default function CartItems({ inputValue }) {
       <div className="h-full overflow-scroll  no-scrollbar bg-zuccini-50">
         {/* show customer info */}
         {(name || phone) && (
-          <div className="grid grid-cols-2 m-2 ">
+          <div className="grid grid-cols-2 my-2 px-5">
             <h1 className="col-span-1 ">name: {name}</h1>
             <h1 className="col-span-1">phone: {phone}</h1>
             <h1 className="">address: {address}</h1>

@@ -4,7 +4,13 @@ import { ProductHeader } from "../../components/pos/ProductHeader";
 import { CartHeader } from "../../components/pos/CartHeader";
 import { ProductList } from "../../components/pos/ProductList";
 import CartItems from "../../components/pos/CartItems";
-function Pos() {
+function Pos({
+  handleOnchange,
+  customerInfo,
+  handleAddCustomer,
+  setCustomerInfo,
+  initialCustomerInfo,
+}) {
   const [search, setSearch] = useState("");
   const initialInputValue = {
     name: "",
@@ -21,6 +27,11 @@ function Pos() {
 
       <div className="w-3/8">
         <CartHeader
+          customerInfo={customerInfo}
+          handleOnchange={handleOnchange}
+          handleAddCustomer={handleAddCustomer}
+          setCustomerInfo={setCustomerInfo}
+          initialCustomerInfo={initialCustomerInfo}
           inputValue={inputValue}
           setInputValue={setInputValue}
           initialInputValue={initialInputValue}

@@ -1,7 +1,22 @@
 import React, { useState, useRef, useEffect } from "react";
-import { RiCloseLargeFill, RiArrowDropDownFill } from "react-icons/ri";
+import {
+  RiCloseLargeFill,
+  RiArrowDropDownFill,
+  RiUserAddFill,
+} from "react-icons/ri";
 import { useCustomerStore } from "../../store/customer-store";
-export function CartHeader({ inputValue, setInputValue, initialInputValue }) {
+import { AddCustomer } from "../../pages/Customer/Customer";
+export function CartHeader({
+  inputValue,
+  setInputValue,
+  initialInputValue,
+  handleOnchange,
+  customerInfo,
+  handleAddCustomer,
+  setCustomerInfo,
+  initialCustomerInfo,
+}) {
+  const [isOpenCustomerModal, setIsOpenCustomerModal] = useState(false);
   const [checked, setChecked] = useState(true);
   return (
     <>
@@ -25,6 +40,7 @@ export function CartHeader({ inputValue, setInputValue, initialInputValue }) {
           setInputValue={setInputValue}
           setChecked={setChecked}
           initialInputValue={initialInputValue}
+          setIsOpenCustomerModal={setIsOpenCustomerModal}
         />
         <div className="flex gap-1 col-span-3 items-center">
           <input
@@ -41,6 +57,16 @@ export function CartHeader({ inputValue, setInputValue, initialInputValue }) {
           <p>Walk-in Customer</p>
         </div>
       </div>
+      {isOpenCustomerModal && (
+        <AddCustomer
+          handleOnchange={handleOnchange}
+          customerInfo={customerInfo}
+          handleAddCustomer={handleAddCustomer}
+          setIsOpenCustomerModal={setIsOpenCustomerModal}
+          initialCustomerInfo={initialCustomerInfo}
+          setCustomerInfo={setCustomerInfo}
+        />
+      )}
     </>
   );
 }
@@ -49,6 +75,7 @@ function DropdownModal({
   setInputValue,
   setChecked,
   initialInputValue,
+  setIsOpenCustomerModal,
 }) {
   const { customers } = useCustomerStore();
   const filteredCustomers = customers.filter((customer) =>
@@ -112,26 +139,42 @@ function DropdownModal({
         >
           Customer
         </label>
-        <div
-          onClick={() => {
-            !showCustomer ? setShowCustomer(true) : setShowCustomer(false);
-          }}
-          className={`absolute right-1 top-2 cursor-pointer text-2xl transition-all duration-300 hover:bg-amber-50 rounded-2xl ${
-            showCustomer ? "rotate-180" : "rotate-0"
-          } `}
-        >
-          <RiArrowDropDownFill />
-        </div>
-        <div
-          onClick={() => {
-            setInputValue(initialInputValue);
-            setChecked(true);
-          }}
-          className={`absolute right-7 top-2 cursor-pointer p-1 transition-all duration-300 hover:bg-amber-50 rounded-2xl ${
-            hovered ? "" : "hidden"
-          } `}
-        >
-          <RiCloseLargeFill />
+        <div className="flex absolute items-center top-1.5 right-2 ">
+          {/* close icon */}
+          <div
+            onClick={() => {
+              setInputValue(initialInputValue);
+              setChecked(true);
+            }}
+            className={` cursor-pointer p-1 transition-all duration-300 hover:bg-amber-50 rounded-2xl ${
+              hovered ? "" : "hidden"
+            } `}
+          >
+            <RiCloseLargeFill />
+          </div>
+          {/* dropdown arrow */}
+          <div
+            onClick={() => {
+              !showCustomer ? setShowCustomer(true) : setShowCustomer(false);
+            }}
+            className={` cursor-pointer text-2xl transition-all duration-300 hover:bg-amber-50 rounded-2xl ${
+              showCustomer ? "rotate-180" : "rotate-0"
+            } `}
+          >
+            <RiArrowDropDownFill />
+          </div>
+
+          {/* add icon */}
+          <div className="">
+            <button
+              onClick={() => {
+                setIsOpenCustomerModal(true);
+              }}
+              className="text-2xl   cursor-pointer"
+            >
+              <RiUserAddFill />
+            </button>
+          </div>
         </div>
       </div>
 

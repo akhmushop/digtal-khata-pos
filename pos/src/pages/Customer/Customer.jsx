@@ -1,47 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { RiUserAddFill, RiCloseLargeFill } from "react-icons/ri";
 import Sidebar from "../../components/Sidebar";
-import { useCustomerStore } from "../../store/customer-store";
-export function AddCustomerModal() {
-  const { addCustomer, customers } = useCustomerStore();
-  const initialCustomerInfo = {
-    name: "",
-    phone: "",
-    address: "",
-  };
-  const [customerInfo, setCustomerInfo] = useState(initialCustomerInfo);
-  const handleOnchange = (e) => {
-    const { id, value } = e.target;
-    setCustomerInfo((prev) => ({
-      ...prev,
-      [id]: id === "phone" ? value.replace(/\D/g, "").slice(0, 11) : value,
-    }));
-  };
-  const handleAddCustomer = () => {
-    if (customerInfo.name === "" || customerInfo.phone === "") {
-      window.alert("Please fill all required fields");
-      return;
-    }
-    if (window.confirm("do you want to add customer")) {
-      addCustomer(customerInfo);
-      setCustomerInfo(initialCustomerInfo);
-    }
-  };
+export function AddCustomerModal({
+  customerInfo,
+  handleOnchange,
+  handleAddCustomer,
+  setCustomerInfo,
+  initialCustomerInfo,
+}) {
   return (
     <div className="grid grid-cols-12">
       <div className="col-span-2">
         <Sidebar />
       </div>
-      {/* <div>
-        <button
-          onClick={() => {
-            !addCustomer ? setAddCustomer(true) : setAddCustomer(false);
-          }}
-          className="text-4xl   cursor-pointer"
-        >
-          <RiUserAddFill />
-        </button>
-      </div> */}
       <div className="col-span-10">
         <h1 className="text-3xl">Add Customer</h1>
         <div className="grid grid-cols-4 w-full gap-3 pr-10">
@@ -97,101 +68,112 @@ export function AddCustomerModal() {
           </div>
         </div>
       </div>
-
-      {/* {addCustomer && (
-        <AddCustomer
-          onClose={() => setAddCustomer(false)}
-          saveCustomer={saveCustomer}
-          setSaveCustomer={setSaveCustomer}
-        />
-      )} */}
     </div>
   );
 }
 
-function AddCustomer({ saveCustomer, setSaveCustomer, onClose }) {
-  const [name, setName] = useState("");
-  const [mobile, setMobile] = useState("");
+export function AddCustomer({
+  handleOnchange,
+  customerInfo,
+  handleAddCustomer,
+  setIsOpenCustomerModal,
+  setCustomerInfo,
+  initialCustomerInfo,
+}) {
   const [animation, setAnimation] = useState(false);
-  const handelAddCustomer = () => {
-    if (!name.trim()) return alert("Enter your Name");
-    const newCustomer = { name, mobile };
-    setSaveCustomer((prev) => [...prev, newCustomer]);
-    setName("");
-    setMobile("");
-    setAnimation(false);
-    setTimeout(onClose, 300);
-  };
-  useEffect(() => {
-    localStorage.setItem("customer", JSON.stringify(saveCustomer));
-  }, [saveCustomer]);
+
   useEffect(() => {
     setAnimation(true);
   }, []);
+  const handleClose = () => {
+    setAnimation(false);
+    setTimeout(() => {
+      setIsOpenCustomerModal(false);
+    }, 300);
+  };
   return (
     <div
       className={`fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-50 
         transition-opacity duration-300 ${
           animation ? "opacity-100" : "opacity-0"
         }`}
-      onClick={() => {
-        setAnimation(false);
-        setTimeout(onClose, 300);
-      }}
+      onClick={handleClose}
     >
       <div
-        className={`h-95 re bg-zuccini-50 w-80 rounded-md  transition-transform duration-300 ${
+        className={` bg-zuccini-50 w-140 rounded-md  transition-transform duration-300 p-5 ${
           animation ? "scale-100" : "scale-90"
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex flex-col items-center justify-center h-full ">
+        <div className="">
           <button
-            onClick={() => {
-              setAnimation(false);
-              setTimeout(onClose, 300);
-            }}
+            onClick={handleClose}
             className="cursor-pointer text-2xl absolute right-2 top-2 hover:bg-red-400 hover:text-white transition-all duration-300"
           >
             <RiCloseLargeFill />
           </button>
 
           <h1 className="text-xl">Customer Information</h1>
-          <PeerFocusInput
-            placeholder={"Name"}
-            id={"name"}
-            onChange={(e) => setName(e.target.value)}
-            value={name}
-          />
-          <PeerFocusInput
-            placeholder={"Mobile Number"}
-            id={"name"}
-            onChange={(e) => setMobile(e.target.value)}
-            value={mobile}
-          />
-          <button
-            onClick={() => {
-              handelAddCustomer();
-            }}
-            className="border h-10 px-4 bg-red-400 text-white cursor-pointer hover:bg-red-500 transition duration-300 rounded"
-          >
-            Add Customer
-          </button>
+          <div className="w-full grid grid-cols-2 gap-5 ">
+            {" "}
+            <PeerFocusInput
+              colSpan={"col-span-1"}
+              placeholder={"Name"}
+              id={"name"}
+              value={name}
+              handleOnchange={handleOnchange}
+              value={customerInfo.name}
+            />
+            <PeerFocusInput
+              colSpan={"col-span-1"}
+              placeholder={"Mobile Number"}
+              id={"phone"}
+              handleOnchange={handleOnchange}
+              value={customerInfo.phone}
+            />
+            <PeerFocusInput
+              colSpan={"col-span-2"}
+              placeholder={"Address"}
+              id={"address"}
+              handleOnchange={handleOnchange}
+              value={customerInfo.address}
+            />
+            <div className="col-start-2 col-end-3 w-full flex gap-2 justify-end">
+              <button
+                onClick={() => {
+                  setCustomerInfo(initialCustomerInfo);
+                  handleClose();
+                }}
+                className="btn btn-warning "
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  handleAddCustomer();
+                  handleClose()
+                }}
+                className="btn btn-success"
+              >
+                Add Customer
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function PeerFocusInput({ placeholder, id, onChange, value }) {
+function PeerFocusInput({ placeholder, id, handleOnchange, value, colSpan }) {
   return (
-    <div className="relative ">
+    <div className={`relative ${colSpan} `}>
       <input
         placeholder=""
         value={value}
-        onChange={onChange}
+        onChange={handleOnchange}
         type="text"
-        className="border my-5 h-10 peer rounded  focus:outline-blue-500"
+        className={`w-full border my-5 h-10 peer rounded  focus:outline-blue-500 pl-3  `}
         id={id}
       />
       <label
