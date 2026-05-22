@@ -17,7 +17,13 @@ import { useSoldStore } from "./store/sold-store";
 import { useCustomerStore } from "./store/customer-store";
 
 function App() {
-  const { addCustomer } = useCustomerStore();
+  const { addCustomer, getCustomers } = useCustomerStore();
+  const initialInputValue = {
+    name: "",
+    phone: "",
+    address: "",
+  };
+  const [inputValue, setInputValue] = useState(initialInputValue);
   const initialCustomerInfo = {
     name: "",
     phone: "",
@@ -31,14 +37,16 @@ function App() {
       [id]: id === "phone" ? value.replace(/\D/g, "").slice(0, 11) : value,
     }));
   };
-  const handleAddCustomer = () => {
+  const handleAddCustomer = async () => {
     if (customerInfo.name === "" || customerInfo.phone === "") {
       window.alert("Please fill all required fields");
       return;
     }
     if (window.confirm("do you want to add customer")) {
       addCustomer(customerInfo);
+      const newCustomer = await addCustomer(customerInfo);
       setCustomerInfo(initialCustomerInfo);
+      setInputValue(newCustomer);
     }
   };
   const { getProducts } = useProductStore();
@@ -46,12 +54,16 @@ function App() {
   useEffect(() => {
     getProducts();
     getSoldProducts();
+    getCustomers();
   }, []);
   const router = createBrowserRouter([
     {
       path: "/",
       element: (
         <Pos
+          initialInputValue={initialInputValue}
+          inputValue={inputValue}
+          setInputValue={setInputValue}
           customerInfo={customerInfo}
           handleOnchange={handleOnchange}
           handleAddCustomer={handleAddCustomer}
