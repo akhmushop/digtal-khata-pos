@@ -10,14 +10,12 @@ function Pos({
   handleAddCustomer,
   setCustomerInfo,
   initialCustomerInfo,
+  inputValue,
+  setInputValue,
+  initialInputValue,
 }) {
   const [search, setSearch] = useState("");
-  const initialInputValue = {
-    name: "",
-    phone: "",
-    address: "",
-  };
-  const [inputValue, setInputValue] = useState(initialInputValue);
+
   return (
     <div className="flex h-screen overflow-hidden">
       <div className="w-5/8">
