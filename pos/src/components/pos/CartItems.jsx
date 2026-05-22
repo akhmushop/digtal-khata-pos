@@ -180,14 +180,14 @@ export default function CartItems({ inputValue }) {
         {/* cartitem */}
 
         {/* cartCalculation */}
-        <CartCalculation />
+        <CartCalculation inputValue={inputValue} />
         {/* cartCalculation */}
       </div>
     </div>
   );
 }
 
-function CartCalculation() {
+function CartCalculation({inputValue}) {
   const cart = useCartStore((state) => state.cart);
   const [isOpen, setIsOpen] = useState(false);
   const [emptyCartCon, setEmptyCartCon] = useState(false);
@@ -280,14 +280,17 @@ function CartCalculation() {
   const addToSoldProduct = useSoldStore((state) => state.addToSoldProduct);
   const resetCart = useCartStore((state) => state.resetCart);
   const handlePay = (handelClose, click) => {
+    const {id} = inputValue
     const updatedCash = {
       ...cashForm,
       paid_amount: cashForm.final_total,
       payment_method: "Cash",
+      customer_id:id
     };
     const updatedPayment = {
       ...cashForm,
       payment_method: paymentMethod,
+      customer_id:id
     };
     if (click === "cash") {
       if (

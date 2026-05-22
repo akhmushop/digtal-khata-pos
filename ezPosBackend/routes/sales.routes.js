@@ -22,6 +22,7 @@ router.post("/api/sold_products", async (req, res) => {
       vat,
       note,
       payment_method,
+      customer_id,
     } = cashForm;
     const due_amount = final_total - paid_amount;
     const getPaymentStatus = (paid, due) => {
@@ -31,14 +32,23 @@ router.post("/api/sold_products", async (req, res) => {
     };
     const payment_status = getPaymentStatus(paid_amount, due_amount);
     const insertSale = await pool.query(
-      "INSERT INTO sales (discount,final_total,subtotal,vat,note,payment_status,due_amount) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id",
-      [discount, final_total, subtotal, vat, note, payment_status, due_amount],
+      "INSERT INTO sales (customer_id, discount,final_total,subtotal,vat,note,payment_status,due_amount) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id",
+      [
+        customer_id,
+        discount,
+        final_total,
+        subtotal,
+        vat,
+        note,
+        payment_status,
+        due_amount,
+      ],
     );
     const salesId = insertSale.rows[0].id;
     if (paid_amount > 0) {
       await pool.query(
-        "INSERT INTO sale_payments (sale_id,paid_amount,payment_method) VALUES($1,$2,$3)",
-        [salesId, paid_amount, payment_method],
+        "INSERT INTO sale_payments (customer_id,sale_id,paid_amount,payment_method) VALUES($1,$2,$3,$4)",
+        [customer_id, salesId, paid_amount, payment_method],
       );
     }
     for (let item of cart) {
