@@ -7,6 +7,7 @@ import { ClickEmptyToResetCart } from "./CartEmptyBtn";
 import { useProductStore } from "../../store/product-store";
 import { useCartStore } from "../../store/cart-store";
 import { useSoldStore } from "../../store/sold-store";
+import axios from "../../axios";
 
 export default function CartItems({ inputValue }) {
   const {
@@ -22,6 +23,14 @@ export default function CartItems({ inputValue }) {
     removeCartItem,
     addCustomCartQuantity,
   } = useCartStore();
+  const [dueByCustomers, setDueByCustomers] = useState([]);
+  const getDueByCustomers = async () => {
+    const res = await axios.get("due_by_customers");
+    setDueByCustomers(res.data);
+  };
+  useEffect(() => {
+    getDueByCustomers();
+  }, []);
   const [editQuantityId, setEditQuantityId] = useState(null);
   const [customQuantity, setCustomQuantity] = useState(null);
   const editQuantityRef = useRef(null);
@@ -65,7 +74,9 @@ export default function CartItems({ inputValue }) {
     addCustomProductQuantityToCart,
   ]);
   // ClickOutSideToSaveCustomQuantity
-  const { name, phone, address } = inputValue;
+  const { name, phone, address, id } = inputValue;
+  const customerDue = dueByCustomers.find((c) => c.customer_id === id);
+  console.log(dueByCustomers);
   return (
     <div className="h-[calc(100vh-4.25rem)]">
       <div className="h-full overflow-scroll  no-scrollbar bg-zuccini-50">
@@ -74,7 +85,15 @@ export default function CartItems({ inputValue }) {
           <div className="grid grid-cols-2 my-2 px-5">
             <h1 className="col-span-1 ">name: {name}</h1>
             <h1 className="col-span-1">phone: {phone}</h1>
-            <h1 className="">address: {address}</h1>
+            <h1 className="col-span-2">address: {address}</h1>
+            {customerDue ? (
+              <h1 className="col-span-2">
+                Total Amount: {customerDue.total_amount} , Total Paid:{" "}
+                {customerDue.total_paid} , Total Due: {customerDue.total_due}
+              </h1>
+            ) : (
+              <h1 className="col-span-2">No Due</h1>
+            )}
           </div>
         )}
 
