@@ -17,7 +17,7 @@ const MENU_ITEMS = [
   { label: "POS", icon: MdPointOfSale, path: "/" },
   { label: "Products", icon: RiProductHuntFill, path: "/product" },
   { label: "Sales", icon: RiMoneyDollarBoxFill, path: "/sales" },
-  { label: "Cash Drawer", icon: RiArchiveDrawerFill, path: "/cash-drawer" },
+  { label: "Expense", icon: RiArchiveDrawerFill, path: "/expense" },
   { label: "Customers", icon: MdManageAccounts, path: "/customer" },
 ];
 
