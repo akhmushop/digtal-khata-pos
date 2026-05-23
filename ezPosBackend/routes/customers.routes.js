@@ -23,19 +23,26 @@ router.post("/api/customers", async (req, res) => {
 });
 router.get("/api/due_by_customers", async (req, res) => {
   try {
-    const result = await pool.query(`SELECT C.ID AS CUSTOMER_ID,
+    const result = await pool.query(`WITH payment_summary AS (
+    SELECT sale_id,
+        SUM(PAID_AMOUNT) AS TOTAL_PAID
+    FROM SALE_PAYMENTS
+    GROUP BY SALE_ID
+)
+SELECT C.ID AS CUSTOMER_ID,
     COALESCE(
-        SUM(S.FINAL_TOTAL) - SUM(COALESCE(SP.PAID_AMOUNT, 0)),
+        SUM(S.FINAL_TOTAL - COALESCE(PS.TOTAL_PAID, 0)),
         0
     ) AS TOTAL_DUE,
-    COALESCE(SUM(SP.PAID_AMOUNT), 0) AS TOTAL_PAID,
+    COALESCE(SUM(PS.TOTAL_PAID), 0) AS TOTAL_PAID,
     COALESCE(SUM(s.FINAL_TOTAL), 0) AS TOTAL_AMOUNT
 FROM customers c
     JOIN SALES S ON S.CUSTOMER_ID = C.ID
-    LEFT JOIN SALE_PAYMENTS SP ON SP.SALE_ID = S.ID
+    LEFT JOIN payment_summary PS ON PS.SALE_ID = S.ID
+WHERE S.PAYMENT_STATUS in ('unpaid', 'partial')
 GROUP BY C.ID
 HAVING COALESCE(
-        SUM(S.FINAL_TOTAL) - SUM(COALESCE(SP.PAID_AMOUNT, 0)),
+        SUM(S.FINAL_TOTAL - COALESCE(PS.TOTAL_PAID, 0)),
         0
     ) > 0`);
     res.json(result.rows);
