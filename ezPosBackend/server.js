@@ -3,6 +3,7 @@ import { pool } from "./config/db.js";
 import productRouter from "./routes/products.routes.js";
 import salesRouter from "./routes/sales.routes.js";
 import customersRouter from "./routes/customers.routes.js";
+import expenseRouter from "./routes/expenses.routes.js"
 import cors from "cors";
 const app = express();
 // middleware
@@ -11,6 +12,7 @@ app.use(express.json());
 app.use("/", productRouter);
 app.use("/", salesRouter);
 app.use("/", customersRouter);
+app.use("/", expenseRouter);
 // routes
 
 const PORT = 3000;

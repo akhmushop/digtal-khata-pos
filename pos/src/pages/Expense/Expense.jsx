@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import Sidebar from "../../components/Sidebar";
-import { useExpenseStore } from "../../store/expense-store";
+import { useExpenseStore } from "../../store/expenses-store";
 export const Expense = () => {
-  const { expense, addExpense } = useExpenseStore();
+  const { expenses, addExpense } = useExpenseStore();
   const initialExpenseValue = {
     title: "",
-    date: new Date().toISOString().split("T")[0],
+    expense_date: new Date().toISOString().split("T")[0],
     amount: "0",
     category: "",
     payment_method: "",
@@ -18,11 +18,10 @@ export const Expense = () => {
     setExpenseData((prev) => {
       return {
         ...prev,
-        [id]: value,
+        [id]: id === "amount" ? Number(value) : value,
       };
     });
   };
-  console.log(expense);
   return (
     <div className="flex gap-5">
       <Sidebar />
@@ -57,8 +56,8 @@ export const Expense = () => {
             <fieldset className="fieldset col-span-6">
               <legend className="fieldset-legend">Expense date</legend>
               <input
-                value={expenseData.date}
-                id="date"
+                value={expenseData.expense_date}
+                id="expense_date"
                 onChange={handleOnChangeExpenseInput}
                 type="date"
                 className="input"
@@ -136,6 +135,7 @@ export const Expense = () => {
               <button className="btn btn-active btn-warning">Reset</button>
               <button
                 onClick={() => {
+                  if (expenseData.amount === "0") return alert("add expense");
                   if (window.confirm("Do you want to add expense")) {
                     addExpense(expenseData);
                     setExpenseData(initialExpenseValue);
