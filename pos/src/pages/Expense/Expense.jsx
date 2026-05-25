@@ -1,13 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar from "../../components/Sidebar";
 import { useExpenseStore } from "../../store/expenses-store";
+import axios from "../../axios.js";
 export const Expense = () => {
   const { expenses, addExpense } = useExpenseStore();
+  const [expenseCategories, setExpenseCategories] = useState([]);
+  const getExpenseCategories = async () => {
+    const res = await axios.get("/expense_categories");
+    setExpenseCategories(res.data);
+  };
+  useEffect(() => {
+    getExpenseCategories();
+  }, []);
   const initialExpenseValue = {
     title: "",
     expense_date: new Date().toISOString().split("T")[0],
     amount: "0",
-    category: "",
+    category_id: "",
     payment_method: "",
     reference_no: "",
     note: "",
@@ -80,17 +89,19 @@ export const Expense = () => {
             <fieldset className="fieldset col-span-6">
               <legend className="fieldset-legend">Category</legend>
               <select
-                value={expenseData.category}
-                id="category"
+                value={expenseData.category_id}
+                id="category_id"
                 onChange={handleOnChangeExpenseInput}
                 className="select"
               >
                 <option value="" disabled={true}>
                   Select Category
                 </option>
-                <option>Travel</option>
-                <option>Marketing</option>
-                <option>Others</option>
+                {expenseCategories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.category_name}
+                  </option>
+                ))}
               </select>
             </fieldset>{" "}
             <fieldset className="fieldset col-span-6">
@@ -132,7 +143,14 @@ export const Expense = () => {
               ></textarea>
             </fieldset>
             <div className="col-span-12 flex justify-between">
-              <button className="btn btn-active btn-warning">Reset</button>
+              <button
+                onClick={() => {
+                  setExpenseData(initialExpenseValue);
+                }}
+                className="btn btn-active btn-warning"
+              >
+                Reset
+              </button>
               <button
                 onClick={() => {
                   if (expenseData.amount === "0") return alert("add expense");
