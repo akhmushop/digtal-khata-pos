@@ -16,3 +16,9 @@ CREATE TABLE expenses (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+INSERT INTO expense_categories (category_name)
+VALUES ('Electricity'),
+    ('Internet'),
+    ('Salary'),
+    ('Transport'),
+    ('Maintenance');
