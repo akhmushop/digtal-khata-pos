@@ -157,6 +157,7 @@ router.get("/api/dashboard_summary", async (req, res) => {
       salesSummary,
       netProfit,
       invoiceDue,
+      expensesSummary,
     ] = await Promise.all([
       await pool.query(
         "SELECT TO_CHAR(created_at,'Mon') AS month,COALESCE(SUM(final_total),0) AS sales ,COALESCE(SUM (CASE WHEN payment_status = 'paid' THEN final_total ELSE 0 END),0) AS cash FROM sales GROUP BY DATE_TRUNC('month',created_at),TO_CHAR(created_at,'Mon')ORDER BY DATE_TRUNC('month',created_at) LIMIT 12",
@@ -264,6 +265,30 @@ SELECT CURRENT_DUE,
         ELSE ROUND(((CURRENT_DUE - PREV_DUE) / PREV_DUE) * 100, 2)
     END AS DUE_GROWTH
 FROM DUE`),
+      await pool.query(`WITH EXPENSES_SUMMARY AS(
+    SELECT SUM(amount) FILTER (
+            WHERE DATE_TRUNC('month', expense_date) = DATE_TRUNC('month', CURRENT_DATE)
+        ) AS CURRENT_EXPENSES,
+        SUM(
+            CASE
+                WHEN DATE_TRUNC('month', expense_date) = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month') THEN amount
+            END
+        ) AS PREV_EXPENSES
+    FROM expenses
+)
+SELECT COALESCE(CURRENT_EXPENSES, 0) AS CURRENT_EXPENSES,
+    ROUND(
+        CASE
+            WHEN COALESCE(PREV_EXPENSES, 0) = 0 THEN NULL
+            ELSE (
+                (
+                    COALESCE(CURRENT_EXPENSES, 0) - COALESCE(PREV_EXPENSES, 0)
+                ) / NULLIF(PREV_EXPENSES, 0)
+            ) * 100
+        END,
+        2
+    ) AS EXPENSES_GROWTH
+FROM EXPENSES_SUMMARY;`),
     ]);
 
     res.json({
@@ -275,6 +300,7 @@ FROM DUE`),
       salesSummary: salesSummary.rows,
       netProfit: netProfit.rows,
       invoiceDue: invoiceDue.rows,
+      expensesSummary: expensesSummary.rows,
     });
   } catch (err) {
     console.error(err);

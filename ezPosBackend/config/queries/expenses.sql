@@ -22,3 +22,24 @@ VALUES ('Electricity'),
     ('Salary'),
     ('Transport'),
     ('Maintenance');
+WITH EXPENSES_SUMMARY AS(
+    SELECT SUM(amount) FILTER (
+            WHERE DATE_TRUNC('month', expense_date) = DATE_TRUNC('month', CURRENT_DATE)
+        ) AS CURRENT_EXPENSES,
+        SUM(
+            CASE
+                WHEN DATE_TRUNC('month', expense_date) = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month') THEN amount
+            END
+        ) AS PREV_EXPENSES
+    FROM expenses
+)
+SELECT COALESCE(CURRENT_EXPENSES, 0) AS CURRENT_EXPENSES,
+    ROUND(
+        (
+            (
+                COALESCE(CURRENT_EXPENSES, 0) - COALESCE(PREV_EXPENSES, 0)
+            ) / NULLIF(PREV_EXPENSES, 0)
+        ) * 100,
+        2
+    ) AS EXPENSES_GROWTH
+FROM EXPENSES_SUMMARY;
