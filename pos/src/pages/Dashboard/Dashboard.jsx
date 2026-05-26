@@ -51,6 +51,7 @@ const DashboardComponent = () => {
         salesSummary: res.data.salesSummary?.[0] || {},
         netProfit: res.data.netProfit?.[0] || {},
         invoiceDue: res.data.invoiceDue?.[0] || {},
+        expensesSummary: res.data.expensesSummary?.[0] || 0,
       });
     } catch (error) {
       console.error("Dashboard error:", error);
@@ -65,7 +66,6 @@ const DashboardComponent = () => {
       maximumFractionDigits: 2,
     }).format(value);
   };
-  console.log(dashboard.invoiceDue);
   // sold items end
   // sales overview start
   const [range, setRange] = useState("3");
@@ -105,8 +105,8 @@ const DashboardComponent = () => {
     },
     {
       title: "Total Expenses",
-      total: 20000,
-      growth: 10,
+      total: dashboard.expensesSummary?.current_expenses,
+      growth: dashboard.expensesSummary?.expenses_growth,
       bg: "bg-linear-to-br from-emerald-50 to-emerald-100 border border-emerald-200",
       icon: ShoppingCart,
       iconColor: "text-emerald-600",
