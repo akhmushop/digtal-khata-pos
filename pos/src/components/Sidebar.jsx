@@ -19,6 +19,7 @@ const MENU_ITEMS = [
   { label: "Sales", icon: RiMoneyDollarBoxFill, path: "/sales" },
   { label: "Expense", icon: RiArchiveDrawerFill, path: "/expense" },
   { label: "Customers", icon: MdManageAccounts, path: "/customer" },
+  { label: "Purchases Order", icon: MdManageAccounts, path: "/purchases" },
 ];
 
 /* ------------------ SIDEBAR ------------------ */
