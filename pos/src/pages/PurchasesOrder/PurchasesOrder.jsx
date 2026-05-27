@@ -6,11 +6,10 @@ import { MdOutlineAddCircleOutline, MdDeleteOutline } from "react-icons/md";
 import { FiMinusCircle } from "react-icons/fi";
 import { HiDotsVertical } from "react-icons/hi";
 import { useProductStore } from "../../store/product-store";
-import { useCartStore } from "../../store/cart-store";
 export function PurchasesOrder() {
   const [searchProducts, setSearchProducts] = useState("");
   const [searchSuppliers, setSearchSuppliers] = useState("");
-  const { cart, addToCart } = useCartStore();
+  const [purchasesCart, setPurchasesCart] = useState([]);
   const { products } = useProductStore();
   const filteredProducts = products.filter((item) =>
     item.product_name
@@ -27,15 +26,21 @@ export function PurchasesOrder() {
   const filteredSuppliers = suppliers.filter((item) =>
     item.name.toLowerCase().includes(searchSuppliers.toLowerCase() || ""),
   );
-  console.log(suppliers);
+  const handleAddPurchase = (product) => {
+    if (product.quantity <= 0) return;
+    setPurchasesCart((prev) => {
+      return [...prev, { ...product, purchaseQty: 1 }];
+    });
+  };
+  console.log(purchasesCart);
   return (
-    <div className="h-screen overflow-hidden grid grid-cols-11">
+    <div className="h-screen overflow-hidden grid grid-cols-12">
       {/* Sidebar */}
       <div className="col-span-2">
         <Sidebar />
       </div>
       {/* product_show */}
-      <div className="col-span-5">
+      <div className="col-span-4">
         {/* Products Headers */}
         <div className=" flex text-black-200  rounded-md mx-5 mt-2  bg-zuccini-400  h-17 sticky top-1 ">
           <div className=" flex justify-between  items-center w-full   ">
@@ -66,8 +71,7 @@ export function PurchasesOrder() {
                   <div
                     key={product.id}
                     onClick={() => {
-                      if (product.quantity <= 0) return;
-                      addToCart(product);
+                      handleAddPurchase(product);
                     }}
                     className={`select-none relative h-60 bg-zuccini-300 rounded-sm flex flex-col items-center justify-between py-2 
   ${
@@ -96,7 +100,7 @@ export function PurchasesOrder() {
         </div>
       </div>
       {/* purchases cart */}
-      <div className=" col-span-4">
+      <div className=" col-span-6">
         {/* cart header */}
         <div className="px-5 gap-4 grid grid-cols-12  items-center bg-zuccini-400   h-17 rounded-md mx-2 mt-2 sticky top-1 ">
           <div className="relative  col-span-4">
@@ -136,7 +140,7 @@ export function PurchasesOrder() {
             <div className="my-2 px-2">
               <h6 className="mb-2">Suppliers*</h6>
               {showSupplierSearch && (
-                <div className="dropdown dropdown-center w-full">
+                <div className="dropdown w-full">
                   <label tabIndex={0} className="input w-full">
                     <svg
                       className="h-[1em] opacity-50"
@@ -166,12 +170,12 @@ export function PurchasesOrder() {
                   </label>
                   <ul
                     tabIndex="-1"
-                    className="dropdown-content menu bg-base-100 rounded-box z-1 w-full p-2 shadow-sm max-h-50 overflow-y-scroll flex flex-row "
+                    className="dropdown-content bg-base-100 rounded-box z-1 w-full p-2 shadow-sm max-h-50 overflow-y-scroll"
                   >
                     {filteredSuppliers.map((sup, i) => (
                       <li
                         key={i}
-                        className="w-full"
+                        className="w-full my-1 p-1 hover:bg-gray-100 active:bg-gray-800 active:text-white rounded hover:cursor-pointer"
                         onClick={() => {
                           setShowSupplierSearch(false);
                           setShowSupplier(sup.name);
@@ -197,52 +201,60 @@ export function PurchasesOrder() {
                 </div>
               )}
             </div>
-            {/* cartitem */}
-            {cart.map((items) => {
-              return (
-                <div
-                  key={items.id}
-                  className="h-20 m-2 bg-zuccini-300 rounded-xl flex items-center select-none"
-                >
-                  <div className="flex items-center w-full justify-between">
-                    <img
-                      className="h-20 w-20  rounded-xl "
-                      src={items.image}
-                      alt=""
-                    />
-                    <div className="flex-1 pl-5">
-                      <h1>{items.product_name}</h1>
-                      <p>
-                        {Number(items.price).toFixed(2)} ×{" "}
-                        {Number(items.sold_quantity)} ={" "}
-                        {(
-                          Number(items.price) * Number(items.sold_quantity)
-                        ).toFixed(2)}
-                      </p>
-                    </div>
-                    <div className="flex text-2xl gap-x-4 items-center pr-5  ">
-                      <div onClick={() => {}} className="cursor-pointer">
-                        <FiMinusCircle />
-                      </div>
-                      <span onClick={() => {}} className="">
+            <div className="overflow-x-auto rounded-box border border-base-content/5 bg-base-100 m-2">
+              <table className="table">
+                {/* head */}
+                <thead>
+                  <tr>
+                    <th>S.No</th>
+                    <th>Product</th>
+                    <th>Type</th>
+                    <th>Unit</th>
+                    <th>Ordered Qty</th>
+                    <th>Est Price</th>
+                    <th>Est Total</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {purchasesCart.map((pur) => (
+                    <tr key={pur.id}>
+                      <th>1</th>
+                      <td>{pur.product_name}</td>
+                      <td>{pur.product_type}</td>
+                      <td>{pur.product_unit}</td>
+                      <td>
                         <input
+                          defaultValue={pur.purchaseQty}
+                          className="w-full input"
                           type="number"
-                          className="h-7 w-11 border"
-                          defaultValue={items.sold_quantity}
-                          autoFocus
                         />
-                      </span>
-                      <div onClick={() => {}} className="cursor-pointer">
-                        <MdOutlineAddCircleOutline />
-                      </div>
-                      <div className="cursor-pointer" onClick={() => {}}>
-                        <MdDeleteOutline />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                      </td>
+                      <td>
+                        <input
+                          defaultValue={pur.cost}
+                          className="w-full input"
+                          type="number"
+                        />
+                      </td>
+                      <td>{(pur.quantity * pur.cost).toFixed(2)}</td>
+                      <td>
+                        <button
+                          onClick={() => {
+                            setPurchasesCart((prev) =>
+                              prev.filter((p) => p.id !== pur.id),
+                            );
+                          }}
+                          className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 hover:cursor-pointer"
+                        >
+                          X
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>

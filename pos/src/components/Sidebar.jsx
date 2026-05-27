@@ -34,7 +34,7 @@ export default function Sidebar() {
   }, [location.pathname]);
 
   return (
-    <aside className="h-screen bg-gray-900 text-white flex flex-col transition-all duration-300 w-60 ">
+    <aside className="h-screen bg-gray-900 text-white flex flex-col transition-all duration-300 w-full ">
       {/* ---------- HEADER ---------- */}
       <div className="flex items-center justify-between px-4 py-4 border-b border-gray-800">
         <h1 className="text-lg font-semibold tracking-wide">My POS</h1>
