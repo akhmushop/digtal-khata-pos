@@ -43,7 +43,16 @@ export function PurchasesOrder() {
     (sum, item) => sum + item.purchaseQty * item.cost,
     0,
   );
-  console.log(estGrandPurchaseTotal);
+  const handleOnchange = (e, purchaseProduct) => {
+    const { value } = e.target;
+    setPurchasesCart((prev) => {
+      return prev.map((p) =>
+        p.id === purchaseProduct.id
+          ? { ...p, purchaseQty: Math.max(1, value) }
+          : p,
+      );
+    });
+  };
   return (
     <div className="h-screen overflow-hidden grid grid-cols-12">
       {/* Sidebar */}
@@ -234,20 +243,29 @@ export function PurchasesOrder() {
                       <td>{pur.product_name}</td>
                       <td>{pur.product_type}</td>
                       <td>{pur.product_unit}</td>
+                      {/* ordered qty */}
                       <td>
                         <input
-                          defaultValue={pur.purchaseQty}
+                          onChange={(e) => {
+                            handleOnchange(e, pur);
+                          }}
+                          onFocus={(e) => {
+                            e.target.select();
+                          }}
+                          value={pur.purchaseQty}
                           className="w-full input"
                           type="number"
                         />
                       </td>
+                      {/* est price */}
                       <td>
                         <input
-                          defaultValue={pur.purchaseQty * pur.cost}
+                          defaultValue={pur.cost}
                           className="w-full input"
                           type="number"
                         />
                       </td>
+                      {/* est total */}
                       <td>{(pur.purchaseQty * pur.cost).toFixed(2)}</td>
                       <td>
                         <button
@@ -280,7 +298,9 @@ export function PurchasesOrder() {
               <div className="my-2 p-2 bg-zuccini-100">
                 <div className="flex justify-between">
                   <h1 className="text-3xl">Est. Grand Total:</h1>{" "}
-                  <h1 className="text-3xl">{estGrandPurchaseTotal.toFixed(2)}</h1>
+                  <h1 className="text-3xl">
+                    {estGrandPurchaseTotal.toFixed(2)}
+                  </h1>
                 </div>
                 <p className="text-xs">
                   *Price can be adjusted during receiving
