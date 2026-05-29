@@ -29,10 +29,21 @@ export function PurchasesOrder() {
   const handleAddPurchase = (product) => {
     if (product.quantity <= 0) return;
     setPurchasesCart((prev) => {
+      const exists = prev.find((p) => p.id === product.id);
+
+      if (exists) {
+        return prev.map((p) =>
+          p.id === product.id ? { ...p, purchaseQty: p.purchaseQty + 1 } : p,
+        );
+      }
       return [...prev, { ...product, purchaseQty: 1 }];
     });
   };
-  console.log(purchasesCart);
+  const estGrandPurchaseTotal = purchasesCart.reduce(
+    (sum, item) => sum + item.purchaseQty * item.cost,
+    0,
+  );
+  console.log(estGrandPurchaseTotal);
   return (
     <div className="h-screen overflow-hidden grid grid-cols-12">
       {/* Sidebar */}
@@ -232,12 +243,12 @@ export function PurchasesOrder() {
                       </td>
                       <td>
                         <input
-                          defaultValue={pur.cost}
+                          defaultValue={pur.purchaseQty * pur.cost}
                           className="w-full input"
                           type="number"
                         />
                       </td>
-                      <td>{(pur.quantity * pur.cost).toFixed(2)}</td>
+                      <td>{(pur.purchaseQty * pur.cost).toFixed(2)}</td>
                       <td>
                         <button
                           onClick={() => {
@@ -254,6 +265,39 @@ export function PurchasesOrder() {
                   ))}
                 </tbody>
               </table>
+            </div>
+            {/* footer area */}
+            <div className="m-2">
+              {/* nots */}
+              <fieldset className="fieldset">
+                <legend className="fieldset-legend">Notes</legend>
+                <textarea
+                  className="textarea h-24 w-full"
+                  placeholder="Add nots for this purchase order..."
+                ></textarea>
+              </fieldset>
+              {/* est. grand Total */}
+              <div className="my-2 p-2 bg-zuccini-100">
+                <div className="flex justify-between">
+                  <h1 className="text-3xl">Est. Grand Total:</h1>{" "}
+                  <h1 className="text-3xl">{estGrandPurchaseTotal.toFixed(2)}</h1>
+                </div>
+                <p className="text-xs">
+                  *Price can be adjusted during receiving
+                </p>
+              </div>
+              {/* button */}
+              <div className="flex gap-3">
+                <button className="btn flex-1 btn-outline btn-primary">
+                  Save as Draft
+                </button>
+                <button className="btn flex-1 btn-outline btn-info">
+                  Preview
+                </button>
+                <button className="btn flex-1 btn-primary">
+                  Create Purchase Order
+                </button>
+              </div>
             </div>
           </div>
         </div>
