@@ -4,6 +4,7 @@ import productRouter from "./routes/products.routes.js";
 import salesRouter from "./routes/sales.routes.js";
 import customersRouter from "./routes/customers.routes.js";
 import expenseRouter from "./routes/expenses.routes.js"
+import purchasesRouter from "./routes/purchases.routes.js"
 import cors from "cors";
 const app = express();
 // middleware
@@ -13,6 +14,8 @@ app.use("/", productRouter);
 app.use("/", salesRouter);
 app.use("/", customersRouter);
 app.use("/", expenseRouter);
+app.use("/", purchasesRouter)
+
 // routes
 
 const PORT = 3000;
