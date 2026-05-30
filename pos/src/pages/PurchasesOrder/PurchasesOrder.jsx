@@ -6,6 +6,7 @@ import { MdOutlineAddCircleOutline, MdDeleteOutline } from "react-icons/md";
 import { FiMinusCircle } from "react-icons/fi";
 import { HiDotsVertical } from "react-icons/hi";
 import { useProductStore } from "../../store/product-store";
+import axios from "../../axios.js";
 export function PurchasesOrder() {
   const [searchProducts, setSearchProducts] = useState("");
   const [searchSuppliers, setSearchSuppliers] = useState("");
@@ -52,6 +53,13 @@ export function PurchasesOrder() {
           : p,
       );
     });
+  };
+  const handleCreatePurchaseOrder = async () => {
+    const updated = {
+      purchasesCart,
+      grand_total: estGrandPurchaseTotal,
+    };
+    axios.post("/purchases", updated);
   };
   return (
     <div className="h-screen overflow-hidden grid grid-cols-12">
@@ -237,9 +245,9 @@ export function PurchasesOrder() {
                   </tr>
                 </thead>
                 <tbody>
-                  {purchasesCart.map((pur) => (
+                  {purchasesCart.map((pur, i) => (
                     <tr key={pur.id}>
-                      <th>1</th>
+                      <th>{i + 1}</th>
                       <td>{pur.product_name}</td>
                       <td>{pur.product_type}</td>
                       <td>{pur.product_unit}</td>
@@ -314,7 +322,10 @@ export function PurchasesOrder() {
                 <button className="btn flex-1 btn-outline btn-info">
                   Preview
                 </button>
-                <button className="btn flex-1 btn-primary">
+                <button
+                  onClick={handleCreatePurchaseOrder}
+                  className="btn flex-1 btn-primary"
+                >
                   Create Purchase Order
                 </button>
               </div>
