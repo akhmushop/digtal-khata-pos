@@ -24,3 +24,7 @@ CREATE TABLE purchase_items (
         quantity * cost_price
     ) STORED
 );
+ALTER TABLE purchases
+ALTER COLUMN payment_status DROP DEFAULT;
+ALTER TABLE purchases
+ALTER COLUMN payment_status SET DEFAULT 'unpaid'
