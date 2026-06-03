@@ -44,22 +44,51 @@ export function PurchasesOrder() {
     (sum, item) => sum + item.purchaseQty * item.cost,
     0,
   );
+  const [purchasesCartNotes, setPurchasesCartNotes] = useState("");
   const handleOnchange = (e, purchaseProduct) => {
-    const { value } = e.target;
+    const { value, id } = e.target;
+    if (id === "notes") {
+      return setPurchasesCartNotes(value);
+    }
     setPurchasesCart((prev) => {
-      return prev.map((p) =>
-        p.id === purchaseProduct.id
-          ? { ...p, purchaseQty: Math.max(1, value) }
-          : p,
-      );
+      return prev.map((p) => {
+        if (p.id !== purchaseProduct.id) return p;
+        switch (id) {
+          case "orderedQty":
+            return {
+              ...p,
+              purchaseQty: Math.max(1, value),
+            };
+          case "estPrice":
+            return {
+              ...p,
+              cost: value,
+            };
+          default:
+            return p;
+        }
+      });
     });
   };
   const handleCreatePurchaseOrder = async () => {
+    if (Object.keys(showSupplier).length === 0) {
+      alert("add supplier");
+      return;
+    }
+    if (purchasesCart.length === 0) {
+      alert("add purchase product");
+      return;
+    }
+    if (!window.confirm("Do you want to create Purchase")) return;
+
     const updated = {
       purchasesCart,
-      grand_total: estGrandPurchaseTotal,
+      final_total: estGrandPurchaseTotal,
+      supplier: showSupplier,
+      notes: purchasesCartNotes,
     };
     axios.post("/purchases", updated);
+    setPurchasesCart([]);
   };
   return (
     <div className="h-screen overflow-hidden grid grid-cols-12">
@@ -206,7 +235,7 @@ export function PurchasesOrder() {
                         className="w-full my-1 p-1 hover:bg-gray-100 active:bg-gray-800 active:text-white rounded hover:cursor-pointer"
                         onClick={() => {
                           setShowSupplierSearch(false);
-                          setShowSupplier(sup.name);
+                          setShowSupplier(sup);
                         }}
                       >
                         <a>{sup.name}</a>
@@ -217,7 +246,7 @@ export function PurchasesOrder() {
               )}
               {!showSupplierSearch && (
                 <div className="border border-gray-400 rounded h-8 flex items-center bg-zuccini-50 p-2 justify-between">
-                  <h1>Supplier: {showSupplier}</h1>
+                  <h1>Supplier: {showSupplier.name}</h1>
                   <button
                     onClick={() => {
                       setShowSupplierSearch(true);
@@ -254,6 +283,7 @@ export function PurchasesOrder() {
                       {/* ordered qty */}
                       <td>
                         <input
+                          id="orderedQty"
                           onChange={(e) => {
                             handleOnchange(e, pur);
                           }}
@@ -268,6 +298,13 @@ export function PurchasesOrder() {
                       {/* est price */}
                       <td>
                         <input
+                          id="estPrice"
+                          onChange={(e) => {
+                            handleOnchange(e, pur);
+                          }}
+                          onFocus={(e) => {
+                            e.target.select();
+                          }}
                           defaultValue={pur.cost}
                           className="w-full input"
                           type="number"
@@ -298,6 +335,10 @@ export function PurchasesOrder() {
               <fieldset className="fieldset">
                 <legend className="fieldset-legend">Notes</legend>
                 <textarea
+                  id="notes"
+                  onChange={(e) => {
+                    handleOnchange(e);
+                  }}
                   className="textarea h-24 w-full"
                   placeholder="Add nots for this purchase order..."
                 ></textarea>
