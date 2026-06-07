@@ -52,11 +52,13 @@ const DashboardComponent = () => {
         netProfit: res.data.netProfit?.[0] || {},
         invoiceDue: res.data.invoiceDue?.[0] || {},
         expensesSummary: res.data.expensesSummary?.[0] || 0,
+        purchasesSummary: res.data.purchasesSummary?.[0] || 0,
       });
     } catch (error) {
       console.error("Dashboard error:", error);
     }
   };
+  console.log(dashboard.purchasesSummary);
   useEffect(() => {
     getDashboardSummary();
   }, []);
@@ -141,8 +143,8 @@ const DashboardComponent = () => {
       bg: "bg-blue-50",
       circleBg: "bg-blue-500",
       title: "Total Purchase",
-      total: 100025,
-      growth: 11,
+      total: dashboard.purchasesSummary?.current_purchases,
+      growth: dashboard.purchasesSummary?.purchases_growth,
     },
     {
       bg: "bg-rose-50",

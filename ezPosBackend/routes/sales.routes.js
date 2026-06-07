@@ -158,6 +158,7 @@ router.get("/api/dashboard_summary", async (req, res) => {
       netProfit,
       invoiceDue,
       expensesSummary,
+      purchasesSummary,
     ] = await Promise.all([
       await pool.query(
         "SELECT TO_CHAR(created_at,'Mon') AS month,COALESCE(SUM(final_total),0) AS sales ,COALESCE(SUM (CASE WHEN payment_status = 'paid' THEN final_total ELSE 0 END),0) AS cash FROM sales GROUP BY DATE_TRUNC('month',created_at),TO_CHAR(created_at,'Mon')ORDER BY DATE_TRUNC('month',created_at) LIMIT 12",
@@ -303,6 +304,29 @@ SELECT COALESCE(CURRENT_EXPENSES, 0) AS CURRENT_EXPENSES,
         2
     ) AS EXPENSES_GROWTH
 FROM EXPENSES_SUMMARY;`),
+      await pool.query(`WITH PURCHASES_SUMMARY AS (
+    SELECT COALESCE(
+            SUM(final_total) FILTER(
+                WHERE DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE)
+            ),
+            0
+        ) AS CURRENT_PURCHASES,
+        COALESCE(
+            SUM(final_total) FILTER(
+                WHERE DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')
+            ),
+            0
+        ) AS PREV_PURCHASES
+    FROM purchases
+)
+SELECT CURRENT_PURCHASES,
+    ROUND(
+        (
+            (CURRENT_PURCHASES - PREV_PURCHASES) / NULLIF(PREV_PURCHASES,0)
+        ) * 100,
+        2
+    ) AS PURCHASES_GROWTH
+FROM PURCHASES_SUMMARY;`),
     ]);
 
     res.json({
@@ -315,6 +339,7 @@ FROM EXPENSES_SUMMARY;`),
       netProfit: netProfit.rows,
       invoiceDue: invoiceDue.rows,
       expensesSummary: expensesSummary.rows,
+      purchasesSummary: purchasesSummary.rows,
     });
   } catch (err) {
     console.error(err);
