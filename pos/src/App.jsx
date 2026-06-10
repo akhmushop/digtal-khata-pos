@@ -17,6 +17,7 @@ import { useSoldStore } from "./store/sold-store";
 import { useCustomerStore } from "./store/customer-store";
 import { Expense } from "./pages/Expense/Expense";
 import { PurchasesOrder } from './pages/PurchasesOrder/PurchasesOrder';
+import { PurchasesList } from "./pages/PurchasesOrder/PurchasesList";
 
 function App() {
   const { addCustomer, getCustomers } = useCustomerStore();
@@ -109,6 +110,10 @@ function App() {
     {
       path: "/purchases",
       element: <PurchasesOrder />,
+    },
+    {
+      path: "/purchases-list",
+      element: <PurchasesList />,
     },
   ]);
   return <RouterProvider router={router} />;

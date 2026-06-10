@@ -16,4 +16,8 @@ router.post("/api/purchases", async (req, res) => {
     );
   }
 });
+router.get("/api/purchases", async (req, res) => {
+  const result = await pool.query('SELECT * FROM purchases')
+  res.json(result.rows)
+})
 export default router;
