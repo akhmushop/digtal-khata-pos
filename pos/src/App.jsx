@@ -19,6 +19,7 @@ import { Expense } from "./pages/Expense/Expense";
 import { PurchasesOrder } from "./pages/PurchasesOrder/PurchasesOrder";
 import { PurchasesList } from "./pages/PurchasesOrder/PurchasesList";
 import { ReceiveItems } from "./pages/PurchasesOrder/ReceiveItems";
+import { usePurchasesStore } from "./store/purchases-store";
 
 function App() {
   const { addCustomer, getCustomers } = useCustomerStore();
@@ -55,10 +56,12 @@ function App() {
   };
   const { getProducts } = useProductStore();
   const { getSoldProducts } = useSoldStore();
+  const { getPurchases } = usePurchasesStore();
   useEffect(() => {
     getProducts();
     getSoldProducts();
     getCustomers();
+    getPurchases();
   }, []);
   const router = createBrowserRouter([
     {
