@@ -16,8 +16,9 @@ import { useProductStore } from "./store/product-store";
 import { useSoldStore } from "./store/sold-store";
 import { useCustomerStore } from "./store/customer-store";
 import { Expense } from "./pages/Expense/Expense";
-import { PurchasesOrder } from './pages/PurchasesOrder/PurchasesOrder';
+import { PurchasesOrder } from "./pages/PurchasesOrder/PurchasesOrder";
 import { PurchasesList } from "./pages/PurchasesOrder/PurchasesList";
+import { ReceiveItems } from "./pages/PurchasesOrder/ReceiveItems";
 
 function App() {
   const { addCustomer, getCustomers } = useCustomerStore();
@@ -114,6 +115,10 @@ function App() {
     {
       path: "/purchases-list",
       element: <PurchasesList />,
+    },
+    {
+      path: "/receive-items",
+      element: <ReceiveItems />,
     },
   ]);
   return <RouterProvider router={router} />;
