@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Sidebar from "../../components/Sidebar";
 import axios from "../../axios.js";
+import { Link } from "react-router";
 export const PurchasesList = () => {
   const [purchases, setPurchases] = useState([]);
   const getPurchases = async () => {
@@ -125,7 +126,7 @@ const PurchaseNew = ({ purchases }) => {
                         <a>View Items</a>
                       </li>
                       <li>
-                        <a>Receive Items</a>
+                        <Link to='/receive-items'>Receive Items</Link>
                       </li>
                       <li>
                         <a>View Transactions</a>
