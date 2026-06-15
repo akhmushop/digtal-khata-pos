@@ -1,16 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Sidebar from "../../components/Sidebar";
-import axios from "../../axios.js";
 import { Link } from "react-router";
+import { usePurchasesStore } from "../../store/purchases-store";
 export const PurchasesList = () => {
-  const [purchases, setPurchases] = useState([]);
-  const getPurchases = async () => {
-    const res = await axios.get("/purchases");
-    setPurchases(res.data);
-  };
-  useEffect(() => {
-    getPurchases();
-  }, []);
+  const { purchases } = usePurchasesStore();
   return (
     <div className="grid grid-cols-12">
       <div className="col-span-2">
@@ -126,7 +119,7 @@ const PurchaseNew = ({ purchases }) => {
                         <a>View Items</a>
                       </li>
                       <li>
-                        <Link to='/receive-items'>Receive Items</Link>
+                        <Link to="/receive-items">Receive Items</Link>
                       </li>
                       <li>
                         <a>View Transactions</a>
