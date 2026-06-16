@@ -56,12 +56,13 @@ function App() {
   };
   const { getProducts } = useProductStore();
   const { getSoldProducts } = useSoldStore();
-  const { getPurchases } = usePurchasesStore();
+  const { getPurchases, getPurchaseItems } = usePurchasesStore();
   useEffect(() => {
     getProducts();
     getSoldProducts();
     getCustomers();
     getPurchases();
+    getPurchaseItems();
   }, []);
   const router = createBrowserRouter([
     {
@@ -120,7 +121,7 @@ function App() {
       element: <PurchasesList />,
     },
     {
-      path: "/receive-items",
+      path: "/receive-items/:id",
       element: <ReceiveItems />,
     },
   ]);

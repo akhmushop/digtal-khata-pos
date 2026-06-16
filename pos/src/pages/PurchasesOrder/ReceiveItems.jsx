@@ -1,5 +1,8 @@
-import React from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Sidebar from "../../components/Sidebar";
+import { useParams } from "react-router";
+import { usePurchasesStore } from "../../store/purchases-store";
+import { useProductStore } from "../../store/product-store";
 export const ReceiveItems = () => {
   const formatCurrency = (value) => {
     return new Intl.NumberFormat("en-US", {
@@ -7,6 +10,12 @@ export const ReceiveItems = () => {
       maximumFractionDigits: 2,
     }).format(value);
   };
+  const { id } = useParams();
+  const { purchases, purchasesItems } = usePurchasesStore();
+  const receivePurchasesItems = useMemo(
+    () => purchasesItems.filter((pur) => pur.purchase_id === Number(id)),
+    [purchasesItems, id],
+  );
   const itemsStatusCards = [
     {
       bg: "bg-amber-50",
@@ -53,6 +62,27 @@ export const ReceiveItems = () => {
       total: 1000,
     },
   ];
+  const [receiveItems, setReceiveItems] = useState([]);
+  const handleReceiveOnchange = (e, itemId) => {
+    const { name, value } = e.target;
+    setReceiveItems((prev) => {
+      return prev.map((item) =>
+        item.id === itemId ? { ...item, [name]: value } : item,
+      );
+    });
+  };
+
+  useEffect(() => {
+    setReceiveItems(
+      receivePurchasesItems.map((item) => ({
+        ...item,
+        receiveQuantity: item.quantity,
+        purchasePrice: item.cost_price,
+        sellingPrice: item.price,
+      })),
+    );
+  }, [receivePurchasesItems]);
+  console.log(receiveItems);
   return (
     <div className="grid grid-cols-12">
       {/* Sidebar */}
@@ -105,27 +135,55 @@ export const ReceiveItems = () => {
               </thead>
               <tbody>
                 {/* row 1 */}
-                <tr>
-                  <th>test Product</th>
-                  <td>Existing</td>
-                  <td>20</td>
-                  <td>0</td>
-                  <td>
-                    <input className="input" type="number" />
-                  </td>
-                  <td>
-                    <input className="input" type="number" />
-                  </td>
-                  <td>
-                    <input className="input" type="number" />
-                  </td>
-                  <td>1500</td>
-                  <td>
-                    <button className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 hover:cursor-pointer">
-                      X
-                    </button>
-                  </td>
-                </tr>
+                {receiveItems.map((pur) => (
+                  <tr key={pur.id}>
+                    <th>{pur.product_name}</th>
+                    <td>{pur.product_unit}</td>
+                    <td>{pur.quantity}</td>
+                    <td>0</td>
+                    <td>
+                      <input
+                        name="receiveQuantity"
+                        onChange={(e) => {
+                          handleReceiveOnchange(e, pur.id);
+                        }}
+                        defaultValue={pur.receiveQuantity}
+                        className="input"
+                        type="number"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        name="purchasePrice"
+                        onChange={(e) => {
+                          handleReceiveOnchange(e, pur.id);
+                        }}
+                        value={pur.purchasePrice}
+                        className="input"
+                        type="number"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        name="sellingPrice"
+                        onChange={(e) => {
+                          handleReceiveOnchange(e, pur.id);
+                        }}
+                        value={pur.sellingPrice}
+                        className="input"
+                        type="number"
+                      />
+                    </td>
+                    <td>
+                      {(pur.receiveQuantity * pur.purchasePrice).toFixed(2)}
+                    </td>
+                    <td>
+                      <button className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 hover:cursor-pointer">
+                        X
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -204,7 +262,9 @@ export const ReceiveItems = () => {
           </div>
         </div>
         <div className="flex mt-5">
-          <button className="btn btn-success flex-1 mr-2">Receive Items & Update Stock</button>
+          <button className="btn btn-success flex-1 mr-2">
+            Receive Items & Update Stock
+          </button>
           <button className="btn btn-soft  flex-none">Cancel</button>
         </div>
       </div>

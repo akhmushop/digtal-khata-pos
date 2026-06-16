@@ -12,12 +12,21 @@ router.post("/api/purchases", async (req, res) => {
     const { id, purchaseQty, cost } = item;
     await pool.query(
       "INSERT INTO purchase_items (purchase_id,product_id,quantity,cost_price) VALUES($1,$2,$3,$4)",
-      [purchasesId.rows[0].id, id, purchaseQty, cost]
+      [purchasesId.rows[0].id, id, purchaseQty, cost],
     );
   }
 });
 router.get("/api/purchases", async (req, res) => {
-  const result = await pool.query('SELECT * FROM purchases')
-  res.json(result.rows)
-})
+  const result = await pool.query("SELECT * FROM purchases");
+  res.json(result.rows);
+});
+router.get("/api/purchases/items", async (req, res) => {
+  const result = await pool.query(`SELECT PI.*,
+    P.product_name,
+    p.product_unit,
+    P.PRICE
+FROM purchase_items PI
+    JOIN products P ON PI.product_id = P.id;`);
+  res.json(result.rows);
+});
 export default router;

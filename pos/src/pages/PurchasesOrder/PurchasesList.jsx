@@ -119,7 +119,9 @@ const PurchaseNew = ({ purchases }) => {
                         <a>View Items</a>
                       </li>
                       <li>
-                        <Link to="/receive-items">Receive Items</Link>
+                        <Link to={`/receive-items/${pur.id}`}>
+                          Receive Items
+                        </Link>
                       </li>
                       <li>
                         <a>View Transactions</a>
