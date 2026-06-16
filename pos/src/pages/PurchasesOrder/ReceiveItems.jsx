@@ -71,7 +71,6 @@ export const ReceiveItems = () => {
       );
     });
   };
-
   useEffect(() => {
     setReceiveItems(
       receivePurchasesItems.map((item) => ({
@@ -178,7 +177,14 @@ export const ReceiveItems = () => {
                       {(pur.receiveQuantity * pur.purchasePrice).toFixed(2)}
                     </td>
                     <td>
-                      <button className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 hover:cursor-pointer">
+                      <button
+                        onClick={() => {
+                          setReceiveItems((prev) =>
+                            prev.filter((p) => p.id !== pur.id),
+                          );
+                        }}
+                        className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 hover:cursor-pointer"
+                      >
                         X
                       </button>
                     </td>
