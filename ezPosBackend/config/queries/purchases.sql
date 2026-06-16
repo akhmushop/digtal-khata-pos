@@ -49,8 +49,14 @@ WITH PURCHASES_SUMMARY AS (
 SELECT CURRENT_PURCHASES,
     ROUND(
         (
-            (CURRENT_PURCHASES - PREV_PURCHASES) / NULLIF(PREV_PURCHASES,0)
+            (CURRENT_PURCHASES - PREV_PURCHASES) / NULLIF(PREV_PURCHASES, 0)
         ) * 100,
         2
     ) AS PURCHASES_GROWTH
 FROM PURCHASES_SUMMARY;
+SELECT PI.*,
+    P.product_name,
+    p.product_unit,
+    P.PRICE
+FROM purchase_items PI
+    JOIN products P ON PI.product_id = P.id;
