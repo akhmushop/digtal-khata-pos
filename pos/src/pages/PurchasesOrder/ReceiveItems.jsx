@@ -11,7 +11,16 @@ export const ReceiveItems = () => {
     }).format(value);
   };
   const { id } = useParams();
+
   const { purchases, purchasesItems } = usePurchasesStore();
+  const receivePurchases = purchases.find((pur) => pur.id === Number(id));
+  const {
+    supplier_name,
+    final_total,
+    payment_status,
+    due_amount,
+    paid_amount,
+  } = receivePurchases ?? {};
   const receivePurchasesItems = useMemo(
     () => purchasesItems.filter((pur) => pur.purchase_id === Number(id)),
     [purchasesItems, id],
@@ -27,42 +36,48 @@ export const ReceiveItems = () => {
       bg: "bg-emerald-50",
       circleBg: "bg-emerald-500",
       title: "Payment Status",
-      status: "PENDING",
+      status: payment_status?.toUpperCase(),
     },
     {
       bg: "bg-blue-50",
       circleBg: "bg-blue-500",
       title: "Amount Paid",
-      total: 1000,
+      total: paid_amount,
     },
     {
       bg: "bg-rose-50",
       circleBg: "bg-rose-500",
       title: "Amount Due",
-      total: 64654,
+      total: due_amount,
     },
   ];
+  const [receiveItems, setReceiveItems] = useState([]);
+  const grandTotal = receiveItems.reduce((total, item) => {
+    const quantity = item.receiveQuantity ?? 0;
+    const price = item.purchasePrice ?? 0;
+    return total + quantity * price;
+  }, 0);
   const paymentsInfoCards = [
     {
       bg: "bg-amber-50",
       circleBg: "bg-amber-500",
       title: "Grand Total",
-      status: 6946,
+      total: grandTotal,
     },
     {
       bg: "bg-emerald-50",
       circleBg: "bg-emerald-500",
       title: "Already Paid",
-      status: 0,
+      status: paid_amount,
     },
     {
       bg: "bg-blue-50",
       circleBg: "bg-blue-500",
       title: "Current Balance",
-      total: 1000,
+      total: due_amount,
     },
   ];
-  const [receiveItems, setReceiveItems] = useState([]);
+
   const handleReceiveOnchange = (e, itemId) => {
     const { name, value } = e.target;
     setReceiveItems((prev) => {
@@ -71,6 +86,7 @@ export const ReceiveItems = () => {
       );
     });
   };
+
   useEffect(() => {
     setReceiveItems(
       receivePurchasesItems.map((item) => ({
@@ -81,7 +97,6 @@ export const ReceiveItems = () => {
       })),
     );
   }, [receivePurchasesItems]);
-  console.log(receiveItems);
   return (
     <div className="grid grid-cols-12">
       {/* Sidebar */}
@@ -96,11 +111,13 @@ export const ReceiveItems = () => {
           <div>
             <p>Back to Purchase Orders</p>
             <h1>Receive Items</h1>
-            <p>OrderId:2343 | Supplier:ezPos</p>
+            <p>
+              OrderId: {id} | Supplier: {supplier_name}
+            </p>
           </div>
           <div>
             <p>Order Total</p>
-            <p>5100</p>
+            <p>{final_total}</p>
           </div>
         </div>
         {/* summer card */}
