@@ -103,11 +103,14 @@ export const ReceiveItems = () => {
     payment_notes: "",
   });
   const handlePaymentOnchange = (e) => {
-    const { value, name } = e.target;
+    const { value, name, max } = e.target;
     setPurchasesPayments((prev) => {
       return {
         ...prev,
-        [name]: value,
+        [name]:
+          name === "payment_amount"
+            ? Math.min(Number(value), Number(max))
+            : value,
       };
     });
   };
@@ -244,6 +247,8 @@ export const ReceiveItems = () => {
           <fieldset className="fieldset w-full">
             <legend className="fieldset-legend">Payment Amount</legend>
             <input
+              min={0}
+              max={grandTotal}
               name="payment_amount"
               onChange={handlePaymentOnchange}
               type="number"
@@ -304,7 +309,7 @@ export const ReceiveItems = () => {
             </div>
             <div className="flex justify-between w-full">
               <p>New Balance Due</p>
-              <p>{grandTotal - purchasesPayment.payment_amount}</p>
+              <p>{formatCurrency(grandTotal - purchasesPayment.payment_amount)}</p>
             </div>
           </div>
         </div>
