@@ -97,6 +97,21 @@ export const ReceiveItems = () => {
       })),
     );
   }, [receivePurchasesItems]);
+  const [purchasesPayment, setPurchasesPayments] = useState({
+    payment_amount: "0",
+    payment_method: "Cash",
+    payment_notes: "",
+  });
+  const handlePaymentOnchange = (e) => {
+    const { value, name } = e.target;
+    setPurchasesPayments((prev) => {
+      return {
+        ...prev,
+        [name]: value,
+      };
+    });
+  };
+  console.log(purchasesPayment);
   return (
     <div className="grid grid-cols-12">
       {/* Sidebar */}
@@ -229,16 +244,23 @@ export const ReceiveItems = () => {
           <fieldset className="fieldset w-full">
             <legend className="fieldset-legend">Payment Amount</legend>
             <input
-              type="text"
+              name="payment_amount"
+              onChange={handlePaymentOnchange}
+              type="number"
               className="input w-full"
-              placeholder="Type here"
+              value={purchasesPayment.payment_amount}
             />
-            <p className="label">Maximum 0</p>
+            <p className="label">Maximum {formatCurrency(grandTotal)}</p>
           </fieldset>
           {/* payment method */}
           <fieldset className="fieldset w-full">
             <legend className="fieldset-legend">Payment Method</legend>
-            <select defaultValue="Cash" className="select w-full">
+            <select
+              name="payment_method"
+              onChange={handlePaymentOnchange}
+              value={purchasesPayment.payment_method}
+              className="select w-full"
+            >
               <option>Cash</option>
               <option>Debit Card</option>
               <option>Credit Card</option>
@@ -256,6 +278,8 @@ export const ReceiveItems = () => {
               Payment Notes (Optional)
             </legend>
             <textarea
+              name="payment_notes"
+              onChange={handlePaymentOnchange}
               className="textarea h-24 w-full"
               placeholder="Add any notes about payment"
             ></textarea>
@@ -266,21 +290,21 @@ export const ReceiveItems = () => {
           <div className="flex justify-between gap-6 p-2">
             <div className="flex justify-between w-full">
               <p>Receiving Now</p>
-              <p>5000</p>
+              <p>{formatCurrency(grandTotal)}</p>
             </div>
             <div className="flex justify-between w-full">
-              <p>Receiving Now</p>
-              <p>234</p>
+              <p>Paying Now</p>
+              <p>{purchasesPayment.payment_amount}</p>
             </div>
           </div>
           <div className="flex justify-between gap-6 p-2">
             <div className="flex justify-between w-full">
               <p>Previous Balance</p>
-              <p>2342</p>
+              <p>{due_amount}</p>
             </div>
             <div className="flex justify-between w-full">
               <p>New Balance Due</p>
-              <p>50050</p>
+              <p>{grandTotal - purchasesPayment.payment_amount}</p>
             </div>
           </div>
         </div>
