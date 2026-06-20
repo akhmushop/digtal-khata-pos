@@ -3,26 +3,27 @@ import Sidebar from "../../components/Sidebar";
 import { useParams } from "react-router";
 import { usePurchasesStore } from "../../store/purchases-store";
 import { useProductStore } from "../../store/product-store";
+const formatCurrency = (value) => {
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+};
+const PAYMENT_METHODS = ["Cash", "Debit Card", "Credit Card", "Bank Transfer", "Cheque", "Other"];
 export const ReceiveItems = () => {
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
-  };
   const { id } = useParams();
 
   const { purchases, purchasesItems } = usePurchasesStore();
-  const receivePurchases = purchases.find((pur) => pur.id === Number(id));
+  const purchaseOrder = purchases.find((item) => item.id === Number(id));
   const {
     supplier_name,
     final_total,
     payment_status,
     due_amount,
     paid_amount,
-  } = receivePurchases ?? {};
+  } = purchaseOrder ?? {};
   const receivePurchasesItems = useMemo(
-    () => purchasesItems.filter((pur) => pur.purchase_id === Number(id)),
+    () => purchasesItems.filter((item) => item.purchase_id === Number(id)),
     [purchasesItems, id],
   );
   const itemsStatusCards = [
@@ -77,16 +78,49 @@ export const ReceiveItems = () => {
       total: due_amount,
     },
   ];
-
+  const [changedItems, setChangedItems] = useState({});
   const handleReceiveOnchange = (e, itemId) => {
-    const { name, value } = e.target;
+    const { name, value, max } = e.target;
+    const originalItem = receivePurchasesItems.find(
+      (item) => item.id === itemId,
+    );
+    const originalValueMap = {
+      receiveQuantity: originalItem.quantity,
+      purchasePrice: originalItem.cost_price,
+      sellingPrice: originalItem.price,
+    };
+    const originalValue = originalValueMap[name];
+    const newValue =
+      name === "receiveQuantity" ? Math.min(Number(value), Number(max)) : value;
     setReceiveItems((prev) => {
       return prev.map((item) =>
-        item.id === itemId ? { ...item, [name]: value } : item,
+        item.id === itemId
+          ? {
+              ...item,
+              [name]: newValue,
+            }
+          : item,
       );
     });
-  };
+    setChangedItems((prev) => {
+      const updated = { ...prev };
+      if (Number(newValue) === Number(originalValue)) {
+        if (updated[itemId]) {
+          delete updated[itemId][name];
+          if (Object.keys(updated[itemId]).length === 0) {
+            delete updated[itemId];
+          }
+        }
+      } else {
+        updated[itemId] = {
+          ...(updated[itemId] || {}),
+          [name]: newValue,
+        };
+      }
 
+      return updated;
+    });
+  };
   useEffect(() => {
     setReceiveItems(
       receivePurchasesItems.map((item) => ({
@@ -97,14 +131,14 @@ export const ReceiveItems = () => {
       })),
     );
   }, [receivePurchasesItems]);
-  const [purchasesPayment, setPurchasesPayments] = useState({
+  const [paymentDetails, setPaymentDetails] = useState({
     payment_amount: "0",
     payment_method: "Cash",
     payment_notes: "",
   });
   const handlePaymentOnchange = (e) => {
     const { value, name, max } = e.target;
-    setPurchasesPayments((prev) => {
+    setPaymentDetails((prev) => {
       return {
         ...prev,
         [name]:
@@ -114,7 +148,6 @@ export const ReceiveItems = () => {
       };
     });
   };
-  console.log(purchasesPayment);
   return (
     <div className="grid grid-cols-12">
       {/* Sidebar */}
@@ -140,10 +173,10 @@ export const ReceiveItems = () => {
         </div>
         {/* summer card */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {itemsStatusCards.map((value, index) => (
+          {itemsStatusCards.map((card, index) => (
             <SummaryCard
               key={index}
-              value={value}
+              card={card}
               formatCurrency={formatCurrency}
             />
           ))}
@@ -169,19 +202,21 @@ export const ReceiveItems = () => {
               </thead>
               <tbody>
                 {/* row 1 */}
-                {receiveItems.map((pur) => (
-                  <tr key={pur.id}>
-                    <th>{pur.product_name}</th>
-                    <td>{pur.product_unit}</td>
-                    <td>{pur.quantity}</td>
+                {receiveItems.map((item) => (
+                  <tr key={item.id}>
+                    <th>{item.product_name}</th>
+                    <td>{item.product_unit}</td>
+                    <td>{item.quantity}</td>
                     <td>0</td>
                     <td>
                       <input
+                        min={0}
+                        max={item.quantity}
                         name="receiveQuantity"
                         onChange={(e) => {
-                          handleReceiveOnchange(e, pur.id);
+                          handleReceiveOnchange(e, item.id);
                         }}
-                        defaultValue={pur.receiveQuantity}
+                        value={item.receiveQuantity}
                         className="input"
                         type="number"
                       />
@@ -190,9 +225,9 @@ export const ReceiveItems = () => {
                       <input
                         name="purchasePrice"
                         onChange={(e) => {
-                          handleReceiveOnchange(e, pur.id);
+                          handleReceiveOnchange(e, item.id);
                         }}
-                        value={pur.purchasePrice}
+                        value={item.purchasePrice}
                         className="input"
                         type="number"
                       />
@@ -201,21 +236,21 @@ export const ReceiveItems = () => {
                       <input
                         name="sellingPrice"
                         onChange={(e) => {
-                          handleReceiveOnchange(e, pur.id);
+                          handleReceiveOnchange(e, item.id);
                         }}
-                        value={pur.sellingPrice}
+                        value={item.sellingPrice}
                         className="input"
                         type="number"
                       />
                     </td>
                     <td>
-                      {(pur.receiveQuantity * pur.purchasePrice).toFixed(2)}
+                      {(item.receiveQuantity * item.purchasePrice).toFixed(2)}
                     </td>
                     <td>
                       <button
                         onClick={() => {
                           setReceiveItems((prev) =>
-                            prev.filter((p) => p.id !== pur.id),
+                            prev.filter((p) => p.id !== item.id),
                           );
                         }}
                         className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 hover:cursor-pointer"
@@ -233,10 +268,10 @@ export const ReceiveItems = () => {
         <div>
           <h1>Payment Details</h1>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {paymentsInfoCards.map((value, index) => (
+            {paymentsInfoCards.map((card, index) => (
               <SummaryCard
                 key={index}
-                value={value}
+                card={card}
                 formatCurrency={formatCurrency}
               />
             ))}
@@ -253,7 +288,7 @@ export const ReceiveItems = () => {
               onChange={handlePaymentOnchange}
               type="number"
               className="input w-full"
-              value={purchasesPayment.payment_amount}
+              value={paymentDetails.payment_amount}
             />
             <p className="label">Maximum {formatCurrency(grandTotal)}</p>
           </fieldset>
@@ -263,16 +298,10 @@ export const ReceiveItems = () => {
             <select
               name="payment_method"
               onChange={handlePaymentOnchange}
-              value={purchasesPayment.payment_method}
+              value={paymentDetails.payment_method}
               className="select w-full"
             >
-              <option>Cash</option>
-              <option>Debit Card</option>
-              <option>Credit Card</option>
-              <option>Credit Card</option>
-              <option>Bank Transfer</option>
-              <option>Cheque</option>
-              <option>Other</option>
+              {PAYMENT_METHODS.map(method => <option key={method}>{method}</option>)}
             </select>
           </fieldset>
         </div>
@@ -299,7 +328,7 @@ export const ReceiveItems = () => {
             </div>
             <div className="flex justify-between w-full">
               <p>Paying Now</p>
-              <p>{purchasesPayment.payment_amount}</p>
+              <p>{paymentDetails.payment_amount}</p>
             </div>
           </div>
           <div className="flex justify-between gap-6 p-2">
@@ -309,12 +338,19 @@ export const ReceiveItems = () => {
             </div>
             <div className="flex justify-between w-full">
               <p>New Balance Due</p>
-              <p>{formatCurrency(grandTotal - purchasesPayment.payment_amount)}</p>
+              <p>
+                {formatCurrency(grandTotal - paymentDetails.payment_amount)}
+              </p>
             </div>
           </div>
         </div>
         <div className="flex mt-5">
-          <button className="btn btn-success flex-1 mr-2">
+          <button
+            onClick={() => {
+              console.log(paymentDetails, changedItems);
+            }}
+            className="btn btn-success flex-1 mr-2"
+          >
             Receive Items & Update Stock
           </button>
           <button className="btn btn-soft  flex-none">Cancel</button>
@@ -323,16 +359,16 @@ export const ReceiveItems = () => {
     </div>
   );
 };
-const SummaryCard = ({ value, formatCurrency }) => {
+const SummaryCard = ({ card, formatCurrency }) => {
   const displayValue =
-    value.total != null
-      ? `TK ${formatCurrency(value.total)}`
-      : (value.status ?? "N/A");
+    card.total != null
+      ? `TK ${formatCurrency(card.total)}`
+      : (card.status ?? "N/A");
   return (
-    <div className={`flex items-center p-3 ${value.bg} rounded-lg`}>
-      <div className={`w-3 h-3 ${value.circleBg} rounded-full mr-3`}></div>
+    <div className={`flex items-center p-3 ${card.bg} rounded-lg`}>
+      <div className={`w-3 h-3 ${card.circleBg} rounded-full mr-3`}></div>
       <div>
-        <p className="text-sm font-medium text-gray-600">{value.title}</p>
+        <p className="text-sm font-medium text-gray-600">{card.title}</p>
         <p className="font-bold">{displayValue}</p>
       </div>
     </div>
