@@ -9,7 +9,14 @@ const formatCurrency = (value) => {
     maximumFractionDigits: 2,
   }).format(value);
 };
-const PAYMENT_METHODS = ["Cash", "Debit Card", "Credit Card", "Bank Transfer", "Cheque", "Other"];
+const PAYMENT_METHODS = [
+  "Cash",
+  "Debit Card",
+  "Credit Card",
+  "Bank Transfer",
+  "Cheque",
+  "Other",
+];
 export const ReceiveItems = () => {
   const { id } = useParams();
 
@@ -78,18 +85,8 @@ export const ReceiveItems = () => {
       total: due_amount,
     },
   ];
-  const [changedItems, setChangedItems] = useState({});
   const handleReceiveOnchange = (e, itemId) => {
     const { name, value, max } = e.target;
-    const originalItem = receivePurchasesItems.find(
-      (item) => item.id === itemId,
-    );
-    const originalValueMap = {
-      receiveQuantity: originalItem.quantity,
-      purchasePrice: originalItem.cost_price,
-      sellingPrice: originalItem.price,
-    };
-    const originalValue = originalValueMap[name];
     const newValue =
       name === "receiveQuantity" ? Math.min(Number(value), Number(max)) : value;
     setReceiveItems((prev) => {
@@ -101,24 +98,6 @@ export const ReceiveItems = () => {
             }
           : item,
       );
-    });
-    setChangedItems((prev) => {
-      const updated = { ...prev };
-      if (Number(newValue) === Number(originalValue)) {
-        if (updated[itemId]) {
-          delete updated[itemId][name];
-          if (Object.keys(updated[itemId]).length === 0) {
-            delete updated[itemId];
-          }
-        }
-      } else {
-        updated[itemId] = {
-          ...(updated[itemId] || {}),
-          [name]: newValue,
-        };
-      }
-
-      return updated;
     });
   };
   useEffect(() => {
@@ -147,6 +126,50 @@ export const ReceiveItems = () => {
             : value,
       };
     });
+  };
+  const handleSubmit = () => {
+    // 1. Loop over ORIGINAL items so we don't miss items deleted from the UI
+    const changedItems = receivePurchasesItems
+      .map((original) => {
+        // Find the current state of this item (returns undefined if user clicked 'X')
+        const current = receiveItems.find((r) => r.id === original.id);
+
+        // If deleted, treat receiveQuantity as 0. Otherwise, use current state.
+        const currentQty = current ? Number(current.receiveQuantity) : 0;
+        const currentPurchasePrice = current
+          ? Number(current.purchasePrice)
+          : Number(original.cost_price);
+        const currentSellingPrice = current
+          ? Number(current.sellingPrice)
+          : Number(original.price);
+
+        // Parse original data to Numbers to ensure proper comparison ("5" becomes 5)
+        const originalQty = Number(original.quantity);
+        const originalPurchasePrice = Number(original.cost_price);
+        const originalSellingPrice = Number(original.price);
+
+        // Check if anything actually changed
+        const hasChanges =
+          currentQty !== originalQty ||
+          currentPurchasePrice !== originalPurchasePrice ||
+          currentSellingPrice !== originalSellingPrice;
+
+        // Return the item only if it changed, formatted for the backend
+        if (hasChanges) {
+          return {
+            id: original.id,
+            product_id: original.product_id, // include any IDs your backend needs
+            receiveQuantity: currentQty,
+            purchasePrice: currentPurchasePrice,
+            sellingPrice: currentSellingPrice,
+          };
+        }
+
+        return null; // Return null if nothing changed
+      })
+      .filter(Boolean); // Remove the nulls (items that didn't change)
+
+    console.log("Submitting:", { paymentDetails, changedItems });
   };
   return (
     <div className="grid grid-cols-12">
@@ -301,7 +324,9 @@ export const ReceiveItems = () => {
               value={paymentDetails.payment_method}
               className="select w-full"
             >
-              {PAYMENT_METHODS.map(method => <option key={method}>{method}</option>)}
+              {PAYMENT_METHODS.map((method) => (
+                <option key={method}>{method}</option>
+              ))}
             </select>
           </fieldset>
         </div>
@@ -346,9 +371,7 @@ export const ReceiveItems = () => {
         </div>
         <div className="flex mt-5">
           <button
-            onClick={() => {
-              console.log(paymentDetails, changedItems);
-            }}
+            onClick={handleSubmit}
             className="btn btn-success flex-1 mr-2"
           >
             Receive Items & Update Stock
