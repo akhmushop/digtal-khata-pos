@@ -85,10 +85,21 @@ export const ReceiveItems = () => {
       total: due_amount,
     },
   ];
+  const getInputValue = (name, value, max) => {
+    const num = Number(value);
+    switch (name) {
+      case "receiveQuantity":
+        return Math.max(0, Math.min(num, Number(max)));
+      case "purchasePrice":
+      case "sellingPrice":
+        return Math.max(0, num);
+      default:
+        return value;
+    }
+  };
   const handleReceiveOnchange = (e, itemId) => {
     const { name, value, max } = e.target;
-    const newValue =
-      name === "receiveQuantity" ? Math.min(Number(value), Number(max)) : value;
+    const newValue = getInputValue(name, value, max);
     setReceiveItems((prev) => {
       return prev.map((item) =>
         item.id === itemId
@@ -129,6 +140,7 @@ export const ReceiveItems = () => {
   };
   const handleSubmit = () => {
     // 1. Loop over ORIGINAL items so we don't miss items deleted from the UI
+    if (paymentDetails.payment_amount === "0") return alert("Enter Amount");
     const changedItems = receivePurchasesItems
       .map((original) => {
         // Find the current state of this item (returns undefined if user clicked 'X')
@@ -143,29 +155,23 @@ export const ReceiveItems = () => {
           ? Number(current.sellingPrice)
           : Number(original.price);
 
-        // Parse original data to Numbers to ensure proper comparison ("5" becomes 5)
-        const originalQty = Number(original.quantity);
-        const originalPurchasePrice = Number(original.cost_price);
-        const originalSellingPrice = Number(original.price);
-
-        // Check if anything actually changed
-        const hasChanges =
-          currentQty !== originalQty ||
-          currentPurchasePrice !== originalPurchasePrice ||
-          currentSellingPrice !== originalSellingPrice;
-
-        // Return the item only if it changed, formatted for the backend
-        if (hasChanges) {
-          return {
-            id: original.id,
-            product_id: original.product_id, // include any IDs your backend needs
+        const changes = {
+          ...(currentQty !== Number(original.quantity) && {
             receiveQuantity: currentQty,
+          }),
+          ...(currentPurchasePrice !== Number(original.cost_price) && {
             purchasePrice: currentPurchasePrice,
+          }),
+          ...(currentSellingPrice !== Number(original.price) && {
             sellingPrice: currentSellingPrice,
-          };
-        }
-
-        return null; // Return null if nothing changed
+          }),
+        };
+        if (Object.keys(changes).length === 0) return null; // Return null if nothing changed
+        return {
+          id: original.id,
+          product_id: original.product_id,
+          ...changes,
+        };
       })
       .filter(Boolean); // Remove the nulls (items that didn't change)
 
