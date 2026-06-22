@@ -60,3 +60,12 @@ SELECT PI.*,
     P.PRICE
 FROM purchase_items PI
     JOIN products P ON PI.product_id = P.id;
+UPDATE purchases
+SET paid_amount = $1,
+    due_amount = $2,
+    payment_status = CASE
+        WHEN ($1::numeric) <= 0 THEN 'unpaid'
+        WHEN ($1::numeric) < final_total THEN 'partial_paid'
+        ELSE 'paid'
+    END
+WHERE ID = $3;
