@@ -28,6 +28,7 @@ export const ReceiveItems = () => {
     payment_status,
     due_amount,
     paid_amount,
+    status
   } = purchaseOrder ?? {};
   const receivePurchasesItems = useMemo(
     () => purchasesItems.filter((item) => item.purchase_id === Number(id)),
@@ -38,7 +39,7 @@ export const ReceiveItems = () => {
       bg: "bg-amber-50",
       circleBg: "bg-amber-500",
       title: "Order Status",
-      status: "ORDERED",
+      status: status?.toUpperCase(),
     },
     {
       bg: "bg-emerald-50",
@@ -122,7 +123,7 @@ export const ReceiveItems = () => {
     );
   }, [receivePurchasesItems]);
   const [paymentDetails, setPaymentDetails] = useState({
-    orderId:id,
+    orderId: id,
     payment_amount: "0",
     payment_method: "Cash",
     payment_notes: "",
@@ -141,7 +142,7 @@ export const ReceiveItems = () => {
   };
   const handleSubmit = () => {
     // 1. Loop over ORIGINAL items so we don't miss items deleted from the UI
-    if (paymentDetails.payment_amount === "0") return alert("Enter Amount");
+    if (!window.confirm("Do you want to Receive Product")) return;
     const changedItems = receivePurchasesItems
       .map((original) => {
         // Find the current state of this item (returns undefined if user clicked 'X')
@@ -176,8 +177,8 @@ export const ReceiveItems = () => {
       })
       .filter(Boolean); // Remove the nulls (items that didn't change)
 
-    console.log("Submitting:", );
-    updateStock( paymentDetails, changedItems )
+    console.log("Submitting:");
+    updateStock(paymentDetails, changedItems);
   };
   return (
     <div className="grid grid-cols-12">
