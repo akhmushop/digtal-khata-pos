@@ -20,7 +20,7 @@ const PAYMENT_METHODS = [
 export const ReceiveItems = () => {
   const { id } = useParams();
 
-  const { purchases, purchasesItems } = usePurchasesStore();
+  const { purchases, purchasesItems, updateStock } = usePurchasesStore();
   const purchaseOrder = purchases.find((item) => item.id === Number(id));
   const {
     supplier_name,
@@ -122,6 +122,7 @@ export const ReceiveItems = () => {
     );
   }, [receivePurchasesItems]);
   const [paymentDetails, setPaymentDetails] = useState({
+    orderId:id,
     payment_amount: "0",
     payment_method: "Cash",
     payment_notes: "",
@@ -175,7 +176,8 @@ export const ReceiveItems = () => {
       })
       .filter(Boolean); // Remove the nulls (items that didn't change)
 
-    console.log("Submitting:", { paymentDetails, changedItems });
+    console.log("Submitting:", );
+    updateStock( paymentDetails, changedItems )
   };
   return (
     <div className="grid grid-cols-12">
@@ -312,14 +314,14 @@ export const ReceiveItems = () => {
             <legend className="fieldset-legend">Payment Amount</legend>
             <input
               min={0}
-              max={grandTotal}
+              max={due_amount}
               name="payment_amount"
               onChange={handlePaymentOnchange}
               type="number"
               className="input w-full"
               value={paymentDetails.payment_amount}
             />
-            <p className="label">Maximum {formatCurrency(grandTotal)}</p>
+            <p className="label">Maximum {formatCurrency(due_amount)}</p>
           </fieldset>
           {/* payment method */}
           <fieldset className="fieldset w-full">
@@ -370,7 +372,7 @@ export const ReceiveItems = () => {
             <div className="flex justify-between w-full">
               <p>New Balance Due</p>
               <p>
-                {formatCurrency(grandTotal - paymentDetails.payment_amount)}
+                {formatCurrency(due_amount - paymentDetails.payment_amount)}
               </p>
             </div>
           </div>
