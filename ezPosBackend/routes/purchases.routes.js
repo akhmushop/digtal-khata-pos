@@ -29,4 +29,24 @@ FROM purchase_items PI
     JOIN products P ON PI.product_id = P.id;`);
   res.json(result.rows);
 });
+router.post("/api/purchases/updates", async (req, res) => {
+  const { paymentDetails, changedItems } = req.body;
+  const { orderId, payment_amount, payment_method, payment_notes } =
+    paymentDetails;
+  const { rows } = await pool.query(
+    "SELECT paid_amount, due_amount FROM purchases WHERE id = $1 LIMIT 1",
+    [orderId],
+  );
+  const { paid_amount, due_amount } = rows[0] || {};
+  const updatedPaidAmount = Number(paid_amount) + payment_amount;
+  const updatedDueAmount = Number(due_amount) - payment_amount;
+  console.log(typeof paid_amount, payment_amount);
+  await pool.query(
+    "UPDATE purchases SET paid_amount = $1 ,due_amount = $2 , payment_status = CASE WHEN ($1::numeric) <=0 THEN 'unpaid' WHEN ($1::numeric) < final_total THEN 'partial_paid' ELSE 'paid' END WHERE ID =$3",
+    [updatedPaidAmount, updatedDueAmount, orderId],
+  );
+  for (let item of changedItems) {
+  }
+  console.log(orderId, payment_amount, payment_method, payment_notes);
+});
 export default router;

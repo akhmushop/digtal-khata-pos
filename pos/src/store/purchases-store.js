@@ -23,4 +23,11 @@ export const usePurchasesStore = create((set) => ({
       set({ error: err.message, loading: false });
     }
   },
+  updateStock: async (paymentDetails, changedItems) => {
+    try {
+      axios.post("/purchases/updates",  {paymentDetails, changedItems} );
+    } catch (err) {
+      console.error(err);
+    }
+  },
 }));
