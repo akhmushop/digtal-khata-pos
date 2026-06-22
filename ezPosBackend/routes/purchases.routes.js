@@ -30,23 +30,65 @@ FROM purchase_items PI
   res.json(result.rows);
 });
 router.post("/api/purchases/updates", async (req, res) => {
-  const { paymentDetails, changedItems } = req.body;
-  const { orderId, payment_amount, payment_method, payment_notes } =
-    paymentDetails;
-  const { rows } = await pool.query(
-    "SELECT paid_amount, due_amount FROM purchases WHERE id = $1 LIMIT 1",
-    [orderId],
-  );
-  const { paid_amount, due_amount } = rows[0] || {};
-  const updatedPaidAmount = Number(paid_amount) + payment_amount;
-  const updatedDueAmount = Number(due_amount) - payment_amount;
-  console.log(typeof paid_amount, payment_amount);
-  await pool.query(
-    "UPDATE purchases SET paid_amount = $1 ,due_amount = $2 , payment_status = CASE WHEN ($1::numeric) <=0 THEN 'unpaid' WHEN ($1::numeric) < final_total THEN 'partial_paid' ELSE 'paid' END WHERE ID =$3",
-    [updatedPaidAmount, updatedDueAmount, orderId],
-  );
-  for (let item of changedItems) {
+  const client = await pool.connect();
+  try {
+    const { paymentDetails, changedItems } = req.body;
+    const { orderId, payment_amount, payment_method, payment_notes } =
+      paymentDetails;
+    if (!orderId || payment_amount === undefined) {
+      return res
+        .status(400)
+        .json({ error: "Missing orderId or payment_amount" });
+    }
+    await client.query("BEGIN");
+    const { rows } = await client.query(
+      "SELECT paid_amount, due_amount FROM purchases WHERE id = $1 FOR UPDATE ",
+      [orderId],
+    );
+    if (rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Purchase order not found" });
+    }
+    const currentPaid = parseFloat(rows[0].paid_amount) || 0;
+    const currentDue = parseFloat(rows[0].due_amount) || 0;
+    const payment = parseFloat(payment_amount) || 0;
+
+    const updatedPaidAmount = currentPaid + payment;
+    const updatedDueAmount = currentDue - payment;
+    const newStatus =
+      changedItems.length === 0 ? "received" : "partially_received";
+
+    await client.query(
+      `UPDATE purchases 
+       SET status = $1, 
+           paid_amount = $2, 
+           due_amount = $3,
+           note = $4,
+           payment_status = CASE 
+               WHEN $2::numeric <= 0 THEN 'unpaid' 
+               WHEN $2::numeric < final_total THEN 'partial_paid' 
+               ELSE 'paid' 
+           END 
+       WHERE id = $5`,
+      [
+        newStatus,
+        updatedPaidAmount,
+        updatedDueAmount,
+        payment_notes,
+        orderId,
+      ],
+    );
+
+    await client.query("COMMIT");
+    res.status(200).json({ message: "Purchase order updated successfully" });
+    for (let item of changedItems) {
+    }
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("Error updating purchase:", err);
+    res.status(500).json({ error: "Internal server error" });
+  } finally {
+    await client.release();
   }
-  console.log(orderId, payment_amount, payment_method, payment_notes);
 });
 export default router;

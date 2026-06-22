@@ -69,3 +69,4 @@ SET paid_amount = $1,
         ELSE 'paid'
     END
 WHERE ID = $3;
+ALTER TABLE purchases ADD COLUMN status  VARCHAR(20) NOT NULL DEFAULT 'ordered';
