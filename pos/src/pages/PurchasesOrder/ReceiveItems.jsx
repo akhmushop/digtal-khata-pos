@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Sidebar from "../../components/Sidebar";
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { usePurchasesStore } from "../../store/purchases-store";
 import { useProductStore } from "../../store/product-store";
+import toast, { Toaster } from "react-hot-toast";
 const formatCurrency = (value) => {
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
@@ -28,7 +29,7 @@ export const ReceiveItems = () => {
     payment_status,
     due_amount,
     paid_amount,
-    status
+    status,
   } = purchaseOrder ?? {};
   const receivePurchasesItems = useMemo(
     () => purchasesItems.filter((item) => item.purchase_id === Number(id)),
@@ -140,6 +141,7 @@ export const ReceiveItems = () => {
       };
     });
   };
+  const navigate = useNavigate();
   const handleSubmit = () => {
     // 1. Loop over ORIGINAL items so we don't miss items deleted from the UI
     if (!window.confirm("Do you want to Receive Product")) return;
@@ -176,9 +178,15 @@ export const ReceiveItems = () => {
         };
       })
       .filter(Boolean); // Remove the nulls (items that didn't change)
-
-    console.log("Submitting:");
-    updateStock(paymentDetails, changedItems);
+    const res = updateStock(paymentDetails, changedItems);
+    toast.promise(res, {
+      loading: "Loading...",
+      success: (data) => {
+        setTimeout(()=>navigate("/purchases-list"),1000)
+        return data?.message;
+      },
+      error: (err) => err.response?.data?.error || "Error when fetching",
+    });
   };
   return (
     <div className="grid grid-cols-12">
@@ -385,6 +393,7 @@ export const ReceiveItems = () => {
           >
             Receive Items & Update Stock
           </button>
+          <Toaster />
           <button className="btn btn-soft  flex-none">Cancel</button>
         </div>
       </div>
