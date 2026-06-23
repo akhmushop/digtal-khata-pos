@@ -70,19 +70,33 @@ router.post("/api/purchases/updates", async (req, res) => {
                ELSE 'paid' 
            END 
        WHERE id = $5`,
-      [
-        newStatus,
-        updatedPaidAmount,
-        updatedDueAmount,
-        payment_notes,
-        orderId,
-      ],
+      [newStatus, updatedPaidAmount, updatedDueAmount, payment_notes, orderId],
     );
-
+    for (let item of changedItems) {
+      const { id, product_id, receiveQuantity, purchasePrice, sellingPrice } =
+        item;
+      const { rows } = await client.query(
+        "SELECT price,cost ,quantity FROM products WHERE id  = $1 FOR UPDATE ",
+        [product_id],
+      );
+      if (rows.length === 0) {
+        throw new Error(`Product with id ${product_id} not found`);
+      }
+      const updatedQuantity =
+        receiveQuantity != null
+          ? Number(receiveQuantity) + rows[0].quantity
+          : rows[0].quantity;
+      const updatedCost =
+        purchasePrice != null ? Number(purchasePrice) : rows[0].cost;
+      const updatedPrice =
+        sellingPrice != null ? Number(sellingPrice) : rows[0].price;
+      await client.query(
+        "UPDATE products SET quantity = $1 ,cost = $2 ,price = $3 WHERE id = $4 ",
+        [updatedQuantity, updatedCost, updatedPrice, product_id],
+      );
+    }
     await client.query("COMMIT");
     res.status(200).json({ message: "Purchase order updated successfully" });
-    for (let item of changedItems) {
-    }
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("Error updating purchase:", err);
