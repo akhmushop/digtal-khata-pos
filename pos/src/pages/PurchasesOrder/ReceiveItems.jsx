@@ -145,39 +145,29 @@ export const ReceiveItems = () => {
   const handleSubmit = () => {
     // 1. Loop over ORIGINAL items so we don't miss items deleted from the UI
     if (!window.confirm("Do you want to Receive Product")) return;
-    const changedItems = receivePurchasesItems
-      .map((original) => {
-        // Find the current state of this item (returns undefined if user clicked 'X')
-        const current = receiveItems.find((r) => r.id === original.id);
+    const changedItems = receivePurchasesItems.map((original) => {
+      // Find the current state of this item (returns undefined if user clicked 'X')
+      const current = receiveItems.find((r) => r.id === original.id);
 
-        // If deleted, treat receiveQuantity as 0. Otherwise, use current state.
-        const currentQty = current ? Number(current.receiveQuantity) : 0;
-        const currentPurchasePrice = current
-          ? Number(current.purchasePrice)
-          : Number(original.cost_price);
-        const currentSellingPrice = current
-          ? Number(current.sellingPrice)
-          : Number(original.price);
-
-        const changes = {
-          ...(currentQty !== Number(original.quantity) && {
-            receiveQuantity: currentQty,
-          }),
-          ...(currentPurchasePrice !== Number(original.cost_price) && {
-            purchasePrice: currentPurchasePrice,
-          }),
-          ...(currentSellingPrice !== Number(original.price) && {
-            sellingPrice: currentSellingPrice,
-          }),
-        };
-        if (Object.keys(changes).length === 0) return null; // Return null if nothing changed
-        return {
-          id: original.id,
-          product_id: original.product_id,
-          ...changes,
-        };
-      })
-      .filter(Boolean); // Remove the nulls (items that didn't change)
+      // If deleted, treat receiveQuantity as 0. Otherwise, use current state.
+      const currentQty = current ? Number(current.receiveQuantity) : 0;
+      const currentPurchasePrice = current
+        ? Number(current.purchasePrice)
+        : Number(original.cost_price);
+      const currentSellingPrice = current
+        ? Number(current.sellingPrice)
+        : Number(original.price);
+      const quantityChanged = currentQty !== Number(original.quantity);
+      // Return null if nothing changed
+      return {
+        id: original.id,
+        product_id: original.product_id,
+        receiveQuantity: currentQty,
+        purchasePrice: currentPurchasePrice,
+        sellingPrice: currentSellingPrice,
+        changedFields: quantityChanged,
+      };
+    });
     const res = updateStock(paymentDetails, changedItems);
     toast.promise(res, {
       loading: "Loading...",
@@ -188,6 +178,7 @@ export const ReceiveItems = () => {
       error: (err) => err.response?.data?.error || "Error when fetching",
     });
   };
+
   return (
     <div className="grid grid-cols-12">
       {/* Sidebar */}
@@ -247,7 +238,7 @@ export const ReceiveItems = () => {
                     <th>{item.product_name}</th>
                     <td>{item.product_unit}</td>
                     <td>{item.quantity}</td>
-                    <td>0</td>
+                    <td>{item.receive_quantity}</td>
                     <td>
                       <input
                         min={0}
