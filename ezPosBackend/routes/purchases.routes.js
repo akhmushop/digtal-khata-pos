@@ -33,6 +33,9 @@ router.post("/api/purchases/updates", async (req, res) => {
   const client = await pool.connect();
   try {
     const { paymentDetails, changedItems } = req.body;
+    const changedFields = changedItems.find(
+      (item) => item.changedFields === true,
+    );
     const { orderId, payment_amount, payment_method, payment_notes } =
       paymentDetails;
     if (!orderId || payment_amount === undefined) {
@@ -56,7 +59,7 @@ router.post("/api/purchases/updates", async (req, res) => {
     const updatedPaidAmount = currentPaid + payment;
     const updatedDueAmount = currentDue - payment;
     const newStatus =
-      changedItems.length === 0 ? "received" : "partially_received";
+      !changedFields ? "received" : "partially_received";
 
     await client.query(
       `UPDATE purchases 
@@ -93,6 +96,21 @@ router.post("/api/purchases/updates", async (req, res) => {
       await client.query(
         "UPDATE products SET quantity = $1 ,cost = $2 ,price = $3 WHERE id = $4 ",
         [updatedQuantity, updatedCost, updatedPrice, product_id],
+      );
+      const { rows: alreadyReceiveQuantity } = await client.query(
+        "SELECT receive_quantity FROM purchase_items WHERE id = $1 FOR UPDATE",
+        [id],
+      );
+      if (alreadyReceiveQuantity.length === 0) {
+        throw new Error(`Product with id ${id} not found`);
+      }
+      const updatedAlreadyReceiveQuantity =
+        receiveQuantity != null
+          ? Number(receiveQuantity) + alreadyReceiveQuantity[0].receive_quantity
+          : alreadyReceiveQuantity[0].receive_quantity;
+      await client.query(
+        "UPDATE purchase_items SET receive_quantity = $1 WHERE id = $2 ",
+        [updatedAlreadyReceiveQuantity, id],
       );
     }
     await client.query("COMMIT");
