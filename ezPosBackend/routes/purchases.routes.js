@@ -24,7 +24,8 @@ router.get("/api/purchases/items", async (req, res) => {
   const result = await pool.query(`SELECT PI.*,
     P.product_name,
     p.product_unit,
-    P.PRICE
+    P.PRICE,
+    P.COST
 FROM purchase_items PI
     JOIN products P ON PI.product_id = P.id;`);
   res.json(result.rows);
@@ -58,8 +59,7 @@ router.post("/api/purchases/updates", async (req, res) => {
 
     const updatedPaidAmount = currentPaid + payment;
     const updatedDueAmount = currentDue - payment;
-    const newStatus =
-      !changedFields ? "received" : "partially_received";
+    const newStatus = !changedFields ? "received" : "partially_received";
 
     await client.query(
       `UPDATE purchases 
@@ -93,14 +93,24 @@ router.post("/api/purchases/updates", async (req, res) => {
         purchasePrice != null ? Number(purchasePrice) : rows[0].cost;
       const updatedPrice =
         sellingPrice != null ? Number(sellingPrice) : rows[0].price;
-      await client.query(
-        "UPDATE products SET quantity = $1 ,cost = $2 ,price = $3 WHERE id = $4 ",
-        [updatedQuantity, updatedCost, updatedPrice, product_id],
-      );
       const { rows: alreadyReceiveQuantity } = await client.query(
-        "SELECT receive_quantity FROM purchase_items WHERE id = $1 FOR UPDATE",
+        "SELECT receive_quantity,quantity FROM purchase_items WHERE id = $1 FOR UPDATE",
         [id],
       );
+      const itemsReceived =
+        Number(alreadyReceiveQuantity[0].receive_quantity) ===
+        Number(alreadyReceiveQuantity[0].quantity);
+      if (!itemsReceived) {
+        await client.query(
+          "UPDATE purchase_items SET cost_price =$1 WHERE id = $2",
+          [updatedCost, id],
+        );
+        await client.query(
+          "UPDATE products SET quantity = $1 ,cost = $2 ,price = $3 WHERE id = $4 ",
+          [updatedQuantity, updatedCost, updatedPrice, product_id],
+        );
+      }
+
       if (alreadyReceiveQuantity.length === 0) {
         throw new Error(`Product with id ${id} not found`);
       }
@@ -108,10 +118,13 @@ router.post("/api/purchases/updates", async (req, res) => {
         receiveQuantity != null
           ? Number(receiveQuantity) + alreadyReceiveQuantity[0].receive_quantity
           : alreadyReceiveQuantity[0].receive_quantity;
-      await client.query(
-        "UPDATE purchase_items SET receive_quantity = $1 WHERE id = $2 ",
-        [updatedAlreadyReceiveQuantity, id],
-      );
+
+      if (!itemsReceived) {
+        await client.query(
+          "UPDATE purchase_items SET receive_quantity = $1 WHERE id = $2 ",
+          [updatedAlreadyReceiveQuantity, id],
+        );
+      }
     }
     await client.query("COMMIT");
     res.status(200).json({ message: "Purchase order updated successfully" });

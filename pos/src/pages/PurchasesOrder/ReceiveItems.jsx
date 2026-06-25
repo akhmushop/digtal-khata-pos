@@ -99,12 +99,12 @@ export const ReceiveItems = () => {
         return value;
     }
   };
-  const handleReceiveOnchange = (e, itemId) => {
+  const handleReceiveOnchange = (e, receiveItem) => {
     const { name, value, max } = e.target;
     const newValue = getInputValue(name, value, max);
     setReceiveItems((prev) => {
       return prev.map((item) =>
-        item.id === itemId
+        item.id === receiveItem.id
           ? {
               ...item,
               [name]: newValue,
@@ -117,7 +117,7 @@ export const ReceiveItems = () => {
     setReceiveItems(
       receivePurchasesItems.map((item) => ({
         ...item,
-        receiveQuantity: item.quantity,
+        receiveQuantity: item.quantity - item.receive_quantity,
         purchasePrice: item.cost_price,
         sellingPrice: item.price,
       })),
@@ -153,12 +153,13 @@ export const ReceiveItems = () => {
       const currentQty = current ? Number(current.receiveQuantity) : 0;
       const currentPurchasePrice = current
         ? Number(current.purchasePrice)
-        : Number(original.cost_price);
+        : Number(original.cost);
       const currentSellingPrice = current
         ? Number(current.sellingPrice)
         : Number(original.price);
-      const quantityChanged = currentQty !== Number(original.quantity);
-      // Return null if nothing changed
+      const quantityChanged =
+        currentQty + Number(original.receive_quantity) !==
+        Number(original.quantity);
       return {
         id: original.id,
         product_id: original.product_id,
@@ -168,17 +169,17 @@ export const ReceiveItems = () => {
         changedFields: quantityChanged,
       };
     });
+    changedItems.map((p)=>{console.log(p.purchasePrice)})
     const res = updateStock(paymentDetails, changedItems);
-    toast.promise(res, {
-      loading: "Loading...",
-      success: (data) => {
-        setTimeout(()=>navigate("/purchases-list"),1000)
-        return data?.message;
-      },
-      error: (err) => err.response?.data?.error || "Error when fetching",
-    });
+    // toast.promise(res, {
+    //   loading: "Loading...",
+    //   success: (data) => {
+    //     setTimeout(() => navigate("/purchases-list"), 1000);
+    //     return data?.message;
+    //   },
+    //   error: (err) => err.response?.data?.error || "Error when fetching",
+    // });
   };
-
   return (
     <div className="grid grid-cols-12">
       {/* Sidebar */}
@@ -233,64 +234,75 @@ export const ReceiveItems = () => {
               </thead>
               <tbody>
                 {/* row 1 */}
-                {receiveItems.map((item) => (
-                  <tr key={item.id}>
-                    <th>{item.product_name}</th>
-                    <td>{item.product_unit}</td>
-                    <td>{item.quantity}</td>
-                    <td>{item.receive_quantity}</td>
-                    <td>
-                      <input
-                        min={0}
-                        max={item.quantity}
-                        name="receiveQuantity"
-                        onChange={(e) => {
-                          handleReceiveOnchange(e, item.id);
-                        }}
-                        value={item.receiveQuantity}
-                        className="input"
-                        type="number"
-                      />
-                    </td>
-                    <td>
-                      <input
-                        name="purchasePrice"
-                        onChange={(e) => {
-                          handleReceiveOnchange(e, item.id);
-                        }}
-                        value={item.purchasePrice}
-                        className="input"
-                        type="number"
-                      />
-                    </td>
-                    <td>
-                      <input
-                        name="sellingPrice"
-                        onChange={(e) => {
-                          handleReceiveOnchange(e, item.id);
-                        }}
-                        value={item.sellingPrice}
-                        className="input"
-                        type="number"
-                      />
-                    </td>
-                    <td>
-                      {(item.receiveQuantity * item.purchasePrice).toFixed(2)}
-                    </td>
-                    <td>
-                      <button
-                        onClick={() => {
-                          setReceiveItems((prev) =>
-                            prev.filter((p) => p.id !== item.id),
-                          );
-                        }}
-                        className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 hover:cursor-pointer"
-                      >
-                        X
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {receiveItems.map((item) => {
+                  const itemsReceived =
+                    Number(item.receive_quantity) === Number(item.quantity);
+
+                  return (
+                    <tr key={item.id}>
+                      <th>{item.product_name}</th>
+                      <td>{item.product_unit}</td>
+                      <td>{item.quantity}</td>
+                      <td>{item.receive_quantity}</td>
+                      <td>
+                        <input
+                          disabled={itemsReceived}
+                          min={0}
+                          max={item.quantity - item.receive_quantity}
+                          name="receiveQuantity"
+                          onChange={(e) => {
+                            handleReceiveOnchange(e, item);
+                          }}
+                          value={item.receiveQuantity}
+                          className="input"
+                          type="number"
+                        />
+                      </td>
+                      <td>
+                        <input
+                          disabled={itemsReceived}
+                          name="purchasePrice"
+                          onChange={(e) => {
+                            handleReceiveOnchange(e, item);
+                          }}
+                          value={item.purchasePrice}
+                          className="input"
+                          type="number"
+                        />
+                      </td>
+                      <td>
+                        <input
+                          disabled={itemsReceived}
+                          name="sellingPrice"
+                          onChange={(e) => {
+                            handleReceiveOnchange(e, item);
+                          }}
+                          value={item.sellingPrice}
+                          className="input"
+                          type="number"
+                        />
+                      </td>
+                      <td>
+                        {(
+                          (item.receiveQuantity + item.receive_quantity) *
+                          item.purchasePrice
+                        ).toFixed(2)}
+                      </td>
+                      <td>
+                        <button
+                          onClick={() => {
+                            setReceiveItems((prev) =>
+                              prev.filter((p) => p.id !== item.id),
+                            );
+                          }}
+                          className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 hover:cursor-pointer"
+                        >
+                          X
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
