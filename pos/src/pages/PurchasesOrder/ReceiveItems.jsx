@@ -169,7 +169,6 @@ export const ReceiveItems = () => {
         changedFields: quantityChanged,
       };
     });
-    changedItems.map((p)=>{console.log(p.purchasePrice)})
     const res = updateStock(paymentDetails, changedItems);
     // toast.promise(res, {
     //   loading: "Loading...",
@@ -180,6 +179,7 @@ export const ReceiveItems = () => {
     //   error: (err) => err.response?.data?.error || "Error when fetching",
     // });
   };
+
   return (
     <div className="grid grid-cols-12">
       {/* Sidebar */}
@@ -283,10 +283,7 @@ export const ReceiveItems = () => {
                         />
                       </td>
                       <td>
-                        {(
-                          (item.receiveQuantity + item.receive_quantity) *
-                          item.purchasePrice
-                        ).toFixed(2)}
+                        {(item.receiveQuantity * item.purchasePrice).toFixed(2)}
                       </td>
                       <td>
                         <button

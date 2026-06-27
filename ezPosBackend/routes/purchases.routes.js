@@ -46,34 +46,50 @@ router.post("/api/purchases/updates", async (req, res) => {
     }
     await client.query("BEGIN");
     const { rows } = await client.query(
-      "SELECT paid_amount, due_amount FROM purchases WHERE id = $1 FOR UPDATE ",
+      "SELECT paid_amount, due_amount,final_total FROM purchases WHERE id = $1 FOR UPDATE ",
       [orderId],
     );
     if (rows.length === 0) {
       await client.query("ROLLBACK");
       return res.status(404).json({ error: "Purchase order not found" });
     }
+    const grandTotal = changedItems.reduce((total, item) => {
+      const quantity = item.receiveQuantity ?? 0;
+      const price = item.purchasePrice ?? 0;
+      return total + quantity * price;
+    }, 0);
     const currentPaid = parseFloat(rows[0].paid_amount) || 0;
     const currentDue = parseFloat(rows[0].due_amount) || 0;
     const payment = parseFloat(payment_amount) || 0;
-
+    const { rows: purchaseItemsResult } = await client.query(
+      "SELECT cost_price ,receive_quantity FROM purchase_items WHERE purchase_id = $1",
+      [orderId],
+    );
+    const receivedItemsTotalCost = purchaseItemsResult.reduce(
+      (sum, item) => sum + item.cost_price * item.receive_quantity,
+      0,
+    );
+    const amountToReceive =
+      Number(rows[0].final_total) - Number(receivedItemsTotalCost);
+    const updatedDue =
+      Number(currentDue) +
+      (Number(grandTotal) - Number(amountToReceive)) -
+      Number(payment);
     const updatedPaidAmount = currentPaid + payment;
-    const updatedDueAmount = currentDue - payment;
     const newStatus = !changedFields ? "received" : "partially_received";
-
     await client.query(
-      `UPDATE purchases 
-       SET status = $1, 
-           paid_amount = $2, 
+      `UPDATE purchases
+       SET status = $1,
+           paid_amount = $2,
            due_amount = $3,
            note = $4,
-           payment_status = CASE 
-               WHEN $2::numeric <= 0 THEN 'unpaid' 
-               WHEN $2::numeric < final_total THEN 'partial_paid' 
-               ELSE 'paid' 
-           END 
+           payment_status = CASE
+               WHEN $2::numeric <= 0 THEN 'unpaid'
+               WHEN $2::numeric < final_total THEN 'partial_paid'
+               ELSE 'paid'
+           END
        WHERE id = $5`,
-      [newStatus, updatedPaidAmount, updatedDueAmount, payment_notes, orderId],
+      [newStatus, updatedPaidAmount, updatedDue, payment_notes, orderId],
     );
     for (let item of changedItems) {
       const { id, product_id, receiveQuantity, purchasePrice, sellingPrice } =
