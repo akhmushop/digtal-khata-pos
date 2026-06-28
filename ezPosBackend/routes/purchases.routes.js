@@ -17,8 +17,31 @@ router.post("/api/purchases", async (req, res) => {
   }
 });
 router.get("/api/purchases", async (req, res) => {
-  const result = await pool.query("SELECT * FROM purchases");
-  res.json(result.rows);
+  try {
+    const [
+      orderedPurchase,
+      purchases,
+      partiallyPaidPurchase,
+      completedPurchase,
+    ] = await Promise.all([
+      await pool.query("SELECT * FROM purchases WHERE STATUS='ordered'"),
+      await pool.query("SELECT * FROM purchases"),
+      await pool.query(
+        "SELECT * FROM purchases WHERE payment_status IN ('partial_paid', 'unpaid')",
+      ),
+      await pool.query(
+        "SELECT * FROM purchases WHERE payment_status = 'paid' AND status = 'received'",
+      ),
+    ]);
+    res.json({
+      orderedPurchase: orderedPurchase.rows,
+      purchases: purchases.rows,
+      partiallyPaidPurchase: partiallyPaidPurchase.rows,
+      completedPurchase:completedPurchase.rows
+    });
+  } catch (err) {
+    console.error(err);
+  }
 });
 router.get("/api/purchases/items", async (req, res) => {
   const result = await pool.query(`SELECT PI.*,

@@ -22,7 +22,9 @@ export const ReceiveItems = () => {
   const { id } = useParams();
 
   const { purchases, purchasesItems, updateStock } = usePurchasesStore();
-  const purchaseOrder = purchases.find((item) => item.id === Number(id));
+  const purchaseOrder = purchases.purchases?.find(
+    (item) => item.id === Number(id),
+  );
   const {
     supplier_name,
     final_total,
@@ -170,16 +172,25 @@ export const ReceiveItems = () => {
       };
     });
     const res = updateStock(paymentDetails, changedItems);
-    // toast.promise(res, {
-    //   loading: "Loading...",
-    //   success: (data) => {
-    //     setTimeout(() => navigate("/purchases-list"), 1000);
-    //     return data?.message;
-    //   },
-    //   error: (err) => err.response?.data?.error || "Error when fetching",
-    // });
+    toast.promise(res, {
+      loading: "Loading...",
+      success: (data) => {
+        setTimeout(() => navigate("/purchases-list"), 1000);
+        return data?.message;
+      },
+      error: (err) => err.response?.data?.error || "Error when fetching",
+    });
   };
-
+  const receivedItemsTotalCost = receivePurchasesItems.reduce(
+    (sum, item) => sum + item.cost_price * item.receive_quantity,
+    0,
+  );
+  const amountToReceive =
+    Number(final_total) - Number(receivedItemsTotalCost);
+  const updatedDue =
+    Number(due_amount) +
+    (Number(grandTotal) - Number(amountToReceive))
+  console.log(updatedDue);
   return (
     <div className="grid grid-cols-12">
       {/* Sidebar */}
@@ -323,14 +334,14 @@ export const ReceiveItems = () => {
             <legend className="fieldset-legend">Payment Amount</legend>
             <input
               min={0}
-              max={due_amount}
+              max={updatedDue}
               name="payment_amount"
               onChange={handlePaymentOnchange}
               type="number"
               className="input w-full"
               value={paymentDetails.payment_amount}
             />
-            <p className="label">Maximum {formatCurrency(due_amount)}</p>
+            <p className="label">Maximum {formatCurrency(updatedDue)}</p>
           </fieldset>
           {/* payment method */}
           <fieldset className="fieldset w-full">
@@ -381,7 +392,7 @@ export const ReceiveItems = () => {
             <div className="flex justify-between w-full">
               <p>New Balance Due</p>
               <p>
-                {formatCurrency(due_amount - paymentDetails.payment_amount)}
+                {formatCurrency(updatedDue - paymentDetails.payment_amount)}
               </p>
             </div>
           </div>

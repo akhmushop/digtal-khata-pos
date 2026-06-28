@@ -44,7 +44,7 @@ export const PurchasesList = () => {
               defaultChecked
             />
             <div className="tab-content border-base-300 bg-base-100">
-              <PurchaseNew purchases={purchases} />
+              <PurchaseNew purchases={purchases.orderedPurchase} />
             </div>
             <input
               type="radio"
@@ -52,8 +52,8 @@ export const PurchasesList = () => {
               className="tab"
               aria-label="Purchase Progress"
             />
-            <div className="tab-content border-base-300 bg-base-100 p-10">
-              Tab content 3
+            <div className="tab-content border-base-300 bg-base-100 ">
+              <PurchaseNew purchases={purchases.partiallyPaidPurchase} />
             </div>
             <input
               type="radio"
@@ -61,8 +61,8 @@ export const PurchasesList = () => {
               className="tab"
               aria-label="Completed"
             />
-            <div className="tab-content border-base-300 bg-base-100 p-10">
-              Tab content 3
+            <div className="tab-content border-base-300 bg-base-100">
+              <PurchaseNew purchases={purchases.completedPurchase} />
             </div>
           </div>
         </div>
@@ -92,7 +92,7 @@ const PurchaseNew = ({ purchases }) => {
         </thead>
         <tbody>
           {/* row 1 */}
-          {purchases.map((pur) => {
+          {purchases?.map((pur) => {
             const date = new Date(pur.created_at);
             return (
               <tr key={pur.id}>
@@ -103,7 +103,7 @@ const PurchaseNew = ({ purchases }) => {
                 <th>{pur.final_total}</th>
                 <th>{pur.due_amount}</th>
                 <th>{pur.payment_status}</th>
-                <th>Ordered</th>
+                <th>{pur.status}</th>
                 <th>{date.toLocaleDateString()}</th>
                 <th>{date.toLocaleDateString()}</th>
                 <th>
