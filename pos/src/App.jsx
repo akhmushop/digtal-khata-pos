@@ -20,6 +20,7 @@ import { PurchasesOrder } from "./pages/PurchasesOrder/PurchasesOrder";
 import { PurchasesList } from "./pages/PurchasesOrder/PurchasesList";
 import { ReceiveItems } from "./pages/PurchasesOrder/ReceiveItems";
 import { usePurchasesStore } from "./store/purchases-store";
+import { PurchaseViewItems } from "./pages/PurchasesOrder/PurchasesReturn";
 
 function App() {
   const { addCustomer, getCustomers } = useCustomerStore();
@@ -123,6 +124,10 @@ function App() {
     {
       path: "/receive-items/:id",
       element: <ReceiveItems />,
+    },
+    {
+      path: "/purchase-return/:id",
+      element: <PurchaseViewItems />,
     },
   ]);
   return <RouterProvider router={router} />;
