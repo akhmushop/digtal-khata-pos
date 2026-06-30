@@ -116,7 +116,7 @@ const PurchaseNew = ({ purchases }) => {
                       className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm"
                     >
                       <li>
-                        <a>View Items</a>
+                        <Link to={`/purchase-return/${pur.id}`}>Return</Link>
                       </li>
                       <li>
                         <Link to={`/receive-items/${pur.id}`}>
