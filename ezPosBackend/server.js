@@ -5,6 +5,7 @@ import salesRouter from "./routes/sales.routes.js";
 import customersRouter from "./routes/customers.routes.js";
 import expenseRouter from "./routes/expenses.routes.js"
 import purchasesRouter from "./routes/purchases.routes.js"
+import purchasesReturnRouter from "./routes/purchaseReturn.routes.js"
 import cors from "cors";
 const app = express();
 // middleware
@@ -15,6 +16,7 @@ app.use("/", salesRouter);
 app.use("/", customersRouter);
 app.use("/", expenseRouter);
 app.use("/", purchasesRouter)
+app.use("/", purchasesReturnRouter)
 
 // routes
 

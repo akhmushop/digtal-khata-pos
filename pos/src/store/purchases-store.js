@@ -25,11 +25,26 @@ export const usePurchasesStore = create((set) => ({
   },
   updateStock: async (paymentDetails, changedItems) => {
     try {
-      const res =await axios.post("/purchases/updates",  {paymentDetails, changedItems} );
-      return res.data
+      const res = await axios.post("/purchases/updates", {
+        paymentDetails,
+        changedItems,
+      });
+      return res.data;
     } catch (err) {
       console.log(err.response.data.error);
-      throw err
+      throw err;
+    }
+  },
+  purchaseReturn: async (orderId, changedItems) => {
+    try {
+      const res = await axios.post("/purchase-return", {
+        orderId,
+        changedItems,
+      });
+      return res.data;
+    } catch (err) {
+      console.log(err.response.data.error);
+      throw err;
     }
   },
 }));
