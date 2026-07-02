@@ -13,7 +13,7 @@ const formatCurrency = (value) => {
 export const PurchaseViewItems = () => {
   const { id } = useParams();
 
-  const { purchases, purchasesItems, updateStock } = usePurchasesStore();
+  const { purchases, purchasesItems, purchaseReturn } = usePurchasesStore();
   const purchaseOrder = purchases.purchases?.find(
     (item) => item.id === Number(id),
   );
@@ -124,8 +124,9 @@ export const PurchaseViewItems = () => {
         product_id: original.product_id,
         returnPurchaseQty: currentReturnQty,
       };
-    });
-    // const res = updateStock(paymentDetails, changedItems);
+    }).filter(Boolean);
+    if(changedItems.length === 0) return alert('Add return Items')
+    const res = purchaseReturn(id, changedItems);
     // toast.promise(res, {
     //   loading: "Loading...",
     //   success: (data) => {
@@ -134,7 +135,7 @@ export const PurchaseViewItems = () => {
     //   },
     //   error: (err) => err.response?.data?.error || "Error when fetching",
     // });
-    console.log(changedItems);
+    console.log(id,changedItems);
   };
   return (
     <div className="grid grid-cols-12">
@@ -278,7 +279,7 @@ export const PurchaseViewItems = () => {
             onClick={handleSubmit}
             className="btn btn-success flex-1 mr-2"
           >
-            Create Returns
+            Process Purchase Return
           </button>
           <Toaster />
           <button className="btn btn-soft  flex-none">Cancel</button>
