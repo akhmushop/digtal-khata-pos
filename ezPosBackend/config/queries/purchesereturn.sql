@@ -50,3 +50,21 @@ CREATE TABLE purchase_return_items (
     -- snapshot from purchase_item, not products table
     line_total NUMERIC(12, 2) GENERATED ALWAYS AS (quantity * unit_price) STORED
 );
+SELECT pri.quantity AS return_quantity,
+    pri.unit_price,
+    pi.quantity AS purchase_quantity,
+    pi.receive_quantity,
+    pi.id,
+    p.product_name,
+    p.product_unit,
+    p.price,
+    p.cost
+FROM purchase_return_items AS pri
+    JOIN products AS p ON pri.product_id = p.id
+    JOIN purchase_items AS pi ON pri.purchase_item_id = pi.id;
+SELECT PRI.purchase_item_id,
+    COALESCE(SUM(pri.quantity), 0) AS return_quantity
+FROM purchase_return_items AS pri
+    JOIN products AS p ON pri.product_id = p.id
+    JOIN purchase_items AS pi ON pri.purchase_item_id = pi.id
+GROUP BY PRI.purchase_item_id;

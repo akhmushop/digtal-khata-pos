@@ -57,13 +57,14 @@ function App() {
   };
   const { getProducts } = useProductStore();
   const { getSoldProducts } = useSoldStore();
-  const { getPurchases, getPurchaseItems } = usePurchasesStore();
+  const { getPurchases, getPurchaseItems,getPurchasesReturnItems } = usePurchasesStore();
   useEffect(() => {
     getProducts();
     getSoldProducts();
     getCustomers();
     getPurchases();
     getPurchaseItems();
+    getPurchasesReturnItems()
   }, []);
   const router = createBrowserRouter([
     {
