@@ -68,3 +68,33 @@ FROM purchase_return_items AS pri
     JOIN products AS p ON pri.product_id = p.id
     JOIN purchase_items AS pi ON pri.purchase_item_id = pi.id
 GROUP BY PRI.purchase_item_id;
+WITH RETURN_SUMMARY AS (
+    SELECT COALESCE(
+            SUM(total_amount) FILTER (
+                WHERE created_at >= DATE_TRUNC('MONTH', CURRENT_DATE)
+                    AND created_at < DATE_TRUNC('MONTH', CURRENT_DATE) + INTERVAL '1 MONTH'
+            ),
+            0
+        ) AS CURRENT_RETURNS,
+        COALESCE(
+            SUM(total_amount) FILTER (
+                WHERE created_at >= DATE_TRUNC('MONTH', CURRENT_DATE - INTERVAL '1 MONTH')
+                    AND created_at < DATE_TRUNC('MONTH', CURRENT_DATE)
+            ),
+            0
+        ) AS PREV_RETURNS
+    FROM purchase_returns
+    WHERE created_at >= DATE_TRUNC('MONTH', CURRENT_DATE - INTERVAL '1 MONTH')
+        AND created_at < DATE_TRUNC('MONTH', CURRENT_DATE) + INTERVAL '1 MONTH'
+)
+SELECT CURRENT_RETURNS,
+    CASE
+        WHEN PREV_RETURNS = 0
+        AND CURRENT_RETURNS = 0 THEN 0
+        WHEN PREV_RETURNS = 0 THEN NULL
+        ELSE ROUND(
+            ((CURRENT_RETURNS - PREV_RETURNS) / PREV_RETURNS) * 100,
+            2
+        )
+    END AS RETURN_GROWTH_PCT
+FROM RETURN_SUMMARY;

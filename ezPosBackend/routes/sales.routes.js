@@ -159,6 +159,7 @@ router.get("/api/dashboard_summary", async (req, res) => {
       invoiceDue,
       expensesSummary,
       purchasesSummary,
+      return_summary,
     ] = await Promise.all([
       await pool.query(
         "SELECT TO_CHAR(created_at,'Mon') AS month,COALESCE(SUM(final_total),0) AS sales ,COALESCE(SUM (CASE WHEN payment_status = 'paid' THEN final_total ELSE 0 END),0) AS cash FROM sales GROUP BY DATE_TRUNC('month',created_at),TO_CHAR(created_at,'Mon')ORDER BY DATE_TRUNC('month',created_at) LIMIT 12",
@@ -327,6 +328,36 @@ SELECT CURRENT_PURCHASES,
         2
     ) AS PURCHASES_GROWTH
 FROM PURCHASES_SUMMARY;`),
+      await pool.query(`WITH RETURN_SUMMARY AS (
+    SELECT COALESCE(
+            SUM(total_amount) FILTER (
+                WHERE created_at >= DATE_TRUNC('MONTH', CURRENT_DATE)
+                    AND created_at < DATE_TRUNC('MONTH', CURRENT_DATE) + INTERVAL '1 MONTH'
+            ),
+            0
+        ) AS CURRENT_RETURNS,
+        COALESCE(
+            SUM(total_amount) FILTER (
+                WHERE created_at >= DATE_TRUNC('MONTH', CURRENT_DATE - INTERVAL '1 MONTH')
+                    AND created_at < DATE_TRUNC('MONTH', CURRENT_DATE)
+            ),
+            0
+        ) AS PREV_RETURNS
+    FROM purchase_returns
+    WHERE created_at >= DATE_TRUNC('MONTH', CURRENT_DATE - INTERVAL '1 MONTH')
+        AND created_at < DATE_TRUNC('MONTH', CURRENT_DATE) + INTERVAL '1 MONTH'
+)
+SELECT CURRENT_RETURNS,
+    CASE
+        WHEN PREV_RETURNS = 0
+        AND CURRENT_RETURNS = 0 THEN 0
+        WHEN PREV_RETURNS = 0 THEN NULL
+        ELSE ROUND(
+            ((CURRENT_RETURNS - PREV_RETURNS) / PREV_RETURNS) * 100,
+            2
+        )
+    END AS RETURN_GROWTH_PCT
+FROM RETURN_SUMMARY;`),
     ]);
 
     res.json({
@@ -340,6 +371,7 @@ FROM PURCHASES_SUMMARY;`),
       invoiceDue: invoiceDue.rows,
       expensesSummary: expensesSummary.rows,
       purchasesSummary: purchasesSummary.rows,
+      return_summary: return_summary.rows,
     });
   } catch (err) {
     console.error(err);

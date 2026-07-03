@@ -53,6 +53,7 @@ const DashboardComponent = () => {
         invoiceDue: res.data.invoiceDue?.[0] || {},
         expensesSummary: res.data.expensesSummary?.[0] || 0,
         purchasesSummary: res.data.purchasesSummary?.[0] || 0,
+        return_summary: res.data.return_summary?.[0] || 0,
       });
     } catch (error) {
       console.error("Dashboard error:", error);
@@ -150,8 +151,8 @@ const DashboardComponent = () => {
       bg: "bg-rose-50",
       circleBg: "bg-rose-500",
       title: "Total Purchase Return",
-      total: 64654,
-      growth: 15,
+      total: dashboard.return_summary?.current_returns,
+      growth: dashboard.return_summary?.return_growth_pct,
     },
   ];
   return (
