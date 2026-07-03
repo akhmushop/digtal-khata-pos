@@ -13,7 +13,8 @@ const formatCurrency = (value) => {
 export const PurchaseViewItems = () => {
   const { id } = useParams();
 
-  const { purchases, purchasesItems, purchaseReturn } = usePurchasesStore();
+  const { purchases, purchasesItems, purchaseReturn, purchasesReturnItems } =
+    usePurchasesStore();
   const purchaseOrder = purchases.purchases?.find(
     (item) => item.id === Number(id),
   );
@@ -112,20 +113,24 @@ export const PurchaseViewItems = () => {
   const handleSubmit = () => {
     // 1. Loop over ORIGINAL items so we don't miss items deleted from the UI
     if (!window.confirm("Do you want to Return Product")) return;
-    const changedItems = receivePurchasesItems.map((original) => {
-      // Find the current state of this item (returns undefined if user clicked 'X')
-      const current = receiveItems.find((r) => r.id === original.id);
+    const changedItems = receivePurchasesItems
+      .map((original) => {
+        // Find the current state of this item (returns undefined if user clicked 'X')
+        const current = receiveItems.find((r) => r.id === original.id);
 
-      // If deleted, treat receiveQuantity as 0. Otherwise, use current state.
-      const currentReturnQty = current ? Number(current.returnPurchaseQty) : 0;
-      if (current.returnPurchaseQty === 0) return null;
-      return {
-        id: original.id,
-        product_id: original.product_id,
-        returnPurchaseQty: currentReturnQty,
-      };
-    }).filter(Boolean);
-    if(changedItems.length === 0) return alert('Add return Items')
+        // If deleted, treat receiveQuantity as 0. Otherwise, use current state.
+        const currentReturnQty = current
+          ? Number(current.returnPurchaseQty)
+          : 0;
+        if (current.returnPurchaseQty === 0) return null;
+        return {
+          id: original.id,
+          product_id: original.product_id,
+          returnPurchaseQty: currentReturnQty,
+        };
+      })
+      .filter(Boolean);
+    if (changedItems.length === 0) return alert("Add return Items");
     const res = purchaseReturn(id, changedItems);
     // toast.promise(res, {
     //   loading: "Loading...",
@@ -135,8 +140,15 @@ export const PurchaseViewItems = () => {
     //   },
     //   error: (err) => err.response?.data?.error || "Error when fetching",
     // });
-    console.log(id,changedItems);
+    console.log(id, changedItems);
   };
+  const purchaseReturnMap = useMemo(
+    () =>
+      new Map(
+        purchasesReturnItems.map((item) => [item.purchase_item_id, item]),
+      ),
+    [purchasesReturnItems],
+  );
   return (
     <div className="grid grid-cols-12">
       {/* Sidebar */}
@@ -192,17 +204,20 @@ export const PurchaseViewItems = () => {
               <tbody>
                 {/* row 1 */}
                 {receiveItems.map((item) => {
+                  const returnItem = purchaseReturnMap.get(item.id);
+                  const returnQuantity = returnItem?.return_quantity ?? 0;
+                  const maxReturn = Number(item.receive_quantity)-Number(returnQuantity)
                   return (
                     <tr key={item.id}>
                       <th>{item.product_name}</th>
                       <td>{item.product_unit}</td>
                       <td>{item.quantity}</td>
                       <td>{item.receive_quantity}</td>
-                      <td>0</td>
+                      <td>{returnQuantity}</td>
                       <td>
                         <input
                           name="returnPurchaseQty"
-                          max={item.quantity}
+                          max={maxReturn}
                           onChange={(e) => {
                             handleReceiveOnchange(e, item);
                           }}
@@ -224,7 +239,9 @@ export const PurchaseViewItems = () => {
                         />
                       </td>
                       <td>
-                        {(item.returnPurchaseQty * item.purchasePrice).toFixed(2)}
+                        {(item.returnPurchaseQty * item.purchasePrice).toFixed(
+                          2,
+                        )}
                       </td>
                       <td>
                         <button className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 hover:cursor-pointer">

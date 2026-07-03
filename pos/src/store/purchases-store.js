@@ -3,6 +3,7 @@ import axios from "../axios";
 export const usePurchasesStore = create((set) => ({
   purchases: [],
   purchasesItems: [],
+  purchasesReturnItems: [],
   loading: false,
   error: null,
   getPurchaseItems: async () => {
@@ -19,6 +20,15 @@ export const usePurchasesStore = create((set) => ({
     try {
       const res = await axios.get("/purchases");
       set({ purchases: res.data, loading: false });
+    } catch (err) {
+      set({ error: err.message, loading: false });
+    }
+  },
+  getPurchasesReturnItems: async () => {
+    set({ loading: true });
+    try {
+      const res = await axios.get("/purchases/return-items");
+      set({ purchasesReturnItems: res.data, loading: false });
     } catch (err) {
       set({ error: err.message, loading: false });
     }

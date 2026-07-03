@@ -66,4 +66,18 @@ router.post("/api/purchase-return", async (req, res) => {
     console.error(err);
   }
 });
+router.get("/api/purchases/return-items", async (req, res) => {
+  try {
+    const result = await pool.query(`SELECT PRI.purchase_item_id,
+    COALESCE(SUM(pri.quantity), 0) AS return_quantity
+FROM purchase_return_items AS pri
+    JOIN products AS p ON pri.product_id = p.id
+    JOIN purchase_items AS pi ON pri.purchase_item_id = pi.id
+GROUP BY PRI.purchase_item_id;
+`);
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+  }
+});
 export default router;
