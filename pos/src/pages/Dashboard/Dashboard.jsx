@@ -59,7 +59,6 @@ const DashboardComponent = () => {
       console.error("Dashboard error:", error);
     }
   };
-  console.log(dashboard.purchasesSummary);
   useEffect(() => {
     getDashboardSummary();
   }, []);
@@ -117,8 +116,8 @@ const DashboardComponent = () => {
     },
     {
       title: "Total Payment Returns",
-      total: 77852,
-      growth: 45,
+      total: dashboard.salesSummary?.current_return,
+      growth: dashboard.salesSummary?.return_growth,
       bg: "bg-linear-to-br from-rose-50 to-rose-100 border border-rose-200",
       icon: TrendingDown,
       iconColor: "text-rose-600",
@@ -153,6 +152,26 @@ const DashboardComponent = () => {
       title: "Total Purchase Return",
       total: dashboard.return_summary?.current_returns,
       growth: dashboard.return_summary?.return_growth_pct,
+    },
+  ];
+  const overallInfo = [
+    {
+      bg: "bg-amber-50",
+      circleBg: "bg-amber-500",
+      title: "SUPPLIERS",
+      total: 5,
+    },
+    {
+      bg: "bg-emerald-50",
+      circleBg: "bg-emerald-500",
+      title: "CUSTOMERS",
+      total: 3,
+    },
+    {
+      bg: "bg-blue-50",
+      circleBg: "bg-blue-500",
+      title: "ORDERS",
+      total: 15,
     },
   ];
   return (
@@ -253,77 +272,116 @@ const DashboardComponent = () => {
           ))}
         </div>
 
-        {/* Sales Chart Section */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-            <div>
-              <h2 className="text-lg font-bold text-gray-900">
-                Sales Overview
-              </h2>
-              <p className="text-sm text-gray-600">
-                Showing total sales for the last 3 months
-              </p>
+        <div className="grid grid-cols-3 gap-6">
+          {/* Sales Chart Section */}
+          <div className="bg-white rounded-xl shadow-sm p-6 mb-8 col-span-2">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">
+                  Sales Overview
+                </h2>
+                <p className="text-sm text-gray-600">
+                  Showing total sales for the last 3 months
+                </p>
+              </div>
+              <div className="flex items-center space-x-4 mt-4 sm:mt-0">
+                <select
+                  value={range}
+                  onChange={(e) => setRange(e.target.value)}
+                  className="bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value={"3"}>Last 3 months</option>
+                  <option value={"6"}>Last 6 months</option>
+                  <option value={"12"}>Last year</option>
+                </select>
+                <button className="p-2 hover:bg-gray-100 rounded-lg">
+                  <Filter className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-            <div className="flex items-center space-x-4 mt-4 sm:mt-0">
-              <select
-                value={range}
-                onChange={(e) => setRange(e.target.value)}
-                className="bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value={"3"}>Last 3 months</option>
-                <option value={"6"}>Last 6 months</option>
-                <option value={"12"}>Last year</option>
-              </select>
-              <button className="p-2 hover:bg-gray-100 rounded-lg">
-                <Filter className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
 
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={filteredData}>
-              <defs>
-                <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#fbbf24" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#fbbf24" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="colorCash" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="month" axisLine={false} tickLine={false} />
-              <YAxis
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(value) => `$${value / 1000}k`}
-              />
-              <Tooltip
-                formatter={(value) => [`$${formatCurrency(value)}`, ""]}
-                contentStyle={{
-                  borderRadius: "8px",
-                  border: "none",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                }}
-              />
-              <Legend />
-              <Area
-                type="monotone"
-                dataKey="sales"
-                stroke="#f59e0b"
-                fill="url(#colorSales)"
-                strokeWidth={2}
-              />
-              <Area
-                type="monotone"
-                dataKey="cash"
-                stroke="#10b981"
-                fill="url(#colorCash)"
-                strokeWidth={2}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={filteredData}>
+                <defs>
+                  <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#fbbf24" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#fbbf24" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorCash" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(value) => `$${value / 1000}k`}
+                />
+                <Tooltip
+                  formatter={(value) => [`$${formatCurrency(value)}`, ""]}
+                  contentStyle={{
+                    borderRadius: "8px",
+                    border: "none",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                  }}
+                />
+                <Legend />
+                <Area
+                  type="monotone"
+                  dataKey="sales"
+                  stroke="#f59e0b"
+                  fill="url(#colorSales)"
+                  strokeWidth={2}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="cash"
+                  stroke="#10b981"
+                  fill="url(#colorCash)"
+                  strokeWidth={2}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm p-2 mb-8 col-span-1 flex flex-col justify-evenly">
+            <section className="flex flex-col gap-6">
+              <h2>Overall Information</h2>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
+                {overallInfo.map((value, index) => (
+                  <OverallInfoCard key={index} value={value} />
+                ))}
+              </div>
+            </section>
+            <section className="flex flex-col gap-6">
+              <h2>Customers Overview</h2>
+              <div className="flex gap-6 items-center">
+                <div className="flex flex-col h-20 w-20 text-center border-6 border-amber-400 rounded-full">
+                  <span className="text-3xl font-bold">1</span>
+                  <span className="text-gray-500">total</span>
+                </div>
+                <div className="flex flex-col w-full gap-4">
+                  <div className="flex justify-between w-full">
+                    <div className="flex justify-between w-full items-center">
+                      <div className="flex gap-2">
+                        <span className="font-medium">First Time</span>
+                        <span className="text-gray-600">1.0K</span>
+                      </div>
+                      <span className="text-gray-600">100%</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between w-full items-center">
+                    <div className="flex gap-2">
+                      <span className="font-medium">Returning</span>
+                      <span className="text-gray-600">1.0K</span>
+                    </div>
+                    <span className="text-gray-600">100%</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
         </div>
 
         {/* Performance Tables */}
@@ -379,6 +437,17 @@ const SummaryCard = ({ value, formatCurrency }) => {
           % from last month
         </p>
       </div>
+    </div>
+  );
+};
+const OverallInfoCard = ({ value }) => {
+  return (
+    <div className={`flex flex-col items-center p-3 ${value.bg} rounded-lg`}>
+      <div className={`w-3 h-3 ${value.circleBg} rounded-full mb-1`}></div>
+
+      <p className="text-sm font-medium text-gray-600">{value.title}</p>
+
+      <p className="font-bold">{value.total}</p>
     </div>
   );
 };
