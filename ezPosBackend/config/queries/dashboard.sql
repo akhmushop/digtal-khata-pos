@@ -108,12 +108,18 @@ REFUND_SUMMARY AS (
         JOIN SALE_ITEMS SI ON SRI.SALE_ITEM_ID = SI.ID
 ),
 EXPENSES_SUMMARY AS (
-    SELECT COALESCE(SUM(amount) FILTER (
-            WHERE DATE_TRUNC('month', expense_date) = DATE_TRUNC('month', CURRENT_DATE)
-        ),0) AS CURRENT_EXPENSES,
-        COALESCE(SUM(amount) FILTER(
-            WHERE DATE_TRUNC('month', expense_date) = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')
-        ),0) AS PREV_EXPENSES
+    SELECT COALESCE(
+            SUM(amount) FILTER (
+                WHERE DATE_TRUNC('month', expense_date) = DATE_TRUNC('month', CURRENT_DATE)
+            ),
+            0
+        ) AS CURRENT_EXPENSES,
+        COALESCE(
+            SUM(amount) FILTER(
+                WHERE DATE_TRUNC('month', expense_date) = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')
+            ),
+            0
+        ) AS PREV_EXPENSES
     FROM expenses
 ),
 NET_SUMMARY AS(
@@ -241,3 +247,50 @@ HAVING COALESCE(
         SUM(S.FINAL_TOTAL - COALESCE(PS.TOTAL_PAID, 0)),
         0
     ) > 0;
+WITH INVOICE_DUE AS (
+    SELECT COALESCE(
+            SUM(DUE_AMOUNT) FILTER (
+                WHERE created_at >= DATE_TRUNC('MONTH', CURRENT_DATE)
+                    AND created_at < DATE_TRUNC('MONTH', CURRENT_DATE) + INTERVAL '1 MONTH'
+            ),
+            0
+        ) AS CURRENT_INVOICE_DUE,
+        COALESCE(
+            SUM(DUE_AMOUNT) FILTER (
+                WHERE created_at >= DATE_TRUNC('MONTH', CURRENT_DATE - INTERVAL '1 MONTH')
+                    AND created_at < DATE_TRUNC('MONTH', CURRENT_DATE)
+            ),
+            0
+        ) AS PREV_INVOICE_DUE,
+        COALESCE(
+            SUM(PAID_AMOUNT) FILTER (
+                WHERE created_at >= DATE_TRUNC('MONTH', CURRENT_DATE)
+                    AND created_at < DATE_TRUNC('MONTH', CURRENT_DATE) + INTERVAL '1 MONTH'
+            ),
+            0
+        ) AS CURRENT_PAID,
+        COALESCE(
+            SUM(PAID_AMOUNT) FILTER (
+                WHERE created_at >= DATE_TRUNC('MONTH', CURRENT_DATE - INTERVAL '1 MONTH')
+                    AND created_at < DATE_TRUNC('MONTH', CURRENT_DATE)
+            ),
+            0
+        ) AS PREV_PAID
+    FROM PURCHASES
+    WHERE created_at >= DATE_TRUNC('MONTH', CURRENT_DATE - INTERVAL '1 MONTH')
+        AND created_at < DATE_TRUNC('MONTH', CURRENT_DATE) + INTERVAL '1 MONTH'
+        AND PAYMENT_STATUS IN ('unpaid', 'partial_paid')
+)
+SELECT CURRENT_INVOICE_DUE - CURRENT_PAID AS CURRENT_DUE,
+    CASE
+        WHEN (PREV_INVOICE_DUE - PREV_PAID) = 0 THEN NULL
+        ELSE ROUND(
+            (
+                (
+                    (CURRENT_INVOICE_DUE - CURRENT_PAID) - (PREV_INVOICE_DUE - PREV_PAID)
+                )::NUMERIC / (PREV_INVOICE_DUE - PREV_PAID)::NUMERIC
+            ) * 100,
+            2
+        )
+    END AS INVOICE_DUE_GROWTH_PCT
+FROM INVOICE_DUE;

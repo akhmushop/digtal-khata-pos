@@ -100,7 +100,7 @@ const DashboardComponent = () => {
     {
       title: "Invoice Due",
       total: dashboard.invoiceDue?.current_due,
-      growth: dashboard.invoiceDue?.due_growth,
+      growth: dashboard.invoiceDue?.invoice_due_growth_pct,
       bg: "bg-linear-to-br from-amber-50 to-amber-100 border border-amber-200",
       icon: TrendingUp,
       iconColor: "text-amber-600",

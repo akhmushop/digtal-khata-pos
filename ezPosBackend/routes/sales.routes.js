@@ -254,33 +254,53 @@ SELECT CURRENT_NET_PROFIT,
     ) AS PROFIT_GROWTH
 FROM NET_SUMMARY;`,
       ),
-      await pool.query(`WITH DUE AS (
+      await pool.query(`WITH INVOICE_DUE AS (
     SELECT COALESCE(
-            SUM(
-                CASE
-                    WHEN DATE_TRUNC('month', CREATED_AT) = DATE_TRUNC('month', CREATED_AT) THEN DUE_AMOUNT
-                    ELSE 0
-                END
+            SUM(DUE_AMOUNT) FILTER (
+                WHERE created_at >= DATE_TRUNC('MONTH', CURRENT_DATE)
+                    AND created_at < DATE_TRUNC('MONTH', CURRENT_DATE) + INTERVAL '1 MONTH'
             ),
             0
-        ) AS CURRENT_DUE,
+        ) AS CURRENT_INVOICE_DUE,
         COALESCE(
-            SUM(
-                CASE
-                    WHEN DATE_TRUNC('month', CREATED_AT) = DATE_TRUNC('month', CREATED_AT - INTERVAL '1 month') THEN DUE_AMOUNT
-                    ELSE 0
-                END
+            SUM(DUE_AMOUNT) FILTER (
+                WHERE created_at >= DATE_TRUNC('MONTH', CURRENT_DATE - INTERVAL '1 MONTH')
+                    AND created_at < DATE_TRUNC('MONTH', CURRENT_DATE)
             ),
             0
-        ) AS PREV_DUE
-    FROM SALES
+        ) AS PREV_INVOICE_DUE,
+        COALESCE(
+            SUM(PAID_AMOUNT) FILTER (
+                WHERE created_at >= DATE_TRUNC('MONTH', CURRENT_DATE)
+                    AND created_at < DATE_TRUNC('MONTH', CURRENT_DATE) + INTERVAL '1 MONTH'
+            ),
+            0
+        ) AS CURRENT_PAID,
+        COALESCE(
+            SUM(PAID_AMOUNT) FILTER (
+                WHERE created_at >= DATE_TRUNC('MONTH', CURRENT_DATE - INTERVAL '1 MONTH')
+                    AND created_at < DATE_TRUNC('MONTH', CURRENT_DATE)
+            ),
+            0
+        ) AS PREV_PAID
+    FROM PURCHASES
+    WHERE created_at >= DATE_TRUNC('MONTH', CURRENT_DATE - INTERVAL '1 MONTH')
+        AND created_at < DATE_TRUNC('MONTH', CURRENT_DATE) + INTERVAL '1 MONTH'
+        AND PAYMENT_STATUS IN ('unpaid', 'partial_paid')
 )
-SELECT CURRENT_DUE,
+SELECT CURRENT_INVOICE_DUE - CURRENT_PAID AS CURRENT_DUE,
     CASE
-        WHEN PREV_DUE = 0 THEN 0
-        ELSE ROUND(((CURRENT_DUE - PREV_DUE) / PREV_DUE) * 100, 2)
-    END AS DUE_GROWTH
-FROM DUE`),
+        WHEN (PREV_INVOICE_DUE - PREV_PAID) = 0 THEN NULL
+        ELSE ROUND(
+            (
+                (
+                    (CURRENT_INVOICE_DUE - CURRENT_PAID) - (PREV_INVOICE_DUE - PREV_PAID)
+                )::NUMERIC / (PREV_INVOICE_DUE - PREV_PAID)::NUMERIC
+            ) * 100,
+            2
+        )
+    END AS INVOICE_DUE_GROWTH_PCT
+FROM INVOICE_DUE;`),
       await pool.query(`WITH EXPENSES_SUMMARY AS(
     SELECT SUM(amount) FILTER (
             WHERE DATE_TRUNC('month', expense_date) = DATE_TRUNC('month', CURRENT_DATE)
