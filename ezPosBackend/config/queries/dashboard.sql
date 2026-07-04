@@ -305,4 +305,35 @@ FROM sale_items si
     JOIN products P ON si.product_id = p.id
 WHERE si.status = 'completed'
 ORDER BY s.created_at DESC
-LIMIT 5
+LIMIT 5;
+---low stock alert --
+SELECT id,
+    product_name,
+    image,
+    sku,
+    status,
+    quantity
+FROM products
+WHERE alert_quantity >= quantity
+    AND quantity > 0
+ORDER BY quantity
+LIMIT 5;
+------top selling products ------
+SELECT si.id,
+    si.product_id,
+    p.product_name,
+    si.sold_price,
+    p.image,
+    SUM(si.sold_quantity) AS top_selling
+FROM sale_items si
+    JOIN sales s ON si.sale_id = s.id
+    JOIN products p ON si.product_id = p.id
+WHERE s.created_at >= DATE_TRUNC('MONTH', CURRENT_DATE - INTERVAL '1 MONTH')
+    AND s.created_at < DATE_TRUNC('MONTH', CURRENT_DATE)
+    AND si.status = 'completed'
+GROUP BY si.product_id,
+    p.product_name,
+    p.image,
+    si.id
+ORDER BY top_selling DESC
+LIMIT 5;

@@ -161,6 +161,8 @@ router.get("/api/dashboard_summary", async (req, res) => {
       purchasesSummary,
       return_summary,
       recentSalesSummary,
+      lowStockSummary,
+      topSellingProducts,
     ] = await Promise.all([
       await pool.query(
         "SELECT TO_CHAR(created_at,'Mon') AS month,COALESCE(SUM(final_total),0) AS sales ,COALESCE(SUM (CASE WHEN payment_status = 'paid' THEN final_total ELSE 0 END),0) AS cash FROM sales GROUP BY DATE_TRUNC('month',created_at),TO_CHAR(created_at,'Mon')ORDER BY DATE_TRUNC('month',created_at) LIMIT 12",
@@ -390,6 +392,35 @@ FROM sale_items si
 WHERE si.status = 'completed'
 ORDER BY s.created_at DESC
 LIMIT 5`),
+      await pool.query(`SELECT id,
+    product_name,
+    image,
+    sku,
+    status,
+    quantity
+FROM products
+WHERE alert_quantity >= quantity
+    AND quantity > 0
+ORDER BY quantity
+LIMIT 5;`),
+      await pool.query(`SELECT si.id,
+    si.product_id,
+    p.product_name,
+    p.image,
+    si.sold_price,
+    SUM(si.sold_quantity) AS top_selling
+FROM sale_items si
+    JOIN sales s ON si.sale_id = s.id
+    JOIN products p ON si.product_id = p.id
+WHERE s.created_at >= DATE_TRUNC('MONTH', CURRENT_DATE - INTERVAL '1 MONTH')
+    AND s.created_at < DATE_TRUNC('MONTH', CURRENT_DATE)
+    AND si.status = 'completed'
+GROUP BY si.product_id,
+    p.product_name,
+    p.image,
+    si.id
+ORDER BY top_selling DESC
+LIMIT 5;`),
     ]);
 
     res.json({
@@ -405,6 +436,8 @@ LIMIT 5`),
       purchasesSummary: purchasesSummary.rows,
       return_summary: return_summary.rows,
       recentSalesSummary: recentSalesSummary.rows,
+      lowStockSummary: lowStockSummary.rows,
+      topSellingProducts: topSellingProducts.rows,
     });
   } catch (err) {
     console.error(err);
