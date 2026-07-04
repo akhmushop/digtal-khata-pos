@@ -54,6 +54,7 @@ const DashboardComponent = () => {
         expensesSummary: res.data.expensesSummary?.[0] || 0,
         purchasesSummary: res.data.purchasesSummary?.[0] || 0,
         return_summary: res.data.return_summary?.[0] || 0,
+        recentSalesSummary: res.data.recentSalesSummary || {},
       });
     } catch (error) {
       console.error("Dashboard error:", error);
@@ -412,7 +413,7 @@ const DashboardComponent = () => {
           />
           {/* Recent Sales */}
           <RecentSales
-            topItemsByGross={dashboard.topItemsByGross}
+            topItemsByGross={dashboard.recentSalesSummary}
             formatCurrency={formatCurrency}
           />
         </div>
@@ -693,30 +694,34 @@ const RecentSales = ({ topItemsByGross, formatCurrency }) => {
       </div>
       <div className="space-y-4">
         {topItemsByGross?.length > 0 ? (
-          Object.values(topItemsByGross).map((item, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg"
-            >
-              <div className="flex items-center">
-                <div
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 ${
-                    item.trend === "up" ? "bg-green-100" : "bg-red-100"
-                  }`}
-                >
-                  {item.trend === "up" ? (
-                    <TrendingUp className="w-4 h-4 text-green-600" />
-                  ) : (
-                    <TrendingDown className="w-4 h-4 text-red-600" />
-                  )}
+          Object.values(topItemsByGross).map((item, index) => {
+            const date = new Date(item.created_at).toLocaleDateString();
+            const time = new Date(item.created_at).toLocaleTimeString();
+            return (
+              <div
+                key={item.id}
+                className="flex items-center justify-between hover:bg-gray-50 rounded-lg"
+              >
+                <div className="flex items-center gap-2">
+                  <img
+                    className={`w-15 h-15 rounded-full`}
+                    src={item.image}
+                    alt=""
+                  />
+
+                  <div className="flex flex-col gap-1 ">
+                    <span className="font-medium">
+                      {item.product_name_at_sale}
+                    </span>
+                    <span className="font-sm">{date + " " + time}</span>
+                  </div>
                 </div>
-                <span className="font-medium">{item.product_name}</span>
+                <span className="font-bold text-right">
+                  TK {formatCurrency(item.sold_price)}
+                </span>
               </div>
-              <span className="font-bold">
-                TK {formatCurrency(item.current_month_gross)}
-              </span>
-            </div>
-          ))
+            );
+          })
         ) : (
           <div className="text-sm text-gray-500">
             No sales data available yet.

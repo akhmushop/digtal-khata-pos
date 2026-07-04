@@ -160,6 +160,7 @@ router.get("/api/dashboard_summary", async (req, res) => {
       expensesSummary,
       purchasesSummary,
       return_summary,
+      recentSalesSummary,
     ] = await Promise.all([
       await pool.query(
         "SELECT TO_CHAR(created_at,'Mon') AS month,COALESCE(SUM(final_total),0) AS sales ,COALESCE(SUM (CASE WHEN payment_status = 'paid' THEN final_total ELSE 0 END),0) AS cash FROM sales GROUP BY DATE_TRUNC('month',created_at),TO_CHAR(created_at,'Mon')ORDER BY DATE_TRUNC('month',created_at) LIMIT 12",
@@ -378,6 +379,17 @@ SELECT CURRENT_RETURNS,
         )
     END AS RETURN_GROWTH_PCT
 FROM RETURN_SUMMARY;`),
+      await pool.query(`SELECT p.image,
+    si.id,
+    s.created_at,
+    si.product_name_at_sale,
+    si.sold_price
+FROM sale_items si
+    JOIN sales s ON si.sale_id = s.id
+    JOIN products P ON si.product_id = p.id
+WHERE si.status = 'completed'
+ORDER BY s.created_at DESC
+LIMIT 5`),
     ]);
 
     res.json({
@@ -392,6 +404,7 @@ FROM RETURN_SUMMARY;`),
       expensesSummary: expensesSummary.rows,
       purchasesSummary: purchasesSummary.rows,
       return_summary: return_summary.rows,
+      recentSalesSummary: recentSalesSummary.rows,
     });
   } catch (err) {
     console.error(err);
