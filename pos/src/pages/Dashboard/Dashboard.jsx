@@ -55,6 +55,8 @@ const DashboardComponent = () => {
         purchasesSummary: res.data.purchasesSummary?.[0] || 0,
         return_summary: res.data.return_summary?.[0] || 0,
         recentSalesSummary: res.data.recentSalesSummary || {},
+        lowStockSummary: res.data.lowStockSummary || {},
+        topSellingProducts: res.data.topSellingProducts || {},
       });
     } catch (error) {
       console.error("Dashboard error:", error);
@@ -403,17 +405,17 @@ const DashboardComponent = () => {
           />
           {/* Top Selling Products */}
           <TopSellingProducts
-            topItemsByGross={dashboard.topItemsByGross}
+            topSellingProducts={dashboard.topSellingProducts}
             formatCurrency={formatCurrency}
           />
           {/* Low Stock Alert */}
           <LowStockAlert
-            topItemsByGross={dashboard.topItemsByGross}
+            lowStockSummary={dashboard.lowStockSummary}
             formatCurrency={formatCurrency}
           />
           {/* Recent Sales */}
           <RecentSales
-            topItemsByGross={dashboard.recentSalesSummary}
+            recentSalesSummary={dashboard.recentSalesSummary}
             formatCurrency={formatCurrency}
           />
         </div>
@@ -595,7 +597,7 @@ const TopItemsByGross = ({ topItemsByGross, formatCurrency }) => {
     </div>
   );
 };
-const TopSellingProducts = ({ topItemsByGross, formatCurrency }) => {
+const TopSellingProducts = ({ topSellingProducts, formatCurrency }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex justify-between items-center mb-6">
@@ -605,31 +607,31 @@ const TopSellingProducts = ({ topItemsByGross, formatCurrency }) => {
         </button>
       </div>
       <div className="space-y-4">
-        {topItemsByGross?.length > 0 ? (
-          Object.values(topItemsByGross).map((item, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg"
-            >
-              <div className="flex items-center">
-                <div
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 ${
-                    item.trend === "up" ? "bg-green-100" : "bg-red-100"
-                  }`}
-                >
-                  {item.trend === "up" ? (
-                    <TrendingUp className="w-4 h-4 text-green-600" />
-                  ) : (
-                    <TrendingDown className="w-4 h-4 text-red-600" />
-                  )}
+        {topSellingProducts?.length > 0 ? (
+          Object.values(topSellingProducts).map((item) => {
+            return (
+              <div
+                key={item.id}
+                className="flex items-center justify-between hover:bg-gray-50 rounded-lg"
+              >
+                <div className="flex items-center gap-2">
+                  <img
+                    className={`w-15 h-15 rounded-full`}
+                    src={item.image}
+                    alt=""
+                  />
+
+                  <div className="flex flex-col gap-1 ">
+                    <span className="font-medium">{item.product_name}</span>
+                    <span className="font-sm">{item.top_selling} Sales</span>
+                  </div>
                 </div>
-                <span className="font-medium">{item.product_name}</span>
+                <span className="font-bold text-right">
+                  TK {formatCurrency(item.sold_price)}
+                </span>
               </div>
-              <span className="font-bold">
-                TK {formatCurrency(item.current_month_gross)}
-              </span>
-            </div>
-          ))
+            );
+          })
         ) : (
           <div className="text-sm text-gray-500">
             No sales data available yet.
@@ -639,7 +641,7 @@ const TopSellingProducts = ({ topItemsByGross, formatCurrency }) => {
     </div>
   );
 };
-const LowStockAlert = ({ topItemsByGross, formatCurrency }) => {
+const LowStockAlert = ({ lowStockSummary, formatCurrency }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex justify-between items-center mb-6">
@@ -649,29 +651,29 @@ const LowStockAlert = ({ topItemsByGross, formatCurrency }) => {
         </button>
       </div>
       <div className="space-y-4">
-        {topItemsByGross?.length > 0 ? (
-          Object.values(topItemsByGross).map((item, index) => (
+        {lowStockSummary?.length > 0 ? (
+          Object.values(lowStockSummary).map((item, index) => (
             <div
-              key={index}
-              className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg"
+              key={item.id}
+              className="flex items-center justify-between hover:bg-gray-50 rounded-lg"
             >
-              <div className="flex items-center">
-                <div
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 ${
-                    item.trend === "up" ? "bg-green-100" : "bg-red-100"
-                  }`}
-                >
-                  {item.trend === "up" ? (
-                    <TrendingUp className="w-4 h-4 text-green-600" />
-                  ) : (
-                    <TrendingDown className="w-4 h-4 text-red-600" />
-                  )}
+              <div className="flex items-center gap-2">
+                <img
+                  className={`w-15 h-15 rounded-full`}
+                  src={item.image}
+                  alt=""
+                />
+
+                <div className="flex flex-col gap-1">
+                  <span className="font-medium">{item.product_name}</span>
+                  <span className="font-sm">{item.sku}</span>
                 </div>
-                <span className="font-medium">{item.product_name}</span>
               </div>
-              <span className="font-bold">
-                TK {formatCurrency(item.current_month_gross)}
-              </span>
+              <div className="flex flex-col text-right ">
+                <span>status</span>
+                <span className="text-red-500">{item.status}</span>
+                <span>stock: {item.quantity}</span>
+              </div>
             </div>
           ))
         ) : (
@@ -683,7 +685,7 @@ const LowStockAlert = ({ topItemsByGross, formatCurrency }) => {
     </div>
   );
 };
-const RecentSales = ({ topItemsByGross, formatCurrency }) => {
+const RecentSales = ({ recentSalesSummary, formatCurrency }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex justify-between items-center mb-6">
@@ -693,8 +695,8 @@ const RecentSales = ({ topItemsByGross, formatCurrency }) => {
         </button>
       </div>
       <div className="space-y-4">
-        {topItemsByGross?.length > 0 ? (
-          Object.values(topItemsByGross).map((item, index) => {
+        {recentSalesSummary?.length > 0 ? (
+          Object.values(recentSalesSummary).map((item, index) => {
             const date = new Date(item.created_at).toLocaleDateString();
             const time = new Date(item.created_at).toLocaleTimeString();
             return (
