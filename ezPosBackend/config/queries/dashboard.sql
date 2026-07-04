@@ -294,3 +294,15 @@ SELECT CURRENT_INVOICE_DUE - CURRENT_PAID AS CURRENT_DUE,
         )
     END AS INVOICE_DUE_GROWTH_PCT
 FROM INVOICE_DUE;
+-- recent sales --
+SELECT p.image,
+    si.id,
+    s.created_at,
+    si.product_name_at_sale,
+    si.sold_price
+FROM sale_items si
+    JOIN sales s ON si.sale_id = s.id
+    JOIN products P ON si.product_id = p.id
+WHERE si.status = 'completed'
+ORDER BY s.created_at DESC
+LIMIT 5
