@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { RiUserAddFill, RiCloseLargeFill } from "react-icons/ri";
 import Sidebar from "../../components/Sidebar.js";
-export function AddCustomerModal({
-  customerInfo,
-  handleOnchange,
-  handleAddCustomer,
-  setCustomerInfo,
-  initialCustomerInfo,
-}) {
+import { useCustomerStore } from "../../store/customer-store.js";
+export function AddCustomerModal({}) {
+  const { customerInfo, handleOnchange, resetCustomerInfo, handleAddCustomer } =
+    useCustomerStore();
   return (
     <div className="grid grid-cols-12">
       <div className="col-span-2">
@@ -53,7 +50,7 @@ export function AddCustomerModal({
           <div className="col-start-4 col-end-5 grid grid-cols-3 gap-3">
             <button
               onClick={() => {
-                setCustomerInfo(initialCustomerInfo);
+                resetCustomerInfo();
               }}
               className="btn btn-warning col-span-1"
             >
@@ -77,8 +74,7 @@ export function AddCustomer({
   customerInfo,
   handleAddCustomer,
   setIsOpenCustomerModal,
-  setCustomerInfo,
-  initialCustomerInfo,
+  resetCustomerInfo,
 }) {
   const [animation, setAnimation] = useState(false);
 
@@ -141,7 +137,7 @@ export function AddCustomer({
             <div className="col-start-2 col-end-3 w-full flex gap-2 justify-end">
               <button
                 onClick={() => {
-                  setCustomerInfo(initialCustomerInfo);
+                  resetCustomerInfo();
                   handleClose();
                 }}
                 className="btn btn-warning "
