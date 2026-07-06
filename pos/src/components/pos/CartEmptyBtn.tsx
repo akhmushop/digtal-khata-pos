@@ -1,10 +1,10 @@
 import React from "react";
-import { useCartStore } from "../../store/cart-store";
-import { useProductStore } from "../../store/product-store";
+import { useCartStore } from "../../store/cart-store.js";
+import { useProductStore } from "../../store/product-store.js";
 export function ClickEmptyToResetCart({ isOpen, setIsOpen, setEmptyCartCon }) {
   const resetCart = useCartStore((state) => state.resetCart);
   const cart = useCartStore((state) => state.cart);
-  const {restoreAllProductQuantityToCart} = useProductStore();
+  const { restoreAllProductQuantityToCart } = useProductStore();
   const handleShowPopup = () => {
     setIsOpen();
     setTimeout(() => setEmptyCartCon(), 300);

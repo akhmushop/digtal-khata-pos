@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
-import Sidebar from "../../components/Sidebar";
+import Sidebar from "../../components/Sidebar.js";
 import { useNavigate, useParams } from "react-router";
-import { usePurchasesStore } from "../../store/purchases-store";
-import { useProductStore } from "../../store/product-store";
+import { usePurchasesStore } from "../../store/purchases-store.js";
+import { useProductStore } from "../../store/product-store.js";
 import toast, { Toaster } from "react-hot-toast";
 const formatCurrency = (value) => {
   return new Intl.NumberFormat("en-US", {
@@ -10,18 +10,11 @@ const formatCurrency = (value) => {
     maximumFractionDigits: 2,
   }).format(value);
 };
-const PAYMENT_METHODS = [
-  "Cash",
-  "Debit Card",
-  "Credit Card",
-  "Bank Transfer",
-  "Cheque",
-  "Other",
-];
-export const ReceiveItems = () => {
+export const PurchaseViewItems = () => {
   const { id } = useParams();
 
-  const { purchases, purchasesItems, updateStock } = usePurchasesStore();
+  const { purchases, purchasesItems, purchaseReturn, purchasesReturnItems } =
+    usePurchasesStore();
   const purchaseOrder = purchases.purchases?.find(
     (item) => item.id === Number(id),
   );
@@ -64,8 +57,8 @@ export const ReceiveItems = () => {
     },
   ];
   const [receiveItems, setReceiveItems] = useState([]);
-  const grandTotal = receiveItems.reduce((total, item) => {
-    const quantity = item.receiveQuantity ?? 0;
+  const totalRefund = receiveItems.reduce((total, item) => {
+    const quantity = item.returnPurchaseQty ?? 0;
     const price = item.purchasePrice ?? 0;
     return total + quantity * price;
   }, 0);
@@ -73,8 +66,8 @@ export const ReceiveItems = () => {
     {
       bg: "bg-amber-50",
       circleBg: "bg-amber-500",
-      title: "Grand Total",
-      total: grandTotal,
+      title: "Total Refund",
+      total: totalRefund,
     },
     {
       bg: "bg-emerald-50",
@@ -89,21 +82,12 @@ export const ReceiveItems = () => {
       total: due_amount,
     },
   ];
-  const getInputValue = (name, value, max) => {
-    const num = Number(value);
-    switch (name) {
-      case "receiveQuantity":
-        return Math.max(0, Math.min(num, Number(max)));
-      case "purchasePrice":
-      case "sellingPrice":
-        return Math.max(0, num);
-      default:
-        return value;
-    }
-  };
   const handleReceiveOnchange = (e, receiveItem) => {
     const { name, value, max } = e.target;
-    const newValue = getInputValue(name, value, max);
+    const newValue =
+      name === "returnPurchaseQty"
+        ? Math.max(0, Math.min(value, Number(max)))
+        : value;
     setReceiveItems((prev) => {
       return prev.map((item) =>
         item.id === receiveItem.id
@@ -119,78 +103,52 @@ export const ReceiveItems = () => {
     setReceiveItems(
       receivePurchasesItems.map((item) => ({
         ...item,
-        receiveQuantity: item.quantity - item.receive_quantity,
+        receiveQuantity: item.receive_quantity,
         purchasePrice: item.cost_price,
-        sellingPrice: item.price,
+        returnPurchaseQty: 0,
       })),
     );
   }, [receivePurchasesItems]);
-  const [paymentDetails, setPaymentDetails] = useState({
-    orderId: id,
-    payment_amount: "0",
-    payment_method: "Cash",
-    payment_notes: "",
-  });
-  const handlePaymentOnchange = (e) => {
-    const { value, name, max } = e.target;
-    setPaymentDetails((prev) => {
-      return {
-        ...prev,
-        [name]:
-          name === "payment_amount"
-            ? Math.min(Number(value), Number(max))
-            : value,
-      };
-    });
-  };
   const navigate = useNavigate();
   const handleSubmit = () => {
     // 1. Loop over ORIGINAL items so we don't miss items deleted from the UI
-    if (!window.confirm("Do you want to Receive Product")) return;
-    const changedItems = receivePurchasesItems.map((original) => {
-      // Find the current state of this item (returns undefined if user clicked 'X')
-      const current = receiveItems.find((r) => r.id === original.id);
+    if (!window.confirm("Do you want to Return Product")) return;
+    const changedItems = receivePurchasesItems
+      .map((original) => {
+        // Find the current state of this item (returns undefined if user clicked 'X')
+        const current = receiveItems.find((r) => r.id === original.id);
 
-      // If deleted, treat receiveQuantity as 0. Otherwise, use current state.
-      const currentQty = current ? Number(current.receiveQuantity) : 0;
-      const currentPurchasePrice = current
-        ? Number(current.purchasePrice)
-        : Number(original.cost);
-      const currentSellingPrice = current
-        ? Number(current.sellingPrice)
-        : Number(original.price);
-      const quantityChanged =
-        currentQty + Number(original.receive_quantity) !==
-        Number(original.quantity);
-      return {
-        id: original.id,
-        product_id: original.product_id,
-        receiveQuantity: currentQty,
-        purchasePrice: currentPurchasePrice,
-        sellingPrice: currentSellingPrice,
-        changedFields: quantityChanged,
-      };
-    });
-    const res = updateStock(paymentDetails, changedItems);
-    toast.promise(res, {
-      loading: "Loading...",
-      success: (data) => {
-        setTimeout(() => navigate("/purchases-list"), 1000);
-        return data?.message;
-      },
-      error: (err) => err.response?.data?.error || "Error when fetching",
-    });
+        // If deleted, treat receiveQuantity as 0. Otherwise, use current state.
+        const currentReturnQty = current
+          ? Number(current.returnPurchaseQty)
+          : 0;
+        if (current.returnPurchaseQty === 0) return null;
+        return {
+          id: original.id,
+          product_id: original.product_id,
+          returnPurchaseQty: currentReturnQty,
+        };
+      })
+      .filter(Boolean);
+    if (changedItems.length === 0) return alert("Add return Items");
+    const res = purchaseReturn(id, changedItems);
+    // toast.promise(res, {
+    //   loading: "Loading...",
+    //   success: (data) => {
+    //     setTimeout(() => navigate("/purchases-list"), 1000);
+    //     return data?.message;
+    //   },
+    //   error: (err) => err.response?.data?.error || "Error when fetching",
+    // });
+    console.log(id, changedItems);
   };
-  const receivedItemsTotalCost = receivePurchasesItems.reduce(
-    (sum, item) => sum + item.cost_price * item.receive_quantity,
-    0,
+  const purchaseReturnMap = useMemo(
+    () =>
+      new Map(
+        purchasesReturnItems.map((item) => [item.purchase_item_id, item]),
+      ),
+    [purchasesReturnItems],
   );
-  const amountToReceive =
-    Number(final_total) - Number(receivedItemsTotalCost);
-  const updatedDue =
-    Number(due_amount) +
-    (Number(grandTotal) - Number(amountToReceive))
-  console.log(updatedDue);
   return (
     <div className="grid grid-cols-12">
       {/* Sidebar */}
@@ -235,10 +193,10 @@ export const ReceiveItems = () => {
                   <th>Product</th>
                   <th>Type/Variant</th>
                   <th>Ordered</th>
-                  <th>Already Receive</th>
-                  <th>Receive Now</th>
+                  <th>Received</th>
+                  <th>Already Return</th>
+                  <th>Return Now</th>
                   <th>Purchase Price</th>
-                  <th>Selling Price</th>
                   <th>Total</th>
                   <th>Action</th>
                 </tr>
@@ -246,32 +204,32 @@ export const ReceiveItems = () => {
               <tbody>
                 {/* row 1 */}
                 {receiveItems.map((item) => {
-                  const itemsReceived =
-                    Number(item.receive_quantity) === Number(item.quantity);
-
+                  const returnItem = purchaseReturnMap.get(item.id);
+                  const returnQuantity = returnItem?.return_quantity ?? 0;
+                  const maxReturn =
+                    Number(item.receive_quantity) - Number(returnQuantity);
                   return (
                     <tr key={item.id}>
                       <th>{item.product_name}</th>
                       <td>{item.product_unit}</td>
                       <td>{item.quantity}</td>
                       <td>{item.receive_quantity}</td>
+                      <td>{returnQuantity}</td>
                       <td>
                         <input
-                          disabled={itemsReceived}
-                          min={0}
-                          max={item.quantity - item.receive_quantity}
-                          name="receiveQuantity"
+                          name="returnPurchaseQty"
+                          max={maxReturn}
                           onChange={(e) => {
                             handleReceiveOnchange(e, item);
                           }}
-                          value={item.receiveQuantity}
+                          value={item.returnPurchaseQty}
                           className="input"
                           type="number"
                         />
                       </td>
                       <td>
                         <input
-                          disabled={itemsReceived}
+                          disabled
                           name="purchasePrice"
                           onChange={(e) => {
                             handleReceiveOnchange(e, item);
@@ -282,30 +240,13 @@ export const ReceiveItems = () => {
                         />
                       </td>
                       <td>
-                        <input
-                          disabled={itemsReceived}
-                          name="sellingPrice"
-                          onChange={(e) => {
-                            handleReceiveOnchange(e, item);
-                          }}
-                          value={item.sellingPrice}
-                          className="input"
-                          type="number"
-                        />
+                        {(item.returnPurchaseQty * item.purchasePrice).toFixed(
+                          2,
+                        )}
                       </td>
                       <td>
-                        {(item.receiveQuantity * item.purchasePrice).toFixed(2)}
-                      </td>
-                      <td>
-                        <button
-                          onClick={() => {
-                            setReceiveItems((prev) =>
-                              prev.filter((p) => p.id !== item.id),
-                            );
-                          }}
-                          className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 hover:cursor-pointer"
-                        >
-                          X
+                        <button className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 hover:cursor-pointer">
+                          Return
                         </button>
                       </td>
                     </tr>
@@ -328,60 +269,16 @@ export const ReceiveItems = () => {
             ))}
           </div>
         </div>
-        <div className="flex justify-between gap-6">
-          {/* payment amount */}
-          <fieldset className="fieldset w-full">
-            <legend className="fieldset-legend">Payment Amount</legend>
-            <input
-              min={0}
-              max={updatedDue}
-              name="payment_amount"
-              onChange={handlePaymentOnchange}
-              type="number"
-              className="input w-full"
-              value={paymentDetails.payment_amount}
-            />
-            <p className="label">Maximum {formatCurrency(updatedDue)}</p>
-          </fieldset>
-          {/* payment method */}
-          <fieldset className="fieldset w-full">
-            <legend className="fieldset-legend">Payment Method</legend>
-            <select
-              name="payment_method"
-              onChange={handlePaymentOnchange}
-              value={paymentDetails.payment_method}
-              className="select w-full"
-            >
-              {PAYMENT_METHODS.map((method) => (
-                <option key={method}>{method}</option>
-              ))}
-            </select>
-          </fieldset>
-        </div>
-        {/* Payment notes */}
-        <div>
-          <fieldset className="fieldset">
-            <legend className="fieldset-legend">
-              Payment Notes (Optional)
-            </legend>
-            <textarea
-              name="payment_notes"
-              onChange={handlePaymentOnchange}
-              className="textarea h-24 w-full"
-              placeholder="Add any notes about payment"
-            ></textarea>
-          </fieldset>
-        </div>
         {/* payment summary */}
         <div className="border-dashed rounded border border-gray-400  w-full mt-2">
           <div className="flex justify-between gap-6 p-2">
             <div className="flex justify-between w-full">
               <p>Receiving Now</p>
-              <p>{formatCurrency(grandTotal)}</p>
+              <p>{formatCurrency(totalRefund)}</p>
             </div>
             <div className="flex justify-between w-full">
               <p>Paying Now</p>
-              <p>{paymentDetails.payment_amount}</p>
+              <p>{}</p>
             </div>
           </div>
           <div className="flex justify-between gap-6 p-2">
@@ -391,9 +288,7 @@ export const ReceiveItems = () => {
             </div>
             <div className="flex justify-between w-full">
               <p>New Balance Due</p>
-              <p>
-                {formatCurrency(updatedDue - paymentDetails.payment_amount)}
-              </p>
+              <p>{}</p>
             </div>
           </div>
         </div>
@@ -402,7 +297,7 @@ export const ReceiveItems = () => {
             onClick={handleSubmit}
             className="btn btn-success flex-1 mr-2"
           >
-            Receive Items & Update Stock
+            Process Purchase Return
           </button>
           <Toaster />
           <button className="btn btn-soft  flex-none">Cancel</button>

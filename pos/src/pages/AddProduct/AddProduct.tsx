@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, Children } from "react";
-import Sidebar from "../../components/Sidebar";
-import AdvancedPOSTable from "../../components/addproduct/Table";
+import Sidebar from "../../components/Sidebar.js";
+import AdvancedPOSTable from "../../components/addproduct/Table.js";
 function AddProduct() {
   return (
     <div className="flex min-h-screen">
@@ -11,6 +11,5 @@ function AddProduct() {
     </div>
   );
 }
-
 
 export default AddProduct;

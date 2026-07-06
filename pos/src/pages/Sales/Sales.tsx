@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { useSoldStore } from "../../store/sold-store";
-import { PopupModal } from "../../components/pos/CartItems";
-import { useProductStore } from "../../store/product-store";
+import { useSoldStore } from "../../store/sold-store.js";
+import { PopupModal } from "../../components/pos/CartItems.jsx";
+import { useProductStore } from "../../store/product-store.js";
 import { create } from "zustand";
 
 export const Sales = () => {

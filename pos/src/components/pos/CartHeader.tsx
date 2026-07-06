@@ -4,8 +4,8 @@ import {
   RiArrowDropDownFill,
   RiUserAddFill,
 } from "react-icons/ri";
-import { useCustomerStore } from "../../store/customer-store";
-import { AddCustomer } from "../../pages/Customer/Customer";
+import { useCustomerStore } from "../../store/customer-store.js";
+import { AddCustomer } from "../../pages/Customer/Customer.js";
 export function CartHeader({
   inputValue,
   setInputValue,

@@ -2,12 +2,12 @@ import React, { Children, useEffect, useRef, useState } from "react";
 import { MdOutlineAddCircleOutline, MdDeleteOutline } from "react-icons/md";
 import { FiMinusCircle } from "react-icons/fi";
 import { HiDotsVertical } from "react-icons/hi";
-import { ClickToShowMore } from "./CartMoreMenu";
-import { ClickEmptyToResetCart } from "./CartEmptyBtn";
-import { useProductStore } from "../../store/product-store";
-import { useCartStore } from "../../store/cart-store";
-import { useSoldStore } from "../../store/sold-store";
-import axios from "../../axios";
+import { ClickToShowMore } from "./CartMoreMenu.js";
+import { ClickEmptyToResetCart } from "./CartEmptyBtn.js";
+import { useProductStore } from "../../store/product-store.js";
+import { useCartStore } from "../../store/cart-store.js";
+import { useSoldStore } from "../../store/sold-store.js";
+import axios from "../../axios.js";
 
 export default function CartItems({ inputValue }) {
   const {
@@ -187,7 +187,7 @@ export default function CartItems({ inputValue }) {
   );
 }
 
-function CartCalculation({inputValue}) {
+function CartCalculation({ inputValue }) {
   const cart = useCartStore((state) => state.cart);
   const [isOpen, setIsOpen] = useState(false);
   const [emptyCartCon, setEmptyCartCon] = useState(false);
@@ -280,17 +280,17 @@ function CartCalculation({inputValue}) {
   const addToSoldProduct = useSoldStore((state) => state.addToSoldProduct);
   const resetCart = useCartStore((state) => state.resetCart);
   const handlePay = (handelClose, click) => {
-    const {id} = inputValue
+    const { id } = inputValue;
     const updatedCash = {
       ...cashForm,
       paid_amount: cashForm.final_total,
       payment_method: "Cash",
-      customer_id:id
+      customer_id: id,
     };
     const updatedPayment = {
       ...cashForm,
       payment_method: paymentMethod,
-      customer_id:id
+      customer_id: id,
     };
     if (click === "cash") {
       if (

@@ -25,8 +25,8 @@ import {
   Download,
   MoreVertical,
 } from "lucide-react";
-import Sidebar from "../../components/Sidebar";
-import axios from "../../axios";
+import Sidebar from "../../components/Sidebar.js";
+import axios from "../../axios.js";
 
 const DashboardComponent = () => {
   const [dashboard, setDashboard] = useState({

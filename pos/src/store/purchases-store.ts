@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import axios from "../axios";
+import axios from "../axios.js";
 export const usePurchasesStore = create((set) => ({
   purchases: [],
   purchasesItems: [],

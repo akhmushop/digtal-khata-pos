@@ -1,7 +1,7 @@
 import { Network } from "lucide-react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import axios from "../axios";
+import axios from "../axios.js";
 // export const useProductStore = create(
 //   persist(
 //     (set) => ({

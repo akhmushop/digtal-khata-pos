@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import Sidebar from "../../components/Sidebar";
+import Sidebar from "../../components/Sidebar.js";
 import { Link } from "react-router";
 import { RiHome9Fill } from "react-icons/ri";
 import { MdOutlineAddCircleOutline, MdDeleteOutline } from "react-icons/md";
 import { FiMinusCircle } from "react-icons/fi";
 import { HiDotsVertical } from "react-icons/hi";
-import { useProductStore } from "../../store/product-store";
+import { useProductStore } from "../../store/product-store.js";
 import axios from "../../axios.js";
 export function PurchasesOrder() {
   const [searchProducts, setSearchProducts] = useState("");

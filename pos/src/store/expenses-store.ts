@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Expense } from "../pages/Expense/Expense.jsx";
+import { Expense } from "../pages/Expense/Expense.js";
 import axios from "../axios.js";
 export const useExpenseStore = create((set) => ({
   expenses : [],

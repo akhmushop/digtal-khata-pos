@@ -1,7 +1,7 @@
 import React from "react";
-import Sidebar from "../../components/Sidebar";
+import Sidebar from "../../components/Sidebar.js";
 import { Link } from "react-router";
-import { usePurchasesStore } from "../../store/purchases-store";
+import { usePurchasesStore } from "../../store/purchases-store.js";
 export const PurchasesList = () => {
   const { purchases } = usePurchasesStore();
   return (
