@@ -21,40 +21,10 @@ import { PurchasesList } from "./pages/PurchasesOrder/PurchasesList.jsx";
 import { ReceiveItems } from "./pages/PurchasesOrder/ReceiveItems.js";
 import { usePurchasesStore } from "./store/purchases-store.js";
 import { PurchaseViewItems } from "./pages/PurchasesOrder/PurchasesReturn.jsx";
+import type { InputValue } from "./types/types.js";
 
 function App() {
-  const { addCustomer, getCustomers } = useCustomerStore();
-  const initialInputValue = {
-    name: "",
-    phone: "",
-    address: "",
-  };
-  const [inputValue, setInputValue] = useState(initialInputValue);
-  const initialCustomerInfo = {
-    name: "",
-    phone: "",
-    address: "",
-  };
-  const [customerInfo, setCustomerInfo] = useState(initialCustomerInfo);
-  const handleOnchange = (e) => {
-    const { id, value } = e.target;
-    setCustomerInfo((prev) => ({
-      ...prev,
-      [id]: id === "phone" ? value.replace(/\D/g, "").slice(0, 11) : value,
-    }));
-  };
-  const handleAddCustomer = async () => {
-    if (customerInfo.name === "" || customerInfo.phone === "") {
-      window.alert("Please fill all required fields");
-      return;
-    }
-    if (window.confirm("do you want to add customer")) {
-      addCustomer(customerInfo);
-      const newCustomer = await addCustomer(customerInfo);
-      setCustomerInfo(initialCustomerInfo);
-      setInputValue(newCustomer);
-    }
-  };
+  const { getCustomers } = useCustomerStore();
   const { getProducts } = useProductStore();
   const { getSoldProducts } = useSoldStore();
   const { getPurchases, getPurchaseItems, getPurchasesReturnItems } =
@@ -70,30 +40,11 @@ function App() {
   const router = createBrowserRouter([
     {
       path: "/",
-      element: (
-        <Pos
-          initialInputValue={initialInputValue}
-          inputValue={inputValue}
-          setInputValue={setInputValue}
-          customerInfo={customerInfo}
-          handleOnchange={handleOnchange}
-          handleAddCustomer={handleAddCustomer}
-          setCustomerInfo={setCustomerInfo}
-          initialCustomerInfo={initialCustomerInfo}
-        />
-      ),
+      element: <Pos />,
     },
     {
       path: "/customer",
-      element: (
-        <AddCustomerModal
-          customerInfo={customerInfo}
-          handleOnchange={handleOnchange}
-          handleAddCustomer={handleAddCustomer}
-          setCustomerInfo={setCustomerInfo}
-          initialCustomerInfo={initialCustomerInfo}
-        />
-      ),
+      element: <AddCustomerModal />,
     },
     {
       path: "/product",

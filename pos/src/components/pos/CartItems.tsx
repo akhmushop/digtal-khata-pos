@@ -8,8 +8,9 @@ import { useProductStore } from "../../store/product-store.js";
 import { useCartStore } from "../../store/cart-store.js";
 import { useSoldStore } from "../../store/sold-store.js";
 import axios from "../../axios.js";
+import { useCustomerStore } from "../../store/customer-store.js";
 
-export default function CartItems({ inputValue }) {
+export default function CartItems() {
   const {
     addProductQuantityToCart,
     removeProductQuantityToCart,
@@ -74,9 +75,9 @@ export default function CartItems({ inputValue }) {
     addCustomProductQuantityToCart,
   ]);
   // ClickOutSideToSaveCustomQuantity
-  const { name, phone, address, id } = inputValue;
+  const { customerInputValue } = useCustomerStore();
+  const { name, phone, address, id } = customerInputValue;
   const customerDue = dueByCustomers.find((c) => c.customer_id === id);
-  console.log(dueByCustomers);
   return (
     <div className="h-[calc(100vh-4.25rem)]">
       <div className="h-full overflow-scroll  no-scrollbar bg-zuccini-50">
@@ -180,14 +181,14 @@ export default function CartItems({ inputValue }) {
         {/* cartitem */}
 
         {/* cartCalculation */}
-        <CartCalculation inputValue={inputValue} />
+        <CartCalculation customerInputValue={customerInputValue} />
         {/* cartCalculation */}
       </div>
     </div>
   );
 }
 
-function CartCalculation({ inputValue }) {
+function CartCalculation({ customerInputValue }) {
   const cart = useCartStore((state) => state.cart);
   const [isOpen, setIsOpen] = useState(false);
   const [emptyCartCon, setEmptyCartCon] = useState(false);
@@ -280,7 +281,7 @@ function CartCalculation({ inputValue }) {
   const addToSoldProduct = useSoldStore((state) => state.addToSoldProduct);
   const resetCart = useCartStore((state) => state.resetCart);
   const handlePay = (handelClose, click) => {
-    const { id } = inputValue;
+    const { id } = customerInputValue;
     const updatedCash = {
       ...cashForm,
       paid_amount: cashForm.final_total,
