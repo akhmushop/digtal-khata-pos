@@ -1,6 +1,6 @@
 import React from "react";
-import { useProductStore } from "../../store/product-store";
-import { useCartStore } from "../../store/cart-store";
+import { useProductStore } from "../../store/product-store.js";
+import { useCartStore } from "../../store/cart-store.js";
 export function ProductList({ search }) {
   // const getProducts = useProductStore((state) => state.getProducts);
   // const product = useProductStore((state) => state.product);

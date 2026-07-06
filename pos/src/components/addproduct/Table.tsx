@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router";
-import { useSoldStore } from "../../store/sold-store";
+import { useSoldStore } from "../../store/sold-store.js";
 import {
   Search,
   ChevronDown,
@@ -39,8 +39,8 @@ import {
 import {
   useProductStore,
   useEditProductStore,
-} from "../../store/product-store";
-import { PopupModal } from "../pos/CartItems";
+} from "../../store/product-store.js";
+import { PopupModal } from "../pos/CartItems.js";
 const AdvancedPOSTable = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });

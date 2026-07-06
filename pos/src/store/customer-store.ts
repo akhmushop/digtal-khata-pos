@@ -1,4 +1,4 @@
-import axios from "../axios";
+import axios from "../axios.js";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 export const useCustomerStore = create((set) => ({

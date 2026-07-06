@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import Sidebar from "../../components/Sidebar";
-import { ProductHeader } from "../../components/pos/ProductHeader";
-import { CartHeader } from "../../components/pos/CartHeader";
-import { ProductList } from "../../components/pos/ProductList";
-import CartItems from "../../components/pos/CartItems";
+import Sidebar from "../../components/Sidebar.js";
+import { ProductHeader } from "../../components/pos/ProductHeader.jsx";
+import { CartHeader } from "../../components/pos/CartHeader.js";
+import { ProductList } from "../../components/pos/ProductList.js";
+import CartItems from "../../components/pos/CartItems.jsx";
 function Pos({
   handleOnchange,
   customerInfo,

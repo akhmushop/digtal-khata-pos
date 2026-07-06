@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { RiUserAddFill, RiCloseLargeFill } from "react-icons/ri";
-import Sidebar from "../../components/Sidebar";
+import Sidebar from "../../components/Sidebar.js";
 export function AddCustomerModal({
   customerInfo,
   handleOnchange,
@@ -151,7 +151,7 @@ export function AddCustomer({
               <button
                 onClick={() => {
                   handleAddCustomer();
-                  handleClose()
+                  handleClose();
                 }}
                 className="btn btn-success"
               >

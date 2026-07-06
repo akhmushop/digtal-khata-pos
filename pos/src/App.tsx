@@ -5,22 +5,22 @@ import {
   createBrowserRouter,
   RouterProvider,
 } from "react-router";
-import Pos from "./pages/POS/POS";
-import { AddCustomerModal } from "./pages/Customer/Customer";
+import Pos from "./pages/POS/POS.js";
+import { AddCustomerModal } from "./pages/Customer/Customer.js";
 import "./App.css";
-import AddProduct from "./pages/AddProduct/AddProduct";
-import ProductStockForm from "./pages/AddProduct/Addproductfrom";
-import DashboardComponent from "./pages/Dashboard/Dashboard";
-import { Sales } from "./pages/Sales/Sales";
-import { useProductStore } from "./store/product-store";
-import { useSoldStore } from "./store/sold-store";
-import { useCustomerStore } from "./store/customer-store";
-import { Expense } from "./pages/Expense/Expense";
-import { PurchasesOrder } from "./pages/PurchasesOrder/PurchasesOrder";
-import { PurchasesList } from "./pages/PurchasesOrder/PurchasesList";
-import { ReceiveItems } from "./pages/PurchasesOrder/ReceiveItems";
-import { usePurchasesStore } from "./store/purchases-store";
-import { PurchaseViewItems } from "./pages/PurchasesOrder/PurchasesReturn";
+import AddProduct from "./pages/AddProduct/AddProduct.jsx";
+import ProductStockForm from "./pages/AddProduct/Addproductfrom.js";
+import DashboardComponent from "./pages/Dashboard/Dashboard.js";
+import { Sales } from "./pages/Sales/Sales.js";
+import { useProductStore } from "./store/product-store.js";
+import { useSoldStore } from "./store/sold-store.js";
+import { useCustomerStore } from "./store/customer-store.js";
+import { Expense } from "./pages/Expense/Expense.js";
+import { PurchasesOrder } from "./pages/PurchasesOrder/PurchasesOrder.jsx";
+import { PurchasesList } from "./pages/PurchasesOrder/PurchasesList.jsx";
+import { ReceiveItems } from "./pages/PurchasesOrder/ReceiveItems.js";
+import { usePurchasesStore } from "./store/purchases-store.js";
+import { PurchaseViewItems } from "./pages/PurchasesOrder/PurchasesReturn.jsx";
 
 function App() {
   const { addCustomer, getCustomers } = useCustomerStore();
@@ -57,14 +57,15 @@ function App() {
   };
   const { getProducts } = useProductStore();
   const { getSoldProducts } = useSoldStore();
-  const { getPurchases, getPurchaseItems,getPurchasesReturnItems } = usePurchasesStore();
+  const { getPurchases, getPurchaseItems, getPurchasesReturnItems } =
+    usePurchasesStore();
   useEffect(() => {
     getProducts();
     getSoldProducts();
     getCustomers();
     getPurchases();
     getPurchaseItems();
-    getPurchasesReturnItems()
+    getPurchasesReturnItems();
   }, []);
   const router = createBrowserRouter([
     {

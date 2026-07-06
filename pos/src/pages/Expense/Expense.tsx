@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import Sidebar from "../../components/Sidebar";
-import { useExpenseStore } from "../../store/expenses-store";
+import Sidebar from "../../components/Sidebar.js";
+import { useExpenseStore } from "../../store/expenses-store.js";
 import axios from "../../axios.js";
 export const Expense = () => {
   const { expenses, addExpense } = useExpenseStore();
