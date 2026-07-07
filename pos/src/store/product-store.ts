@@ -2,6 +2,10 @@ import { Network } from "lucide-react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import axios from "../axios.js";
+import type {
+  ProductsStore,
+  EditingProductsStore,
+} from "../types/products-types.js";
 // export const useProductStore = create(
 //   persist(
 //     (set) => ({
@@ -464,11 +468,12 @@ import axios from "../axios.js";
 //     },
 //   ),
 // );
-export const useEditProductStore = create((set) => ({
+
+export const useEditProductStore = create<EditingProductsStore>((set) => ({
   editingProduct: null,
   setEditingProduct: (product) => set({ editingProduct: product }),
 }));
-export const useProductStore = create((set) => ({
+export const useProductStore = create<ProductsStore>((set) => ({
   products: [],
   loading: false,
   error: null,
@@ -477,8 +482,9 @@ export const useProductStore = create((set) => ({
     try {
       const res = await axios.get("/products");
       set({ products: res.data, loading: false });
-    } catch (err) {
-      set({ error: err.message, loading: false });
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      set({ error: errorMessage, loading: false });
     }
   },
   removeProductQuantity: (id) =>
@@ -534,6 +540,9 @@ export const useProductStore = create((set) => ({
     try {
       set((state) => {
         const findProduct = state.products.find((p) => p.id === id);
+        if (!findProduct) {
+          return state;
+        }
         const status =
           newStock === 0
             ? "Out of Stock"
@@ -602,7 +611,6 @@ export const useProductStore = create((set) => ({
   updateProduct: async (id, updatedProduct) => {
     try {
       axios.patch(`/products/updated_product/${id}`, updatedProduct);
-      console.log(updatedProduct);
       set((state) => ({
         products: state.products.map((p) => {
           if (p.id === id) {
