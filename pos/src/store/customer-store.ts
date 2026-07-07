@@ -1,12 +1,14 @@
 import axios from "../axios.js";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-const initialCustomerInfo = {
+import type { InputValue,CustomerStore } from "../types/types.js";
+const initialCustomerInfo: InputValue = {
   name: "",
   phone: "",
   address: "",
 };
-export const useCustomerStore = create((set, get) => ({
+
+export const useCustomerStore = create<CustomerStore>((set, get) => ({
   customers: [],
   customerInfo: initialCustomerInfo,
   customerInputValue: initialCustomerInfo,
@@ -25,7 +27,7 @@ export const useCustomerStore = create((set, get) => ({
     const { value } = e.target;
     set((state) => ({
       customerInputValue: {
-        ...state,
+        ...state.customerInputValue,
         name: value,
       },
     }));
@@ -69,8 +71,9 @@ export const useCustomerStore = create((set, get) => ({
     try {
       const res = await axios.get("/customers");
       set({ customers: res.data, loading: false });
-    } catch (err) {
-      set({ error: err.message, loading: false });
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      set({ error: errorMessage, loading: false });
     }
   },
   addCustomer: async (customerInfo) => {
@@ -86,9 +89,10 @@ export const useCustomerStore = create((set, get) => ({
       }));
 
       return res.data;
-    } catch (err) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
       set({
-        error: err.message,
+        error: errorMessage,
         loading: false,
       });
     }

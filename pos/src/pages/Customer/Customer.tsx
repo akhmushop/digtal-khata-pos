@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { RiUserAddFill, RiCloseLargeFill } from "react-icons/ri";
 import Sidebar from "../../components/Sidebar.js";
 import { useCustomerStore } from "../../store/customer-store.js";
+import type { InputValue,PeerFocusInputProps,AddCustomerProps } from "../../types/types.js";
 export function AddCustomerModal({}) {
   const { customerInfo, handleOnchange, resetCustomerInfo, handleAddCustomer } =
     useCustomerStore();
@@ -75,7 +76,7 @@ export function AddCustomer({
   handleAddCustomer,
   setIsOpenCustomerModal,
   resetCustomerInfo,
-}) {
+}: AddCustomerProps) {
   const [animation, setAnimation] = useState(false);
 
   useEffect(() => {
@@ -116,7 +117,6 @@ export function AddCustomer({
               colSpan={"col-span-1"}
               placeholder={"Name"}
               id={"name"}
-              value={name}
               handleOnchange={handleOnchange}
               value={customerInfo.name}
             />
@@ -161,7 +161,13 @@ export function AddCustomer({
   );
 }
 
-function PeerFocusInput({ placeholder, id, handleOnchange, value, colSpan }) {
+function PeerFocusInput({
+  placeholder,
+  id,
+  handleOnchange,
+  value,
+  colSpan,
+}: PeerFocusInputProps) {
   return (
     <div className={`relative ${colSpan} `}>
       <input

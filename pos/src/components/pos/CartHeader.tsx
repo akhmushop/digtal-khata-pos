@@ -64,7 +64,14 @@ export function CartHeader() {
     </>
   );
 }
-function DropdownModal({ setChecked, setIsOpenCustomerModal }) {
+type DropdownModalProps = {
+  setChecked: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsOpenCustomerModal: React.Dispatch<React.SetStateAction<boolean>>;
+};
+function DropdownModal({
+  setChecked,
+  setIsOpenCustomerModal,
+}: DropdownModalProps) {
   const {
     customers,
     resetCustomerInputValue,
@@ -79,10 +86,13 @@ function DropdownModal({ setChecked, setIsOpenCustomerModal }) {
   const [showCustomer, setShowCustomer] = useState(false);
 
   const [hovered, setHovered] = useState(false);
-  const inputRef = useRef(null);
+  const inputRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const clickOutside = (event) => {
-      if (inputRef.current && !inputRef.current.contains(event.target)) {
+    const clickOutside = (event: MouseEvent) => {
+      if (
+        inputRef.current &&
+        !inputRef.current.contains(event.target as Node)
+      ) {
         setShowCustomer(false);
       }
     };
