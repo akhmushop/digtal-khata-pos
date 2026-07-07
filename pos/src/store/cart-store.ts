@@ -1,6 +1,7 @@
 import axios from "../axios.js";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { CartStore } from "../types/cart-types.js";
 // export const useCartStore = create(
 //   persist(
 //     (set) => ({
@@ -78,7 +79,7 @@ import { persist } from "zustand/middleware";
 //   )
 // );
 
-export const useCartStore = create((set) => ({
+export const useCartStore = create<CartStore>((set) => ({
   cart: [],
   addToCart: (cartProduct) =>
     set((state) => {
