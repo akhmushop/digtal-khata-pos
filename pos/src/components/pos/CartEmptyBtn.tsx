@@ -1,12 +1,17 @@
 import React from "react";
 import { useCartStore } from "../../store/cart-store.js";
 import { useProductStore } from "../../store/product-store.js";
-export function ClickEmptyToResetCart({ isOpen, setIsOpen, setEmptyCartCon }) {
+import type { ClickEmptyToResetCartProps } from "../../types/cart-types.js";
+export function ClickEmptyToResetCart({
+  isOpen,
+  setIsOpen,
+  setEmptyCartCon,
+}: ClickEmptyToResetCartProps) {
   const resetCart = useCartStore((state) => state.resetCart);
   const cart = useCartStore((state) => state.cart);
   const { restoreAllProductQuantityToCart } = useProductStore();
   const handleShowPopup = () => {
-    setIsOpen();
+    setIsOpen(false);
     setTimeout(() => setEmptyCartCon(), 300);
   };
   const handleClearCart = () => {

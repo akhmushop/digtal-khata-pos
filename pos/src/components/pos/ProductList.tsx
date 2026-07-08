@@ -1,7 +1,10 @@
 import React from "react";
 import { useProductStore } from "../../store/product-store.js";
 import { useCartStore } from "../../store/cart-store.js";
-export function ProductList({ search }) {
+interface ProductListProps {
+  search:string
+}
+export function ProductList({ search }:ProductListProps) {
   // const getProducts = useProductStore((state) => state.getProducts);
   // const product = useProductStore((state) => state.product);
   // const removeProductQty = useProductStore((state) => state.removeProductQty);

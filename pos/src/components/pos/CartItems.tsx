@@ -9,6 +9,23 @@ import { useCartStore } from "../../store/cart-store.js";
 import { useSoldStore } from "../../store/sold-store.js";
 import axios from "../../axios.js";
 import { useCustomerStore } from "../../store/customer-store.js";
+import type {
+  CustomerDue,
+  CustomerInputValueProps,
+} from "../../types/types.js";
+import type {
+  AddChargeModalProps,
+  CartHoldBtnProps,
+  CartHoldShowBtnProps,
+  CartTextModalProps,
+  CashForm,
+  CashModalProps,
+  ClickType,
+  HoldCartItems,
+  PaymentModalProps,
+  PeerInputProps,
+  PopupModalProps,
+} from "../../types/cart-types.js";
 
 export default function CartItems() {
   const {
@@ -24,7 +41,7 @@ export default function CartItems() {
     removeCartItem,
     addCustomCartQuantity,
   } = useCartStore();
-  const [dueByCustomers, setDueByCustomers] = useState([]);
+  const [dueByCustomers, setDueByCustomers] = useState<CustomerDue[]>([]);
   const getDueByCustomers = async () => {
     const res = await axios.get("due_by_customers");
     setDueByCustomers(res.data);
@@ -32,15 +49,15 @@ export default function CartItems() {
   useEffect(() => {
     getDueByCustomers();
   }, []);
-  const [editQuantityId, setEditQuantityId] = useState(null);
-  const [customQuantity, setCustomQuantity] = useState(null);
-  const editQuantityRef = useRef(null);
+  const [editQuantityId, setEditQuantityId] = useState<number | null>(null);
+  const [customQuantity, setCustomQuantity] = useState<number | null>(null);
+  const editQuantityRef = useRef<HTMLInputElement>(null);
   // ClickOutSideToSaveCustomQuantity
   useEffect(() => {
-    const clickOutside = (event) => {
+    const clickOutside = (event: MouseEvent) => {
       if (
         editQuantityRef.current &&
-        !editQuantityRef.current.contains(event.target)
+        !editQuantityRef.current.contains(event.target as Node)
       ) {
         setEditQuantityId(null);
       }
@@ -48,7 +65,7 @@ export default function CartItems() {
       if (
         editQuantityRef.current &&
         items &&
-        !editQuantityRef.current.contains(event.target)
+        !editQuantityRef.current.contains(event.target as Node)
       ) {
         const newQuantity = Number(customQuantity);
         if (!isNaN(newQuantity) && newQuantity > 0) {
@@ -145,7 +162,7 @@ export default function CartItems() {
                         defaultValue={items.sold_quantity}
                         autoFocus
                         onChange={(e) => {
-                          setCustomQuantity(e.target.value);
+                          setCustomQuantity(Number(e.target.value));
                         }}
                       />
                     ) : (
@@ -188,14 +205,14 @@ export default function CartItems() {
   );
 }
 
-function CartCalculation({ customerInputValue }) {
+function CartCalculation({ customerInputValue }: CustomerInputValueProps) {
   const cart = useCartStore((state) => state.cart);
   const [isOpen, setIsOpen] = useState(false);
   const [emptyCartCon, setEmptyCartCon] = useState(false);
   const [showMore, setShowMore] = useState(false);
-  const closeMore = useRef(null);
+  const closeMore = useRef<HTMLInputElement>(null);
   const [isAddChargeModalOpen, setIsChargeModalOpen] = useState(false);
-  const [holdCartItems, setHoldCartItems] = useState(() => {
+  const [holdCartItems, setHoldCartItems] = useState<HoldCartItems[]>(() => {
     try {
       const storedHold = localStorage.getItem("holdCart");
       return storedHold ? JSON.parse(storedHold) : [];
@@ -210,8 +227,11 @@ function CartCalculation({ customerInputValue }) {
   const [holdConfirm, setHoldConfirm] = useState(false);
 
   useEffect(() => {
-    const clickOutside = (event) => {
-      if (closeMore.current && !closeMore.current.contains(event.target)) {
+    const clickOutside = (event: MouseEvent) => {
+      if (
+        closeMore.current &&
+        !closeMore.current.contains(event.target as Node)
+      ) {
         setShowMore(false);
       }
     };
@@ -232,8 +252,10 @@ function CartCalculation({ customerInputValue }) {
     paid_amount: 0,
     note: "",
     due_amount: 0,
+    subtotal: 0,
+    vat: 0,
   };
-  const [cashForm, setCashForm] = useState(initialCashFrom);
+  const [cashForm, setCashForm] = useState<CashForm>(initialCashFrom);
   const [paymentMethod, setPaymentMethod] = useState("Cash");
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -262,7 +284,7 @@ function CartCalculation({ customerInputValue }) {
     setIsPaymentModalOpen(true);
     setTimeout(() => setIsOpen(true), 10);
   };
-  const handleCashChange = (id, value) => {
+  const handleCashChange = (id: string, value: number |string) => {
     setCashForm((prev) => {
       const updated = { ...prev, [id]: value };
       // payable AFTER discount
@@ -280,7 +302,8 @@ function CartCalculation({ customerInputValue }) {
   };
   const addToSoldProduct = useSoldStore((state) => state.addToSoldProduct);
   const resetCart = useCartStore((state) => state.resetCart);
-  const handlePay = (handelClose, click) => {
+
+  const handlePay = (handelClose: () => void, click: ClickType) => {
     const { id } = customerInputValue;
     const updatedCash = {
       ...cashForm,
@@ -421,8 +444,6 @@ function CartCalculation({ customerInputValue }) {
             isOpen={isOpen}
             setIsOpen={setIsOpen}
             setIsCashModalOpen={setIsCashModalOpen}
-            cashForm={cashForm}
-            setCashForm={setCashForm}
             initialCashFrom={initialCashFrom}
           />
         )}
@@ -443,7 +464,7 @@ function CartHoldBtn({
   setHoldConfirmFalse,
   setHoldCartItems,
   holdCartItems,
-}) {
+}: CartHoldBtnProps) {
   const cart = useCartStore((state) => state.cart);
   const resetCart = useCartStore((state) => state.resetCart);
   const handelClose = () => {
@@ -489,7 +510,7 @@ function CartHoldShowBtn({
   setShowHoldItemsFalse,
   holdCartItems,
   setHoldCartItems,
-}) {
+}: CartHoldShowBtnProps) {
   const addHoldItemsToCart = useCartStore((state) => state.addHoldItemsToCart);
   const handelClose = () => {
     setTimeout(() => setShowHoldItemsFalse(), 300);
@@ -526,8 +547,10 @@ function CartHoldShowBtn({
     </PopupModal>
   );
 }
-function PeerInput({ id, peerName, value, onChange }) {
-  const handelChange = (e) => {
+function PeerInput({ id, peerName, value, onChange }:PeerInputProps) {
+  const handelChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     const rawValue = e.target.value;
 
     // NOTE field does not need number filtering
@@ -580,7 +603,7 @@ function PaymentModal({
   setPaymentMethod,
   handlePay,
   initialCashFrom,
-}) {
+}:PaymentModalProps) {
   const handelClose = () => {
     setTimeout(() => setIsPaymentModalOpen(false), 300);
     setIsOpen(false);
@@ -670,7 +693,7 @@ function CashModal({
   setCashForm,
   initialCashFrom,
   handlePay,
-}) {
+}: CashModalProps) {
   const handelClose = () => {
     setTimeout(() => setIsCashModalOpen(false), 300);
     setIsOpen(false);
@@ -733,7 +756,7 @@ function CashModal({
     </PopupModal>
   );
 }
-export function PopupModal({ isOpen, handelClose, children, className }) {
+export function PopupModal({ isOpen, handelClose, children, className }:PopupModalProps) {
   return (
     <div
       onClick={handelClose}
@@ -759,7 +782,7 @@ function CartTextModal({
   isAddChargeModalOpen,
   setIsChargeModalOpen,
   isOpen,
-}) {
+}:CartTextModalProps) {
   const cart = useCartStore((state) => state.cart);
   const totalItemsCount = cart.reduce((total) => total + 1, 0);
   const totalQuantityCount = cart.reduce(
@@ -791,7 +814,6 @@ function CartTextModal({
       <div>
         {isAddChargeModalOpen && (
           <AddChargeModal
-            handelClose={handelClose}
             isOpen={isOpen}
             setIsOpen={setIsOpen}
             setIsChargeModalOpen={setIsChargeModalOpen}
@@ -818,17 +840,17 @@ function CartTextModal({
     </>
   );
 }
-function AddChargeModal({ isOpen, setIsOpen, setIsChargeModalOpen }) {
+function AddChargeModal({ isOpen, setIsOpen, setIsChargeModalOpen }:AddChargeModalProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const handleOption = () => {
     setIsDropdownOpen((prev) => !prev);
   };
-  const addChargeHtml = useRef(null);
+  const addChargeHtml = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    const clickOutside = (event) => {
+    const clickOutside = (event:MouseEvent) => {
       if (
         addChargeHtml.current &&
-        !addChargeHtml.current.contains(event.target)
+        !addChargeHtml.current.contains(event.target as Node)
       ) {
         setIsDropdownOpen(false);
       }

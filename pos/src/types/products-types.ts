@@ -6,7 +6,7 @@ export interface ProductsTypes {
   product_type: string;
   alert_quantity: number;
   cost: number;
-  price: string;
+  price: number;
   discount_percent: number;
   flat_discount: number;
   quantity: number;
@@ -45,7 +45,6 @@ export interface ProductsStore {
   ) => void;
   restoreAllProductQuantityToCart: (
     id: number,
-    customQuantity: number,
     sold_quantity: number,
   ) => void;
   updateStock: (id: number, newStock: number) => void;
