@@ -21,7 +21,7 @@ import { PurchasesList } from "./pages/PurchasesOrder/PurchasesList.jsx";
 import { ReceiveItems } from "./pages/PurchasesOrder/ReceiveItems.js";
 import { usePurchasesStore } from "./store/purchases-store.js";
 import { PurchaseViewItems } from "./pages/PurchasesOrder/PurchasesReturn.jsx";
-import type { InputValue } from "./types/types.js";
+import type { InputValue } from "./types/customers-types.js";
 
 function App() {
   const { getCustomers } = useCustomerStore();

@@ -2,7 +2,11 @@ import React, { useState, useEffect } from "react";
 import { RiUserAddFill, RiCloseLargeFill } from "react-icons/ri";
 import Sidebar from "../../components/Sidebar.js";
 import { useCustomerStore } from "../../store/customer-store.js";
-import type { InputValue,PeerFocusInputProps,AddCustomerProps } from "../../types/types.js";
+import type {
+  InputValue,
+  PeerFocusInputProps,
+  AddCustomerProps,
+} from "../../types/customers-types.js";
 export function AddCustomerModal({}) {
   const { customerInfo, handleOnchange, resetCustomerInfo, handleAddCustomer } =
     useCustomerStore();
