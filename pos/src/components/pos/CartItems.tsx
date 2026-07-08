@@ -12,7 +12,7 @@ import { useCustomerStore } from "../../store/customer-store.js";
 import type {
   CustomerDue,
   CustomerInputValueProps,
-} from "../../types/types.js";
+} from "../../types/customers-types.js";
 import type {
   AddChargeModalProps,
   CartHoldBtnProps,
@@ -284,7 +284,7 @@ function CartCalculation({ customerInputValue }: CustomerInputValueProps) {
     setIsPaymentModalOpen(true);
     setTimeout(() => setIsOpen(true), 10);
   };
-  const handleCashChange = (id: string, value: number |string) => {
+  const handleCashChange = (id: string, value: number | string) => {
     setCashForm((prev) => {
       const updated = { ...prev, [id]: value };
       // payable AFTER discount
@@ -547,7 +547,7 @@ function CartHoldShowBtn({
     </PopupModal>
   );
 }
-function PeerInput({ id, peerName, value, onChange }:PeerInputProps) {
+function PeerInput({ id, peerName, value, onChange }: PeerInputProps) {
   const handelChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
@@ -603,7 +603,7 @@ function PaymentModal({
   setPaymentMethod,
   handlePay,
   initialCashFrom,
-}:PaymentModalProps) {
+}: PaymentModalProps) {
   const handelClose = () => {
     setTimeout(() => setIsPaymentModalOpen(false), 300);
     setIsOpen(false);
@@ -756,7 +756,12 @@ function CashModal({
     </PopupModal>
   );
 }
-export function PopupModal({ isOpen, handelClose, children, className }:PopupModalProps) {
+export function PopupModal({
+  isOpen,
+  handelClose,
+  children,
+  className,
+}: PopupModalProps) {
   return (
     <div
       onClick={handelClose}
@@ -782,7 +787,7 @@ function CartTextModal({
   isAddChargeModalOpen,
   setIsChargeModalOpen,
   isOpen,
-}:CartTextModalProps) {
+}: CartTextModalProps) {
   const cart = useCartStore((state) => state.cart);
   const totalItemsCount = cart.reduce((total) => total + 1, 0);
   const totalQuantityCount = cart.reduce(
@@ -840,14 +845,18 @@ function CartTextModal({
     </>
   );
 }
-function AddChargeModal({ isOpen, setIsOpen, setIsChargeModalOpen }:AddChargeModalProps) {
+function AddChargeModal({
+  isOpen,
+  setIsOpen,
+  setIsChargeModalOpen,
+}: AddChargeModalProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const handleOption = () => {
     setIsDropdownOpen((prev) => !prev);
   };
   const addChargeHtml = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    const clickOutside = (event:MouseEvent) => {
+    const clickOutside = (event: MouseEvent) => {
       if (
         addChargeHtml.current &&
         !addChargeHtml.current.contains(event.target as Node)
