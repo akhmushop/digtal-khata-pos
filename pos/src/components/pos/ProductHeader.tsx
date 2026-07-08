@@ -1,12 +1,17 @@
 import React, { useState } from "react";
 import { Link } from "react-router";
 import { RiHome9Fill } from "react-icons/ri";
-export function ProductHeader({ setSearch }) {
+interface SetSearchProps {
+  setSearch: React.Dispatch<React.SetStateAction<string>>;
+}
+export function ProductHeader({ setSearch }: SetSearchProps) {
   return (
     <>
       <div className="flex text-black-200  rounded-md mx-5 mt-2  bg-zuccini-400  h-17 sticky top-1">
         <div className=" flex justify-between  items-center w-full   ">
-          <Link to="/dashboard"><h1 className="text-xl   pl-3 pr-3 ">myPos</h1></Link>
+          <Link to="/dashboard">
+            <h1 className="text-xl   pl-3 pr-3 ">myPos</h1>
+          </Link>
           <input
             onChange={(e) => {
               setSearch(e.target.value);

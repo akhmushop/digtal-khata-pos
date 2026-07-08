@@ -1,4 +1,5 @@
 export type InputValue = {
+  id: number;
   name: string;
   phone: string;
   address: string;
@@ -37,3 +38,12 @@ export type AddCustomerProps = {
   setIsOpenCustomerModal: React.Dispatch<React.SetStateAction<boolean>>;
   resetCustomerInfo: () => void;
 };
+export interface CustomerDue {
+  customer_id: number;
+  total_amount: number;
+  total_due: number;
+  total_paid: number;
+}
+export interface CustomerInputValueProps {
+  customerInputValue: InputValue;
+}

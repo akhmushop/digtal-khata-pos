@@ -1,11 +1,13 @@
 import React from "react";
+import type { ClickToShowMoreProps } from "../../types/cart-types.js";
+
 export function ClickToShowMore({
   showMore,
   setHoldConfirm,
   setIsOpen,
   setShowMoreFalse,
   setShowHoldItems,
-}) {
+}:ClickToShowMoreProps) {
   return (
     <div
       className={`absolute bg-gray-400 h-40 w-40 bottom-0 right-8 rounded transition-all  duration-300 transform origin-bottom-left ${
