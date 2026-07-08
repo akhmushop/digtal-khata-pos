@@ -1,6 +1,7 @@
 import axios from "../axios.js";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { SalesStore } from "../types/sales-types.js";
 // export const useSoldStore = create(
 //   persist(
 //     (set) => ({
@@ -49,7 +50,7 @@ import { persist } from "zustand/middleware";
 //     },
 //   ),
 // );
-export const useSoldStore = create((set) => ({
+export const useSoldStore = create<SalesStore>((set) => ({
   soldProducts: [],
   loading: false,
   error: null,
@@ -59,7 +60,8 @@ export const useSoldStore = create((set) => ({
       const res = await axios.get("/sold_products");
       set({ soldProducts: res.data, loading: false });
     } catch (err) {
-      set({ error: err.message, loading: false });
+      const errorMessage = err instanceof Error ? err.message :String(err)
+      set({ error:errorMessage, loading: false });
     }
   },
   addToSoldProduct: async (cart,cashForm) => {

@@ -1,6 +1,6 @@
 import type React from "react";
 import type { ProductsTypes } from "./products-types.js";
-interface CartType extends ProductsTypes {
+export interface CartType extends ProductsTypes {
   sold_quantity: number;
 }
 export interface CartStore {

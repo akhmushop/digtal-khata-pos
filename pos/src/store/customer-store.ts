@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { InputValue, CustomerStore } from "../types/customers-types.js";
 const initialCustomerInfo: InputValue = {
+  id: 0,
   name: "",
   phone: "",
   address: "",
