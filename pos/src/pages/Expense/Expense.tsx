@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from "react";
 import Sidebar from "../../components/Sidebar.js";
-import { useExpenseStore } from "../../store/expenses-store.js";
+import {
+  ExpenseCategories,
+  Expenses,
+  useExpenseStore,
+} from "../../store/expenses-store.js";
 import axios from "../../axios.js";
 export const Expense = () => {
   const { expenses, addExpense } = useExpenseStore();
-  const [expenseCategories, setExpenseCategories] = useState([]);
+  const [expenseCategories, setExpenseCategories] = useState<
+    ExpenseCategories[]
+  >([]);
   const getExpenseCategories = async () => {
     const res = await axios.get("/expense_categories");
     setExpenseCategories(res.data);
@@ -12,17 +18,21 @@ export const Expense = () => {
   useEffect(() => {
     getExpenseCategories();
   }, []);
-  const initialExpenseValue = {
+  const initialExpenseValue: Expenses = {
     title: "",
-    expense_date: new Date().toISOString().split("T")[0],
-    amount: "0",
-    category_id: "",
+    expense_date: new Date().toISOString().split("T")[0] ?? "",
+    amount: 0,
+    category_id: 0,
     payment_method: "",
     reference_no: "",
     note: "",
   };
   const [expenseData, setExpenseData] = useState(initialExpenseValue);
-  const handleOnChangeExpenseInput = (e) => {
+  const handleOnChangeExpenseInput = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
     const { value, id } = e.target;
     setExpenseData((prev) => {
       return {
@@ -37,7 +47,11 @@ export const Expense = () => {
 
       <button
         className="btn"
-        onClick={() => document.getElementById("expense_modal").showModal()}
+        onClick={() =>
+          (
+            document.getElementById("expense_modal") as HTMLDialogElement
+          ).showModal()
+        }
       >
         Add Expense
       </button>
@@ -153,7 +167,7 @@ export const Expense = () => {
               </button>
               <button
                 onClick={() => {
-                  if (expenseData.amount === "0") return alert("add expense");
+                  if (expenseData.amount === 0) return alert("add expense");
                   if (window.confirm("Do you want to add expense")) {
                     addExpense(expenseData);
                     setExpenseData(initialExpenseValue);
