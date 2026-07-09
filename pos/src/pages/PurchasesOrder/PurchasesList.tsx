@@ -2,6 +2,7 @@ import React from "react";
 import Sidebar from "../../components/Sidebar.js";
 import { Link } from "react-router";
 import { usePurchasesStore } from "../../store/purchases-store.js";
+import type { PurchaseNewProps } from "../../types/purchases-types.js";
 export const PurchasesList = () => {
   const { purchases } = usePurchasesStore();
   return (
@@ -70,7 +71,7 @@ export const PurchasesList = () => {
     </div>
   );
 };
-const PurchaseNew = ({ purchases }) => {
+const PurchaseNew = ({ purchases }:PurchaseNewProps) => {
   return (
     <div className="rounded-box border border-base-content/5 bg-base-100">
       <table className="table table-sm ">
@@ -112,7 +113,7 @@ const PurchaseNew = ({ purchases }) => {
                       . . .
                     </div>
                     <ul
-                      tabIndex="-1"
+                      tabIndex={-1}
                       className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm"
                     >
                       <li>
