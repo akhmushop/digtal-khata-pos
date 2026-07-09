@@ -3,24 +3,26 @@ import { useSoldStore } from "../../store/sold-store.js";
 import { PopupModal } from "../../components/pos/CartItems.jsx";
 import { useProductStore } from "../../store/product-store.js";
 import { create } from "zustand";
+import { AllSoldProduct, SalesStoreType } from "../../types/sales-types.js";
 
 export const Sales = () => {
   const soldProducts = useSoldStore((state) => state.soldProducts);
-  const removeProduct = useSoldStore((state) => state.removeProduct);
-  const { restoreReturnProduct } = useProductStore();
+  // const { restoreReturnProduct } = useProductStore();
   const [isOpen, setIsOpen] = useState(false);
   const [showProductDetailsModal, setShowProductDetailsModal] = useState(false);
   const [soldProductArray, setSoldProductArray] = useState([]);
-  const [detailsProduct, setDetailsProduct] = useState({});
+  const [detailsProduct, setDetailsProduct] = useState<SalesStoreType | null>(
+    null,
+  );
   const [showSoldProductModal, setShowSoldProductModal] = useState(false);
   const returnProducts = useSoldStore((state) => state.returnProducts);
   const returnSingleItems = useSoldStore((state) => state.returnSingleItems);
-  const [identifyArray, setIdentifyArray] = useState(null);
+  const [identifyArray, setIdentifyArray] = useState<number | null>(null);
   const handelClose = () => {
     setTimeout(() => setShowProductDetailsModal(false), 300);
     setIsOpen(false);
   };
-  const handleFullReturn = (product) => {
+  const handleFullReturn = (product: AllSoldProduct) => {
     if (window.confirm("Do you want to return")) {
       // product.items.map((p) => {
       //   restoreReturnProduct(p.id, p.sold_quantity);
@@ -28,39 +30,50 @@ export const Sales = () => {
       returnProducts(product.id);
     }
   };
-  const handleSingleReturn = (soldArray, item) => {
+  const handleSingleReturn = (
+    soldArray: AllSoldProduct,
+    item: SalesStoreType,
+  ) => {
     // restoreReturnProduct(item.id, item.sold_quantity);
     if (
       window.confirm(`Do you want to refund this product ${item.product_name}`)
     )
       returnSingleItems(item);
   };
-  const handleMoreInfo = (item) => {
+  const handleMoreInfo = (item: SalesStoreType) => {
     setDetailsProduct(item);
     setShowProductDetailsModal(true);
     setTimeout(() => setIsOpen(true), 30);
   };
-  const grouped = soldProducts.reduce((acc, item) => {
-    const key = item.sale_id;
-    if (!acc[item.sale_id]) {
-      acc[key] = [];
-    }
-    acc[item.sale_id].push(item);
-    return acc;
-  }, {});
-  const allSoldProduct = Object.entries(grouped).map(([id, items]) => {
-    const find = items.find((p) => p.id);
+  const grouped = soldProducts.reduce<Record<number, SalesStoreType[]>>(
+    (acc, item) => {
+      const key = item.sale_id;
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(item);
+      return acc;
+    },
+    {},
+  );
 
-    return {
-      id: Number(id),
-      items,
-      created_at: find.created_at,
-    };
-  });
+  const allSoldProduct: AllSoldProduct[] = Object.entries(grouped).flatMap(
+    ([id, items]) => {
+      const firstItem = items[0];
+      if (!firstItem) {
+        return [];
+      }
+      return {
+        id: Number(id),
+        items,
+        created_at: firstItem.created_at,
+      };
+    },
+  );
   return (
     <div>
       {showProductDetailsModal && (
-        <PopupModal isOpen={isOpen}>
+        <PopupModal isOpen={isOpen} handelClose={handelClose} className="">
           <ShowProductDetails
             handelClose={handelClose}
             detailsProduct={detailsProduct}
@@ -179,8 +192,11 @@ export const Sales = () => {
   );
 };
 const ShowProductDetails = ({
-  handelClose = { handelClose },
-  detailsProduct = { detailsProduct },
+  handelClose,
+  detailsProduct,
+}: {
+  handelClose: () => void;
+  detailsProduct: SalesStoreType | null;
 }) => {
   const { products } = useProductStore();
   return (
