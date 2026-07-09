@@ -4,7 +4,13 @@ import { useNavigate, useParams } from "react-router";
 import { usePurchasesStore } from "../../store/purchases-store.js";
 import { useProductStore } from "../../store/product-store.js";
 import toast, { Toaster } from "react-hot-toast";
-const formatCurrency = (value) => {
+import type {
+  PaymentDetails,
+  PaymentsInfoCard,
+  PurchasesItems,
+  SummaryCardProps,
+} from "../../types/purchases-types.js";
+const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -37,59 +43,59 @@ export const ReceiveItems = () => {
     () => purchasesItems.filter((item) => item.purchase_id === Number(id)),
     [purchasesItems, id],
   );
-  const itemsStatusCards = [
+  const itemsStatusCards:PaymentsInfoCard[] = [
     {
       bg: "bg-amber-50",
       circleBg: "bg-amber-500",
       title: "Order Status",
-      status: status?.toUpperCase(),
+      status: status?.toUpperCase() ?? "",
     },
     {
       bg: "bg-emerald-50",
       circleBg: "bg-emerald-500",
       title: "Payment Status",
-      status: payment_status?.toUpperCase(),
+      status: payment_status?.toUpperCase() ?? '',
     },
     {
       bg: "bg-blue-50",
       circleBg: "bg-blue-500",
       title: "Amount Paid",
-      total: paid_amount,
+      total: paid_amount ?? 0,
     },
     {
       bg: "bg-rose-50",
       circleBg: "bg-rose-500",
       title: "Amount Due",
-      total: due_amount,
+      total: due_amount ?? 0,
     },
   ];
-  const [receiveItems, setReceiveItems] = useState([]);
+  const [receiveItems, setReceiveItems] = useState<PurchasesItems[]>([]);
   const grandTotal = receiveItems.reduce((total, item) => {
     const quantity = item.receiveQuantity ?? 0;
     const price = item.purchasePrice ?? 0;
     return total + quantity * price;
   }, 0);
-  const paymentsInfoCards = [
+  const paymentsInfoCards:PaymentsInfoCard[] = [
     {
       bg: "bg-amber-50",
       circleBg: "bg-amber-500",
       title: "Grand Total",
-      total: grandTotal,
+      total: grandTotal ?? 0,
     },
     {
       bg: "bg-emerald-50",
       circleBg: "bg-emerald-500",
       title: "Already Paid",
-      status: paid_amount,
+      total: paid_amount ?? 0,
     },
     {
       bg: "bg-blue-50",
       circleBg: "bg-blue-500",
       title: "Current Balance",
-      total: due_amount,
+      total: due_amount ?? 0,
     },
   ];
-  const getInputValue = (name, value, max) => {
+  const getInputValue = (name: string, value: number, max: number) => {
     const num = Number(value);
     switch (name) {
       case "receiveQuantity":
@@ -101,9 +107,12 @@ export const ReceiveItems = () => {
         return value;
     }
   };
-  const handleReceiveOnchange = (e, receiveItem) => {
+  const handleReceiveOnchange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    receiveItem: PurchasesItems,
+  ) => {
     const { name, value, max } = e.target;
-    const newValue = getInputValue(name, value, max);
+    const newValue = getInputValue(name, Number(value), Number(max));
     setReceiveItems((prev) => {
       return prev.map((item) =>
         item.id === receiveItem.id
@@ -125,14 +134,15 @@ export const ReceiveItems = () => {
       })),
     );
   }, [receivePurchasesItems]);
-  const [paymentDetails, setPaymentDetails] = useState({
-    orderId: id,
-    payment_amount: "0",
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails>({
+    orderId: Number(id),
+    payment_amount: 0,
     payment_method: "Cash",
     payment_notes: "",
   });
-  const handlePaymentOnchange = (e) => {
-    const { value, name, max } = e.target;
+  const handlePaymentOnchange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { value, name } = e.target;
+    const max = (e.target as HTMLInputElement).max;
     setPaymentDetails((prev) => {
       return {
         ...prev,
@@ -409,9 +419,9 @@ export const ReceiveItems = () => {
     </div>
   );
 };
-const SummaryCard = ({ card, formatCurrency }) => {
+const SummaryCard = ({ card, formatCurrency }:SummaryCardProps) => {
   const displayValue =
-    card.total != null
+    "total" in card
       ? `TK ${formatCurrency(card.total)}`
       : (card.status ?? "N/A");
   return (

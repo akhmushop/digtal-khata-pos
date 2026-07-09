@@ -1,7 +1,13 @@
 import { create } from "zustand";
 import axios from "../axios.js";
-export const usePurchasesStore = create((set) => ({
-  purchases: [],
+import type { PurchasesStore } from "../types/purchases-types.js";
+export const usePurchasesStore = create<PurchasesStore>((set) => ({
+  purchases: {
+    orderedPurchase: [],
+    partiallyPaidPurchase: [],
+    completedPurchase: [],
+    purchases: [],
+  },
   purchasesItems: [],
   purchasesReturnItems: [],
   loading: false,
@@ -11,8 +17,9 @@ export const usePurchasesStore = create((set) => ({
     try {
       const res = await axios.get("/purchases/items");
       set({ purchasesItems: res.data, loading: false });
-    } catch (err) {
-      set({ error: err.message, loading: false });
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      set({ error: errorMessage, loading: false });
     }
   },
   getPurchases: async () => {
@@ -20,8 +27,9 @@ export const usePurchasesStore = create((set) => ({
     try {
       const res = await axios.get("/purchases");
       set({ purchases: res.data, loading: false });
-    } catch (err) {
-      set({ error: err.message, loading: false });
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      set({ error: errorMessage, loading: false });
     }
   },
   getPurchasesReturnItems: async () => {
@@ -29,8 +37,9 @@ export const usePurchasesStore = create((set) => ({
     try {
       const res = await axios.get("/purchases/return-items");
       set({ purchasesReturnItems: res.data, loading: false });
-    } catch (err) {
-      set({ error: err.message, loading: false });
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      set({ error: errorMessage, loading: false });
     }
   },
   updateStock: async (paymentDetails, changedItems) => {
@@ -41,7 +50,6 @@ export const usePurchasesStore = create((set) => ({
       });
       return res.data;
     } catch (err) {
-      console.log(err.response.data.error);
       throw err;
     }
   },
@@ -53,7 +61,6 @@ export const usePurchasesStore = create((set) => ({
       });
       return res.data;
     } catch (err) {
-      console.log(err.response.data.error);
       throw err;
     }
   },

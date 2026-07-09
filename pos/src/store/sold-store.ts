@@ -59,13 +59,13 @@ export const useSoldStore = create<SalesStore>((set) => ({
     try {
       const res = await axios.get("/sold_products");
       set({ soldProducts: res.data, loading: false });
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message :String(err)
-      set({ error:errorMessage, loading: false });
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      set({ error: errorMessage, loading: false });
     }
   },
-  addToSoldProduct: async (cart,cashForm) => {
-    axios.post("/sold_products", {cart:cart ,cashForm:cashForm});
+  addToSoldProduct: async (cart, cashForm) => {
+    axios.post("/sold_products", { cart: cart, cashForm: cashForm });
   },
   returnSingleItems: async (item) => {
     axios.post(`/sold_products/refund/${item.sale_items_id}`);
@@ -79,8 +79,8 @@ export const useSoldStore = create<SalesStore>((set) => ({
     try {
       axios.post(`/sold_products/refunds_all/${id}`);
       set((state) => ({
-        soldProducts: state.soldProducts.filter((p) => p.sale_id !== id)
-      }))
+        soldProducts: state.soldProducts.filter((p) => p.sale_id !== id),
+      }));
     } catch (err) {
       console.error(err);
     }

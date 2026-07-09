@@ -7,10 +7,12 @@ import { FiMinusCircle } from "react-icons/fi";
 import { HiDotsVertical } from "react-icons/hi";
 import { useProductStore } from "../../store/product-store.js";
 import axios from "../../axios.js";
+import type { PurchaseCart, Suppliers } from "../../types/purchases-types.js";
+import type { ProductsTypes } from "../../types/products-types.js";
 export function PurchasesOrder() {
   const [searchProducts, setSearchProducts] = useState("");
   const [searchSuppliers, setSearchSuppliers] = useState("");
-  const [purchasesCart, setPurchasesCart] = useState([]);
+  const [purchasesCart, setPurchasesCart] = useState<PurchaseCart[]>([]);
   const { products } = useProductStore();
   const filteredProducts = products.filter((item) =>
     item.product_name
@@ -18,7 +20,7 @@ export function PurchasesOrder() {
       .includes(searchProducts.toLowerCase() || ""),
   );
   const [showSupplierSearch, setShowSupplierSearch] = useState(true);
-  const [showSupplier, setShowSupplier] = useState({});
+  const [showSupplier, setShowSupplier] = useState<Suppliers | null>(null);
   const [suppliers, setSupplier] = useState([
     {
       name: "ezPos",
@@ -27,7 +29,7 @@ export function PurchasesOrder() {
   const filteredSuppliers = suppliers.filter((item) =>
     item.name.toLowerCase().includes(searchSuppliers.toLowerCase() || ""),
   );
-  const handleAddPurchase = (product) => {
+  const handleAddPurchase = (product: ProductsTypes) => {
     if (product.quantity <= 0) return;
     setPurchasesCart((prev) => {
       const exists = prev.find((p) => p.id === product.id);
@@ -45,7 +47,10 @@ export function PurchasesOrder() {
     0,
   );
   const [purchasesCartNotes, setPurchasesCartNotes] = useState("");
-  const handleOnchange = (e, purchaseProduct) => {
+  const handleOnchange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    purchaseProduct: ProductsTypes,
+  ) => {
     const { value, id } = e.target;
     if (id === "notes") {
       return setPurchasesCartNotes(value);
@@ -57,12 +62,12 @@ export function PurchasesOrder() {
           case "orderedQty":
             return {
               ...p,
-              purchaseQty: Math.max(1, value),
+              purchaseQty: Math.max(1, Number(value)),
             };
           case "estPrice":
             return {
               ...p,
-              cost: value,
+              cost: Number(value),
             };
           default:
             return p;
@@ -71,7 +76,7 @@ export function PurchasesOrder() {
     });
   };
   const handleCreatePurchaseOrder = async () => {
-    if (Object.keys(showSupplier).length === 0) {
+    if (showSupplier === null) {
       alert("add supplier");
       return;
     }
@@ -226,7 +231,7 @@ export function PurchasesOrder() {
                     />
                   </label>
                   <ul
-                    tabIndex="-1"
+                    tabIndex={-1}
                     className="dropdown-content bg-base-100 rounded-box z-1 w-full p-2 shadow-sm max-h-50 overflow-y-scroll"
                   >
                     {filteredSuppliers.map((sup, i) => (
@@ -246,7 +251,7 @@ export function PurchasesOrder() {
               )}
               {!showSupplierSearch && (
                 <div className="border border-gray-400 rounded h-8 flex items-center bg-zuccini-50 p-2 justify-between">
-                  <h1>Supplier: {showSupplier.name}</h1>
+                  <h1>Supplier: {showSupplier?.name}</h1>
                   <button
                     onClick={() => {
                       setShowSupplierSearch(true);
@@ -337,7 +342,7 @@ export function PurchasesOrder() {
                 <textarea
                   id="notes"
                   onChange={(e) => {
-                    handleOnchange(e);
+                    handleOnchange(e, {} as ProductsTypes);
                   }}
                   className="textarea h-24 w-full"
                   placeholder="Add nots for this purchase order..."
