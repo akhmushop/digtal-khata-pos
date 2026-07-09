@@ -27,36 +27,97 @@ import {
 } from "lucide-react";
 import Sidebar from "../../components/Sidebar.js";
 import axios from "../../axios.js";
-
+import {
+  BigSummaryCardProps,
+  BigSummaryCards,
+  DashBoard,
+  ExpensesSummary,
+  InvoiceDue,
+  LowStockAlertProps,
+  NetProfit,
+  OverallInfoCards,
+  ProductSummary,
+  PurchasesSummary,
+  RecentSalesProps,
+  ReturnSummary,
+  SaleSummary,
+  SummaryCardProps,
+  SummaryCards,
+  TopItemsByGrossProps,
+  TopProfitByCategoryProps,
+  TopSellingProductsProps,
+  TopSoldProductCategory,
+} from "../../types/dashboard-types.js";
 const DashboardComponent = () => {
-  const [dashboard, setDashboard] = useState({
-    salesOverview: {},
-    productsSummary: {},
-    topItemsByGross: {},
+  const initialProductSummary: ProductSummary = {
+    low_stock: 0,
+    stock_out: 0,
+    total_items: 0,
+    total_valuation: 0,
+  };
+  const initialSaleSummary: SaleSummary = {
+    current_net_sales: 0,
+    current_return: 0,
+    return_growth: 0,
+    sales_growth: 0,
+  };
+  const initialNetProfit: NetProfit = {
+    current_net_profit: 0,
+    profit_growth: 0,
+  };
+  const initialInvoiceDue: InvoiceDue = {
+    current_due: 0,
+    invoice_due_growth_pct: 0,
+  };
+  const initialExpensesSummary: ExpensesSummary = {
+    current_expenses: 0,
+    expenses_growth: 0,
+  };
+  const initialPurchasesSummary: PurchasesSummary = {
+    current_purchases: 0,
+    purchases_growth: 0,
+  };
+  const initialReturnSummary: ReturnSummary = {
+    current_returns: 0,
+    return_growth_pct: 0,
+  };
+  const [dashboard, setDashboard] = useState<DashBoard>({
+    salesOverview: [],
+    productsSummary: initialProductSummary,
+    topItemsByGross: [],
     totalSales: {},
-    topSoldProductsByCategory: {},
-    profitByCategory: {},
+    topSoldProductsByCategory: [],
+    profitByCategory: [],
+    salesSummary: initialSaleSummary,
+    netProfit: initialNetProfit,
+    invoiceDue: initialInvoiceDue,
+    expensesSummary: initialExpensesSummary,
+    purchasesSummary: initialPurchasesSummary,
+    return_summary: initialReturnSummary,
+    recentSalesSummary: [],
+    lowStockSummary: [],
+    topSellingProducts: [],
   });
   const getDashboardSummary = async () => {
     try {
       const res = await axios.get("/dashboard_summary");
 
       setDashboard({
-        salesOverview: res.data.salesOverview || {},
+        salesOverview: res.data.salesOverview || [],
         productsSummary: res.data.productsSummary?.[0] || {},
-        topItemsByGross: res.data.topItemsByGross || {},
+        topItemsByGross: res.data.topItemsByGross || [],
         totalSales: res.data.totalSales?.[0] || {},
-        topSoldProductsByCategory: res.data.top_sold_products_by_category || {},
-        profitByCategory: res.data.profitByCategory || {},
+        topSoldProductsByCategory: res.data.top_sold_products_by_category || [],
+        profitByCategory: res.data.profitByCategory || [],
         salesSummary: res.data.salesSummary?.[0] || {},
         netProfit: res.data.netProfit?.[0] || {},
         invoiceDue: res.data.invoiceDue?.[0] || {},
         expensesSummary: res.data.expensesSummary?.[0] || 0,
         purchasesSummary: res.data.purchasesSummary?.[0] || 0,
         return_summary: res.data.return_summary?.[0] || 0,
-        recentSalesSummary: res.data.recentSalesSummary || {},
-        lowStockSummary: res.data.lowStockSummary || {},
-        topSellingProducts: res.data.topSellingProducts || {},
+        recentSalesSummary: res.data.recentSalesSummary || [],
+        lowStockSummary: res.data.lowStockSummary || [],
+        topSellingProducts: res.data.topSellingProducts || [],
       });
     } catch (error) {
       console.error("Dashboard error:", error);
@@ -65,7 +126,8 @@ const DashboardComponent = () => {
   useEffect(() => {
     getDashboardSummary();
   }, []);
-  const formatCurrency = (value) => {
+
+  const formatCurrency = (value: number): string => {
     return new Intl.NumberFormat("en-US", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
@@ -80,16 +142,17 @@ const DashboardComponent = () => {
   // sales overview end
   // performance table Start
   const colors = ["#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#8b5cf6"];
+
   const topSoldProductByCategory = Object.values(
     dashboard.topSoldProductsByCategory,
   ).map((item, index) => {
     return {
       category: item.category,
       quantity: item.sold_items_by_category,
-      color: colors[index % colors.length],
+      color: colors[index % colors.length] || "#ef4444",
     };
   });
-  const bigSummaryCards = [
+  const bigSummaryCards: BigSummaryCards[] = [
     {
       title: "Net Profit",
       total: dashboard.netProfit?.current_net_profit,
@@ -102,7 +165,7 @@ const DashboardComponent = () => {
     {
       title: "Invoice Due",
       total: dashboard.invoiceDue?.current_due,
-      growth: dashboard.invoiceDue?.invoice_due_growth_pct,
+      growth: dashboard.invoiceDue?.invoice_due_growth_pct ?? 0,
       bg: "bg-linear-to-br from-amber-50 to-amber-100 border border-amber-200",
       icon: TrendingUp,
       iconColor: "text-amber-600",
@@ -127,7 +190,7 @@ const DashboardComponent = () => {
       titleColor: "text-rose-700",
     },
   ];
-  const summaryCards = [
+  const summaryCards: SummaryCards[] = [
     {
       bg: "bg-amber-50",
       circleBg: "bg-amber-500",
@@ -157,7 +220,7 @@ const DashboardComponent = () => {
       growth: dashboard.return_summary?.return_growth_pct,
     },
   ];
-  const overallInfo = [
+  const overallInfo: OverallInfoCards[] = [
     {
       bg: "bg-amber-50",
       circleBg: "bg-amber-500",
@@ -323,7 +386,10 @@ const DashboardComponent = () => {
                   tickFormatter={(value) => `$${value / 1000}k`}
                 />
                 <Tooltip
-                  formatter={(value) => [`$${formatCurrency(value)}`, ""]}
+                  formatter={(value) => [
+                    `$${formatCurrency(typeof value === "number" ? value : 0)}`,
+                    "",
+                  ]}
                   contentStyle={{
                     borderRadius: "8px",
                     border: "none",
@@ -426,7 +492,7 @@ const DashboardComponent = () => {
 
 export default DashboardComponent;
 
-const SummaryCard = ({ value, formatCurrency }) => {
+const SummaryCard = ({ value, formatCurrency }: SummaryCardProps) => {
   return (
     <div className={`flex items-center p-3 ${value.bg} rounded-lg`}>
       <div className={`w-3 h-3 ${value.circleBg} rounded-full mr-3`}></div>
@@ -443,7 +509,7 @@ const SummaryCard = ({ value, formatCurrency }) => {
     </div>
   );
 };
-const OverallInfoCard = ({ value }) => {
+const OverallInfoCard = ({ value }: { value: OverallInfoCards }) => {
   return (
     <div className={`flex flex-col items-center p-3 ${value.bg} rounded-lg`}>
       <div className={`w-3 h-3 ${value.circleBg} rounded-full mb-1`}></div>
@@ -454,7 +520,7 @@ const OverallInfoCard = ({ value }) => {
     </div>
   );
 };
-const BigSummaryCard = ({ value, formatCurrency }) => {
+const BigSummaryCard = ({ value, formatCurrency }: BigSummaryCardProps) => {
   const Icon = value.icon;
   return (
     <div className={`${value.bg} rounded-xl shadow-sm p-6`}>
@@ -481,7 +547,12 @@ const BigSummaryCard = ({ value, formatCurrency }) => {
     </div>
   );
 };
-const TopSoldProductsByCategory = ({ topSoldProductByCategory }) => {
+
+const TopSoldProductsByCategory = ({
+  topSoldProductByCategory,
+}: {
+  topSoldProductByCategory: TopSoldProductCategory[];
+}) => {
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex justify-between items-center mb-6">
@@ -510,7 +581,10 @@ const TopSoldProductsByCategory = ({ topSoldProductByCategory }) => {
     </div>
   );
 };
-const TopProfitByCategory = ({ profitByCategory, formatCurrency }) => {
+const TopProfitByCategory = ({
+  profitByCategory,
+  formatCurrency,
+}: TopProfitByCategoryProps) => {
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex justify-between items-center mb-6">
@@ -553,7 +627,10 @@ const TopProfitByCategory = ({ profitByCategory, formatCurrency }) => {
     </div>
   );
 };
-const TopItemsByGross = ({ topItemsByGross, formatCurrency }) => {
+const TopItemsByGross = ({
+  topItemsByGross,
+  formatCurrency,
+}: TopItemsByGrossProps) => {
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex justify-between items-center mb-6">
@@ -597,7 +674,10 @@ const TopItemsByGross = ({ topItemsByGross, formatCurrency }) => {
     </div>
   );
 };
-const TopSellingProducts = ({ topSellingProducts, formatCurrency }) => {
+const TopSellingProducts = ({
+  topSellingProducts,
+  formatCurrency,
+}: TopSellingProductsProps) => {
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex justify-between items-center mb-6">
@@ -641,7 +721,7 @@ const TopSellingProducts = ({ topSellingProducts, formatCurrency }) => {
     </div>
   );
 };
-const LowStockAlert = ({ lowStockSummary, formatCurrency }) => {
+const LowStockAlert = ({ lowStockSummary, formatCurrency }:LowStockAlertProps) => {
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex justify-between items-center mb-6">
@@ -685,7 +765,7 @@ const LowStockAlert = ({ lowStockSummary, formatCurrency }) => {
     </div>
   );
 };
-const RecentSales = ({ recentSalesSummary, formatCurrency }) => {
+const RecentSales = ({ recentSalesSummary, formatCurrency }:RecentSalesProps) => {
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex justify-between items-center mb-6">
