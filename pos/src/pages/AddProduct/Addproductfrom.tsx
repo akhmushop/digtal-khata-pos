@@ -26,21 +26,30 @@ import {
 } from "../../store/product-store.js";
 import { useLocation, useNavigate } from "react-router";
 import { useBlocker } from "react-router";
+import { ProductsTypes } from "../../types/products-types.js";
+import { Errors, InitialFormData } from "../../types/addProduct-types.js";
 
 const ProductStockForm = () => {
   const editingProduct = useEditProductStore((state) => state.editingProduct);
-  const [imagePreview, setImagePreview] = useState(
+  const [imagePreview, setImagePreview] = useState<string | null>(
     editingProduct?.image ?? null,
   );
-  const [errors, setErrors] = useState({});
+  const initialErrors: Errors = {
+    barcode: "",
+    product_name: "",
+    cost: "",
+    price: "",
+    quantity: "",
+    image: "",
+  };
+  const [errors, setErrors] = useState(initialErrors);
   const [showSuccess, setShowSuccess] = useState(false);
   const addToProduct = useProductStore((state) => state.addToProduct);
   const updateProduct = useProductStore((state) => state.updateProduct);
   const setEditingProduct = useEditProductStore(
     (state) => state.setEditingProduct,
   );
-
-  const initialFormData = editingProduct
+  const initialFormData: InitialFormData = editingProduct
     ? {
         barcode: editingProduct.barcode,
         product_name: editingProduct.product_name,
@@ -65,33 +74,33 @@ const ProductStockForm = () => {
         product_name: "",
         product_unit: "PC",
         product_type: "SIMPLE",
-        alert_quantity: "2",
-        cost: "",
-        price: "",
-        quantity: "",
-        discount_percent: "0",
-        flat_discount: "0",
+        alert_quantity: 0,
+        cost: 0,
+        price: 0,
+        quantity: 0,
+        discount_percent: 0,
+        flat_discount: 0,
         batch_number: "",
         expiry_date: "",
         description: "",
         supplier: "",
         brand: "",
         category: "",
-        tags: "",
+        tags: [],
       };
   const [hasChanges, setHasChanges] = useState(false);
 
-  const useUnsavedChanges = (hasChanges) => {
+  const useUnsavedChanges = (hasChanges: boolean) => {
     useEffect(() => {
-      const handelBeforeUnload = (e) => {
+      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
         if (hasChanges) {
           e.preventDefault();
           e.returnValue = "You have unsave changes. Leave anyway?";
         }
       };
-      window.addEventListener("beforeunload", handelBeforeUnload);
+      window.addEventListener("beforeunload", handleBeforeUnload);
       return () =>
-        window.removeEventListener("beforeunload", handelBeforeUnload);
+        window.removeEventListener("beforeunload", handleBeforeUnload);
     }, [handleChange]);
   };
 
@@ -101,7 +110,7 @@ const ProductStockForm = () => {
     editingProduct?.tags?.join(", ") ?? "",
   );
   const validateForm = () => {
-    const newErrors = {};
+    const newErrors = initialErrors;
 
     if (!formData.barcode.trim()) {
       newErrors.barcode = "Barcode is required";
@@ -111,19 +120,19 @@ const ProductStockForm = () => {
       newErrors.product_name = "Product name is required";
     }
 
-    if (!formData.cost || parseFloat(formData.cost) <= 0) {
+    if (!formData.cost || formData.cost <= 0) {
       newErrors.cost = "Valid cost is required";
     }
 
-    if (!formData.price || parseFloat(formData.price) <= 0) {
+    if (!formData.price || formData.price <= 0) {
       newErrors.price = "Valid price is required";
     }
 
-    if (!formData.quantity || parseInt(formData.quantity) < 0) {
+    if (!formData.quantity || formData.quantity < 0) {
       newErrors.quantity = "Valid quantity is required";
     }
 
-    if (parseFloat(formData.cost) > parseFloat(formData.price)) {
+    if (formData.cost > formData.price) {
       newErrors.price = "Price should be greater than cost";
     }
 
@@ -131,8 +140,8 @@ const ProductStockForm = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
         setErrors({ ...errors, image: "Image size should be less than 5MB" });
@@ -141,15 +150,21 @@ const ProductStockForm = () => {
 
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result);
+        if (typeof reader.result === "string") {
+          setImagePreview(reader.result);
+        }
         setErrors({ ...errors, image: null });
       };
       reader.readAsDataURL(file);
     }
   };
-
-  const handleChange = (e) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLSelectElement | HTMLInputElement | HTMLTextAreaElement
+    >,
+  ) => {
     const { name, value } = e.target;
+
     if (name === "tags") {
       setTagInput(value);
     } else
@@ -162,7 +177,7 @@ const ProductStockForm = () => {
     }
 
     // Clear error for this field
-    if (errors[name]) {
+    if (errors[name as keyof Errors]) {
       setErrors({ ...errors, [name]: null });
     }
   };
@@ -185,19 +200,16 @@ const ProductStockForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || "/product";
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.ChangeEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!validateForm()) {
       return;
     }
-
     // Calculate final price after discounts
-    const basePrice = parseFloat(formData.price);
-    const percentDiscount =
-      (basePrice * parseFloat(formData.discount_percent)) / 100;
-    const finalPrice =
-      basePrice - percentDiscount - parseFloat(formData.flat_discount);
+    const basePrice = formData.price;
+    const percentDiscount = (basePrice * formData.discount_percent) / 100;
+    const finalPrice = basePrice - percentDiscount - formData.flat_discount;
     const tagsArray = tagInput
       .split(",")
       .map((tag) => tag.trim())
@@ -214,12 +226,16 @@ const ProductStockForm = () => {
     };
 
     if (editingProduct) {
-      const changed = {};
-      Object.keys(productData).forEach((key) => {
-        if (productData[key] !== editingProduct[key]) {
-          changed[key] = productData[key] === "" ? 0 : productData[key];
-        }
-      });
+      const changed: Partial<
+        Record<keyof InitialFormData, string | number | string[]>
+      > = {};
+      (Object.keys(productData) as (keyof InitialFormData)[]).forEach(
+        (field) => {
+          if (productData[field] !== editingProduct[field]) {
+            changed[field] = productData[field] === "" ? 0 : productData[field];
+          }
+        },
+      );
       if (Object.keys(changed).length === 0) {
         alert("Nothing Changed");
         return;
@@ -247,14 +263,14 @@ const ProductStockForm = () => {
       setFormData(initialFormData);
       setTagInput("");
       setImagePreview(null);
-      setErrors({});
+      setErrors(initialErrors);
     }
   };
 
   const handleCancel = () => {
     setFormData(initialFormData);
     setImagePreview(null);
-    setErrors({});
+    setErrors(initialErrors);
   };
   const productUnits = ["PC", "KG", "L", "M", "SET", "BOX", "DOZEN"];
   const productTypes = ["SIMPLE", "VARIABLE", "DIGITAL", "BUNDLE"];
@@ -585,11 +601,14 @@ const ProductStockForm = () => {
                         <div className="px-4 py-3 bg-green-50 border border-green-200 rounded-lg font-semibold text-green-700">
                           $
                           {(
-                            parseFloat(formData.price || 0) -
-                            (parseFloat(formData.price || 0) *
-                              parseFloat(formData.discount_percent || 0)) /
-                              100 -
-                            parseFloat(formData.flat_discount || 0)
+                            formData.price ||
+                            0 -
+                              (formData.price ||
+                                0 * formData.discount_percent ||
+                                0) /
+                                100 -
+                              formData.flat_discount ||
+                            0
                           ).toFixed(2)}
                         </div>
                       </div>
@@ -637,7 +656,7 @@ const ProductStockForm = () => {
                     name="description"
                     value={formData.description}
                     onChange={handleChange}
-                    rows="4"
+                    rows={4}
                     placeholder="Enter detailed product description..."
                     className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
                   />
@@ -665,7 +684,7 @@ const ProductStockForm = () => {
                             : "border-gray-300"
                       } rounded-xl p-8 transition-all duration-300 cursor-pointer hover:border-green-400`}
                       onClick={() =>
-                        document.getElementById("file-upload").click()
+                        document.getElementById("file-upload")?.click()
                       }
                     >
                       <input
@@ -719,7 +738,7 @@ const ProductStockForm = () => {
                   <button
                     type="button"
                     onClick={() =>
-                      document.getElementById("file-upload").click()
+                      document.getElementById("file-upload")?.click()
                     }
                     className="w-full px-4 py-3 bg-linear-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow"
                   >

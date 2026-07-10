@@ -511,7 +511,7 @@ function CartHoldShowBtn({
   holdCartItems,
   setHoldCartItems,
 }: CartHoldShowBtnProps) {
-  const addHoldItemsToCart = useCartStore((state) => state.addHoldItemsToCart);
+  // const addHoldItemsToCart = useCartStore((state) => state.addHoldItemsToCart);
   const handelClose = () => {
     setTimeout(() => setShowHoldItemsFalse(), 300);
     setIsOpen(false);
@@ -526,7 +526,7 @@ function CartHoldShowBtn({
         holdCartItems.map((cart, index) => (
           <div
             onClick={() => {
-              addHoldItemsToCart(cart.items);
+              // addHoldItemsToCart(cart.items);
               setHoldCartItems((prev) =>
                 prev.filter((hold) => hold.id !== cart.id),
               );
