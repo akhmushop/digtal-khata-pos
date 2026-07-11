@@ -22,5 +22,5 @@
     "allowJs": true,
     "checkJs": false
   },
-  "include": ["src"]
+  "include": ["src","src/**/*.d.ts"]
 }

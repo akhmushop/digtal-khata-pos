@@ -41,18 +41,26 @@ import {
   useEditProductStore,
 } from "../../store/product-store.js";
 import { PopupModal } from "../pos/CartItems.js";
+import { Resizing, SortConfig } from "../../types/table-types.js";
+import { ProductsTypes } from "../../types/products-types.js";
+import { SalesStoreType } from "../../types/sales-types.js";
 const AdvancedPOSTable = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+  const [sortConfig, setSortConfig] = useState<SortConfig>({
+    key: null,
+    direction: "asc",
+  });
   const [perPage, setPerPage] = useState(50);
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState("list");
-  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [showStockModal, setShowStockModal] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
-  const [currentProduct, setCurrentProduct] = useState(null);
+  const [currentProduct, setCurrentProduct] = useState<ProductsTypes | null>(
+    null,
+  );
   const soldProducts = useSoldStore((state) => state.soldProducts);
   const setEditingProduct = useEditProductStore(
     (state) => state.setEditingProduct,
@@ -86,7 +94,8 @@ const AdvancedPOSTable = () => {
     status: 110,
     action: 100,
   });
-  const [resizing, setResizing] = useState(null);
+  type Widths = keyof typeof columnWidths;
+  const [resizing, setResizing] = useState<Resizing | null>(null);
 
   const [categories] = useState([
     "Electronics",
@@ -107,7 +116,10 @@ const AdvancedPOSTable = () => {
     "Online",
   ]);
 
-  const handleMouseDown = (columnKey, e) => {
+  const handleMouseDown = (
+    columnKey: Widths,
+    e: React.MouseEvent<HTMLDivElement>,
+  ) => {
     e.preventDefault();
     setResizing({
       columnKey,
@@ -116,7 +128,7 @@ const AdvancedPOSTable = () => {
     });
   };
 
-  const handleMouseMove = (e) => {
+  const handleMouseMove = (e: MouseEvent) => {
     if (!resizing) return;
     const diff = e.pageX - resizing.startX;
     const newWidth = Math.max(50, resizing.startWidth + diff);
@@ -136,11 +148,11 @@ const AdvancedPOSTable = () => {
     }
   }, [resizing]);
 
-  const filteredProducts = useMemo(() => {
+  const filteredProducts = useMemo<ProductsTypes[]>(() => {
     return products.filter((p) => {
       const matchesSearch =
         p.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.id.toLowerCase().includes(searchTerm.toLowerCase());
+        String(p.id).toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory =
         filters.category === "all" || p.category === filters.category;
       const matchesStatus =
@@ -165,22 +177,23 @@ const AdvancedPOSTable = () => {
       );
     });
   }, [products, searchTerm, filters]);
-
   const sortedProducts = useMemo(() => {
     let sorted = [...filteredProducts];
-    if (sortConfig.key) {
+    const key = sortConfig.key;
+    if (key === null) {
+      return sorted;
+    }
+    if (key) {
       sorted.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key])
-          return sortConfig.direction === "asc" ? -1 : 1;
-        if (a[sortConfig.key] > b[sortConfig.key])
-          return sortConfig.direction === "asc" ? 1 : -1;
+        if (a[key] < b[key]) return sortConfig.direction === "asc" ? -1 : 1;
+        if (a[key] > b[key]) return sortConfig.direction === "asc" ? 1 : -1;
         return 0;
       });
     }
     return sorted;
   }, [filteredProducts, sortConfig]);
 
-  const requestSort = (key) => {
+  const requestSort = (key: keyof ProductsTypes) => {
     setSortConfig({
       key,
       direction:
@@ -196,7 +209,7 @@ const AdvancedPOSTable = () => {
     startIndex,
     startIndex + perPage,
   );
-  const getStatusStyle = (status) => {
+  const getStatusStyle = (status: string) => {
     switch (status) {
       case "In Stock":
         return "bg-emerald-50 text-emerald-700 border-emerald-200";
@@ -222,7 +235,8 @@ const AdvancedPOSTable = () => {
   ).length;
   const outOfStockCount = products.filter((p) => p.quantity === 0).length;
 
-  const toggleSelectProduct = (id) => {
+  const toggleSelectProduct = (id: number) => {
+    console.log(id);
     setSelectedProducts((prev) =>
       prev.includes(id) ? prev.filter((pid) => pid !== id) : [...prev, id],
     );
@@ -258,25 +272,25 @@ const AdvancedPOSTable = () => {
 
   const openProductModal = (product = null) => {
     setCurrentProduct(product);
-    setShowProductModal(true);
+    // setShowProductModal(true);
   };
 
-  const openStockModal = (product) => {
+  const openStockModal = (product: ProductsTypes) => {
     setCurrentProduct(product);
     setShowStockModal(true);
   };
-  const handleSaveProduct = (productData) => {
-    if (currentProduct) {
-      setProducts(
-        products.map((p) =>
-          p.id === currentProduct.id ? { ...p, ...productData } : p,
-        ),
-      );
-    } else {
-      setProducts([...products, { ...productData, id: Date.now() }]);
-    }
-    setShowProductModal(false);
-  };
+  // const handleSaveProduct = (productData) => {
+  //   if (currentProduct) {
+  //     setProducts(
+  //       products.map((p) =>
+  //         p.id === currentProduct.id ? { ...p, ...productData } : p,
+  //       ),
+  //     );
+  //   } else {
+  //     setProducts([...products, { ...productData, id: Date.now() }]);
+  //   }
+  //   // setShowProductModal(false);
+  // };
   // const duplicateProduct = (product) => {
   //   const newProduct = {
   //     ...product,
@@ -292,23 +306,25 @@ const AdvancedPOSTable = () => {
     (sum, item) => sum + item.sold_quantity,
     0,
   );
-  const totalRevenueByMonth = soldProducts.reduce((acc, item) => {
-    const date = new Date(item.created_at);
-    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-    const revenue = item.price * item.sold_quantity;
-    if (!acc[monthKey]) {
-      acc[monthKey] = 0;
-    }
-    acc[monthKey] += revenue;
-    return acc;
-  }, {});
+  const totalRevenueByMonth = soldProducts.reduce<Record<string, number>>(
+    (acc, item) => {
+      const date = new Date(item.created_at);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      const revenue = item.price * item.sold_quantity;
+      if (!acc[monthKey]) {
+        acc[monthKey] = 0;
+      }
+      acc[monthKey] += revenue;
+      return acc;
+    },
+    {},
+  );
   const totalRevenueInArray = Object.entries(totalRevenueByMonth)
     .sort()
     .map(([month, total], index, arr) => {
       let percentageChange = null;
-
       if (index > 0) {
-        const prevMonthRevenue = arr[index - 1][1];
+        const prevMonthRevenue = arr[index - 1]?.[1] ?? 0;
         percentageChange =
           ((total - prevMonthRevenue) / prevMonthRevenue) * 100;
       }
@@ -330,10 +346,13 @@ const AdvancedPOSTable = () => {
     (sum, p) => sum + (Number(p.quantity) || 0),
     0,
   );
-  const saleDateRange = soldProducts.reduce(
+  const saleDateRange = soldProducts.reduce<{
+    min: Date | null;
+    max: Date | null;
+  }>(
     (range, item) => {
       const date = new Date(item.created_at);
-      if (isNaN(date)) return range;
+      if (Number.isNaN(date.getTime())) return range;
 
       return {
         min: range.min ? (date < range.min ? date : range.min) : date,
@@ -346,7 +365,8 @@ const AdvancedPOSTable = () => {
     saleDateRange.min && saleDateRange.max
       ? Math.max(
           1,
-          (saleDateRange.max - saleDateRange.min) / (1000 * 60 * 60 * 24),
+          (saleDateRange.max.getTime() - saleDateRange.min.getTime()) /
+            (1000 * 60 * 60 * 24),
         )
       : 1;
   const averageSalesPerDay =
@@ -361,7 +381,7 @@ const AdvancedPOSTable = () => {
   return (
     <div className="h-screen bg-linear-to-br from-slate-50 to-slate-100 p-6 overflow-y-scroll">
       {showProductDetailsModal && (
-        <PopupModal isOpen={isOpen} handelClose={handelClose}>
+        <PopupModal className={""} isOpen={isOpen} handelClose={handelClose}>
           <ShowProductDetails handelClose={handelClose} />
         </PopupModal>
       )}
@@ -1167,7 +1187,11 @@ const AdvancedPOSTable = () => {
                   <button
                     onClick={() => {
                       const newStock = parseInt(
-                        document.getElementById("newStock").value,
+                        (
+                          document.getElementById(
+                            "newStock",
+                          ) as HTMLInputElement
+                        ).value,
                       );
                       updateStock(currentProduct.id, newStock);
                       setShowStockModal(false);
@@ -1191,7 +1215,7 @@ const AdvancedPOSTable = () => {
     </div>
   );
 };
-const ShowProductDetails = ({ handelClose = { handelClose } }) => {
+const ShowProductDetails = ({ handelClose }: { handelClose: () => void }) => {
   const detailsProduct = useEditProductStore((state) => state.editingProduct);
   return (
     <div className="relative w-130  bg-white shadow-md overflow-hidden rounded-b-lg">

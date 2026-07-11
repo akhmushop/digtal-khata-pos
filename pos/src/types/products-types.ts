@@ -26,6 +26,7 @@ export interface ProductsTypes {
   dimensions: string;
   variations: string;
   final_price: number;
+  location:string;
   tags: string[];
 }
 interface productData {

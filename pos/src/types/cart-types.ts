@@ -82,7 +82,7 @@ export interface PaymentModalProps {
 export interface PopupModalProps {
   handelClose: () => void;
   isOpen: boolean;
-  className: string;
+  className: string ;
   children: React.ReactNode;
 }
 export interface CartTextModalProps {
