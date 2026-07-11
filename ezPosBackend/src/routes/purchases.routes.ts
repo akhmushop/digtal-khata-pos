@@ -1,5 +1,6 @@
 import express from "express";
 import { pool } from "../config/db.js";
+import type { ChangedItems } from "../types/changedItems-types.js";
 const router = express.Router();
 router.post("/api/purchases", async (req, res) => {
   const { purchasesCart, final_total, supplier, note } = req.body;
@@ -37,7 +38,7 @@ router.get("/api/purchases", async (req, res) => {
       orderedPurchase: orderedPurchase.rows,
       purchases: purchases.rows,
       partiallyPaidPurchase: partiallyPaidPurchase.rows,
-      completedPurchase:completedPurchase.rows
+      completedPurchase: completedPurchase.rows,
     });
   } catch (err) {
     console.error(err);
@@ -58,7 +59,7 @@ router.post("/api/purchases/updates", async (req, res) => {
   try {
     const { paymentDetails, changedItems } = req.body;
     const changedFields = changedItems.find(
-      (item) => item.changedFields === true,
+      (item:ChangedItems) => item.changedFields === true,
     );
     const { orderId, payment_amount, payment_method, payment_notes } =
       paymentDetails;
@@ -76,7 +77,8 @@ router.post("/api/purchases/updates", async (req, res) => {
       await client.query("ROLLBACK");
       return res.status(404).json({ error: "Purchase order not found" });
     }
-    const grandTotal = changedItems.reduce((total, item) => {
+
+    const grandTotal = changedItems.reduce((total:number, item:ChangedItems) => {
       const quantity = item.receiveQuantity ?? 0;
       const price = item.purchasePrice ?? 0;
       return total + quantity * price;

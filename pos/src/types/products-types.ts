@@ -26,37 +26,9 @@ export interface ProductsTypes {
   dimensions: string;
   variations: string;
   final_price: number;
-  location:string;
   tags: string[];
 }
-interface productData {
- flat_discount: number;
- discount_percent: number;
- tags: string[];
- final_price: number;
- image: string | null;
- created_at: string;
- barcode: string;
- product_name: string;
- product_unit: string;
- product_type: string;
- alert_quantity: number;
- cost: number;
- price: number;
- quantity: number;
- batch_number: string;
- expiry_date: string;
- description: string;
- brand: string;
- category: string;
- supplier: string;
- id?: number;
- status?: string;
- sku?: string;
- weight?: string;
- dimensions?: string;
- variations?: string;
-}
+
 export interface ProductsStore {
   products: ProductsTypes[];
   loading: boolean;
@@ -76,7 +48,7 @@ export interface ProductsStore {
   ) => void;
   restoreAllProductQuantityToCart: (id: number, sold_quantity: number) => void;
   updateStock: (id: number, newStock: number) => void;
-  addToProduct: (product: productData) => void;
+  addToProduct: (product: ProductsTypes) => void;
   removeProduct: (id: number) => void;
   duplicateProduct: (product: ProductsTypes) => void;
   updateProduct: (

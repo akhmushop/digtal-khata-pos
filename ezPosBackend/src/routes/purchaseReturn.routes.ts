@@ -1,12 +1,13 @@
 import express from "express";
 import { pool } from "../config/db.js";
+import type { ChangedItems } from "../types/changedItems-types.js";
 const router = express.Router();
 router.post("/api/purchase-return", async (req, res) => {
   try {
     const { orderId, changedItems } = req.body;
 
     // 1. Extract all IDs from the frontend payload
-    const itemIds = changedItems.map((item) => Number(item.id));
+    const itemIds = changedItems.map((item:ChangedItems) => Number(item.id));
 
     let total_amount = 0;
 
