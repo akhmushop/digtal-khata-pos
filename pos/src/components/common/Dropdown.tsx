@@ -4,10 +4,13 @@ function DropdownModal({ options, label }) {
   const [selected, setSelected] = useState(options[0].name || "");
   const [isOpen, setIsOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const dropdownRef = useRef(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const clickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+    const clickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
         setIsFocused(false);
       }
@@ -17,7 +20,7 @@ function DropdownModal({ options, label }) {
       document.removeEventListener("mousedown", clickOutside);
     };
   }, []);
-  const handleMouseDown = (e) => {
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button === 0) {
       e.preventDefault();
       setIsOpen(!isOpen);
