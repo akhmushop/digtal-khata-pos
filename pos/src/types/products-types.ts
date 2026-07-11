@@ -1,7 +1,7 @@
 import { InitialFormData } from "./addProduct-types";
 
 export interface ProductsTypes {
-  id: number;
+  id?: number;
   barcode: string;
   product_name: string;
   product_unit: string;
@@ -18,13 +18,13 @@ export interface ProductsTypes {
   brand: string;
   category: string;
   supplier: string;
-  image: string;
-  status: string;
+  image: string | null;
+  status?: string;
   created_at: string;
-  sku: string;
-  weight: string;
-  dimensions: string;
-  variations: string;
+  sku?: string;
+  weight?: string;
+  dimensions?: string;
+  variations?: string;
   final_price: number;
   tags: string[];
 }
@@ -52,10 +52,8 @@ export interface ProductsStore {
   removeProduct: (id: number) => void;
   duplicateProduct: (product: ProductsTypes) => void;
   updateProduct: (
-    id: number,
-    updated_product: Partial<
-      Record<keyof InitialFormData, string | number | string[]>
-    >,
+    id: number | undefined,
+    updated_product: Partial<ProductsTypes>,
   ) => void;
 }
 export interface EditingProductsStore {

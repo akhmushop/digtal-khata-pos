@@ -226,16 +226,16 @@ const ProductStockForm = () => {
     };
 
     if (editingProduct) {
-      const changed: Partial<
-        Record<keyof InitialFormData, string | number | string[]>
-      > = {};
-      (Object.keys(productData) as (keyof InitialFormData)[]).forEach(
-        (field) => {
-          if (productData[field] !== editingProduct[field]) {
-            changed[field] = productData[field] === "" ? 0 : productData[field];
-          }
-        },
-      );
+      type ProductKey = keyof ProductsTypes;
+      const changed: Partial<ProductsTypes> = {};
+
+      (Object.keys(productData) as ProductKey[]).forEach((key) => {
+        const oldVal = editingProduct[key];
+        const newVal = productData[key];
+        if (oldVal !== newVal) {
+          (changed as Record<ProductKey, unknown>)[key] = newVal;
+        }
+      });
       if (Object.keys(changed).length === 0) {
         alert("Nothing Changed");
         return;
