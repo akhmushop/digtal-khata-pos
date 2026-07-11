@@ -221,7 +221,7 @@ const ProductStockForm = () => {
       discount_percent: Number(formData.discount_percent),
       tags: tagsArray,
       final_price: finalPrice,
-      image: imagePreview,
+      image: imagePreview ?? '',
       created_at: new Date().toISOString(),
     };
 
