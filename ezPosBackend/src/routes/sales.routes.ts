@@ -25,7 +25,7 @@ router.post("/api/sold_products", async (req, res) => {
       customer_id,
     } = cashForm;
     const due_amount = final_total - paid_amount;
-    const getPaymentStatus = (paid, due) => {
+    const getPaymentStatus = (paid:number, due:number) => {
       if (due <= 0) return "paid";
       if (paid > 0 && due > 0) return "partial";
       if (paid === 0) return "unpaid";

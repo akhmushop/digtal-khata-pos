@@ -24,9 +24,10 @@ router.post("/api/products", async (req, res) => {
       values,
     );
     res.json(newProduct.rows[0]);
-  } catch (err) {
+  } catch (err: unknown) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: errorMessage });
   }
 });
 router.put("/api/products/:id", async (req, res) => {
@@ -150,7 +151,8 @@ router.post("/api/products/duplicate-product/:id", async (req, res) => {
     // res.json(newProduct.rows[0]);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: errorMessage });
   }
 });
 router.patch("/api/products/updated_product/:id", async (req, res) => {
