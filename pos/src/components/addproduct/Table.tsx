@@ -936,7 +936,7 @@ const AdvancedPOSTable = () => {
                         {/* <Package2 className="w-6 h-6 text-slate-400" /> */}
                         <img
                           className="w-12 h-12 bg-linear-to-br from-slate-100 to-slate-200 rounded-lg flex items-center justify-center "
-                          src={product.image}
+                          src={product.image || undefined}
                           alt=""
                         />
                       </div>
