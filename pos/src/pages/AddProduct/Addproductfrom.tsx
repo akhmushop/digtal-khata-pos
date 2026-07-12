@@ -135,9 +135,8 @@ const ProductStockForm = () => {
     if (formData.cost > formData.price) {
       newErrors.price = "Price should be greater than cost";
     }
-
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return Object.values(newErrors).every((error) => error === "");
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -600,16 +599,14 @@ const ProductStockForm = () => {
                         </label>
                         <div className="px-4 py-3 bg-green-50 border border-green-200 rounded-lg font-semibold text-green-700">
                           $
-                          {(
-                            formData.price ||
+                          {formData.price ||
                             0 -
                               (formData.price ||
                                 0 * formData.discountPercent ||
                                 0) /
                                 100 -
                               formData.flatDiscount ||
-                            0
-                          ).toFixed(2)}
+                            0}
                         </div>
                       </div>
                     )}
