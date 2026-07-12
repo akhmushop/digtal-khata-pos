@@ -151,7 +151,7 @@ const AdvancedPOSTable = () => {
   const filteredProducts = useMemo<ProductsTypes[]>(() => {
     return products.filter((p) => {
       const matchesSearch =
-        p.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         String(p.id).toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory =
         filters.category === "all" || p.category === filters.category;
@@ -223,15 +223,15 @@ const AdvancedPOSTable = () => {
   };
 
   const totalValue = soldProducts.reduce(
-    (sum, p) => sum + p.price * p.sold_quantity,
+    (sum, p) => sum + p.price * p.soldQuantity,
     0,
   );
   const totalProfit = soldProducts.reduce(
-    (sum, p) => sum + (p.price - p.cost) * p.sold_quantity,
+    (sum, p) => sum + (p.price - p.cost) * p.soldQuantity,
     0,
   );
   const lowStockCount = products.filter(
-    (p) => p.quantity > 0 && p.quantity <= p.alert_quantity,
+    (p) => p.quantity > 0 && p.quantity <= p.alertQuantity,
   ).length;
   const outOfStockCount = products.filter((p) => p.quantity === 0).length;
 
@@ -303,14 +303,14 @@ const AdvancedPOSTable = () => {
   // total sold
 
   const totalSoldItems = soldProducts.reduce(
-    (sum, item) => sum + item.sold_quantity,
+    (sum, item) => sum + item.soldQuantity,
     0,
   );
   const totalRevenueByMonth = soldProducts.reduce<Record<string, number>>(
     (acc, item) => {
-      const date = new Date(item.created_at);
+      const date = new Date(item.createdAt);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-      const revenue = item.price * item.sold_quantity;
+      const revenue = item.price * item.soldQuantity;
       if (!acc[monthKey]) {
         acc[monthKey] = 0;
       }
@@ -351,7 +351,7 @@ const AdvancedPOSTable = () => {
     max: Date | null;
   }>(
     (range, item) => {
-      const date = new Date(item.created_at);
+      const date = new Date(item.createdAt);
       if (Number.isNaN(date.getTime())) return range;
 
       return {
@@ -780,11 +780,11 @@ const AdvancedPOSTable = () => {
                     style={{ width: `${columnWidths.name}px` }}
                   >
                     <button
-                      onClick={() => requestSort("product_name")}
+                      onClick={() => requestSort("productName")}
                       className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider hover:text-slate-900"
                     >
                       Product Name
-                      {sortConfig.key === "product_name" &&
+                      {sortConfig.key === "productName" &&
                         (sortConfig.direction === "asc" ? (
                           <ChevronUp className="w-4 h-4" />
                         ) : (
@@ -943,7 +943,7 @@ const AdvancedPOSTable = () => {
                     </td>
                     <td className="px-4 py-4 truncate">
                       <div className="font-semibold text-slate-900 truncate">
-                        {product.product_name}
+                        {product.productName}
                       </div>
 
                       <div className="flex gap-1 mt-1">
@@ -998,10 +998,10 @@ const AdvancedPOSTable = () => {
                           <Edit2 className="w-3 h-3 text-slate-400" />
                         </button>
                       </div>
-                      {product.quantity <= product.alert_quantity &&
+                      {product.quantity <= product.alertQuantity &&
                         product.quantity > 0 && (
                           <div className="text-xs text-amber-600 mt-1">
-                            Alert: {product.alert_quantity}
+                            Alert: {product.alertQuantity}
                           </div>
                         )}
                     </td>
@@ -1160,7 +1160,7 @@ const AdvancedPOSTable = () => {
                 <p className="text-sm text-slate-600 mb-2">
                   Product:{" "}
                   <span className="font-medium text-slate-900">
-                    {currentProduct.product_name}
+                    {currentProduct.productName}
                   </span>
                 </p>
                 <p className="text-sm text-slate-600">
@@ -1256,7 +1256,7 @@ const ShowProductDetails = ({ handelClose }: { handelClose: () => void }) => {
                 Product Name:
               </span>
               <span className="text-gray-600 flex-1 wrap-break-word">
-                {detailsProduct.product_name}
+                {detailsProduct.productName}
               </span>
             </div>
 
@@ -1265,7 +1265,7 @@ const ShowProductDetails = ({ handelClose }: { handelClose: () => void }) => {
                 Product Unit:
               </span>
               <span className="text-gray-600 flex-1">
-                {detailsProduct.product_unit}
+                {detailsProduct.productUnit}
               </span>
             </div>
 
@@ -1274,7 +1274,7 @@ const ShowProductDetails = ({ handelClose }: { handelClose: () => void }) => {
                 Product Type:
               </span>
               <span className="text-gray-600 flex-1">
-                {detailsProduct.product_type}
+                {detailsProduct.productType}
               </span>
             </div>
 
@@ -1283,7 +1283,7 @@ const ShowProductDetails = ({ handelClose }: { handelClose: () => void }) => {
                 Alert Quantity:
               </span>
               <span className="text-gray-600 flex-1">
-                {detailsProduct.alert_quantity}
+                {detailsProduct.alertQuantity}
               </span>
             </div>
 
@@ -1306,7 +1306,7 @@ const ShowProductDetails = ({ handelClose }: { handelClose: () => void }) => {
                 Quantity:
               </span>
               <span
-                className={`flex-1 ${detailsProduct.quantity < detailsProduct.alert_quantity ? "text-red-600 font-semibold" : "text-gray-600"}`}
+                className={`flex-1 ${detailsProduct.quantity < detailsProduct.alertQuantity ? "text-red-600 font-semibold" : "text-gray-600"}`}
               >
                 {detailsProduct.quantity}
               </span>
@@ -1317,15 +1317,15 @@ const ShowProductDetails = ({ handelClose }: { handelClose: () => void }) => {
                 Discount:
               </span>
               <span className="text-gray-600 flex-1">
-                {detailsProduct.discount_percent > 0 &&
-                  `${detailsProduct.discount_percent}%`}
-                {detailsProduct.discount_percent > 0 &&
-                  detailsProduct.flat_discount > 0 &&
+                {detailsProduct.discountPercent > 0 &&
+                  `${detailsProduct.discountPercent}%`}
+                {detailsProduct.discountPercent > 0 &&
+                  detailsProduct.flatDiscount > 0 &&
                   " / "}
-                {detailsProduct.flat_discount > 0 &&
-                  `$${detailsProduct.flat_discount} flat`}
-                {detailsProduct.discount_percent === 0 &&
-                  detailsProduct.flat_discount === 0 &&
+                {detailsProduct.flatDiscount > 0 &&
+                  `$${detailsProduct.flatDiscount} flat`}
+                {detailsProduct.discountPercent === 0 &&
+                  detailsProduct.flatDiscount === 0 &&
                   "No discount"}
               </span>
             </div>
@@ -1335,7 +1335,7 @@ const ShowProductDetails = ({ handelClose }: { handelClose: () => void }) => {
                 Batch Number:
               </span>
               <span className="text-gray-600 flex-1">
-                {detailsProduct.batch_number}
+                {detailsProduct.batchNumber}
               </span>
             </div>
 
@@ -1344,7 +1344,7 @@ const ShowProductDetails = ({ handelClose }: { handelClose: () => void }) => {
                 Expiry Date:
               </span>
               <span className="text-gray-600 flex-1">
-                {detailsProduct.expiry_date || "N/A"}
+                {detailsProduct.expiryDate || "N/A"}
               </span>
             </div>
 

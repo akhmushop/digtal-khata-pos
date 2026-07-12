@@ -39,8 +39,8 @@ export type AddCustomerProps = {
   resetCustomerInfo: () => void;
 };
 export interface CustomerDue {
-  customer_id: number;
-  total_amount: number;
+  customerId: number;
+  totalAmount: number;
   total_due: number;
   total_paid: number;
 }

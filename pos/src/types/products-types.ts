@@ -3,31 +3,31 @@ import { InitialFormData } from "./addProduct-types";
 export interface ProductsTypes {
   id: number;
   barcode: string;
-  product_name: string;
-  product_unit: string;
-  product_type: string;
-  alert_quantity: number;
+  productName: string;
+  productUnit: string;
+  productType: string;
+  alertQuantity: number;
   cost: number;
   price: number;
-  discount_percent: number;
-  flat_discount: number;
+  discountPercent: number;
+  flatDiscount: number;
   quantity: number;
-  batch_number: string;
-  expiry_date: string;
+  batchNumber: string;
+  expiryDate: string;
   description: string;
   brand: string;
   category: string;
   supplier: string;
-  image: string ;
+  image: string;
   status: string;
-  created_at: string;
+  createdAt: string;
   sku: string;
   weight: string;
   dimensions: string;
   variations: string;
-  final_price: number;
+  finalPrice: number;
   tags: string[];
-  location:string
+  location: string;
 }
 
 export interface ProductsStore {
@@ -40,14 +40,14 @@ export interface ProductsStore {
   addProductQuantityToCart: (id: number) => void;
   restoreSingleProductQuantityToCart: (
     id: number,
-    sold_quantity: number,
+    soldQuantity: number,
   ) => void;
   addCustomProductQuantityToCart: (
     id: number,
     customQuantity: number,
-    sold_quantity: number,
+    soldQuantity: number,
   ) => void;
-  restoreAllProductQuantityToCart: (id: number, sold_quantity: number) => void;
+  restoreAllProductQuantityToCart: (id: number, soldQuantity: number) => void;
   updateStock: (id: number, newStock: number) => void;
   addToProduct: (product: Partial<ProductsTypes>) => void;
   removeProduct: (id: number) => void;

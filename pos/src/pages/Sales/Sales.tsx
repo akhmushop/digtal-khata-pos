@@ -25,7 +25,7 @@ export const Sales = () => {
   const handleFullReturn = (product: AllSoldProduct) => {
     if (window.confirm("Do you want to return")) {
       // product.items.map((p) => {
-      //   restoreReturnProduct(p.id, p.sold_quantity);
+      //   restoreReturnProduct(p.id, p.soldQuantity);
       // });
       returnProducts(product.id);
     }
@@ -34,9 +34,9 @@ export const Sales = () => {
     soldArray: AllSoldProduct,
     item: SalesStoreType,
   ) => {
-    // restoreReturnProduct(item.id, item.sold_quantity);
+    // restoreReturnProduct(item.id, item.soldQuantity);
     if (
-      window.confirm(`Do you want to refund this product ${item.product_name}`)
+      window.confirm(`Do you want to refund this product ${item.productName}`)
     )
       returnSingleItems(item);
   };
@@ -47,7 +47,7 @@ export const Sales = () => {
   };
   const grouped = soldProducts.reduce<Record<number, SalesStoreType[]>>(
     (acc, item) => {
-      const key = item.sale_id;
+      const key = item.saleId;
       if (!acc[key]) {
         acc[key] = [];
       }
@@ -66,7 +66,7 @@ export const Sales = () => {
       return {
         id: Number(id),
         items,
-        created_at: firstItem.created_at,
+        createdAt: firstItem.createdAt,
       };
     },
   );
@@ -92,7 +92,7 @@ export const Sales = () => {
         </thead>
         <tbody className="">
           {allSoldProduct.map((product) => {
-            const date = new Date(product.created_at);
+            const date = new Date(product.createdAt);
             return (
               <tr key={product.id}>
                 <td className="p-2">
@@ -158,8 +158,8 @@ export const Sales = () => {
                   return (
                     <tr key={item.id}>
                       <td className="p-2">{item.id}</td>
-                      <td className="p-2">{item.product_name}</td>
-                      <td className="p-2">{item.sold_quantity}</td>
+                      <td className="p-2">{item.productName}</td>
+                      <td className="p-2">{item.soldQuantity}</td>
                       <td className="p-2">{item.cost}</td>
                       <td className="p-2">{item.price}</td>
                       <td className="p-2">{item.price}</td>
@@ -243,7 +243,7 @@ const ShowProductDetails = ({
                       Product Name:
                     </span>
                     <span className="text-gray-600 flex-1 wrap-break-word">
-                      {product.product_name}
+                      {product.productName}
                     </span>
                   </div>
 
@@ -252,7 +252,7 @@ const ShowProductDetails = ({
                       Product Unit:
                     </span>
                     <span className="text-gray-600 flex-1">
-                      {product.product_unit}
+                      {product.productUnit}
                     </span>
                   </div>
 
@@ -261,7 +261,7 @@ const ShowProductDetails = ({
                       Product Type:
                     </span>
                     <span className="text-gray-600 flex-1">
-                      {product.product_type}
+                      {product.productType}
                     </span>
                   </div>
 
@@ -270,7 +270,7 @@ const ShowProductDetails = ({
                       Alert Quantity:
                     </span>
                     <span className="text-gray-600 flex-1">
-                      {product.alert_quantity}
+                      {product.alertQuantity}
                     </span>
                   </div>
 
@@ -297,7 +297,7 @@ const ShowProductDetails = ({
                       Quantity:
                     </span>
                     <span
-                      className={`flex-1 ${product.quantity < product.alert_quantity ? "text-red-600 font-semibold" : "text-gray-600"}`}
+                      className={`flex-1 ${product.quantity < product.alertQuantity ? "text-red-600 font-semibold" : "text-gray-600"}`}
                     >
                       {product.quantity}
                     </span>
@@ -308,15 +308,15 @@ const ShowProductDetails = ({
                       Discount:
                     </span>
                     <span className="text-gray-600 flex-1">
-                      {product.discount_percent > 0 &&
-                        `${product.discount_percent}%`}
-                      {product.discount_percent > 0 &&
-                        product.flat_discount > 0 &&
+                      {product.discountPercent > 0 &&
+                        `${product.discountPercent}%`}
+                      {product.discountPercent > 0 &&
+                        product.flatDiscount > 0 &&
                         " / "}
-                      {product.flat_discount > 0 &&
-                        `$${product.flat_discount} flat`}
-                      {product.discount_percent === 0 &&
-                        product.flat_discount === 0 &&
+                      {product.flatDiscount > 0 &&
+                        `$${product.flatDiscount} flat`}
+                      {product.discountPercent === 0 &&
+                        product.flatDiscount === 0 &&
                         "No discount"}
                     </span>
                   </div>
@@ -326,7 +326,7 @@ const ShowProductDetails = ({
                       Batch Number:
                     </span>
                     <span className="text-gray-600 flex-1">
-                      {product.batch_number}
+                      {product.batchNumber}
                     </span>
                   </div>
 
@@ -335,7 +335,7 @@ const ShowProductDetails = ({
                       Expiry Date:
                     </span>
                     <span className="text-gray-600 flex-1">
-                      {product.expiry_date || "N/A"}
+                      {product.expiryDate || "N/A"}
                     </span>
                   </div>
 

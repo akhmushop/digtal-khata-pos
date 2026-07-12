@@ -25,15 +25,15 @@ export const PurchaseViewItems = () => {
     (item) => item.id === Number(id),
   );
   const {
-    supplier_name,
-    final_total,
-    payment_status,
-    due_amount,
-    paid_amount,
+    supplierName,
+    finalTotal,
+    paymentStatus,
+    dueAmount,
+    paidAmount,
     status,
   } = purchaseOrder ?? {};
   const receivePurchasesItems = useMemo(
-    () => purchasesItems.filter((item) => item.purchase_id === Number(id)),
+    () => purchasesItems.filter((item) => item.purchaseId === Number(id)),
     [purchasesItems, id],
   );
   const itemsStatusCards: PaymentsInfoCard[] = [
@@ -47,19 +47,19 @@ export const PurchaseViewItems = () => {
       bg: "bg-emerald-50",
       circleBg: "bg-emerald-500",
       title: "Payment Status",
-      status: payment_status?.toUpperCase() ?? "",
+      status: paymentStatus?.toUpperCase() ?? "",
     },
     {
       bg: "bg-blue-50",
       circleBg: "bg-blue-500",
       title: "Amount Paid",
-      total: paid_amount ?? 0,
+      total: paidAmount ?? 0,
     },
     {
       bg: "bg-rose-50",
       circleBg: "bg-rose-500",
       title: "Amount Due",
-      total: due_amount ?? 0,
+      total: dueAmount ?? 0,
     },
   ];
   const [receiveItems, setReceiveItems] = useState<PurchasesItems[]>([]);
@@ -79,13 +79,13 @@ export const PurchaseViewItems = () => {
       bg: "bg-emerald-50",
       circleBg: "bg-emerald-500",
       title: "Already Paid",
-      total: paid_amount ?? 0,
+      total: paidAmount ?? 0,
     },
     {
       bg: "bg-blue-50",
       circleBg: "bg-blue-500",
       title: "Current Balance",
-      total: due_amount ?? 0,
+      total: dueAmount ?? 0,
     },
   ];
   const handleReceiveOnchange = (
@@ -112,8 +112,8 @@ export const PurchaseViewItems = () => {
     setReceiveItems(
       receivePurchasesItems.map((item) => ({
         ...item,
-        receiveQuantity: item.receive_quantity,
-        purchasePrice: item.cost_price,
+        receiveQuantity: item.receiveQuantity,
+        purchasePrice: item.costPrice,
         returnPurchaseQty: 0,
       })),
     );
@@ -134,7 +134,7 @@ export const PurchaseViewItems = () => {
         if (currentReturnQty === 0) return null;
         return {
           id: original.id,
-          product_id: original.product_id,
+          productId: original.productId,
           returnPurchaseQty: currentReturnQty,
         };
       })
@@ -152,9 +152,7 @@ export const PurchaseViewItems = () => {
   };
   const purchaseReturnMap = useMemo(
     () =>
-      new Map(
-        purchasesReturnItems.map((item) => [item.purchase_item_id, item]),
-      ),
+      new Map(purchasesReturnItems.map((item) => [item.purchaseItemId, item])),
     [purchasesReturnItems],
   );
   return (
@@ -172,12 +170,12 @@ export const PurchaseViewItems = () => {
             <p>Back to Purchase Orders</p>
             <h1>Receive Items</h1>
             <p>
-              OrderId: {id} | Supplier: {supplier_name}
+              OrderId: {id} | Supplier: {supplierName}
             </p>
           </div>
           <div>
             <p>Order Total</p>
-            <p>{final_total}</p>
+            <p>{finalTotal}</p>
           </div>
         </div>
         {/* summer card */}
@@ -215,13 +213,13 @@ export const PurchaseViewItems = () => {
                   const returnItem = purchaseReturnMap.get(item.id);
                   const returnQuantity = returnItem?.return_quantity ?? 0;
                   const maxReturn =
-                    Number(item.receive_quantity) - Number(returnQuantity);
+                    Number(item.receiveQuantity) - Number(returnQuantity);
                   return (
                     <tr key={item.id}>
-                      <th>{item.product_name}</th>
-                      <td>{item.product_unit}</td>
+                      <th>{item.productName}</th>
+                      <td>{item.productUnit}</td>
                       <td>{item.quantity}</td>
-                      <td>{item.receive_quantity}</td>
+                      <td>{item.receiveQuantity}</td>
                       <td>{returnQuantity}</td>
                       <td>
                         <input
@@ -292,7 +290,7 @@ export const PurchaseViewItems = () => {
           <div className="flex justify-between gap-6 p-2">
             <div className="flex justify-between w-full">
               <p>Previous Balance</p>
-              <p>{due_amount}</p>
+              <p>{dueAmount}</p>
             </div>
             <div className="flex justify-between w-full">
               <p>New Balance Due</p>

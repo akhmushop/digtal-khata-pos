@@ -510,30 +510,30 @@ export const useProductStore = create<ProductsStore>((set) => ({
         p.id === id ? { ...p, quantity: p.quantity + 1 } : p,
       ),
     })),
-  restoreSingleProductQuantityToCart: (id, sold_quantity) =>
+  restoreSingleProductQuantityToCart: (id, soldQuantity) =>
     set((state) => ({
       products: state.products.map((p) => {
         if (p.id === id) {
           return {
             ...p,
-            quantity: p.quantity + sold_quantity,
+            quantity: p.quantity + soldQuantity,
           };
         }
         return p;
       }),
     })),
-  addCustomProductQuantityToCart: (id, customQuantity, sold_quantity) =>
+  addCustomProductQuantityToCart: (id, customQuantity, soldQuantity) =>
     set((state) => ({
       products: state.products.map((p) =>
         p.id === id
-          ? { ...p, quantity: p.quantity - (customQuantity - sold_quantity) }
+          ? { ...p, quantity: p.quantity - (customQuantity - soldQuantity) }
           : p,
       ),
     })),
-  restoreAllProductQuantityToCart: (id, sold_quantity) =>
+  restoreAllProductQuantityToCart: (id, soldQuantity) =>
     set((state) => ({
       products: state.products.map((p) =>
-        p.id === id ? { ...p, quantity: p.quantity + sold_quantity } : p,
+        p.id === id ? { ...p, quantity: p.quantity + soldQuantity } : p,
       ),
     })),
   updateStock: async (id, newStock) => {
@@ -546,7 +546,7 @@ export const useProductStore = create<ProductsStore>((set) => ({
         const status =
           newStock === 0
             ? "Out of Stock"
-            : newStock <= findProduct.alert_quantity
+            : newStock <= findProduct.alertQuantity
               ? "Low-Stock"
               : "In-Stock";
 
@@ -599,7 +599,7 @@ export const useProductStore = create<ProductsStore>((set) => ({
           ...state.products,
           {
             ...product,
-            product_name: `${product.product_name}(copy)`,
+            productName: `${product.productName}(copy)`,
             barcode: `${product.barcode}(copy)`,
           },
         ],

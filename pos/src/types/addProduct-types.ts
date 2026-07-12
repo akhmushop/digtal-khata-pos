@@ -1,16 +1,16 @@
 export interface InitialFormData {
   barcode: string;
-  product_name: string;
-  product_unit: string;
-  product_type: string;
-  alert_quantity: number;
+  productName: string;
+  productUnit: string;
+  productType: string;
+  alertQuantity: number;
   cost: number;
   price: number;
-  discount_percent: number;
-  flat_discount: number;
+  discountPercent: number;
+  flatDiscount: number;
   quantity: number;
-  batch_number: string;
-  expiry_date: string;
+  batchNumber: string;
+  expiryDate: string;
   description: string;
   brand: string;
   category: string;
@@ -19,7 +19,7 @@ export interface InitialFormData {
 }
 export interface Errors {
   barcode: string;
-  product_name: string;
+  productName: string;
   cost: string;
   price: string;
   quantity: string;

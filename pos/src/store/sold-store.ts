@@ -71,7 +71,7 @@ export const useSoldStore = create<SalesStore>((set) => ({
     axios.post(`/sold_products/refund/${item.sale_items_id}`);
     set((state) => ({
       soldProducts: state.soldProducts.filter((product) =>
-        product.sale_id === item.sale_id ? product.id !== item.id : product,
+        product.saleId === item.saleId ? product.id !== item.id : product,
       ),
     }));
   },
@@ -79,7 +79,7 @@ export const useSoldStore = create<SalesStore>((set) => ({
     try {
       axios.post(`/sold_products/refunds_all/${id}`);
       set((state) => ({
-        soldProducts: state.soldProducts.filter((p) => p.sale_id !== id),
+        soldProducts: state.soldProducts.filter((p) => p.saleId !== id),
       }));
     } catch (err) {
       console.error(err);
