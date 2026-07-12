@@ -1,11 +1,14 @@
 import express, { json } from "express";
 import { pool } from "../config/db.js";
+import { db } from "../db/index.js";
+import { products } from "../db/schema.js";
+import type { ProductsTypes } from "../types/product-types.js";
 const router = express.Router();
 
 router.get("/api/products", async (req, res) => {
   try {
-    const products = await pool.query("SELECT * FROM products");
-    res.json(products.rows);
+    const result = await db.select().from(products);
+    res.json(result);
   } catch (err) {
     console.error(err);
   }
