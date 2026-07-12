@@ -32,18 +32,18 @@ export const ReceiveItems = () => {
     (item) => item.id === Number(id),
   );
   const {
-    supplier_name,
-    final_total,
-    payment_status,
-    due_amount,
-    paid_amount,
+    supplierName,
+    finalTotal,
+    paymentStatus,
+    dueAmount,
+    paidAmount,
     status,
   } = purchaseOrder ?? {};
   const receivePurchasesItems = useMemo(
-    () => purchasesItems.filter((item) => item.purchase_id === Number(id)),
+    () => purchasesItems.filter((item) => item.purchaseId === Number(id)),
     [purchasesItems, id],
   );
-  const itemsStatusCards:PaymentsInfoCard[] = [
+  const itemsStatusCards: PaymentsInfoCard[] = [
     {
       bg: "bg-amber-50",
       circleBg: "bg-amber-500",
@@ -54,19 +54,19 @@ export const ReceiveItems = () => {
       bg: "bg-emerald-50",
       circleBg: "bg-emerald-500",
       title: "Payment Status",
-      status: payment_status?.toUpperCase() ?? '',
+      status: paymentStatus?.toUpperCase() ?? "",
     },
     {
       bg: "bg-blue-50",
       circleBg: "bg-blue-500",
       title: "Amount Paid",
-      total: paid_amount ?? 0,
+      total: paidAmount ?? 0,
     },
     {
       bg: "bg-rose-50",
       circleBg: "bg-rose-500",
       title: "Amount Due",
-      total: due_amount ?? 0,
+      total: dueAmount ?? 0,
     },
   ];
   const [receiveItems, setReceiveItems] = useState<PurchasesItems[]>([]);
@@ -75,7 +75,7 @@ export const ReceiveItems = () => {
     const price = item.purchasePrice ?? 0;
     return total + quantity * price;
   }, 0);
-  const paymentsInfoCards:PaymentsInfoCard[] = [
+  const paymentsInfoCards: PaymentsInfoCard[] = [
     {
       bg: "bg-amber-50",
       circleBg: "bg-amber-500",
@@ -86,13 +86,13 @@ export const ReceiveItems = () => {
       bg: "bg-emerald-50",
       circleBg: "bg-emerald-500",
       title: "Already Paid",
-      total: paid_amount ?? 0,
+      total: paidAmount ?? 0,
     },
     {
       bg: "bg-blue-50",
       circleBg: "bg-blue-500",
       title: "Current Balance",
-      total: due_amount ?? 0,
+      total: dueAmount ?? 0,
     },
   ];
   const getInputValue = (name: string, value: number, max: number) => {
@@ -128,8 +128,8 @@ export const ReceiveItems = () => {
     setReceiveItems(
       receivePurchasesItems.map((item) => ({
         ...item,
-        receiveQuantity: item.quantity - item.receive_quantity,
-        purchasePrice: item.cost_price,
+        receiveQuantity: item.quantity - item.receiveQuantity,
+        purchasePrice: item.costPrice,
         sellingPrice: item.price,
       })),
     );
@@ -137,10 +137,14 @@ export const ReceiveItems = () => {
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails>({
     orderId: Number(id),
     payment_amount: 0,
-    payment_method: "Cash",
+    paymentMethod: "Cash",
     payment_notes: "",
   });
-  const handlePaymentOnchange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handlePaymentOnchange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
+  ) => {
     const { value, name } = e.target;
     const max = (e.target as HTMLInputElement).max;
     setPaymentDetails((prev) => {
@@ -170,11 +174,11 @@ export const ReceiveItems = () => {
         ? Number(current.sellingPrice)
         : Number(original.price);
       const quantityChanged =
-        currentQty + Number(original.receive_quantity) !==
+        currentQty + Number(original.receiveQuantity) !==
         Number(original.quantity);
       return {
         id: original.id,
-        product_id: original.product_id,
+        productId: original.productId,
         receiveQuantity: currentQty,
         purchasePrice: currentPurchasePrice,
         sellingPrice: currentSellingPrice,
@@ -192,12 +196,12 @@ export const ReceiveItems = () => {
     });
   };
   const receivedItemsTotalCost = receivePurchasesItems.reduce(
-    (sum, item) => sum + item.cost_price * item.receive_quantity,
+    (sum, item) => sum + item.costPrice * item.receiveQuantity,
     0,
   );
-  const amountToReceive = Number(final_total) - Number(receivedItemsTotalCost);
+  const amountToReceive = Number(finalTotal) - Number(receivedItemsTotalCost);
   const updatedDue =
-    Number(due_amount) + (Number(grandTotal) - Number(amountToReceive));
+    Number(dueAmount) + (Number(grandTotal) - Number(amountToReceive));
   console.log(updatedDue);
   return (
     <div className="grid grid-cols-12">
@@ -214,12 +218,12 @@ export const ReceiveItems = () => {
             <p>Back to Purchase Orders</p>
             <h1>Receive Items</h1>
             <p>
-              OrderId: {id} | Supplier: {supplier_name}
+              OrderId: {id} | Supplier: {supplierName}
             </p>
           </div>
           <div>
             <p>Order Total</p>
-            <p>{final_total}</p>
+            <p>{finalTotal}</p>
           </div>
         </div>
         {/* summer card */}
@@ -255,19 +259,19 @@ export const ReceiveItems = () => {
                 {/* row 1 */}
                 {receiveItems.map((item) => {
                   const itemsReceived =
-                    Number(item.receive_quantity) === Number(item.quantity);
+                    Number(item.receiveQuantity) === Number(item.quantity);
 
                   return (
                     <tr key={item.id}>
-                      <th>{item.product_name}</th>
-                      <td>{item.product_unit}</td>
+                      <th>{item.productName}</th>
+                      <td>{item.productUnit}</td>
                       <td>{item.quantity}</td>
-                      <td>{item.receive_quantity}</td>
+                      <td>{item.receiveQuantity}</td>
                       <td>
                         <input
                           disabled={itemsReceived}
                           min={0}
-                          max={item.quantity - item.receive_quantity}
+                          max={item.quantity - item.receiveQuantity}
                           name="receiveQuantity"
                           onChange={(e) => {
                             handleReceiveOnchange(e, item);
@@ -355,9 +359,9 @@ export const ReceiveItems = () => {
           <fieldset className="fieldset w-full">
             <legend className="fieldset-legend">Payment Method</legend>
             <select
-              name="payment_method"
+              name="paymentMethod"
               onChange={handlePaymentOnchange}
-              value={paymentDetails.payment_method}
+              value={paymentDetails.paymentMethod}
               className="select w-full"
             >
               {PAYMENT_METHODS.map((method) => (
@@ -395,7 +399,7 @@ export const ReceiveItems = () => {
           <div className="flex justify-between gap-6 p-2">
             <div className="flex justify-between w-full">
               <p>Previous Balance</p>
-              <p>{due_amount}</p>
+              <p>{dueAmount}</p>
             </div>
             <div className="flex justify-between w-full">
               <p>New Balance Due</p>
@@ -419,7 +423,7 @@ export const ReceiveItems = () => {
     </div>
   );
 };
-const SummaryCard = ({ card, formatCurrency }:SummaryCardProps) => {
+const SummaryCard = ({ card, formatCurrency }: SummaryCardProps) => {
   const displayValue =
     "total" in card
       ? `TK ${formatCurrency(card.total)}`

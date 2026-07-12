@@ -2,16 +2,16 @@ import React from "react";
 import { useProductStore } from "../../store/product-store.js";
 import { useCartStore } from "../../store/cart-store.js";
 interface ProductListProps {
-  search:string
+  search: string;
 }
-export function ProductList({ search }:ProductListProps) {
+export function ProductList({ search }: ProductListProps) {
   // const getProducts = useProductStore((state) => state.getProducts);
   // const product = useProductStore((state) => state.product);
   // const removeProductQty = useProductStore((state) => state.removeProductQty);
   const { addToCart } = useCartStore();
   const { products, removeProductQuantity } = useProductStore();
   const filtered = products.filter((item) =>
-    item.product_name.toLowerCase().includes(search.toLowerCase() || ""),
+    item.productName.toLowerCase().includes(search.toLowerCase() || ""),
   );
 
   return (
@@ -38,7 +38,7 @@ export function ProductList({ search }:ProductListProps) {
                   </div>
                 )}
                 <img className="h-20 rounded-sm " src={product.image} alt="" />
-                <h2 className="text-center">{product.product_name}</h2>
+                <h2 className="text-center">{product.productName}</h2>
                 <p className=" ">{product.category}</p>
                 <h1 className=" ">TK: {product.price}</h1>
                 <p className=" ">Stock: {product.quantity}</p>

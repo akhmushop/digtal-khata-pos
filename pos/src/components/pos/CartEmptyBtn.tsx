@@ -17,7 +17,7 @@ export function ClickEmptyToResetCart({
   const handleClearCart = () => {
     if (cart.length === 0) return alert("Your cart is already empty");
     cart.map((p) => {
-      restoreAllProductQuantityToCart(p.id, p.sold_quantity);
+      restoreAllProductQuantityToCart(p.id, p.soldQuantity);
     });
     resetCart();
     handleShowPopup();

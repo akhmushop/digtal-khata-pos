@@ -36,7 +36,7 @@ const ProductStockForm = () => {
   );
   const initialErrors: Errors = {
     barcode: "",
-    product_name: "",
+    productName: "",
     cost: "",
     price: "",
     quantity: "",
@@ -52,17 +52,17 @@ const ProductStockForm = () => {
   const initialFormData: InitialFormData = editingProduct
     ? {
         barcode: editingProduct.barcode,
-        product_name: editingProduct.product_name,
-        product_unit: editingProduct.product_unit,
-        product_type: editingProduct.product_type,
-        alert_quantity: editingProduct.alert_quantity,
+        productName: editingProduct.productName,
+        productUnit: editingProduct.productUnit,
+        productType: editingProduct.productType,
+        alertQuantity: editingProduct.alertQuantity,
         cost: editingProduct.cost,
         price: editingProduct.price,
         quantity: editingProduct.quantity,
-        discount_percent: editingProduct.discount_percent,
-        flat_discount: editingProduct.flat_discount,
-        batch_number: editingProduct.batch_number,
-        expiry_date: editingProduct.expiry_date || "",
+        discountPercent: editingProduct.discountPercent,
+        flatDiscount: editingProduct.flatDiscount,
+        batchNumber: editingProduct.batchNumber,
+        expiryDate: editingProduct.expiryDate || "",
         description: editingProduct.description,
         supplier: editingProduct.supplier,
         brand: editingProduct.brand,
@@ -71,17 +71,17 @@ const ProductStockForm = () => {
       }
     : {
         barcode: "",
-        product_name: "",
-        product_unit: "PC",
-        product_type: "SIMPLE",
-        alert_quantity: 0,
+        productName: "",
+        productUnit: "PC",
+        productType: "SIMPLE",
+        alertQuantity: 0,
         cost: 0,
         price: 0,
         quantity: 0,
-        discount_percent: 0,
-        flat_discount: 0,
-        batch_number: "",
-        expiry_date: "",
+        discountPercent: 0,
+        flatDiscount: 0,
+        batchNumber: "",
+        expiryDate: "",
         description: "",
         supplier: "",
         brand: "",
@@ -116,8 +116,8 @@ const ProductStockForm = () => {
       newErrors.barcode = "Barcode is required";
     }
 
-    if (!formData.product_name.trim()) {
-      newErrors.product_name = "Product name is required";
+    if (!formData.productName.trim()) {
+      newErrors.productName = "Product name is required";
     }
 
     if (!formData.cost || formData.cost <= 0) {
@@ -208,8 +208,8 @@ const ProductStockForm = () => {
     }
     // Calculate final price after discounts
     const basePrice = formData.price;
-    const percentDiscount = (basePrice * formData.discount_percent) / 100;
-    const finalPrice = basePrice - percentDiscount - formData.flat_discount;
+    const percentDiscount = (basePrice * formData.discountPercent) / 100;
+    const finalPrice = basePrice - percentDiscount - formData.flatDiscount;
     const tagsArray = tagInput
       .split(",")
       .map((tag) => tag.trim())
@@ -217,12 +217,12 @@ const ProductStockForm = () => {
     const productData = {
       ...(editingProduct ? editingProduct : {}),
       ...formData,
-      flat_discount: Number(formData.flat_discount),
-      discount_percent: Number(formData.discount_percent),
+      flatDiscount: Number(formData.flatDiscount),
+      discountPercent: Number(formData.discountPercent),
       tags: tagsArray,
-      final_price: finalPrice,
-      image: imagePreview ?? '',
-      created_at: new Date().toISOString(),
+      finalPrice: finalPrice,
+      image: imagePreview ?? "",
+      createdAt: new Date().toISOString(),
     };
 
     if (editingProduct) {
@@ -380,19 +380,19 @@ const ProductStockForm = () => {
                       </label>
                       <input
                         type="text"
-                        name="product_name"
-                        value={formData.product_name}
+                        name="productName"
+                        value={formData.productName}
                         onChange={handleChange}
                         placeholder="Enter product name"
                         className={`w-full px-4 py-3 bg-white border ${
-                          errors.product_name
+                          errors.productName
                             ? "border-red-500"
                             : "border-gray-300"
                         } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                       />
-                      {errors.product_name && (
+                      {errors.productName && (
                         <p className="text-xs text-red-500">
-                          {errors.product_name}
+                          {errors.productName}
                         </p>
                       )}
                     </div>
@@ -404,8 +404,8 @@ const ProductStockForm = () => {
                       </label>
                       <div className="relative">
                         <select
-                          name="product_unit"
-                          value={formData.product_unit}
+                          name="productUnit"
+                          value={formData.productUnit}
                           onChange={handleChange}
                           className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
                         >
@@ -426,8 +426,8 @@ const ProductStockForm = () => {
                       </label>
                       <div className="relative">
                         <select
-                          name="product_type"
-                          value={formData.product_type}
+                          name="productType"
+                          value={formData.productType}
                           onChange={handleChange}
                           className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
                         >
@@ -449,8 +449,8 @@ const ProductStockForm = () => {
                       </label>
                       <input
                         type="number"
-                        name="alert_quantity"
-                        value={formData.alert_quantity}
+                        name="alertQuantity"
+                        value={formData.alertQuantity}
                         onChange={handleChange}
                         min="0"
                         className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200"
@@ -561,8 +561,8 @@ const ProductStockForm = () => {
                       </label>
                       <input
                         type="number"
-                        name="discount_percent"
-                        value={formData.discount_percent}
+                        name="discountPercent"
+                        value={formData.discountPercent}
                         onChange={handleChange}
                         min="0"
                         max="100"
@@ -582,8 +582,8 @@ const ProductStockForm = () => {
                         </div>
                         <input
                           type="number"
-                          name="flat_discount"
-                          value={formData.flat_discount}
+                          name="flatDiscount"
+                          value={formData.flatDiscount}
                           onChange={handleChange}
                           step="0.01"
                           min="0"
@@ -604,10 +604,10 @@ const ProductStockForm = () => {
                             formData.price ||
                             0 -
                               (formData.price ||
-                                0 * formData.discount_percent ||
+                                0 * formData.discountPercent ||
                                 0) /
                                 100 -
-                              formData.flat_discount ||
+                              formData.flatDiscount ||
                             0
                           ).toFixed(2)}
                         </div>
@@ -621,8 +621,8 @@ const ProductStockForm = () => {
                       </label>
                       <input
                         type="text"
-                        name="batch_number"
-                        value={formData.batch_number}
+                        name="batchNumber"
+                        value={formData.batchNumber}
                         onChange={handleChange}
                         placeholder="Enter batch number"
                         className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
@@ -637,8 +637,8 @@ const ProductStockForm = () => {
                       </label>
                       <input
                         type="date"
-                        name="expiry_date"
-                        value={formData.expiry_date}
+                        name="expiryDate"
+                        value={formData.expiryDate}
                         onChange={handleChange}
                         min={new Date().toISOString().split("T")[0]}
                         className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"

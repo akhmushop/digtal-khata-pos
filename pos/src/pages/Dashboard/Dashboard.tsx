@@ -658,7 +658,7 @@ const TopItemsByGross = ({
                     <TrendingDown className="w-4 h-4 text-red-600" />
                   )}
                 </div>
-                <span className="font-medium">{item.product_name}</span>
+                <span className="font-medium">{item.productName}</span>
               </div>
               <span className="font-bold">
                 TK {formatCurrency(item.current_month_gross)}
@@ -702,12 +702,12 @@ const TopSellingProducts = ({
                   />
 
                   <div className="flex flex-col gap-1 ">
-                    <span className="font-medium">{item.product_name}</span>
+                    <span className="font-medium">{item.productName}</span>
                     <span className="font-sm">{item.top_selling} Sales</span>
                   </div>
                 </div>
                 <span className="font-bold text-right">
-                  TK {formatCurrency(item.sold_price)}
+                  TK {formatCurrency(item.soldPrice)}
                 </span>
               </div>
             );
@@ -721,7 +721,10 @@ const TopSellingProducts = ({
     </div>
   );
 };
-const LowStockAlert = ({ lowStockSummary, formatCurrency }:LowStockAlertProps) => {
+const LowStockAlert = ({
+  lowStockSummary,
+  formatCurrency,
+}: LowStockAlertProps) => {
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex justify-between items-center mb-6">
@@ -745,7 +748,7 @@ const LowStockAlert = ({ lowStockSummary, formatCurrency }:LowStockAlertProps) =
                 />
 
                 <div className="flex flex-col gap-1">
-                  <span className="font-medium">{item.product_name}</span>
+                  <span className="font-medium">{item.productName}</span>
                   <span className="font-sm">{item.sku}</span>
                 </div>
               </div>
@@ -765,7 +768,10 @@ const LowStockAlert = ({ lowStockSummary, formatCurrency }:LowStockAlertProps) =
     </div>
   );
 };
-const RecentSales = ({ recentSalesSummary, formatCurrency }:RecentSalesProps) => {
+const RecentSales = ({
+  recentSalesSummary,
+  formatCurrency,
+}: RecentSalesProps) => {
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex justify-between items-center mb-6">
@@ -777,8 +783,8 @@ const RecentSales = ({ recentSalesSummary, formatCurrency }:RecentSalesProps) =>
       <div className="space-y-4">
         {recentSalesSummary?.length > 0 ? (
           Object.values(recentSalesSummary).map((item, index) => {
-            const date = new Date(item.created_at).toLocaleDateString();
-            const time = new Date(item.created_at).toLocaleTimeString();
+            const date = new Date(item.createdAt).toLocaleDateString();
+            const time = new Date(item.createdAt).toLocaleTimeString();
             return (
               <div
                 key={item.id}
@@ -793,13 +799,13 @@ const RecentSales = ({ recentSalesSummary, formatCurrency }:RecentSalesProps) =>
 
                   <div className="flex flex-col gap-1 ">
                     <span className="font-medium">
-                      {item.product_name_at_sale}
+                      {item.productNameAtSale}
                     </span>
                     <span className="font-sm">{date + " " + time}</span>
                   </div>
                 </div>
                 <span className="font-bold text-right">
-                  TK {formatCurrency(item.sold_price)}
+                  TK {formatCurrency(item.soldPrice)}
                 </span>
               </div>
             );

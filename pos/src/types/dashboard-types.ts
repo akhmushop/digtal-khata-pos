@@ -12,7 +12,7 @@ export interface ProductSummary {
 }
 interface TopItemByGross {
   trend: string;
-  product_name: string;
+  productName: string;
   current_month_gross: number;
   last_month_gross: number;
 }
@@ -48,16 +48,16 @@ export interface ReturnSummary {
   return_growth_pct: number;
 }
 interface RecentSale {
-  created_at: string;
+  createdAt: string;
   id: number;
   image: string;
-  product_name_at_sale: number;
-  sold_price: number;
+  productNameAtSale: number;
+  soldPrice: number;
 }
 interface LowStockProduct {
   id: number;
   image: string;
-  product_name: number;
+  productName: number;
   quantity: number;
   sku: string;
   status: string;
@@ -65,9 +65,9 @@ interface LowStockProduct {
 interface TopSellingProduct {
   id: number;
   image: string;
-  product_id: number;
-  product_name: string;
-  sold_price: number;
+  productId: number;
+  productName: string;
+  soldPrice: number;
   top_selling: number;
 }
 export interface SaleSummary {

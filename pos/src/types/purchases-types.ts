@@ -1,42 +1,42 @@
 import type { ProductsTypes } from "./products-types.js";
 interface PurchasesStoreType {
-  created_at: string;
+  createdAt: string;
   discount: number;
-  due_amount: number;
-  final_total: number;
+  dueAmount: number;
+  finalTotal: number;
   id: number;
   note: string;
-  paid_amount: number;
-  payment_status: string;
+  paidAmount: number;
+  paymentStatus: string;
   status: string;
   subtotal: number;
-  supplier_name: number;
+  supplierName: number;
 }
 export interface PurchaseCart extends ProductsTypes {
   purchaseQty: number;
 }
 export interface PurchasesItems extends ProductsTypes {
-  purchase_id: number;
-  receive_quantity: number;
-  cost_price: number;
-  product_id: number;
+  purchaseId: number;
+  receiveQuantity: number;
+  costPrice: number;
+  productId: number;
   returnPurchaseQty: number;
   purchasePrice: number;
   receiveQuantity: number;
   sellingPrice: number;
 }
 export interface PurchasesReturnItems extends ProductsTypes {
-  purchase_item_id: number;
+  purchaseItemId: number;
   return_quantity: number;
 }
 export interface ChangedItems {
   id: number;
-  product_id: number;
+  productId: number;
   returnPurchaseQty: number;
 }
 export interface UpdateStockChangedItems {
   id: number;
-  product_id: number;
+  productId: number;
   receiveQuantity: number;
   purchasePrice: number;
   sellingPrice: number;
@@ -97,6 +97,6 @@ export interface SummaryCardProps {
 export interface PaymentDetails {
   orderId: number;
   payment_amount: number;
-  payment_method: string;
+  paymentMethod: string;
   payment_notes: string;
 }

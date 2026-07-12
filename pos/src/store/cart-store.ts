@@ -88,12 +88,12 @@ export const useCartStore = create<CartStore>((set) => ({
         return {
           cart: state.cart.map((p) =>
             p.id === cartProduct.id
-              ? { ...p, sold_quantity: (p.sold_quantity || 1) + 1 }
+              ? { ...p, soldQuantity: (p.soldQuantity || 1) + 1 }
               : p,
           ),
         };
       }
-      return { cart: [...state.cart, { ...cartProduct, sold_quantity: 1 }] };
+      return { cart: [...state.cart, { ...cartProduct, soldQuantity: 1 }] };
     }),
   removeCartItem: (id) =>
     set((state) => ({
@@ -105,7 +105,7 @@ export const useCartStore = create<CartStore>((set) => ({
         if (p.id === id) {
           return {
             ...p,
-            sold_quantity: p.sold_quantity + 1,
+            soldQuantity: p.soldQuantity + 1,
           };
         }
         return p;
@@ -116,15 +116,15 @@ export const useCartStore = create<CartStore>((set) => ({
       return {
         cart: state.cart
           .map((p) =>
-            p.id === id ? { ...p, sold_quantity: p.sold_quantity - 1 } : p,
+            p.id === id ? { ...p, soldQuantity: p.soldQuantity - 1 } : p,
           )
-          .filter((p) => p.sold_quantity > 0),
+          .filter((p) => p.soldQuantity > 0),
       };
     }),
   addCustomCartQuantity: (id, customCartQuantity) =>
     set((state) => ({
       cart: state.cart.map((p) =>
-        p.id === id ? { ...p, sold_quantity: customCartQuantity } : p,
+        p.id === id ? { ...p, soldQuantity: customCartQuantity } : p,
       ),
     })),
   resetCart: () =>

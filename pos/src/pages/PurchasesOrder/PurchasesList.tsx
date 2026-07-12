@@ -71,7 +71,7 @@ export const PurchasesList = () => {
     </div>
   );
 };
-const PurchaseNew = ({ purchases }:PurchaseNewProps) => {
+const PurchaseNew = ({ purchases }: PurchaseNewProps) => {
   return (
     <div className="rounded-box border border-base-content/5 bg-base-100">
       <table className="table table-sm ">
@@ -94,16 +94,16 @@ const PurchaseNew = ({ purchases }:PurchaseNewProps) => {
         <tbody>
           {/* row 1 */}
           {purchases?.map((pur) => {
-            const date = new Date(pur.created_at);
+            const date = new Date(pur.createdAt);
             return (
               <tr key={pur.id}>
                 <th>{pur.id}</th>
-                <th>{pur.supplier_name}</th>
+                <th>{pur.supplierName}</th>
                 <th>demo</th>
                 <th>1items</th>
-                <th>{pur.final_total}</th>
-                <th>{pur.due_amount}</th>
-                <th>{pur.payment_status}</th>
+                <th>{pur.finalTotal}</th>
+                <th>{pur.dueAmount}</th>
+                <th>{pur.paymentStatus}</th>
                 <th>{pur.status}</th>
                 <th>{date.toLocaleDateString()}</th>
                 <th>{date.toLocaleDateString()}</th>

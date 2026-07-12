@@ -1,7 +1,7 @@
 import type React from "react";
 import type { ProductsTypes } from "./products-types.js";
 export interface CartType extends ProductsTypes {
-  sold_quantity: number;
+  soldQuantity: number;
 }
 export interface CartStore {
   cart: CartType[];
@@ -16,10 +16,10 @@ export interface CashForm {
   discount: number;
   amountReceived: number;
   change: number;
-  final_total: number;
-  paid_amount: number;
+  finalTotal: number;
+  paidAmount: number;
   note: string;
-  due_amount: number;
+  dueAmount: number;
   subtotal: number;
   vat: number;
 }
@@ -82,7 +82,7 @@ export interface PaymentModalProps {
 export interface PopupModalProps {
   handelClose: () => void;
   isOpen: boolean;
-  className: string ;
+  className: string;
   children: React.ReactNode;
 }
 export interface CartTextModalProps {

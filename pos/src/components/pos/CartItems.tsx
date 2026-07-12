@@ -73,7 +73,7 @@ export default function CartItems() {
           addCustomProductQuantityToCart(
             items.id,
             newQuantity,
-            items.sold_quantity,
+            items.soldQuantity,
           );
         }
         setCustomQuantity(null);
@@ -94,7 +94,7 @@ export default function CartItems() {
   // ClickOutSideToSaveCustomQuantity
   const { customerInputValue } = useCustomerStore();
   const { name, phone, address, id } = customerInputValue;
-  const customerDue = dueByCustomers.find((c) => c.customer_id === id);
+  const customerDue = dueByCustomers.find((c) => c.customerId === id);
   return (
     <div className="h-[calc(100vh-4.25rem)]">
       <div className="h-full overflow-scroll  no-scrollbar bg-zuccini-50">
@@ -106,7 +106,7 @@ export default function CartItems() {
             <h1 className="col-span-2">address: {address}</h1>
             {customerDue ? (
               <h1 className="col-span-2">
-                Total Amount: {customerDue.total_amount} , Total Paid:{" "}
+                Total Amount: {customerDue.totalAmount} , Total Paid:{" "}
                 {customerDue.total_paid} , Total Due: {customerDue.total_due}
               </h1>
             ) : (
@@ -129,13 +129,13 @@ export default function CartItems() {
                   alt=""
                 />
                 <div className="flex-1 pl-5">
-                  <h1>{items.product_name}</h1>
+                  <h1>{items.productName}</h1>
                   <p>
                     {Number(items.price).toFixed(2)} ×{" "}
-                    {Number(items.sold_quantity)} ={" "}
-                    {(
-                      Number(items.price) * Number(items.sold_quantity)
-                    ).toFixed(2)}
+                    {Number(items.soldQuantity)} ={" "}
+                    {(Number(items.price) * Number(items.soldQuantity)).toFixed(
+                      2,
+                    )}
                   </p>
                 </div>
                 <div className="flex text-2xl gap-x-4 items-center pr-5  ">
@@ -159,14 +159,14 @@ export default function CartItems() {
                         type="number"
                         className="h-7 w-11 border"
                         ref={editQuantityRef}
-                        defaultValue={items.sold_quantity}
+                        defaultValue={items.soldQuantity}
                         autoFocus
                         onChange={(e) => {
                           setCustomQuantity(Number(e.target.value));
                         }}
                       />
                     ) : (
-                      items.sold_quantity
+                      items.soldQuantity
                     )}
                   </span>
                   <div
@@ -183,7 +183,7 @@ export default function CartItems() {
                     onClick={() => {
                       restoreSingleProductQuantityToCart(
                         items.id,
-                        items.sold_quantity,
+                        items.soldQuantity,
                       );
                       removeCartItem(items.id);
                     }}
@@ -221,7 +221,7 @@ function CartCalculation({ customerInputValue }: CustomerInputValueProps) {
     }
   });
   const subTotal = Number(
-    cart.reduce((total, item) => total + item.price * item.sold_quantity, 0),
+    cart.reduce((total, item) => total + item.price * item.soldQuantity, 0),
   );
   const vat = Number(subTotal * (5 / 100));
   const [holdConfirm, setHoldConfirm] = useState(false);
@@ -248,10 +248,10 @@ function CartCalculation({ customerInputValue }: CustomerInputValueProps) {
     discount: 0,
     amountReceived: 0,
     change: 0,
-    final_total: 0,
-    paid_amount: 0,
+    finalTotal: 0,
+    paidAmount: 0,
     note: "",
-    due_amount: 0,
+    dueAmount: 0,
     subtotal: 0,
     vat: 0,
   };
@@ -266,7 +266,7 @@ function CartCalculation({ customerInputValue }: CustomerInputValueProps) {
       ...prev,
       subtotal: subTotal,
       vat: vat,
-      final_total: total,
+      finalTotal: total,
     }));
     setIsCashModalOpen(true);
     setTimeout(() => setIsOpen(true), 30);
@@ -277,8 +277,8 @@ function CartCalculation({ customerInputValue }: CustomerInputValueProps) {
       ...prev,
       subtotal: subTotal,
       vat: vat,
-      final_total: total,
-      due_amount: total,
+      finalTotal: total,
+      dueAmount: total,
     }));
     setIsOpen(false);
     setIsPaymentModalOpen(true);
@@ -289,12 +289,12 @@ function CartCalculation({ customerInputValue }: CustomerInputValueProps) {
       const updated = { ...prev, [id]: value };
       // payable AFTER discount
       const baseTotal = Number(prev.subtotal) + Number(prev.vat);
-      updated.final_total = baseTotal - Number(updated.discount);
+      updated.finalTotal = baseTotal - Number(updated.discount);
       // change = amountReceived - payable
-      const calculateDueAmount = updated.final_total - updated.paid_amount;
-      updated.due_amount = calculateDueAmount;
+      const calculateDueAmount = updated.finalTotal - updated.paidAmount;
+      updated.dueAmount = calculateDueAmount;
       const calculatedChange =
-        Number(updated.amountReceived) - Number(updated.final_total);
+        Number(updated.amountReceived) - Number(updated.finalTotal);
       updated.change = calculatedChange < 0 ? 0 : calculatedChange;
 
       return updated;
@@ -307,19 +307,19 @@ function CartCalculation({ customerInputValue }: CustomerInputValueProps) {
     const { id } = customerInputValue;
     const updatedCash = {
       ...cashForm,
-      paid_amount: cashForm.final_total,
-      payment_method: "Cash",
-      customer_id: id,
+      paidAmount: cashForm.finalTotal,
+      paymentMethod: "Cash",
+      customerId: id,
     };
     const updatedPayment = {
       ...cashForm,
-      payment_method: paymentMethod,
-      customer_id: id,
+      paymentMethod: paymentMethod,
+      customerId: id,
     };
     if (click === "cash") {
       if (
         cashForm.amountReceived > 0 &&
-        cashForm.amountReceived > cashForm.final_total
+        cashForm.amountReceived > cashForm.finalTotal
       ) {
         addToSoldProduct(cart, updatedCash);
         resetCart();
@@ -568,7 +568,7 @@ function PeerInput({ id, peerName, value, onChange }: PeerInputProps) {
   return (
     <div className="relative">
       <input
-        disabled={id === "final_total" || id === "due_amount"}
+        disabled={id === "finalTotal" || id === "dueAmount"}
         onFocus={(e) => {
           e.target.select();
         }}
@@ -624,15 +624,15 @@ function PaymentModal({
       <div className="space-y-5">
         <div className="grid grid-cols-2 gap-5">
           <PeerInput
-            id="paid_amount"
+            id="paidAmount"
             peerName="Paid Amount"
-            value={cashForm.paid_amount}
+            value={cashForm.paidAmount}
             onChange={handleCashChange}
           />
           <PeerInput
-            id="final_total"
+            id="finalTotal"
             peerName="Final Total"
-            value={cashForm.final_total}
+            value={cashForm.finalTotal}
             onChange={handleCashChange}
           />
         </div>
@@ -644,9 +644,9 @@ function PaymentModal({
             onChange={handleCashChange}
           />
           <PeerInput
-            id="due_amount"
+            id="dueAmount"
             peerName="Due Amount"
-            value={cashForm.due_amount}
+            value={cashForm.dueAmount}
             onChange={handleCashChange}
           />
         </div>
@@ -733,9 +733,9 @@ function CashModal({
             onChange={handleCashChange}
           />
           <PeerInput
-            id="final_total"
+            id="finalTotal"
             peerName="Final Total"
-            value={cashForm.final_total.toFixed(2)}
+            value={cashForm.finalTotal.toFixed(2)}
             onChange={handleCashChange}
           />
         </div>
@@ -791,7 +791,7 @@ function CartTextModal({
   const cart = useCartStore((state) => state.cart);
   const totalItemsCount = cart.reduce((total) => total + 1, 0);
   const totalQuantityCount = cart.reduce(
-    (total, item) => total + (item.sold_quantity || 0),
+    (total, item) => total + (item.soldQuantity || 0),
     0,
   );
 

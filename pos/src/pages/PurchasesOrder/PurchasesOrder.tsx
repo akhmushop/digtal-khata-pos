@@ -15,9 +15,7 @@ export function PurchasesOrder() {
   const [purchasesCart, setPurchasesCart] = useState<PurchaseCart[]>([]);
   const { products } = useProductStore();
   const filteredProducts = products.filter((item) =>
-    item.product_name
-      .toLowerCase()
-      .includes(searchProducts.toLowerCase() || ""),
+    item.productName.toLowerCase().includes(searchProducts.toLowerCase() || ""),
   );
   const [showSupplierSearch, setShowSupplierSearch] = useState(true);
   const [showSupplier, setShowSupplier] = useState<Suppliers | null>(null);
@@ -88,7 +86,7 @@ export function PurchasesOrder() {
 
     const updated = {
       purchasesCart,
-      final_total: estGrandPurchaseTotal,
+      finalTotal: estGrandPurchaseTotal,
       supplier: showSupplier,
       notes: purchasesCartNotes,
     };
@@ -150,7 +148,7 @@ export function PurchasesOrder() {
                       src={product.image}
                       alt=""
                     />
-                    <h2 className="text-center">{product.product_name}</h2>
+                    <h2 className="text-center">{product.productName}</h2>
                     <p className=" ">{product.category}</p>
                     <h1 className=" ">TK: {product.price}</h1>
                     <p className=" ">Stock: {product.quantity}</p>
@@ -282,9 +280,9 @@ export function PurchasesOrder() {
                   {purchasesCart.map((pur, i) => (
                     <tr key={pur.id}>
                       <th>{i + 1}</th>
-                      <td>{pur.product_name}</td>
-                      <td>{pur.product_type}</td>
-                      <td>{pur.product_unit}</td>
+                      <td>{pur.productName}</td>
+                      <td>{pur.productType}</td>
+                      <td>{pur.productUnit}</td>
                       {/* ordered qty */}
                       <td>
                         <input

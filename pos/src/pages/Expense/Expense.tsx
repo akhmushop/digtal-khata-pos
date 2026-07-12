@@ -20,11 +20,11 @@ export const Expense = () => {
   }, []);
   const initialExpenseValue: Expenses = {
     title: "",
-    expense_date: new Date().toISOString().split("T")[0] ?? "",
+    expenseDate: new Date().toISOString().split("T")[0] ?? "",
     amount: 0,
-    category_id: 0,
-    payment_method: "",
-    reference_no: "",
+    categoryId: 0,
+    paymentMethod: "",
+    referenceNo: "",
     note: "",
   };
   const [expenseData, setExpenseData] = useState(initialExpenseValue);
@@ -79,8 +79,8 @@ export const Expense = () => {
             <fieldset className="fieldset col-span-6">
               <legend className="fieldset-legend">Expense date</legend>
               <input
-                value={expenseData.expense_date}
-                id="expense_date"
+                value={expenseData.expenseDate}
+                id="expenseDate"
                 onChange={handleOnChangeExpenseInput}
                 type="date"
                 className="input"
@@ -103,8 +103,8 @@ export const Expense = () => {
             <fieldset className="fieldset col-span-6">
               <legend className="fieldset-legend">Category</legend>
               <select
-                value={expenseData.category_id}
-                id="category_id"
+                value={expenseData.categoryId}
+                id="categoryId"
                 onChange={handleOnChangeExpenseInput}
                 className="select"
               >
@@ -113,7 +113,7 @@ export const Expense = () => {
                 </option>
                 {expenseCategories.map((cat) => (
                   <option key={cat.id} value={cat.id}>
-                    {cat.category_name}
+                    {cat.categoryName}
                   </option>
                 ))}
               </select>
@@ -121,8 +121,8 @@ export const Expense = () => {
             <fieldset className="fieldset col-span-6">
               <legend className="fieldset-legend">Payment Method</legend>
               <select
-                value={expenseData.payment_method}
-                id="payment_method"
+                value={expenseData.paymentMethod}
+                id="paymentMethod"
                 onChange={handleOnChangeExpenseInput}
                 className="select"
               >
@@ -138,8 +138,8 @@ export const Expense = () => {
             <fieldset className="fieldset col-span-12">
               <legend className="fieldset-legend">Reference no.</legend>
               <input
-                value={expenseData.reference_no}
-                id="reference_no"
+                value={expenseData.referenceNo}
+                id="referenceNo"
                 onChange={handleOnChangeExpenseInput}
                 type="text"
                 className="input w-full"
