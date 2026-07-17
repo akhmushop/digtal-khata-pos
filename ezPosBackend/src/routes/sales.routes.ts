@@ -1,12 +1,39 @@
 import express from "express";
 import { pool } from "../config/db.js";
+import { db } from "../db/index.js";
+import {
+  products,
+  saleItems,
+  salePayments,
+  saleRefundItems,
+  saleRefunds,
+  sales,
+} from "../db/schema.js";
+import { and, asc, desc, eq, gt, gte, lt, sql } from "drizzle-orm";
+import { error } from "node:console";
 const router = express.Router();
 router.get("/api/sold_products", async (req, res) => {
   try {
-    const sold_products = await pool.query(
-      "SELECT s.id AS sale_id,si.id AS sale_items_id,p.id,p.product_name,p.category, p.cost, p.price ,si.sold_quantity, si.sold_price, s.created_at FROM sale_items si JOIN sales s ON si.sale_id = s.id JOIN products p ON si.product_id = p.id WHERE si.status = 'completed' AND s.status = 'completed'",
-    );
-    res.json(sold_products.rows);
+    const soldProducts = await db
+      .select({
+        saleId: sales.id,
+        saleItemsId: saleItems.id,
+        id: products.id,
+        productName: products.productName,
+        category: products.category,
+        cost: products.cost,
+        price: products.price,
+        soldQuantity: saleItems.soldQuantity,
+        soldPrice: saleItems.soldPrice,
+        createdAt: sales.createdAt,
+      })
+      .from(saleItems)
+      .innerJoin(sales, eq(saleItems.saleId, sales.id))
+      .innerJoin(products, eq(saleItems.productId, products.id))
+      .where(
+        and(eq(saleItems.status, "completed"), eq(sales.status, "completed")),
+      );
+    res.json(soldProducts);
   } catch (err) {
     console.error(err);
   }
@@ -14,53 +41,40 @@ router.get("/api/sold_products", async (req, res) => {
 router.post("/api/sold_products", async (req, res) => {
   try {
     const { cart, cashForm } = req.body;
-    const {
-      final_total,
-      paid_amount,
-      discount,
-      subtotal,
-      vat,
-      note,
-      payment_method,
-      customer_id,
-    } = cashForm;
+    const { final_total, paid_amount, payment_method, customer_id } = cashForm;
     const due_amount = final_total - paid_amount;
-    const getPaymentStatus = (paid:number, due:number) => {
+    const getPaymentStatus = (paid: number, due: number) => {
       if (due <= 0) return "paid";
       if (paid > 0 && due > 0) return "partial";
       if (paid === 0) return "unpaid";
     };
-    const payment_status = getPaymentStatus(paid_amount, due_amount);
-    const insertSale = await pool.query(
-      "INSERT INTO sales (customer_id, discount,final_total,subtotal,vat,note,payment_status,due_amount) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id",
-      [
-        customer_id,
-        discount,
-        final_total,
-        subtotal,
-        vat,
-        note,
-        payment_status,
-        due_amount,
-      ],
-    );
-    const salesId = insertSale.rows[0].id;
+    const paymentStatus = getPaymentStatus(paid_amount, due_amount);
+    const [insertSale] = await db
+      .insert(sales)
+      .values({ ...cashForm, paymentStatus: paymentStatus })
+      .returning({ id: sales.id });
+    const salesId = insertSale?.id;
     if (paid_amount > 0) {
-      await pool.query(
-        "INSERT INTO sale_payments (customer_id,sale_id,paid_amount,payment_method) VALUES($1,$2,$3,$4)",
-        [customer_id, salesId, paid_amount, payment_method],
-      );
+      await db.insert(salePayments).values({
+        customerId: customer_id,
+        saleId: salesId,
+        paidAmount: paid_amount,
+        paymentMethod: payment_method,
+      });
     }
     for (let item of cart) {
-      const { id, sold_quantity, final_price, product_name, cost } = item;
-      const insertSoldProducts = await pool.query(
-        "INSERT INTO sale_items (sale_id, product_id, sold_quantity, sold_price,product_name_at_sale,cost_at_sale) VALUES ($1,$2,$3,$4,$5,$6)",
-        [salesId, id, sold_quantity, final_price, product_name, cost],
-      );
-      const updateProductQuantity = await pool.query(
-        "UPDATE products SET quantity = quantity - $1 WHERE id = $2",
-        [sold_quantity, id],
-      );
+      await db.insert(saleItems).values({
+        saleId: salesId,
+        productId: item.id,
+        soldQuantity: item.sold_quantity,
+        soldPrice: item.final_price,
+        productNameAtSale: item.product_name,
+        costAtSale: item.cost,
+      });
+      await db
+        .update(products)
+        .set({ quantity: sql`${products.quantity} - ${item.sold_quantity}` })
+        .where(eq(products.id, item.id));
     }
   } catch (err) {
     console.error(err);
@@ -68,86 +82,240 @@ router.post("/api/sold_products", async (req, res) => {
 });
 router.post("/api/sold_products/refund/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    const updateStatus = await pool.query(
-      "UPDATE sale_items SET status = 'refunded' WHERE id = $1",
-      [id],
-    );
-    const sale_items = await pool.query(
-      "SELECT * FROM sale_items WHERE id = $1",
-      [id],
-    );
-    const saleItem = sale_items.rows[0];
-    const refundTotal = saleItem.sold_price * saleItem.sold_quantity;
-    const refund = await pool.query(
-      "INSERT INTO sale_refunds (sale_id ,refund_total) VALUES ($1,$2) RETURNING id",
-      [saleItem.sale_id, refundTotal],
-    );
-    const saleRefundsId = refund.rows[0].id;
-    await pool.query(
-      "INSERT INTO sale_refund_items (refund_id ,sale_item_id,product_id,quantity,refund_price,refund_total) VALUES($1,$2,$3,$4,$5,$6)",
-      [
-        saleRefundsId,
-        saleItem.id,
-        saleItem.product_id,
-        saleItem.sold_quantity,
-        saleItem.sold_price,
+    const id = Number(req.params.id);
+    await db
+      .update(saleItems)
+      .set({ status: "refunded" })
+      .where(eq(saleItems.id, id));
+    const [saleItem] = await db
+      .select()
+      .from(saleItems)
+      .where(eq(saleItems.id, id));
+    if (!saleItem) {
+      return res.status(404).json({ error: "Sale item not found" });
+    }
+    const refundTotal =
+      Number(saleItem.soldPrice) * Number(saleItem.soldQuantity);
+    const [saleRefund] = await db
+      .insert(saleRefunds)
+      .values({
+        saleId: saleItem.saleId,
         refundTotal,
-      ],
-    );
-    const updateProductStock = await pool.query(
-      "UPDATE products SET quantity =quantity + $1 WHERE id = $2",
-      [saleItem.sold_quantity, saleItem.product_id],
-    );
+      })
+      .returning({ id: saleRefunds.id });
+    if (!saleRefund) {
+      return res.status(404).json({ error: "Sale refund id not found" });
+    }
+    await db.insert(saleRefundItems).values({
+      refundId: saleRefund.id,
+      saleItemId: saleItem.id,
+      productId: saleItem.productId,
+      quantity: saleItem.soldQuantity,
+      refundPrice: saleItem.soldPrice,
+      refundTotal,
+    });
+    await db.update(products).set({
+      quantity: sql`${products.quantity} + ${saleItem.soldQuantity}`,
+    });
   } catch (err) {
     console.error(err);
   }
 });
 router.post("/api/sold_products/refunds_all/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    const items = await pool.query(
-      "SELECT * FROM sale_items WHERE sale_id=$1 AND status = 'completed'",
-      [id],
-    );
-    const refundTotal = items.rows.reduce(
-      (total, item) => total + item.sold_price * item.sold_quantity,
+    const id = Number(req.params.id);
+    const items = await db
+      .select()
+      .from(saleItems)
+      .where(and(eq(saleItems.saleId, id), eq(saleItems.status, "completed")));
+    if (!items) {
+      return res.status(404).json({ error: "Sale Items not found" });
+    }
+    const refundTotal = items.reduce(
+      (total, item) =>
+        total + Number(item.soldPrice) * Number(item.soldQuantity),
       0,
     );
-    const saleRefundsId = await pool.query(
-      "INSERT INTO sale_refunds (sale_id ,refund_total) VALUES ($1,$2) RETURNING id",
-      [id, refundTotal],
-    );
-    for (let item of items.rows) {
-      await pool.query(
-        "INSERT INTO sale_refund_items (refund_id ,sale_item_id,product_id,quantity,refund_price,refund_total) VALUES($1,$2,$3,$4,$5,$6)",
-        [
-          saleRefundsId.rows[0].id,
-          item.id,
-          item.product_id,
-          item.sold_quantity,
-          item.sold_price,
-          item.sold_price * item.sold_quantity,
-        ],
-      );
-      await pool.query(
-        "UPDATE products SET quantity =quantity + $1 WHERE id = $2",
-        [item.sold_quantity, item.product_id],
-      );
-      await pool.query(
-        "UPDATE sale_items SET status = 'refunded' WHERE sale_id  = $1",
-        [item.sale_id],
-      );
+    const [saleRefundsId] = await db
+      .insert(saleRefunds)
+      .values({
+        saleId: id,
+        refundTotal,
+      })
+      .returning({ id: saleRefunds.id });
+    if (!saleRefundsId) {
+      return res.status(404).json({ error: "Sale Refunds id not found" });
     }
-    await pool.query("UPDATE sales SET status = 'refunded' WHERE id = $1", [
-      id,
-    ]);
+    for (let item of items) {
+      await db.insert(saleRefundItems).values({
+        refundId: saleRefundsId.id,
+        saleItemId: item.id,
+        productId: item.productId,
+        quantity: item.soldQuantity,
+        refundPrice: item.soldPrice,
+        refundTotal: sql`${item.soldPrice} * ${item.soldQuantity}`,
+      });
+      await db
+        .update(products)
+        .set({ quantity: sql`${products.quantity}+${item.soldQuantity}` })
+        .where(eq(products.id, Number(item.productId)));
+      await db
+        .update(saleItems)
+        .set({ status: "refunded" })
+        .where(eq(saleItems.saleId, Number(item.saleId)));
+    }
+    await db.update(sales).set({ status: "refunded" }).where(eq(sales.id, id));
   } catch (err) {
     console.error(err);
   }
 });
 router.get("/api/dashboard_summary", async (req, res) => {
   try {
+    // top_sold_products_by_category
+    const lastMonthSales = db
+      .select({
+        productId: saleItems.productId,
+        soldQuantity: saleItems.soldQuantity,
+      })
+      .from(saleItems)
+      .innerJoin(sales, eq(saleItems.saleId, sales.id))
+      .where(
+        sql`DATE_TRUNC('month', ${sales.createdAt}) = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')`,
+      )
+      .as("last_month_sales");
+    const topCategoriesQuery = db
+      .select({
+        category: products.category,
+        soldItemsByCategory: sql<number>`COALESCE(SUM(${lastMonthSales.soldQuantity}), 0)`,
+      })
+      .from(products)
+      .leftJoin(lastMonthSales, eq(lastMonthSales.productId, products.id))
+      .groupBy(products.category)
+      .orderBy(desc(sql`COALESCE(SUM(${lastMonthSales.soldQuantity}), 0)`))
+      .limit(5);
+    // profitByCategory
+    const currentMonthCte = db.$with("current_month").as(
+      db
+        .select({
+          category: products.category,
+          currentProfit: sql<number>`SUM(
+				(${saleItems.soldPrice} - ${saleItems.costAtSale}) * ${saleItems.soldQuantity}
+			)`.as("current_profit"),
+        })
+        .from(products)
+        .innerJoin(saleItems, eq(saleItems.productId, products.id))
+        .innerJoin(sales, eq(saleItems.saleId, sales.id))
+        .where(
+          sql`DATE_TRUNC('month', ${sales.createdAt}) = DATE_TRUNC('month', CURRENT_DATE)`,
+        )
+        .groupBy(products.category),
+    );
+    const lastMonthCte = db.$with("last_month").as(
+      db
+        .select({
+          category: products.category,
+          lastProfit: sql<number>`SUM(
+				(${saleItems.soldPrice} - ${saleItems.costAtSale}) * ${saleItems.soldQuantity}
+			)`.as("last_profit"),
+        })
+        .from(products)
+        .innerJoin(saleItems, eq(saleItems.productId, products.id))
+        .innerJoin(sales, eq(saleItems.saleId, sales.id))
+        .where(
+          sql`DATE_TRUNC('month', ${sales.createdAt}) = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')`,
+        )
+        .groupBy(products.category),
+    );
+    const profitByCategoryQuery = db
+      .with(currentMonthCte, lastMonthCte)
+      .select({
+        category: sql`COALESCE(${currentMonthCte.category},${lastMonthCte.category})`,
+        currentMonthProfit: sql<number>`COALESCE(${currentMonthCte.currentProfit},0)`,
+        lastMonthProfit: sql<number>`COALESCE(${lastMonthCte.lastProfit},0)`,
+        growthPercentage: sql<number>`ROUND(
+		(
+			(
+				COALESCE(${currentMonthCte.currentProfit}, 0) - COALESCE(${lastMonthCte.lastProfit}, 0)
+			) / NULLIF(COALESCE(${lastMonthCte.lastProfit}, 0), 0)
+		) * 100,
+		2
+	)`,
+      })
+      .from(currentMonthCte)
+      .fullJoin(
+        lastMonthCte,
+        eq(currentMonthCte.category, lastMonthCte.category),
+      )
+      .orderBy(desc(sql`COALESCE(${currentMonthCte.currentProfit},0)`))
+      .limit(5);
+    // topItemsByGross
+    const currentMonthGrossCte = db.$with("current_month").as(
+      db
+        .select({
+          productName: products.productName,
+          currentGross:
+            sql<number>`SUM(${saleItems.soldPrice} * ${saleItems.soldQuantity})`.as(
+              "current_gross",
+            ),
+        })
+        .from(products)
+        .innerJoin(saleItems, eq(saleItems.productId, products.id))
+        .innerJoin(sales, eq(saleItems.saleId, sales.id))
+        .where(
+          sql`DATE_TRUNC('month', ${sales.createdAt}) = DATE_TRUNC('month', CURRENT_DATE)`,
+        )
+        .groupBy(
+          products.productName,
+          sql`DATE_TRUNC('month', ${sales.createdAt})`,
+        ),
+    );
+    const lastMonthGrossCte = db.$with("last_month").as(
+      db
+        .select({
+          productName: products.productName,
+          lastGross:
+            sql<number>`SUM(${saleItems.soldPrice} * ${saleItems.soldQuantity})`.as(
+              "last_gross",
+            ),
+        })
+        .from(products)
+        .innerJoin(saleItems, eq(saleItems.productId, products.id))
+        .innerJoin(sales, eq(saleItems.saleId, sales.id))
+        .where(
+          sql`DATE_TRUNC('month', ${sales.createdAt}) = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')`,
+        )
+        .groupBy(
+          products.productName,
+          sql`DATE_TRUNC('month', ${sales.createdAt})`,
+        ),
+    );
+    const topItemsByGrossQuery = db
+      .with(currentMonthGrossCte, lastMonthGrossCte)
+      .select({
+        productName:
+          sql<string>`COALESCE(${currentMonthGrossCte.productName}, ${lastMonthGrossCte.productName})`.as(
+            "product_name",
+          ),
+        currentMonthGross:
+          sql<number>`COALESCE(${currentMonthGrossCte.currentGross}, 0)`.as(
+            "current_month_gross",
+          ),
+        lastMonthGross:
+          sql<number>`COALESCE(${lastMonthGrossCte.lastGross}, 0)`.as(
+            "last_month_gross",
+          ),
+        trend: sql`CASE
+		                  WHEN COALESCE(${currentMonthGrossCte.currentGross}, 0) > COALESCE(${lastMonthGrossCte.lastGross}, 0) THEN 'up'
+		                  WHEN COALESCE(${currentMonthGrossCte.currentGross}, 0) < COALESCE(${lastMonthGrossCte.lastGross}, 0) THEN 'down'
+	                END `.as("trend"),
+      })
+      .from(currentMonthGrossCte)
+      .fullJoin(
+        lastMonthGrossCte,
+        eq(currentMonthGrossCte.productName, lastMonthGrossCte.productName),
+      )
+      .orderBy(desc(sql`COALESCE(${currentMonthGrossCte.currentGross}, 0)`))
+      .limit(5);
     const [
       salesOverview,
       top_sold_products_by_category,
@@ -164,26 +332,45 @@ router.get("/api/dashboard_summary", async (req, res) => {
       lowStockSummary,
       topSellingProducts,
     ] = await Promise.all([
-      await pool.query(
-        "SELECT TO_CHAR(created_at,'Mon') AS month,COALESCE(SUM(final_total),0) AS sales ,COALESCE(SUM (CASE WHEN payment_status = 'paid' THEN final_total ELSE 0 END),0) AS cash FROM sales GROUP BY DATE_TRUNC('month',created_at),TO_CHAR(created_at,'Mon')ORDER BY DATE_TRUNC('month',created_at) LIMIT 12",
+      // salesOverview
+      db
+        .select({
+          month: sql<string>`TO_CHAR(${sales.createdAt},'Mon')`,
+          sales: sql<number>`COALESCE(SUM(${sales.finalTotal}),0)`,
+          cash: sql<number>`COALESCE(SUM(CASE WHEN ${sales.paymentStatus} = 'paid' THEN ${sales.finalTotal} ELSE 0 END),0)`,
+        })
+        .from(sales)
+        .groupBy(
+          sql`DATE_TRUNC('month',${sales.createdAt})`,
+          sql`TO_CHAR(${sales.createdAt},'Mon')`,
+        )
+        .orderBy(sql`DATE_TRUNC('month',${sales.createdAt})`)
+        .limit(12),
+      topCategoriesQuery,
+      profitByCategoryQuery,
+      topItemsByGrossQuery,
+      db
+        .select({
+          lowStock:
+            sql<number>`COUNT(*) FILTER(WHERE ${products.quantity} >0 AND ${products.quantity} <= ${products.alertQuantity})`.as(
+              "low_stock",
+            ),
+          stockOut:
+            sql<number>`COUNT(*) FILTER(WHERE ${products.quantity} =0)`.as(
+              "stock_out",
+            ),
+          totalItems: sql<number>`SUM (${products.quantity})`.as("total_items"),
+          totalValuation:
+            sql<number>`SUM (${products.quantity} * ${products.cost})`.as(
+              "total_valuation",
+            ),
+        })
+        .from(products),
+      db.execute(
+        sql`WITH sales_summary AS (SELECT COALESCE(SUM(CASE WHEN DATE_TRUNC('month' ,created_at) = DATE_TRUNC('month',CURRENT_DATE) THEN final_total ELSE 0 END),0)AS current_sales,COALESCE(SUM(CASE WHEN DATE_TRUNC('month' ,created_at) = DATE_TRUNC('month',CURRENT_DATE - INTERVAL '1 month')THEN final_total ELSE 0 END),0)AS prev_sales FROM sales),return_summary AS(SELECT COALESCE(SUM(CASE WHEN DATE_TRUNC('month' ,created_at) = DATE_TRUNC('month',CURRENT_DATE)THEN refund_total ELSE 0 END),0) AS current_return,COALESCE(SUM(CASE WHEN DATE_TRUNC('month' ,created_at) = DATE_TRUNC('month',CURRENT_DATE - INTERVAL '1 month')THEN refund_total ELSE 0 END),0) AS prev_return FROM sale_refunds)SELECT  ss.current_sales - rs.current_return AS current_net_sales,CASE WHEN (ss.prev_sales - rs.prev_return) = 0 THEN 0 ELSE ROUND(((ss.current_sales-rs.current_return) - (ss.prev_sales-rs.prev_return)) / (ss.prev_sales-rs.prev_return) *100,2)END AS sales_growth ,rs.current_return,CASE WHEN rs.prev_return = 0 THEN 0 ELSE ROUND(((rs.current_return) - (rs.prev_return)) / (rs.prev_return) *100,2)END AS return_growth FROM sales_summary ss ,return_summary rs`,
       ),
-      await pool.query(
-        "SELECT p.category , COALESCE(SUM(si.sold_quantity),0) AS sold_items_by_category FROM products p LEFT JOIN (SELECT si.product_id , si.sold_quantity FROM sale_items si JOIN sales s ON si.sale_id = s.id WHERE DATE_TRUNC('month',s.created_at) = DATE_TRUNC('month', CURRENT_DATE -INTERVAL '1 month')) si ON si.product_id = p.id GROUP BY p.category ORDER BY sold_items_by_category DESC LIMIT 5",
-      ),
-      await pool.query(
-        "WITH current_month AS (SELECT p.category ,SUM((si.sold_price - si.cost_at_sale) * si.sold_quantity) AS current_profit FROM products p JOIN sale_items si ON si.product_id = p.id JOIN sales s ON  si.sale_id = s.id WHERE DATE_TRUNC('month',s.created_at) = DATE_TRUNC('month', CURRENT_DATE)GROUP BY p.category),last_month AS(SELECT p.category ,SUM((si.sold_price - si.cost_at_sale) * si.sold_quantity) AS last_profit FROM products p JOIN sale_items si ON si.product_id = p.id JOIN sales s ON  si.sale_id = s.id WHERE DATE_TRUNC('month',s.created_at) = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')GROUP BY p.category)SELECT COALESCE(c.category, l.category) AS category,COALESCE (c.current_profit, 0) AS current_month_profit,COALESCE (l.last_profit,0) AS last_month_profit,ROUND(((COALESCE(c.current_profit,0) - COALESCE(l.last_profit,0)) / NULLIF(COALESCE(l.last_profit,0),0)) * 100,2) AS growth_percentage FROM current_month c FULL JOIN last_month l ON c.category = l.category ORDER BY current_month_profit DESC LIMIT 5",
-      ),
-      await pool.query(
-        "WITH current_month AS (SELECT p.product_name , SUM(si.sold_price * si.sold_quantity) AS current_gross FROM products p JOIN sale_items si ON si.product_id = p.id JOIN sales s ON si.sale_id = s.id WHERE DATE_TRUNC('month',s.created_at) = DATE_TRUNC('month',CURRENT_DATE)GROUP BY p.product_name ,DATE_TRUNC('month',s.created_at)),last_month AS (SELECT  p.product_name , SUM(si.sold_price * si.sold_quantity) AS last_gross FROM products p JOIN sale_items si ON si.product_id = p.id JOIN sales s ON si.sale_id = s.id WHERE DATE_TRUNC('month',s.created_at) = DATE_TRUNC('month',CURRENT_DATE -INTERVAL '1 month')GROUP BY p.product_name ,DATE_TRUNC('month',s.created_at))SELECT COALESCE(c.product_name,l.product_name) AS product_name ,COALESCE(c.current_gross,0) AS current_month_gross,COALESCE(l.last_gross,0) AS last_month_gross,CASE WHEN COALESCE(c.current_gross,0) > COALESCE(l.last_gross,0) THEN 'up' WHEN COALESCE(c.current_gross,0) < COALESCE(l.last_gross,0) THEN 'down' END AS trend FROM current_month c FULL JOIN last_month l ON c.product_name = l.product_name ORDER BY current_month_gross DESC LIMIT 5",
-      ),
-      await pool.query(
-        "SELECT COUNT(*) FILTER(WHERE products.quantity >0 AND products.quantity <= products.alert_quantity) AS low_stock ,COUNT(*) FILTER(WHERE products.quantity <=0) AS stock_out ,SUM (products.quantity)  AS total_items,SUM (products.quantity * products.cost) AS total_valuation FROM products",
-      ),
-      await pool.query(
-        "WITH sales_summary AS (SELECT COALESCE(SUM(CASE WHEN DATE_TRUNC('month' ,created_at) = DATE_TRUNC('month',CURRENT_DATE) THEN final_total ELSE 0 END),0)AS current_sales,COALESCE(SUM(CASE WHEN DATE_TRUNC('month' ,created_at) = DATE_TRUNC('month',CURRENT_DATE - INTERVAL '1 month')THEN final_total ELSE 0 END),0)AS prev_sales FROM sales),return_summary AS(SELECT COALESCE(SUM(CASE WHEN DATE_TRUNC('month' ,created_at) = DATE_TRUNC('month',CURRENT_DATE)THEN refund_total ELSE 0 END),0) AS current_return,COALESCE(SUM(CASE WHEN DATE_TRUNC('month' ,created_at) = DATE_TRUNC('month',CURRENT_DATE - INTERVAL '1 month')THEN refund_total ELSE 0 END),0) AS prev_return FROM sale_refunds)SELECT  ss.current_sales - rs.current_return AS current_net_sales,CASE WHEN (ss.prev_sales - rs.prev_return) = 0 THEN 0 ELSE ROUND(((ss.current_sales-rs.current_return) - (ss.prev_sales-rs.prev_return)) / (ss.prev_sales-rs.prev_return) *100,2)END AS sales_growth ,rs.current_return,CASE WHEN rs.prev_return = 0 THEN 0 ELSE ROUND(((rs.current_return) - (rs.prev_return)) / (rs.prev_return) *100,2)END AS return_growth FROM sales_summary ss ,return_summary rs",
-      ),
-      await pool.query(
-        `WITH PROFIT_SUMMARY AS (
+      db.execute(
+        sql`WITH PROFIT_SUMMARY AS (
     SELECT COALESCE(
             SUM(
                 CASE
@@ -257,7 +444,7 @@ SELECT CURRENT_NET_PROFIT,
     ) AS PROFIT_GROWTH
 FROM NET_SUMMARY;`,
       ),
-      await pool.query(`WITH INVOICE_DUE AS (
+      db.execute(sql`WITH INVOICE_DUE AS (
     SELECT COALESCE(
             SUM(DUE_AMOUNT) FILTER (
                 WHERE created_at >= DATE_TRUNC('MONTH', CURRENT_DATE)
@@ -304,7 +491,7 @@ SELECT CURRENT_INVOICE_DUE - CURRENT_PAID AS CURRENT_DUE,
         )
     END AS INVOICE_DUE_GROWTH_PCT
 FROM INVOICE_DUE;`),
-      await pool.query(`WITH EXPENSES_SUMMARY AS(
+      db.execute(sql`WITH EXPENSES_SUMMARY AS(
     SELECT SUM(amount) FILTER (
             WHERE DATE_TRUNC('month', expense_date) = DATE_TRUNC('month', CURRENT_DATE)
         ) AS CURRENT_EXPENSES,
@@ -328,7 +515,7 @@ SELECT COALESCE(CURRENT_EXPENSES, 0) AS CURRENT_EXPENSES,
         2
     ) AS EXPENSES_GROWTH
 FROM EXPENSES_SUMMARY;`),
-      await pool.query(`WITH PURCHASES_SUMMARY AS (
+      db.execute(sql`WITH PURCHASES_SUMMARY AS (
     SELECT COALESCE(
             SUM(final_total) FILTER(
                 WHERE DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE)
@@ -351,7 +538,7 @@ SELECT CURRENT_PURCHASES,
         2
     ) AS PURCHASES_GROWTH
 FROM PURCHASES_SUMMARY;`),
-      await pool.query(`WITH RETURN_SUMMARY AS (
+      db.execute(sql`WITH RETURN_SUMMARY AS (
     SELECT COALESCE(
             SUM(total_amount) FILTER (
                 WHERE created_at >= DATE_TRUNC('MONTH', CURRENT_DATE)
@@ -381,63 +568,87 @@ SELECT CURRENT_RETURNS,
         )
     END AS RETURN_GROWTH_PCT
 FROM RETURN_SUMMARY;`),
-      await pool.query(`SELECT p.image,
-    si.id,
-    s.created_at,
-    si.product_name_at_sale,
-    si.sold_price
-FROM sale_items si
-    JOIN sales s ON si.sale_id = s.id
-    JOIN products P ON si.product_id = p.id
-WHERE si.status = 'completed'
-ORDER BY s.created_at DESC
-LIMIT 5`),
-      await pool.query(`SELECT id,
-    product_name,
-    image,
-    sku,
-    status,
-    quantity
-FROM products
-WHERE alert_quantity >= quantity
-    AND quantity > 0
-ORDER BY quantity
-LIMIT 5;`),
-      await pool.query(`SELECT si.id,
-    si.product_id,
-    p.product_name,
-    p.image,
-    si.sold_price,
-    SUM(si.sold_quantity) AS top_selling
-FROM sale_items si
-    JOIN sales s ON si.sale_id = s.id
-    JOIN products p ON si.product_id = p.id
-WHERE s.created_at >= DATE_TRUNC('MONTH', CURRENT_DATE - INTERVAL '1 MONTH')
-    AND s.created_at < DATE_TRUNC('MONTH', CURRENT_DATE)
-    AND si.status = 'completed'
-GROUP BY si.product_id,
-    p.product_name,
-    p.image,
-    si.id
-ORDER BY top_selling DESC
-LIMIT 5;`),
+      db
+        .select({
+          image: products.image,
+          id: saleItems.id,
+          createdAt: sales.createdAt,
+          productNameAtSale: saleItems.productNameAtSale,
+          soldPrice: saleItems.soldPrice,
+        })
+        .from(saleItems)
+        .innerJoin(sales, eq(saleItems.saleId, sales.id))
+        .innerJoin(products, eq(saleItems.productId, products.id))
+        .where(eq(saleItems.status, "completed"))
+        .orderBy(desc(sales.createdAt))
+        .limit(5),
+      db
+        .select({
+          id: products.id,
+          productName: products.productName,
+          image: products.image,
+          sku: products.sku,
+          status: products.status,
+          quantity: products.quantity,
+        })
+        .from(products)
+        .where(
+          and(
+            gte(products.alertQuantity, products.quantity),
+            gt(products.quantity, 0),
+          ),
+        )
+        .orderBy(asc(products.quantity))
+        .limit(5),
+      db
+        .select({
+          id: saleItems.id,
+          productId: saleItems.productId,
+          productName: products.productName,
+          image: products.image,
+          soldPrice: saleItems.soldPrice,
+          topSelling: sql<number>`SUM(${saleItems.soldQuantity})`.as(
+            "top_selling",
+          ),
+        })
+        .from(saleItems)
+        .innerJoin(sales, eq(saleItems.saleId, sales.id))
+        .innerJoin(products, eq(saleItems.productId, products.id))
+        .where(
+          and(
+            gte(
+              sales.createdAt,
+              sql`DATE_TRUNC('MONTH', CURRENT_DATE - INTERVAL '1 MONTH')`,
+            ),
+            lt(sales.createdAt, sql`DATE_TRUNC('MONTH', CURRENT_DATE)`),
+            eq(saleItems.status, "completed"),
+          ),
+        )
+        .groupBy(
+          saleItems.productId,
+          products.productName,
+          products.image,
+          saleItems.id,
+        )
+        .orderBy(desc(sql`SUM(${saleItems.soldQuantity})`))
+        .limit(5),
     ]);
 
     res.json({
-      salesOverview: salesOverview.rows,
-      top_sold_products_by_category: top_sold_products_by_category.rows,
-      profitByCategory: profitByCategory.rows,
-      topItemsByGross: topItemsByGross.rows,
-      productsSummary: productsSummary.rows,
+      salesOverview,
+      top_sold_products_by_category,
+      profitByCategory,
+      topItemsByGross,
+      productsSummary,
       salesSummary: salesSummary.rows,
       netProfit: netProfit.rows,
       invoiceDue: invoiceDue.rows,
       expensesSummary: expensesSummary.rows,
       purchasesSummary: purchasesSummary.rows,
       return_summary: return_summary.rows,
-      recentSalesSummary: recentSalesSummary.rows,
-      lowStockSummary: lowStockSummary.rows,
-      topSellingProducts: topSellingProducts.rows,
+      recentSalesSummary,
+      lowStockSummary,
+      topSellingProducts,
     });
   } catch (err) {
     console.error(err);

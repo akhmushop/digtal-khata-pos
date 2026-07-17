@@ -68,7 +68,7 @@ export const useSoldStore = create<SalesStore>((set) => ({
     axios.post("/sold_products", { cart: cart, cashForm: cashForm });
   },
   returnSingleItems: async (item) => {
-    axios.post(`/sold_products/refund/${item.sale_items_id}`);
+    axios.post(`/sold_products/refund/${item.saleItemsId}`);
     set((state) => ({
       soldProducts: state.soldProducts.filter((product) =>
         product.saleId === item.saleId ? product.id !== item.id : product,

@@ -9,7 +9,7 @@ export const saleRefunds = pgTable("sale_refunds", {
 	reason: text(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
 	status: varchar({ length: 20 }),
-	refundTotal: numeric("refund_total"),
+	refundTotal: numeric("refund_total",{mode:"number"}),
 }, (table) => [
 	foreignKey({
 			columns: [table.saleId],
@@ -136,7 +136,7 @@ export const saleRefundItems = pgTable("sale_refund_items", {
 	productId: integer("product_id"),
 	quantity: integer(),
 	refundPrice: numeric("refund_price"),
-	refundTotal: numeric("refund_total"),
+	refundTotal: numeric("refund_total",{mode:"number"}),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
 }, (table) => [
 	foreignKey({

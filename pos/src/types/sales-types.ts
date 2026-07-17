@@ -1,7 +1,7 @@
 import type { CartType, CashForm } from "./cart-types.js";
 export interface SalesStoreType {
   id: number;
-  sale_items_id: number;
+  saleItemsId: number;
   saleId: number;
   productName: string;
   soldQuantity: number;
