@@ -21,7 +21,7 @@ export const PurchaseViewItems = () => {
 
   const { purchases, purchasesItems, purchaseReturn, purchasesReturnItems } =
     usePurchasesStore();
-  const purchaseOrder = purchases.purchases?.find(
+  const purchaseOrder = purchases.allPurchases?.find(
     (item) => item.id === Number(id),
   );
   const {

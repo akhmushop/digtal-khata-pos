@@ -22,7 +22,6 @@ export interface PurchasesItems extends ProductsTypes {
   productId: number;
   returnPurchaseQty: number;
   purchasePrice: number;
-  receiveQuantity: number;
   sellingPrice: number;
 }
 export interface PurchasesReturnItems extends ProductsTypes {
@@ -50,7 +49,7 @@ export interface PurchasesStore {
     orderedPurchase: PurchasesStoreType[];
     partiallyPaidPurchase: PurchasesStoreType[];
     completedPurchase: PurchasesStoreType[];
-    purchases: PurchasesStoreType[];
+    allPurchases: PurchasesStoreType[];
   };
   purchasesItems: PurchasesItems[];
   purchasesReturnItems: PurchasesReturnItems[];
