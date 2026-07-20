@@ -1,65 +1,106 @@
 import express from "express";
 import { pool } from "../config/db.js";
 import type { ChangedItems } from "../types/changedItems-types.js";
+import { db } from "../db/index.js";
+import { products, purchaseItems, purchases } from "../db/schema.js";
+import { error } from "node:console";
+import { and, eq, inArray } from "drizzle-orm";
 const router = express.Router();
 router.post("/api/purchases", async (req, res) => {
-  const { purchasesCart, final_total, supplier, note } = req.body;
+  try {
+    const { purchasesCart, final_total, supplier, note } = req.body;
 
-  const purchasesId = await pool.query(
-    "INSERT INTO purchases (supplier_name,final_total,due_amount,note) VALUES ($1,$2,$3,$4) RETURNING id",
-    [supplier.name, final_total, final_total, note],
-  );
-  for (let item of purchasesCart) {
-    const { id, purchaseQty, cost } = item;
-    await pool.query(
-      "INSERT INTO purchase_items (purchase_id,product_id,quantity,cost_price) VALUES($1,$2,$3,$4)",
-      [purchasesId.rows[0].id, id, purchaseQty, cost],
-    );
+    // const purchasesId = await pool.query(
+    //   "INSERT INTO purchases (supplier_name,final_total,due_amount,note) VALUES ($1,$2,$3,$4) RETURNING id",
+    //   [supplier.name, final_total, final_total, note],
+    // );
+    const [purchaseId] = await db
+      .insert(purchases)
+      .values({
+        supplierName: supplier.name,
+        finalTotal: final_total,
+        dueAmount: final_total,
+        note,
+      })
+      .returning({ id: purchases.id });
+    if (!purchaseId?.id) {
+      return res.status(500).json({ error: "Purchase id not found" });
+    }
+    for (let item of purchasesCart) {
+      const { id, purchaseQty, cost } = item;
+      // await pool.query(
+      //   "INSERT INTO purchase_items (purchase_id,product_id,quantity,cost_price) VALUES($1,$2,$3,$4)",
+      //   [purchaseId.id, id, purchaseQty, cost],
+      // );
+      db.insert(purchaseItems).values({
+        purchaseId: purchaseId.id,
+        productId: id,
+        quantity: purchaseQty,
+        costPrice: cost,
+      });
+    }
+  } catch (err) {
+    console.error(err);
   }
 });
 router.get("/api/purchases", async (req, res) => {
   try {
     const [
       orderedPurchase,
-      purchases,
+      allPurchases,
       partiallyPaidPurchase,
       completedPurchase,
     ] = await Promise.all([
-      await pool.query("SELECT * FROM purchases WHERE STATUS='ordered'"),
-      await pool.query("SELECT * FROM purchases"),
-      await pool.query(
-        "SELECT * FROM purchases WHERE payment_status IN ('partial_paid', 'unpaid')",
-      ),
-      await pool.query(
-        "SELECT * FROM purchases WHERE payment_status = 'paid' AND status = 'received'",
-      ),
+      db.select().from(purchases).where(eq(purchases.status, "ordered")),
+      db.select().from(purchases),
+      db
+        .select()
+        .from(purchases)
+        .where(inArray(purchases.paymentStatus, ["partial_paid", "unpaid"])),
+      db
+        .select()
+        .from(purchases)
+        .where(inArray(purchases.paymentStatus, ["paid", "received"])),
     ]);
     res.json({
-      orderedPurchase: orderedPurchase.rows,
-      purchases: purchases.rows,
-      partiallyPaidPurchase: partiallyPaidPurchase.rows,
-      completedPurchase: completedPurchase.rows,
+      orderedPurchase,
+      allPurchases,
+      partiallyPaidPurchase,
+      completedPurchase,
     });
   } catch (err) {
     console.error(err);
   }
 });
 router.get("/api/purchases/items", async (req, res) => {
-  const result = await pool.query(`SELECT PI.*,
-    P.product_name,
-    p.product_unit,
-    P.PRICE,
-    P.COST
-FROM purchase_items PI
-    JOIN products P ON PI.product_id = P.id;`);
-  res.json(result.rows);
+  try {
+    //     const result = await pool.query(`SELECT PI.*,
+    //     P.product_name,
+    //     p.product_unit,
+    //     P.PRICE,
+    //     P.COST
+    // FROM purchase_items PI
+    //     JOIN products P ON PI.product_id = P.id;`);
+    const result = await db
+      .select({
+        purchaseItems,
+        productName: products.productName,
+        productUnit: products.productUnit,
+        price: products.price,
+        cost: products.cost,
+      })
+      .from(purchaseItems)
+      .innerJoin(products, eq(purchaseItems.productId, products.id));
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+  }
 });
 router.post("/api/purchases/updates", async (req, res) => {
-  const client = await pool.connect();
   try {
     const { paymentDetails, changedItems } = req.body;
     const changedFields = changedItems.find(
-      (item:ChangedItems) => item.changedFields === true,
+      (item: ChangedItems) => item.changedFields === true,
     );
     const { orderId, payment_amount, payment_method, payment_notes } =
       paymentDetails;
@@ -68,113 +109,136 @@ router.post("/api/purchases/updates", async (req, res) => {
         .status(400)
         .json({ error: "Missing orderId or payment_amount" });
     }
-    await client.query("BEGIN");
-    const { rows } = await client.query(
-      "SELECT paid_amount, due_amount,final_total FROM purchases WHERE id = $1 FOR UPDATE ",
-      [orderId],
-    );
-    if (rows.length === 0) {
-      await client.query("ROLLBACK");
-      return res.status(404).json({ error: "Purchase order not found" });
-    }
+    await db.transaction(async (tx) => {
+      const purchaseRows = await tx
+        .select({
+          paidAmount: purchases.paidAmount,
+          dueAmount: purchases.dueAmount,
+          finalTotal: purchases.finalTotal,
+        })
+        .from(purchases)
+        .where(eq(purchases.id, orderId))
+        .for("update");
+      if (purchaseRows.length === 0) {
+        throw new Error("Purchase order not found");
+      }
 
-    const grandTotal = changedItems.reduce((total:number, item:ChangedItems) => {
-      const quantity = item.receiveQuantity ?? 0;
-      const price = item.purchasePrice ?? 0;
-      return total + quantity * price;
-    }, 0);
-    const currentPaid = parseFloat(rows[0].paid_amount) || 0;
-    const currentDue = parseFloat(rows[0].due_amount) || 0;
-    const payment = parseFloat(payment_amount) || 0;
-    const { rows: purchaseItemsResult } = await client.query(
-      "SELECT cost_price ,receive_quantity FROM purchase_items WHERE purchase_id = $1",
-      [orderId],
-    );
-    const receivedItemsTotalCost = purchaseItemsResult.reduce(
-      (sum, item) => sum + item.cost_price * item.receive_quantity,
-      0,
-    );
-    const amountToReceive =
-      Number(rows[0].final_total) - Number(receivedItemsTotalCost);
-    const updatedDue =
-      Number(currentDue) +
-      (Number(grandTotal) - Number(amountToReceive)) -
-      Number(payment);
-    const updatedPaidAmount = currentPaid + payment;
-    const newStatus = !changedFields ? "received" : "partially_received";
-    await client.query(
-      `UPDATE purchases
-       SET status = $1,
-           paid_amount = $2,
-           due_amount = $3,
-           note = $4,
-           payment_status = CASE
-               WHEN $2::numeric <= 0 THEN 'unpaid'
-               WHEN $2::numeric < final_total THEN 'partial_paid'
-               ELSE 'paid'
-           END
-       WHERE id = $5`,
-      [newStatus, updatedPaidAmount, updatedDue, payment_notes, orderId],
-    );
-    for (let item of changedItems) {
-      const { id, product_id, receiveQuantity, purchasePrice, sellingPrice } =
-        item;
-      const { rows } = await client.query(
-        "SELECT price,cost ,quantity FROM products WHERE id  = $1 FOR UPDATE ",
-        [product_id],
+      const grandTotal = changedItems.reduce(
+        (total: number, item: ChangedItems) => {
+          const quantity = item.receiveQuantity ?? 0;
+          const price = item.purchasePrice ?? 0;
+          return total + quantity * price;
+        },
+        0,
       );
-      if (rows.length === 0) {
-        throw new Error(`Product with id ${product_id} not found`);
-      }
-      const updatedQuantity =
-        receiveQuantity != null
-          ? Number(receiveQuantity) + rows[0].quantity
-          : rows[0].quantity;
-      const updatedCost =
-        purchasePrice != null ? Number(purchasePrice) : rows[0].cost;
-      const updatedPrice =
-        sellingPrice != null ? Number(sellingPrice) : rows[0].price;
-      const { rows: alreadyReceiveQuantity } = await client.query(
-        "SELECT receive_quantity,quantity FROM purchase_items WHERE id = $1 FOR UPDATE",
-        [id],
+      const currentPaid = Number(purchaseRows[0]?.paidAmount) || 0;
+      const currentDue = Number(purchaseRows[0]?.dueAmount) || 0;
+      const payment = parseFloat(payment_amount) || 0;
+      const purchaseItemsResult = await tx
+        .select({
+          costPrice: purchaseItems.costPrice,
+          receiveQuantity: purchaseItems.receiveQuantity,
+        })
+        .from(purchaseItems)
+        .where(eq(purchaseItems.purchaseId, orderId));
+      const receivedItemsTotalCost = purchaseItemsResult.reduce(
+        (sum, item) =>
+          sum + Number(item.costPrice) * Number(item.receiveQuantity),
+        0,
       );
-      const itemsReceived =
-        Number(alreadyReceiveQuantity[0].receive_quantity) ===
-        Number(alreadyReceiveQuantity[0].quantity);
-      if (!itemsReceived) {
-        await client.query(
-          "UPDATE purchase_items SET cost_price =$1 WHERE id = $2",
-          [updatedCost, id],
-        );
-        await client.query(
-          "UPDATE products SET quantity = $1 ,cost = $2 ,price = $3 WHERE id = $4 ",
-          [updatedQuantity, updatedCost, updatedPrice, product_id],
-        );
-      }
+      const amountToReceive =
+        Number(purchaseRows[0]?.finalTotal) - Number(receivedItemsTotalCost);
+      const updatedDue =
+        Number(currentDue) +
+        (Number(grandTotal) - Number(amountToReceive)) -
+        Number(payment);
+      const updatedPaidAmount = currentPaid + payment;
+      const newStatus = !changedFields ? "received" : "partially_received";
+      await tx
+        .update(purchases)
+        .set({
+          status: newStatus,
+          paidAmount: updatedPaidAmount,
+          dueAmount: updatedDue,
+          note: payment_notes,
+          paymentStatus:
+            updatedPaidAmount <= 0
+              ? "unpaid"
+              : updatedPaidAmount < Number(purchaseRows[0]?.finalTotal)
+                ? "partial_paid"
+                : "paid",
+        })
+        .where(eq(purchases.id, orderId));
+      for (let item of changedItems) {
+        const { id, product_id, receiveQuantity, purchasePrice, sellingPrice } =
+          item;
+        const productRows = await tx
+          .select({
+            price: products.price,
+            cost: products.cost,
+            quantity: products.quantity,
+          })
+          .from(products)
+          .where(eq(products.id, product_id))
+          .for("update");
+        if (productRows.length === 0) {
+          throw new Error(`Product with id ${product_id} not found`);
+        }
+        const updatedQuantity =
+          receiveQuantity != null
+            ? Number(receiveQuantity) + productRows[0]!.quantity
+            : productRows[0]?.quantity;
+        const updatedCost =
+          purchasePrice != null ? Number(purchasePrice) : productRows[0]?.cost;
+        const updatedPrice =
+          sellingPrice != null ? Number(sellingPrice) : productRows[0]?.price;
+        const alreadyReceiveQuantity = await tx
+          .select()
+          .from(purchaseItems)
+          .where(eq(purchaseItems.id, id))
+          .for("update");
+        if (alreadyReceiveQuantity.length === 0) {
+          throw new Error(`Product with id ${id} not found`);
+        }
+        const itemsReceived =
+          Number(alreadyReceiveQuantity[0]?.receiveQuantity) ===
+          Number(alreadyReceiveQuantity[0]?.quantity);
+        const updatedAlreadyReceiveQuantity =
+          receiveQuantity != null
+            ? Number(receiveQuantity) +
+              Number(alreadyReceiveQuantity[0]?.receiveQuantity)
+            : alreadyReceiveQuantity[0]?.receiveQuantity;
 
-      if (alreadyReceiveQuantity.length === 0) {
-        throw new Error(`Product with id ${id} not found`);
+        if (!itemsReceived) {
+          await tx
+            .update(purchaseItems)
+            .set({
+              costPrice: updatedCost,
+              receiveQuantity: updatedAlreadyReceiveQuantity,
+            })
+            .where(eq(purchaseItems.id, id));
+          await tx
+            .update(products)
+            .set({
+              quantity: updatedQuantity,
+              cost: updatedCost,
+              price: updatedPrice,
+            })
+            .where(eq(products.id, product_id));
+        }
       }
-      const updatedAlreadyReceiveQuantity =
-        receiveQuantity != null
-          ? Number(receiveQuantity) + alreadyReceiveQuantity[0].receive_quantity
-          : alreadyReceiveQuantity[0].receive_quantity;
-
-      if (!itemsReceived) {
-        await client.query(
-          "UPDATE purchase_items SET receive_quantity = $1 WHERE id = $2 ",
-          [updatedAlreadyReceiveQuantity, id],
-        );
+      res.status(200).json({ message: "Purchase order updated successfully" });
+    });
+  } catch (err: unknown) {
+    console.error(err);
+    if (err instanceof Error) {
+      if (err.message.includes("not found")) {
+        return res.status(404).json({ error: err.message });
       }
     }
-    await client.query("COMMIT");
-    res.status(200).json({ message: "Purchase order updated successfully" });
-  } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("Error updating purchase:", err);
-    res.status(500).json({ error: "Internal server error" });
-  } finally {
-    await client.release();
+    res.status(500).json({
+      error: "Transaction Failed",
+    });
   }
 });
 export default router;

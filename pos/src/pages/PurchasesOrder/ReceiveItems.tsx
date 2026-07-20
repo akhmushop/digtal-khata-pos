@@ -28,7 +28,7 @@ export const ReceiveItems = () => {
   const { id } = useParams();
 
   const { purchases, purchasesItems, updateStock } = usePurchasesStore();
-  const purchaseOrder = purchases.purchases?.find(
+  const purchaseOrder = purchases.allPurchases?.find(
     (item) => item.id === Number(id),
   );
   const {
