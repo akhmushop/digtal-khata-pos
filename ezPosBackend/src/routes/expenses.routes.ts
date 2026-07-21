@@ -1,28 +1,31 @@
 import express from "express";
 import { pool } from "../config/db.js";
+import { db } from "../db/index.js";
+import { expenses } from "../db/schema.js";
 const router = express.Router();
 router.post("/api/expenses", async (req, res) => {
-  const {
-    title,
-    expense_date,
-    amount,
-    category_id,
-    payment_method,
-    reference_no,
-    note,
-  } = req.body;
-  await pool.query(
-    "INSERT INTO expenses(title,expense_date,amount,payment_method,reference_no,note,category_id) VALUES($1,$2,$3,$4,$5,$6,$7)",
-    [
+  try {
+    const {
       title,
       expense_date,
       amount,
+      category_id,
       payment_method,
       reference_no,
       note,
-      category_id,
-    ],
-  );
+    } = req.body;
+    await db.insert(expenses).values({
+      title,
+      expenseDate: expense_date,
+      amount,
+      categoryId: category_id,
+      paymentMethod: payment_method,
+      referenceNo: reference_no,
+      note,
+    });
+  } catch (err) {
+    console.error(err);
+  }
 });
 router.get("/api/expense_categories", async (req, res) => {
   const result = await pool.query("SELECT * FROM expense_categories");

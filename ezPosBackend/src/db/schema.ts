@@ -109,7 +109,7 @@ export const supplierLedger = pgTable(
     // You can use { mode: "bigint" } if numbers are exceeding js number limitations
     referenceId: bigint("reference_id", { mode: "number" }),
     debit: numeric({ precision: 12, scale: 2 }).default("0"),
-    credit: numeric({ precision: 12, scale: 2 }).default("0"),
+    credit: numeric({ precision: 12, scale: 2, mode: "number" }).default(0),
     note: text(),
     createdAt: timestamp("created_at", { mode: "string" }).default(
       sql`CURRENT_TIMESTAMP`,
@@ -263,8 +263,12 @@ export const purchaseReturnItems = pgTable(
     purchaseReturnId: integer("purchase_return_id").notNull(),
     purchaseItemId: integer("purchase_item_id").notNull(),
     productId: integer("product_id").notNull(),
-    quantity: numeric({ precision: 10, scale: 2 }).notNull(),
-    unitPrice: numeric("unit_price", { precision: 10, scale: 2 }).notNull(),
+    quantity: numeric({ precision: 10, scale: 2, mode: "number" }).notNull(),
+    unitPrice: numeric("unit_price", {
+      precision: 10,
+      scale: 2,
+      mode: "number",
+    }).notNull(),
     lineTotal: numeric("line_total", {
       precision: 12,
       scale: 2,
@@ -323,7 +327,11 @@ export const purchaseItems = pgTable(
     purchaseId: integer("purchase_id").notNull(),
     productId: integer("product_id").notNull(),
     quantity: numeric({ precision: 12, scale: 2 }).notNull(),
-    costPrice: numeric("cost_price", { precision: 12, scale: 2,mode:'number' }).notNull(),
+    costPrice: numeric("cost_price", {
+      precision: 12,
+      scale: 2,
+      mode: "number",
+    }).notNull(),
     totalCost: numeric("total_cost", {
       precision: 12,
       scale: 2,
@@ -355,8 +363,12 @@ export const purchaseReturns = pgTable(
       .notNull(),
     reason: text(),
     status: varchar({ length: 20 }).default("pending").notNull(),
-    totalAmount: numeric("total_amount", { precision: 12, scale: 2 })
-      .default("0")
+    totalAmount: numeric("total_amount", {
+      precision: 12,
+      scale: 2,
+      mode: "number",
+    })
+      .default(0)
       .notNull(),
     createdAt: timestamp("created_at", { mode: "string" })
       .defaultNow()
