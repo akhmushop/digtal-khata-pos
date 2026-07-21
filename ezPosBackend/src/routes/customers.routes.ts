@@ -1,10 +1,13 @@
 import express, { json } from "express";
 import { pool } from "../config/db.js";
+import { db } from "../db/index.js";
+import { customers, salePayments, sales } from "../db/schema.js";
+import { eq, inArray, sql } from "drizzle-orm";
 const router = express.Router();
 router.get("/api/customers", async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM customers");
-    res.json(result.rows);
+    const result = db.select().from(customers);
+    res.json(result);
   } catch (err) {
     console.error(err);
   }
@@ -12,40 +15,53 @@ router.get("/api/customers", async (req, res) => {
 router.post("/api/customers", async (req, res) => {
   try {
     const { name, phone, address } = req.body;
-    const result = await pool.query(
-      "INSERT INTO customers(name, phone, address) VALUES ($1,$2,$3) RETURNING *",
-      [name, phone, address],
-    );
-    res.json(result.rows[0]);
+    const [customer] = await db
+      .insert(customers)
+      .values({ name, phone, address })
+      .returning();
+    res.json(customer);
   } catch (err) {
     console.error(err);
   }
 });
 router.get("/api/due_by_customers", async (req, res) => {
   try {
-    const result = await pool.query(`WITH payment_summary AS (
-    SELECT sale_id,
-        SUM(PAID_AMOUNT) AS TOTAL_PAID
-    FROM SALE_PAYMENTS
-    GROUP BY SALE_ID
-)
-SELECT C.ID AS CUSTOMER_ID,
-    COALESCE(
-        SUM(S.FINAL_TOTAL - COALESCE(PS.TOTAL_PAID, 0)),
-        0
-    ) AS TOTAL_DUE,
-    COALESCE(SUM(PS.TOTAL_PAID), 0) AS TOTAL_PAID,
-    COALESCE(SUM(s.FINAL_TOTAL), 0) AS TOTAL_AMOUNT
-FROM customers c
-    JOIN SALES S ON S.CUSTOMER_ID = C.ID
-    LEFT JOIN payment_summary PS ON PS.SALE_ID = S.ID
-WHERE S.PAYMENT_STATUS in ('unpaid', 'partial')
-GROUP BY C.ID
-HAVING COALESCE(
-        SUM(S.FINAL_TOTAL - COALESCE(PS.TOTAL_PAID, 0)),
-        0
-    ) > 0`);
-    res.json(result.rows);
+    const paymentSummaryCte = db.$with("payment_summary").as(
+      db
+        .select({
+          saleId: salePayments.saleId,
+          totalPaid: sql<number>`SUM(${salePayments.paidAmount})`.as(
+            "total_paid",
+          ),
+        })
+        .from(salePayments)
+        .groupBy(salePayments.saleId),
+    );
+    const paymentSummary = await db
+      .with(paymentSummaryCte)
+      .select({
+        customerId: customers.id,
+        totalDue:
+          sql<number>`COALESCE(SUM(${sales.finalTotal} - COALESCE(${paymentSummaryCte.totalPaid}, 0)),0)`.as(
+            "TOTAL_DUE",
+          ),
+        totalPaid:
+          sql<number>`COALESCE(SUM(${paymentSummaryCte.totalPaid}), 0)`.as(
+            "TOTAL_PAID",
+          ),
+        totalAmount: sql<number>`COALESCE(SUM(${sales.finalTotal}), 0)`.as(
+          "TOTAL_AMOUNT",
+        ),
+      })
+      .from(customers)
+      .innerJoin(sales, eq(sales.customerId, customers.id))
+      .leftJoin(paymentSummaryCte, eq(paymentSummaryCte.saleId, sales.id))
+      .where(inArray(sales.paymentStatus, ["unpaid", "partial"]))
+      .groupBy(customers.id)
+      .having(
+        sql`COALESCE(SUM(${sales.finalTotal} - COALESCE(${paymentSummaryCte.totalPaid}, 0)),0) > 0`,
+      );
+    res.json(paymentSummary);
   } catch (err) {
     console.error(err);
   }
