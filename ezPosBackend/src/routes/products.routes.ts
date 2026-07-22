@@ -1,6 +1,6 @@
 import express, { json } from "express";
 import { pool } from "../config/db.js";
-import { db } from "../db/index.js";
+import { db } from "../db/schema/index.js";
 import { products } from "../db/schema.js";
 import type { ProductsTypes } from "../types/product-types.js";
 import { eq } from "drizzle-orm";

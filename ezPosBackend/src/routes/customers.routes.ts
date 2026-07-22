@@ -1,6 +1,6 @@
 import express, { json } from "express";
 import { pool } from "../config/db.js";
-import { db } from "../db/index.js";
+import { db } from "../db/schema/index.js";
 import { customers, salePayments, sales } from "../db/schema.js";
 import { eq, inArray, sql } from "drizzle-orm";
 const router = express.Router();

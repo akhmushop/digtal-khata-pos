@@ -1,6 +1,6 @@
 import express from "express";
 import { pool } from "../config/db.js";
-import { db } from "../db/index.js";
+import { db } from "../db/schema/index.js";
 import {
   products,
   saleItems,

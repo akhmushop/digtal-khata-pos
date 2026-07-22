@@ -1,7 +1,7 @@
 import express from "express";
 import { pool } from "../config/db.js";
 import type { ChangedItems } from "../types/changedItems-types.js";
-import { db } from "../db/index.js";
+import { db } from "../db/schema/index.js";
 import { products, purchaseItems, purchases } from "../db/schema.js";
 import { error } from "node:console";
 import { and, eq, inArray } from "drizzle-orm";
