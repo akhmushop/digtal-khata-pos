@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { sales, saleRefunds, customers, suppliers, supplierLedger, saleRefundItems, salePayments, purchaseReturns, purchaseReturnItems, purchaseItems, products, saleItems, purchases, expenseCategories, expenses } from "./schema";
+import { sales, saleRefunds, customers, suppliers, supplierLedger, saleRefundItems, salePayments, purchaseReturns, purchaseReturnItems, purchaseItems, products, saleItems, purchases, expenseCategories, expenses } from "../schema.js";
 
 export const saleRefundsRelations = relations(saleRefunds, ({one, many}) => ({
 	sale: one(sales, {
