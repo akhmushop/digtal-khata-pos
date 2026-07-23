@@ -1,10 +1,6 @@
 import type { Request, Response } from "express";
 import * as productsService from "./products.service.js";
-function handleError(res: Response, err: unknown) {
-  console.error(err);
-  const message = err instanceof Error ? err.message : String(err);
-  res.status(500).json({ error: message });
-}
+import { handleError } from "../../utils/handleError.js";
 export async function getProducts(req: Request, res: Response) {
   try {
     res.json(await productsService.getAllProducts());
