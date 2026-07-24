@@ -18,7 +18,7 @@ export const expenses = pgTable(
   {
     id: serial().primaryKey().notNull(),
     title: varchar({ length: 255 }).notNull(),
-    amount: numeric({ precision: 10, scale: 2 }).notNull(),
+    amount: numeric({ precision: 10, scale: 2, mode: "number" }).notNull(),
     categoryId: integer("category_id"),
     paymentMethod: varchar("payment_method", { length: 50 }),
     referenceNo: varchar("reference_no", { length: 100 }),
