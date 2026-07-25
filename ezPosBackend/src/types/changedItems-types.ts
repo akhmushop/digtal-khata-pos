@@ -5,4 +5,5 @@ export interface ChangedItems {
   purchasePrice: number;
   sellingPrice: number;
   changedFields: boolean;
+  returnPurchaseQty:number
 }
