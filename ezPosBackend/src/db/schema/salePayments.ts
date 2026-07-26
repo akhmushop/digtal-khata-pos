@@ -17,7 +17,11 @@ export const salePayments = pgTable(
     id: serial().primaryKey().notNull(),
     saleId: integer("sale_id"),
     customerId: integer("customer_id"),
-    paidAmount: numeric("paid_amount", { precision: 10, scale: 2 }),
+    paidAmount: numeric("paid_amount", {
+      precision: 10,
+      scale: 2,
+      mode: "number",
+    }),
     paymentMethod: varchar("payment_method", { length: 50 }),
     paymentDate: timestamp("payment_date", { mode: "string" }).defaultNow(),
     notes: text(),
