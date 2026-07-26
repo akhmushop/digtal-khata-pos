@@ -18,10 +18,10 @@ export const saleItems = pgTable(
     saleId: integer("sale_id"),
     productId: integer("product_id"),
     soldQuantity: integer("sold_quantity"),
-    soldPrice: numeric("sold_price"),
+    soldPrice: numeric("sold_price",{mode:'number'}),
     status: varchar({ length: 20 }).default("completed"),
     productNameAtSale: text("product_name_at_sale"),
-    costAtSale: numeric("cost_at_sale", { precision: 10, scale: 2 }),
+    costAtSale: numeric("cost_at_sale", { precision: 10, scale: 2,mode:'number' }),
   },
   (table) => [
     foreignKey({

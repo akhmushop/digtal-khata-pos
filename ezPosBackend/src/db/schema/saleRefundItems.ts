@@ -16,7 +16,7 @@ export const saleRefundItems = pgTable(
     saleItemId: integer("sale_item_id"),
     productId: integer("product_id"),
     quantity: integer(),
-    refundPrice: numeric("refund_price"),
+    refundPrice: numeric("refund_price", { mode: "number" }),
     refundTotal: numeric("refund_total", { mode: "number" }),
     createdAt: timestamp("created_at", { mode: "string" }).defaultNow(),
   },
