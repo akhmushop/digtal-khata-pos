@@ -7,14 +7,12 @@ import { supplierLedger } from "../../db/schema/supplierLedger.js";
 import { purchaseReturnItems } from "../../db/schema/purchaseReturnItems.js";
 import { error } from "node:console";
 import { products } from "../../db/schema/products.js";
+import type { CreatePurchaseReturnInput } from "../../types/purchases-type.js";
 
 export async function createPurchaseReturn({
   orderId,
   changedItems,
-}: {
-  orderId: number;
-  changedItems: ChangedItems[];
-}) {
+}: CreatePurchaseReturnInput) {
   const itemIds = changedItems.map((item: ChangedItems) => Number(item.id));
   let total_amount = 0;
 
