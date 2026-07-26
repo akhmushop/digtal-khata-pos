@@ -16,8 +16,8 @@ export const purchases = pgTable("purchases", {
   supplierName: varchar("supplier_name", { length: 255 }),
   subtotal: numeric({ precision: 10, scale: 2 }).default("0").notNull(),
   discount: numeric({ precision: 10, scale: 2 }).default("0").notNull(),
-  finalTotal: numeric("final_total", { precision: 10, scale: 2 })
-    .default("0")
+  finalTotal: numeric("final_total", { precision: 10, scale: 2, mode:'number' })
+    .default(0)
     .notNull(),
   paidAmount: numeric("paid_amount", {
     precision: 10,

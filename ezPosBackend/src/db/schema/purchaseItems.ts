@@ -15,7 +15,7 @@ export const purchaseItems = pgTable(
     id: serial().primaryKey().notNull(),
     purchaseId: integer("purchase_id").notNull(),
     productId: integer("product_id").notNull(),
-    quantity: numeric({ precision: 12, scale: 2 }).notNull(),
+    quantity: numeric({ precision: 12, scale: 2, mode: "number" }).notNull(),
     costPrice: numeric("cost_price", {
       precision: 12,
       scale: 2,
