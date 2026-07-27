@@ -7,8 +7,9 @@ import {
   check,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
-import { purchaseItems, purchaseReturns } from "../schema.js";
 import { products } from "./products.js";
+import { purchaseReturns } from "./purchaseReturns.js";
+import { purchaseItems } from "./purchaseItems.js";
 
 export const purchaseReturnItems = pgTable(
   "purchase_return_items",

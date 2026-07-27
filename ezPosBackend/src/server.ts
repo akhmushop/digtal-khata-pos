@@ -1,11 +1,11 @@
 import express from "express";
 import { pool } from "./config/db.js";
-import productRouter from "./routes/products.routes.js";
-import salesRouter from "./routes/sales.routes.js";
-import customersRouter from "./routes/customers.routes.js";
-import expenseRouter from "./routes/expenses.routes.js"
-import purchasesRouter from "./routes/purchases.routes.js"
-import purchasesReturnRouter from "./routes/purchaseReturn.routes.js"
+import productRouter from "./modules/products/products.routes.js";
+import salesRouter from "./modules/sales/sales.routes.js";
+import customersRouter from "./modules/customers/customers.routes.js";
+import expenseRouter from "./modules/expenses/expenses.routes.js";
+import purchasesRouter from "./modules/purchases/purchases.routes.js";
+import purchasesReturnRouter from "./modules/purchaseReturn/purchaseReturn.routes.js";
 import cors from "cors";
 const app = express();
 // middleware

@@ -8,7 +8,7 @@ import {
   varchar,
   numeric,
 } from "drizzle-orm/pg-core";
-import { sales } from "../schema.js";
+import { sales } from "./sales.js";
 export const saleRefunds = pgTable(
   "sale_refunds",
   {
