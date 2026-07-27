@@ -9,7 +9,7 @@ import {
   bigint,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
-import { suppliers } from "../schema.js";
+import { suppliers } from "./suppliers.js";
 
 export const supplierLedger = pgTable(
   "supplier_ledger",

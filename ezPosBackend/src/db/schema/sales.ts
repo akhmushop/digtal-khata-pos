@@ -11,7 +11,7 @@ import {
   unique,
   date,
 } from "drizzle-orm/pg-core";
-import { customers } from "../schema.js";
+import { customers } from "./customers.js";
 export const sales = pgTable(
   "sales",
   {
