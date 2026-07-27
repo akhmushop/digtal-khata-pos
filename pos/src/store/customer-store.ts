@@ -1,7 +1,8 @@
-import axios from "../axios.js";
+import axios from "../api/axios.js";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { InputValue, CustomerStore } from "../types/customers-types.js";
+import { createCustomerApi, getCustomersApi } from "../api/customerApi.js";
 const initialCustomerInfo: InputValue = {
   id: 0,
   name: "",
@@ -70,8 +71,8 @@ export const useCustomerStore = create<CustomerStore>((set, get) => ({
   getCustomers: async () => {
     set({ loading: true });
     try {
-      const res = await axios.get("/customers");
-      set({ customers: res.data, loading: false });
+      const customersData = await getCustomersApi();
+      set({ customers: customersData, loading: false });
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       set({ error: errorMessage, loading: false });
@@ -81,15 +82,15 @@ export const useCustomerStore = create<CustomerStore>((set, get) => ({
     try {
       set({ loading: true });
 
-      const res = await axios.post("/customers", customerInfo);
+      const customer = await createCustomerApi(customerInfo);
 
       set((state) => ({
-        customers: [...state.customers, res.data],
+        customers: [...state.customers, customer],
         loading: false,
         error: null,
       }));
 
-      return res.data;
+      return customer;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       set({

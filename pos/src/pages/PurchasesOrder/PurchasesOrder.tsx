@@ -6,7 +6,7 @@ import { MdOutlineAddCircleOutline, MdDeleteOutline } from "react-icons/md";
 import { FiMinusCircle } from "react-icons/fi";
 import { HiDotsVertical } from "react-icons/hi";
 import { useProductStore } from "../../store/product-store.js";
-import axios from "../../axios.js";
+import axios from "../../api/axios.js";
 import type { PurchaseCart, Suppliers } from "../../types/purchases-types.js";
 import type { ProductsTypes } from "../../types/products-types.js";
 export function PurchasesOrder() {

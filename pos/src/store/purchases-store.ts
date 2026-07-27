@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import axios from "../axios.js";
+import axios from "../api/axios.js";
 import type { PurchasesStore } from "../types/purchases-types.js";
 export const usePurchasesStore = create<PurchasesStore>((set) => ({
   purchases: {

@@ -5,7 +5,7 @@ import {
   Expenses,
   useExpenseStore,
 } from "../../store/expenses-store.js";
-import axios from "../../axios.js";
+import axios from "../../api/axios.js";
 export const Expense = () => {
   const { expenses, addExpense } = useExpenseStore();
   const [expenseCategories, setExpenseCategories] = useState<

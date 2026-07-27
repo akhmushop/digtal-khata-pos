@@ -23,7 +23,6 @@ export async function createCustomer(req: Request, res: Response) {
       address,
     );
     res.status(201).json(customer);
-    res.json(customer);
   } catch (err) {
     handleError(res, err);
   }
