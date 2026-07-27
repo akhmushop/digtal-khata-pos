@@ -7,7 +7,7 @@ import { ClickEmptyToResetCart } from "./CartEmptyBtn.js";
 import { useProductStore } from "../../store/product-store.js";
 import { useCartStore } from "../../store/cart-store.js";
 import { useSoldStore } from "../../store/sold-store.js";
-import axios from "../../axios.js";
+import axios from "../../api/axios.js";
 import { useCustomerStore } from "../../store/customer-store.js";
 import type {
   CustomerDue,

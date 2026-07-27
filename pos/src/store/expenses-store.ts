@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { Expense } from "../pages/Expense/Expense.js";
-import axios from "../axios.js";
+import axios from "../api/axios.js";
 export interface Expenses {
   title: string;
   expenseDate: string;
