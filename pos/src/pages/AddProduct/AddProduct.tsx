@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, Children } from "react";
-import Sidebar from "../../components/Sidebar.js";
+import Sidebar from "../../components/layout/Sidebar.js";
 import AdvancedPOSTable from "../../components/addproduct/Table.js";
 function AddProduct() {
   return (

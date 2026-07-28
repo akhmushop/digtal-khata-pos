@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import Sidebar from "../../components/Sidebar.js";
+import Sidebar from "../../components/layout/Sidebar.js";
 import { useNavigate, useParams } from "react-router";
 import { usePurchasesStore } from "../../store/usePurchaseStore.js";
 import { useProductStore } from "../../store/useProductStore.js";

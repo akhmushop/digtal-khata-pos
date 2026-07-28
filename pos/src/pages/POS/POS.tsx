@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import Sidebar from "../../components/Sidebar.js";
+import Sidebar from "../../components/layout/Sidebar.js";
 import { ProductHeader } from "../../components/pos/ProductHeader.jsx";
 import { CartHeader } from "../../components/pos/CartHeader.js";
 import { ProductList } from "../../components/pos/ProductList.js";
