@@ -4,11 +4,11 @@ import { FiMinusCircle } from "react-icons/fi";
 import { HiDotsVertical } from "react-icons/hi";
 import { ClickToShowMore } from "./CartMoreMenu.js";
 import { ClickEmptyToResetCart } from "./CartEmptyBtn.js";
-import { useProductStore } from "../../store/product-store.js";
-import { useCartStore } from "../../store/cart-store.js";
-import { useSoldStore } from "../../store/sold-store.js";
+import { useProductStore } from "../../store/useProductStore.js";
+import { useCartStore } from "../../store/useCartStore.js";
+import { useSoldStore } from "../../store/useSalesStore.js";
 import axios from "../../api/axios.js";
-import { useCustomerStore } from "../../store/customer-store.js";
+import { useCustomerStore } from "../../store/useCustomerStore.js";
 import type {
   CustomerDue,
   CustomerInputValueProps,

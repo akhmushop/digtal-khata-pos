@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Sidebar from "../../components/Sidebar.js";
 import { useNavigate, useParams } from "react-router";
-import { usePurchasesStore } from "../../store/purchases-store.js";
-import { useProductStore } from "../../store/product-store.js";
+import { usePurchasesStore } from "../../store/usePurchaseStore.js";
+import { useProductStore } from "../../store/useProductStore.js";
 import toast, { Toaster } from "react-hot-toast";
 import type {
   PaymentDetails,

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { RiUserAddFill, RiCloseLargeFill } from "react-icons/ri";
 import Sidebar from "../../components/Sidebar.js";
-import { useCustomerStore } from "../../store/customer-store.js";
+import { useCustomerStore } from "../../store/useCustomerStore.js";
 import type {
   InputValue,
   PeerFocusInputProps,

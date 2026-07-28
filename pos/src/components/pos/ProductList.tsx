@@ -1,6 +1,6 @@
 import React from "react";
-import { useProductStore } from "../../store/product-store.js";
-import { useCartStore } from "../../store/cart-store.js";
+import { useProductStore } from "../../store/useProductStore.js";
+import { useCartStore } from "../../store/useCartStore.js";
 interface ProductListProps {
   search: string;
 }

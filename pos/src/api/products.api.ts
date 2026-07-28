@@ -1,4 +1,4 @@
-import axios from "../api/axios.js";
+import axios from "./axios.js";
 import { ProductsTypes } from "../types/products.types.js";
 
 export async function getProductsApi() {

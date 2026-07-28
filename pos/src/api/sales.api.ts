@@ -1,4 +1,4 @@
-import axios from "../api/axios.js";
+import axios from "./axios.js";
 import { CartType, CashForm } from "../types/cart.types.js";
 import { SalesStoreType } from "../types/sales.types.js";
 

@@ -8,7 +8,7 @@ import {
   getPurchasesReturnItemsApi,
   purchaseReturnApi,
   updateStockApi,
-} from "../api/purchasesApi.js";
+} from "../api/purchases.api.js";
 export const usePurchasesStore = create<PurchasesStore>((set) => ({
   purchases: {
     orderedPurchase: [],

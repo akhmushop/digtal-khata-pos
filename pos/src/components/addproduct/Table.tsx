@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router";
-import { useSoldStore } from "../../store/sold-store.js";
+import { useSoldStore } from "../../store/useSalesStore.js";
 import {
   Search,
   ChevronDown,
@@ -39,7 +39,7 @@ import {
 import {
   useProductStore,
   useEditProductStore,
-} from "../../store/product-store.js";
+} from "../../store/useProductStore.js";
 import { PopupModal } from "../pos/CartItems.js";
 import { Resizing, SortConfig } from "../../types/table.types.js";
 import { ProductsTypes } from "../../types/products.types.js";
