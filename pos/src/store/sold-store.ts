@@ -2,6 +2,13 @@ import axios from "../api/axios.js";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { SalesStore } from "../types/sales-types.js";
+import { getErrorMessage } from "../utils/getErrorMessage.js";
+import {
+  createFullReturnApi,
+  createSalesApi,
+  createSingleReturnApi,
+  getSalesProductsApi,
+} from "../api/salesApi.js";
 // export const useSoldStore = create(
 //   persist(
 //     (set) => ({
@@ -57,18 +64,17 @@ export const useSoldStore = create<SalesStore>((set) => ({
   getSoldProducts: async () => {
     set({ loading: true });
     try {
-      const res = await axios.get("/sold_products");
-      set({ soldProducts: res.data, loading: false });
+      const data = await getSalesProductsApi();
+      set({ soldProducts: data, loading: false });
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      set({ error: errorMessage, loading: false });
+      set({ error: getErrorMessage(err), loading: false });
     }
   },
   addToSoldProduct: async (cart, cashForm) => {
-    axios.post("/sold_products", { cart: cart, cashForm: cashForm });
+    await createSalesApi(cart, cashForm);
   },
   returnSingleItems: async (item) => {
-    axios.post(`/sold_products/refund/${item.saleItemsId}`);
+    await createSingleReturnApi(item);
     set((state) => ({
       soldProducts: state.soldProducts.filter((product) =>
         product.saleId === item.saleId ? product.id !== item.id : product,
@@ -77,7 +83,7 @@ export const useSoldStore = create<SalesStore>((set) => ({
   },
   returnProducts: async (id) => {
     try {
-      axios.post(`/sold_products/refunds_all/${id}`);
+      await createFullReturnApi(id);
       set((state) => ({
         soldProducts: state.soldProducts.filter((p) => p.saleId !== id),
       }));
