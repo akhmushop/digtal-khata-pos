@@ -6,7 +6,7 @@ import type {
   InputValue,
   PeerFocusInputProps,
   AddCustomerProps,
-} from "../../types/customers-types.js";
+} from "../../types/customers.types.js";
 export function AddCustomerModal({}) {
   const { customerInfo, handleOnchange, resetCustomerInfo, handleAddCustomer } =
     useCustomerStore();

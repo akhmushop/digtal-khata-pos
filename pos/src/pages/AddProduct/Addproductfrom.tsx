@@ -26,8 +26,8 @@ import {
 } from "../../store/product-store.js";
 import { useLocation, useNavigate } from "react-router";
 import { useBlocker } from "react-router";
-import { ProductsTypes } from "../../types/products-types.js";
-import { Errors, InitialFormData } from "../../types/addProduct-types.js";
+import { ProductsTypes } from "../../types/products.types.js";
+import { Errors, InitialFormData } from "../../types/addProduct.types.js";
 
 const ProductStockForm = () => {
   const editingProduct = useEditProductStore((state) => state.editingProduct);

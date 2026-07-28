@@ -5,7 +5,7 @@ import axios from "../api/axios.js";
 import type {
   ProductsStore,
   EditingProductsStore,
-} from "../types/products-types.js";
+} from "../types/products.types.js";
 import {
   createProductApi,
   deleteProductByIdApi,
@@ -618,7 +618,7 @@ export const useProductStore = create<ProductsStore>((set) => ({
       if (id === undefined) {
         throw new Error("Product ID is undefined");
       }
-      updateProductByIdApi(id , updatedProduct);
+      updateProductByIdApi(id, updatedProduct);
       set((state) => ({
         products: state.products.map((p) => {
           if (p.id === id) {

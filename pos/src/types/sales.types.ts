@@ -1,4 +1,4 @@
-import type { CartType, CashForm } from "./cart-types.js";
+import type { CartType, CashForm } from "./cart.types.js";
 export interface SalesStoreType {
   id: number;
   saleItemsId: number;

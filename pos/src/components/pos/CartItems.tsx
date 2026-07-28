@@ -12,7 +12,7 @@ import { useCustomerStore } from "../../store/customer-store.js";
 import type {
   CustomerDue,
   CustomerInputValueProps,
-} from "../../types/customers-types.js";
+} from "../../types/customers.types.js";
 import type {
   AddChargeModalProps,
   CartHoldBtnProps,
@@ -25,7 +25,7 @@ import type {
   PaymentModalProps,
   PeerInputProps,
   PopupModalProps,
-} from "../../types/cart-types.js";
+} from "../../types/cart.types.js";
 
 export default function CartItems() {
   const {

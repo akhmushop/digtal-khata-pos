@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import axios from "../api/axios.js";
-import type { PurchasesStore } from "../types/purchases-types.js";
+import type { PurchasesStore } from "../types/purchases.types.js";
 import { getErrorMessage } from "../utils/getErrorMessage.js";
 import {
   getPurchasesApi,

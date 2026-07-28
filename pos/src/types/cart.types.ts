@@ -1,5 +1,5 @@
 import type React from "react";
-import type { ProductsTypes } from "./products-types.js";
+import type { ProductsTypes } from "./products.types.js";
 export interface CartType extends ProductsTypes {
   soldQuantity: number;
 }

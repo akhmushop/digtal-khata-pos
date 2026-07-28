@@ -1,7 +1,7 @@
 import axios from "../api/axios.js";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { SalesStore } from "../types/sales-types.js";
+import type { SalesStore } from "../types/sales.types.js";
 import { getErrorMessage } from "../utils/getErrorMessage.js";
 import {
   createFullReturnApi,
