@@ -25,7 +25,7 @@ import {
   Download,
   MoreVertical,
 } from "lucide-react";
-import Sidebar from "../../components/Sidebar.js";
+import Sidebar from "../../components/layout/Sidebar.js";
 import axios from "../../api/axios.js";
 import {
   BigSummaryCardProps,

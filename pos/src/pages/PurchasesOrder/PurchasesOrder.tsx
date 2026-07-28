@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import Sidebar from "../../components/Sidebar.js";
+import Sidebar from "../../components/layout/Sidebar.js";
 import { Link } from "react-router";
 import { RiHome9Fill } from "react-icons/ri";
 import { MdOutlineAddCircleOutline, MdDeleteOutline } from "react-icons/md";
