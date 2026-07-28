@@ -1,4 +1,4 @@
-import { ProductsTypes } from "./products-types";
+import { ProductsTypes } from "./products.types";
 
 export interface Resizing {
   columnKey: string;

@@ -1,4 +1,4 @@
-import { InitialFormData } from "./addProduct-types";
+import { InitialFormData } from "./addProduct.types";
 
 export interface ProductsTypes {
   id: number;
@@ -52,10 +52,7 @@ export interface ProductsStore {
   addToProduct: (product: ProductsTypes) => void;
   removeProduct: (id: number) => void;
   duplicateProduct: (product: ProductsTypes) => void;
-  updateProduct: (
-    id: number ,
-    updated_product: Partial<ProductsTypes>,
-  ) => void;
+  updateProduct: (id: number, updated_product: Partial<ProductsTypes>) => void;
 }
 export interface EditingProductsStore {
   editingProduct: ProductsTypes | null;

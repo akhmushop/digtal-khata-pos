@@ -41,9 +41,9 @@ import {
   useEditProductStore,
 } from "../../store/product-store.js";
 import { PopupModal } from "../pos/CartItems.js";
-import { Resizing, SortConfig } from "../../types/table-types.js";
-import { ProductsTypes } from "../../types/products-types.js";
-import { SalesStoreType } from "../../types/sales-types.js";
+import { Resizing, SortConfig } from "../../types/table.types.js";
+import { ProductsTypes } from "../../types/products.types.js";
+import { SalesStoreType } from "../../types/sales.types.js";
 const AdvancedPOSTable = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<SortConfig>({

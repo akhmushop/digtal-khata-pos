@@ -1,4 +1,4 @@
-import type { ProductsTypes } from "./products-types.js";
+import type { ProductsTypes } from "./products.types.js";
 interface PurchasesStoreType {
   createdAt: string;
   discount: number;

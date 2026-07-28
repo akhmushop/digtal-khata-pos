@@ -1,5 +1,5 @@
 import axios from "../api/axios.js";
-import { ProductsTypes } from "../types/products-types.js";
+import { ProductsTypes } from "../types/products.types.js";
 
 export async function getProductsApi() {
   const { data } = await axios.get("/products");

@@ -47,7 +47,7 @@ import {
   TopProfitByCategoryProps,
   TopSellingProductsProps,
   TopSoldProductCategory,
-} from "../../types/dashboard-types.js";
+} from "../../types/dashboard.types.js";
 const DashboardComponent = () => {
   const initialProductSummary: ProductSummary = {
     low_stock: 0,

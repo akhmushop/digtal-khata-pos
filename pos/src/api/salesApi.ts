@@ -1,6 +1,6 @@
 import axios from "../api/axios.js";
-import { CartType, CashForm } from "../types/cart-types.js";
-import { SalesStoreType } from "../types/sales-types.js";
+import { CartType, CashForm } from "../types/cart.types.js";
+import { SalesStoreType } from "../types/sales.types.js";
 
 export async function getSalesProductsApi() {
   const { data } = await axios.get("/sold_products");

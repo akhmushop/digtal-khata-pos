@@ -3,7 +3,7 @@ import { useSoldStore } from "../../store/sold-store.js";
 import { PopupModal } from "../../components/pos/CartItems.jsx";
 import { useProductStore } from "../../store/product-store.js";
 import { create } from "zustand";
-import { AllSoldProduct, SalesStoreType } from "../../types/sales-types.js";
+import { AllSoldProduct, SalesStoreType } from "../../types/sales.types.js";
 
 export const Sales = () => {
   const soldProducts = useSoldStore((state) => state.soldProducts);

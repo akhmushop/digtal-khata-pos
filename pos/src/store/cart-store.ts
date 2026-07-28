@@ -1,7 +1,7 @@
 import axios from "../api/axios.js";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { CartStore } from "../types/cart-types.js";
+import type { CartStore } from "../types/cart.types.js";
 // export const useCartStore = create(
 //   persist(
 //     (set) => ({
