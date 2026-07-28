@@ -8,7 +8,7 @@ import {
   createSalesApi,
   createSingleReturnApi,
   getSalesProductsApi,
-} from "../api/salesApi.js";
+} from "../api/sales.api.js";
 // export const useSoldStore = create(
 //   persist(
 //     (set) => ({

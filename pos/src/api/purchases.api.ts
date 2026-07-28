@@ -1,4 +1,4 @@
-import axios from "../api/axios.js";
+import axios from "./axios.js";
 import {
   ChangedItems,
   PaymentDetails,

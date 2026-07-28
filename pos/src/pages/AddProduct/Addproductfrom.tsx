@@ -23,7 +23,7 @@ import {
 import {
   useProductStore,
   useEditProductStore,
-} from "../../store/product-store.js";
+} from "../../store/useProductStore.js";
 import { useLocation, useNavigate } from "react-router";
 import { useBlocker } from "react-router";
 import { ProductsTypes } from "../../types/products.types.js";

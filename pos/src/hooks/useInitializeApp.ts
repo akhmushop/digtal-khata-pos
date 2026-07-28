@@ -1,8 +1,8 @@
 import { useEffect } from "react";
-import { useCustomerStore } from "../store/customer-store";
-import { useProductStore } from "../store/product-store";
-import { usePurchasesStore } from "../store/purchases-store";
-import { useSoldStore } from "../store/sold-store";
+import { useCustomerStore } from "../store/useCustomerStore";
+import { useProductStore } from "../store/useProductStore";
+import { usePurchasesStore } from "../store/usePurchaseStore";
+import { useSoldStore } from "../store/useSalesStore";
 
 export function useInitializeApp() {
   const { getCustomers } = useCustomerStore();

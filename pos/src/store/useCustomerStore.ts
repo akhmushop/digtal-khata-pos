@@ -2,7 +2,7 @@ import axios from "../api/axios.js";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { InputValue, CustomerStore } from "../types/customers.types.js";
-import { createCustomerApi, getCustomersApi } from "../api/customerApi.js";
+import { createCustomerApi, getCustomersApi } from "../api/customer.api.js";
 const initialCustomerInfo: InputValue = {
   id: 0,
   name: "",

@@ -13,7 +13,7 @@ import {
   getProductsApi,
   updateProductByIdApi,
   updateStockByIdApi,
-} from "../api/productsApi.js";
+} from "../api/products.api.js";
 // export const useProductStore = create(
 //   persist(
 //     (set) => ({
