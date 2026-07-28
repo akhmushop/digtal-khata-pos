@@ -51,6 +51,7 @@ const ProductStockForm = () => {
   );
   const initialFormData: InitialFormData = editingProduct
     ? {
+        id: editingProduct.id,
         barcode: editingProduct.barcode,
         productName: editingProduct.productName,
         productUnit: editingProduct.productUnit,
@@ -68,8 +69,15 @@ const ProductStockForm = () => {
         brand: editingProduct.brand,
         category: editingProduct.category,
         tags: editingProduct.tags,
+        sku: editingProduct.sku,
+        weight: editingProduct.weight,
+        dimensions: editingProduct.dimensions,
+        variations: editingProduct.variations,
+        status: editingProduct.status,
+        location: editingProduct.location,
       }
     : {
+        id: 0,
         barcode: "",
         productName: "",
         productUnit: "PC",
@@ -87,6 +95,12 @@ const ProductStockForm = () => {
         brand: "",
         category: "",
         tags: [],
+        sku: "",
+        weight: "",
+        dimensions: "",
+        variations: "",
+        status: "",
+        location: "",
       };
   const [hasChanges, setHasChanges] = useState(false);
 

@@ -49,11 +49,11 @@ export interface ProductsStore {
   ) => void;
   restoreAllProductQuantityToCart: (id: number, soldQuantity: number) => void;
   updateStock: (id: number, newStock: number) => void;
-  addToProduct: (product: Partial<ProductsTypes>) => void;
+  addToProduct: (product: ProductsTypes) => void;
   removeProduct: (id: number) => void;
   duplicateProduct: (product: ProductsTypes) => void;
   updateProduct: (
-    id: number | undefined,
+    id: number ,
     updated_product: Partial<ProductsTypes>,
   ) => void;
 }

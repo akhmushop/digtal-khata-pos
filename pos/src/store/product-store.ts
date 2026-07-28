@@ -6,6 +6,14 @@ import type {
   ProductsStore,
   EditingProductsStore,
 } from "../types/products-types.js";
+import {
+  createProductApi,
+  deleteProductByIdApi,
+  duplicateProductApi,
+  getProductsApi,
+  updateProductByIdApi,
+  updateStockByIdApi,
+} from "../api/productsApi.js";
 // export const useProductStore = create(
 //   persist(
 //     (set) => ({
@@ -480,8 +488,8 @@ export const useProductStore = create<ProductsStore>((set) => ({
   getProducts: async () => {
     set({ loading: true });
     try {
-      const res = await axios.get("/products");
-      set({ products: res.data, loading: false });
+      const productsData = await getProductsApi();
+      set({ products: productsData, loading: false });
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       set({ error: errorMessage, loading: false });
@@ -550,10 +558,7 @@ export const useProductStore = create<ProductsStore>((set) => ({
               ? "Low-Stock"
               : "In-Stock";
 
-        axios.put(`products/update_stock/${id}`, {
-          newStock: newStock,
-          status: status,
-        });
+        updateStockByIdApi(id, newStock, status);
         return {
           products: state.products.map((p) => {
             if (p.id === id) {
@@ -573,7 +578,7 @@ export const useProductStore = create<ProductsStore>((set) => ({
   },
   addToProduct: async (product) => {
     try {
-      axios.post(`/products`, product);
+      createProductApi(product);
       set((state) => ({
         products: [...state.products, product],
       }));
@@ -583,7 +588,7 @@ export const useProductStore = create<ProductsStore>((set) => ({
   },
   removeProduct: async (id) => {
     try {
-      axios.delete(`products/remove_product/${id}`);
+      deleteProductByIdApi(id);
       set((state) => ({
         products: state.products.filter((p) => p.id !== id),
       }));
@@ -593,7 +598,7 @@ export const useProductStore = create<ProductsStore>((set) => ({
   },
   duplicateProduct: async (product) => {
     try {
-      axios.post(`products/duplicate-product/${product.id}`, product);
+      duplicateProductApi(product);
       set((state) => ({
         products: [
           ...state.products,
@@ -610,7 +615,10 @@ export const useProductStore = create<ProductsStore>((set) => ({
   },
   updateProduct: async (id, updatedProduct) => {
     try {
-      axios.patch(`/products/updated_product/${id}`, updatedProduct);
+      if (id === undefined) {
+        throw new Error("Product ID is undefined");
+      }
+      updateProductByIdApi(id , updatedProduct);
       set((state) => ({
         products: state.products.map((p) => {
           if (p.id === id) {

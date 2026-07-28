@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { Expense } from "../pages/Expense/Expense.js";
 import axios from "../api/axios.js";
+import { createExpenseApi } from "../api/expensesApi.js";
 export interface Expenses {
   title: string;
   expenseDate: string;
@@ -21,7 +22,12 @@ interface ExpenseStore {
 export const useExpenseStore = create<ExpenseStore>((set) => ({
   expenses: [],
   addExpense: (expenseData) => {
-    axios.post("/expenses ", expenseData);
+    try {
+      createExpenseApi(expenseData);
+    } catch (err) {
+      console.error("Error creating expense:", err);
+    }
+
     set((state) => ({
       expenses: [...state.expenses, expenseData],
     }));

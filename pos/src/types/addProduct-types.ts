@@ -1,4 +1,5 @@
 export interface InitialFormData {
+  id: number;
   barcode: string;
   productName: string;
   productUnit: string;
@@ -16,6 +17,12 @@ export interface InitialFormData {
   category: string;
   supplier: string;
   tags: string[];
+  sku: string;
+  weight: string;
+  dimensions: string;
+  variations: string;
+  status: string;
+  location: string;
 }
 export interface Errors {
   barcode: string;
