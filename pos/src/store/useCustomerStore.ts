@@ -14,6 +14,7 @@ export const useCustomerStore = create<CustomerStore>((set, get) => ({
   customers: [],
   customerInfo: initialCustomerInfo,
   customerInputValue: initialCustomerInfo,
+  showCustomerInfo: initialCustomerInfo,
   loading: false,
   error: null,
   handleOnchange: (e) => {
@@ -37,17 +38,18 @@ export const useCustomerStore = create<CustomerStore>((set, get) => ({
       setChecked(true);
     }
   },
-  setCustomerInputValue: (customer) => {
+  setShowCustomerInfo: (customer) => {
     set((state) => ({
-      customerInputValue: customer,
+      showCustomerInfo: customer,
     }));
   },
   resetCustomerInfo: () =>
     set({
       customerInfo: { ...initialCustomerInfo },
     }),
-  resetCustomerInputValue: () =>
+  resetShowCustomerInfo: () =>
     set({
+      showCustomerInfo: { ...initialCustomerInfo },
       customerInputValue: { ...initialCustomerInfo },
     }),
   handleAddCustomer: async () => {
