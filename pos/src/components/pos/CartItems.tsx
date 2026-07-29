@@ -11,7 +11,7 @@ import axios from "../../api/axios.js";
 import { useCustomerStore } from "../../store/useCustomerStore.js";
 import type {
   CustomerDue,
-  CustomerInputValueProps,
+  ShowCustomerInfoProps,
 } from "../../types/customers.types.js";
 import type {
   AddChargeModalProps,
@@ -92,8 +92,8 @@ export default function CartItems() {
     addCustomProductQuantityToCart,
   ]);
   // ClickOutSideToSaveCustomQuantity
-  const { customerInputValue } = useCustomerStore();
-  const { name, phone, address, id } = customerInputValue;
+  const { showCustomerInfo } = useCustomerStore();
+  const { name, phone, address, id } = showCustomerInfo;
   const customerDue = dueByCustomers.find((c) => c.customerId === id);
   return (
     <div className="h-[calc(100vh-4.25rem)]">
@@ -198,14 +198,14 @@ export default function CartItems() {
         {/* cartitem */}
 
         {/* cartCalculation */}
-        <CartCalculation customerInputValue={customerInputValue} />
+        <CartCalculation showCustomerInfo={showCustomerInfo} />
         {/* cartCalculation */}
       </div>
     </div>
   );
 }
 
-function CartCalculation({ customerInputValue }: CustomerInputValueProps) {
+function CartCalculation({ showCustomerInfo }: ShowCustomerInfoProps) {
   const cart = useCartStore((state) => state.cart);
   const [isOpen, setIsOpen] = useState(false);
   const [emptyCartCon, setEmptyCartCon] = useState(false);
@@ -304,7 +304,7 @@ function CartCalculation({ customerInputValue }: CustomerInputValueProps) {
   const resetCart = useCartStore((state) => state.resetCart);
 
   const handlePay = (handelClose: () => void, click: ClickType) => {
-    const { id } = customerInputValue;
+    const { id } = showCustomerInfo;
     const updatedCash = {
       ...cashForm,
       paidAmount: cashForm.finalTotal,

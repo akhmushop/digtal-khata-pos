@@ -12,7 +12,7 @@ export function CartHeader() {
     handleOnchange,
     resetCustomerInfo,
     handleAddCustomer,
-    resetCustomerInputValue,
+    resetShowCustomerInfo,
   } = useCustomerStore();
   const [isOpenCustomerModal, setIsOpenCustomerModal] = useState(false);
   const [checked, setChecked] = useState(true);
@@ -43,7 +43,7 @@ export function CartHeader() {
             onChange={(e) => {
               setChecked(e.target.checked);
               if (!checked) {
-                resetCustomerInputValue();
+                resetShowCustomerInfo();
               }
             }}
             checked={checked}
@@ -74,10 +74,10 @@ function DropdownModal({
 }: DropdownModalProps) {
   const {
     customers,
-    resetCustomerInputValue,
     customerInputValue,
     handleInputChange,
-    setCustomerInputValue,
+    setShowCustomerInfo,
+    resetShowCustomerInfo,
   } = useCustomerStore();
   const filteredCustomers = customers.filter((customer) =>
     customer.name.toLowerCase().includes(customerInputValue.name.toLowerCase()),
@@ -137,7 +137,7 @@ function DropdownModal({
           {/* close icon */}
           <div
             onClick={() => {
-              resetCustomerInputValue();
+              resetShowCustomerInfo();
               setChecked(true);
             }}
             className={` cursor-pointer p-1 transition-all duration-300 hover:bg-amber-50 rounded-2xl ${
@@ -182,7 +182,7 @@ function DropdownModal({
             return (
               <h1
                 onClick={() => {
-                  setCustomerInputValue(customer);
+                  setShowCustomerInfo(customer);
                   setChecked(false);
                   setShowCustomer(false);
                 }}
