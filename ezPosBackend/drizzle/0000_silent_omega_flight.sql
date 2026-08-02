@@ -5,7 +5,7 @@ CREATE TABLE "customers" (
 	"name" varchar(255) NOT NULL,
 	"phone" varchar(20),
 	"address" text,
-	"created_at" timestamp DEFAULT now()
+	"created_at" timestamp with time zone DEFAULT now()
 );
 --> statement-breakpoint
 CREATE TABLE "expense_categories" (
@@ -40,8 +40,8 @@ CREATE TABLE "products" (
 	"supplier" varchar(50),
 	"image" varchar(200),
 	"status" varchar(30),
-	"created_at" timestamp DEFAULT now(),
-	"updated_at" timestamp DEFAULT now(),
+	"created_at" timestamp with time zone DEFAULT now(),
+	"updated_at" timestamp with time zone DEFAULT now(),
 	"tags" jsonb,
 	"has_variants" boolean DEFAULT false
 );
@@ -64,8 +64,8 @@ CREATE TABLE "product_variants" (
 	"dimensions" varchar(80),
 	"image" varchar(200),
 	"is_default" boolean DEFAULT false,
-	"created_at" timestamp DEFAULT now(),
-	"updated_at" timestamp DEFAULT now(),
+	"created_at" timestamp with time zone DEFAULT now(),
+	"updated_at" timestamp with time zone DEFAULT now(),
 	"status" varchar(30)
 );
 --> statement-breakpoint
@@ -83,13 +83,13 @@ CREATE TABLE "variant_options" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"variant_type_id" integer NOT NULL,
 	"value" varchar(100) NOT NULL,
-	"created_at" timestamp DEFAULT now()
+	"created_at" timestamp with time zone DEFAULT now()
 );
 --> statement-breakpoint
 CREATE TABLE "variant_types" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" varchar(100) NOT NULL,
-	"created_at" timestamp DEFAULT now()
+	"created_at" timestamp with time zone DEFAULT now()
 );
 --> statement-breakpoint
 CREATE TABLE "variant_values" (
@@ -127,7 +127,7 @@ CREATE TABLE "purchase_returns" (
 	"reason" text,
 	"status" varchar(20) DEFAULT 'pending' NOT NULL,
 	"total_amount" numeric(12, 2) DEFAULT 0 NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "purchases" (
@@ -140,7 +140,7 @@ CREATE TABLE "purchases" (
 	"due_amount" numeric(10, 2) DEFAULT 0 NOT NULL,
 	"payment_status" "payment_status" DEFAULT 'unpaid' NOT NULL,
 	"note" text,
-	"created_at" timestamp DEFAULT CURRENT_TIMESTAMP,
+	"created_at" timestamp with time zone DEFAULT now(),
 	"status" "status" DEFAULT 'ordered' NOT NULL
 );
 --> statement-breakpoint
@@ -173,21 +173,21 @@ CREATE TABLE "sale_refund_items" (
 	"quantity" integer,
 	"refund_price" numeric,
 	"refund_total" numeric,
-	"created_at" timestamp DEFAULT now()
+	"created_at" timestamp with time zone DEFAULT now()
 );
 --> statement-breakpoint
 CREATE TABLE "sale_refunds" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"sale_id" integer,
 	"reason" text,
-	"created_at" timestamp DEFAULT now(),
+	"created_at" timestamp with time zone DEFAULT now(),
 	"status" varchar(20),
 	"refund_total" numeric
 );
 --> statement-breakpoint
 CREATE TABLE "sales" (
 	"id" serial PRIMARY KEY NOT NULL,
-	"created_at" timestamp DEFAULT CURRENT_TIMESTAMP,
+	"created_at" timestamp with time zone DEFAULT now(),
 	"status" varchar(30) DEFAULT 'completed',
 	"invoice_number" varchar(50),
 	"sale_date" date DEFAULT CURRENT_DATE,
@@ -210,7 +210,7 @@ CREATE TABLE "supplier_ledger" (
 	"debit" numeric(12, 2) DEFAULT '0',
 	"credit" numeric(12, 2) DEFAULT 0,
 	"note" text,
-	"created_at" timestamp DEFAULT CURRENT_TIMESTAMP
+	"created_at" timestamp with time zone DEFAULT now()
 );
 --> statement-breakpoint
 CREATE TABLE "suppliers" (
@@ -226,8 +226,8 @@ CREATE TABLE "suppliers" (
 	"opening_balance_type" varchar(10),
 	"status" boolean DEFAULT true,
 	"note" text,
-	"created_at" timestamp DEFAULT CURRENT_TIMESTAMP,
-	"updated_at" timestamp DEFAULT CURRENT_TIMESTAMP,
+	"created_at" timestamp with time zone DEFAULT now(),
+	"updated_at" timestamp with time zone DEFAULT now(),
 	CONSTRAINT "suppliers_supplier_code_key" UNIQUE("supplier_code"),
 	CONSTRAINT "suppliers_opening_balance_type_check" CHECK ((opening_balance_type)::text = ANY ((ARRAY['payable'::character varying, 'receivable'::character varying])::text[]))
 );
