@@ -18,7 +18,7 @@ export const saleRefundItems = pgTable(
     quantity: integer(),
     refundPrice: numeric("refund_price", { mode: "number" }),
     refundTotal: numeric("refund_total", { mode: "number" }),
-    createdAt: timestamp("created_at", { mode: "string" }).defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },
   (table) => [
     foreignKey({

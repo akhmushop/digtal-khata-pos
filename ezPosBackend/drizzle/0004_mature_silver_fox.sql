@@ -1,3 +1,5 @@
+CREATE TYPE "public"."payment_status" AS ENUM('received', 'paid', 'unpaid', 'partial_paid');--> statement-breakpoint
+CREATE TYPE "public"."status" AS ENUM('ordered', 'received', 'partially_received');--> statement-breakpoint
 CREATE TABLE "customers" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" varchar(255) NOT NULL,
@@ -38,8 +40,8 @@ CREATE TABLE "products" (
 	"supplier" varchar(50),
 	"image" varchar(200),
 	"status" varchar(30),
-	"created_at" varchar(30) DEFAULT CURRENT_DATE,
-	"updated_at" varchar(30) DEFAULT CURRENT_DATE,
+	"created_at" timestamp DEFAULT now(),
+	"updated_at" timestamp DEFAULT now(),
 	"tags" jsonb,
 	"has_variants" boolean DEFAULT false
 );
@@ -51,19 +53,19 @@ CREATE TABLE "product_variants" (
 	"barcode" varchar(100),
 	"quantity" integer DEFAULT 0 NOT NULL,
 	"alert_quantity" integer DEFAULT 0,
-	"purchase_price" numeric NOT NULL,
-	"selling_price" numeric NOT NULL,
-	"discount_percent" numeric DEFAULT '0',
-	"flat_discount" numeric DEFAULT '0',
-	"final_price" numeric,
+	"purchase_price" numeric(12, 2) NOT NULL,
+	"selling_price" numeric(12, 2) NOT NULL,
+	"discount_percent" numeric(12, 2) DEFAULT '0',
+	"flat_discount" numeric(12, 2) DEFAULT '0',
+	"final_price" numeric(12, 2),
 	"batch_number" varchar(200),
 	"expiry_date" varchar(30),
 	"weight" varchar(20),
 	"dimensions" varchar(80),
 	"image" varchar(200),
 	"is_default" boolean DEFAULT false,
-	"created_at" varchar(30) DEFAULT 'CURRENT_DATE',
-	"updated_at" varchar(30) DEFAULT 'CURRENT_DATE',
+	"created_at" timestamp DEFAULT now(),
+	"updated_at" timestamp DEFAULT now(),
 	"status" varchar(30)
 );
 --> statement-breakpoint
@@ -81,18 +83,19 @@ CREATE TABLE "variant_options" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"variant_type_id" integer NOT NULL,
 	"value" varchar(100) NOT NULL,
-	"created_at" varchar(30) DEFAULT 'CURRENT_DATE'
+	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
 CREATE TABLE "variant_types" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" varchar(100) NOT NULL,
-	"created_at" varchar(30) DEFAULT 'CURRENT_DATE'
+	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
 CREATE TABLE "variant_values" (
 	"variant_id" integer NOT NULL,
-	"option_id" integer NOT NULL
+	"option_id" integer NOT NULL,
+	CONSTRAINT "variant_values_variant_id_option_id_pk" PRIMARY KEY("variant_id","option_id")
 );
 --> statement-breakpoint
 CREATE TABLE "purchase_items" (

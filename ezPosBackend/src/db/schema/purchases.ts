@@ -9,7 +9,7 @@ import {
   numeric,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
-import { paymentStatusEnum, statusEnum } from "../../types/purchases-type.js";
+import { paymentStatusEnum, statusEnum } from "./enums.js";
 
 export const purchases = pgTable("purchases", {
   id: serial().primaryKey().notNull(),
@@ -33,8 +33,6 @@ export const purchases = pgTable("purchases", {
     .default("unpaid")
     .notNull(),
   note: text(),
-  createdAt: timestamp("created_at", { mode: "string" }).default(
-    sql`CURRENT_TIMESTAMP`,
-  ),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   status: statusEnum("status").default("ordered").notNull(),
 });
