@@ -15,6 +15,13 @@
       "when": 1783814334139,
       "tag": "0001_volatile_khan",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785686532214,
+      "tag": "0002_low_flatman",
+      "breakpoints": true
     }
   ]
 }
