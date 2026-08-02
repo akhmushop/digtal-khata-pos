@@ -15,7 +15,7 @@ export const saleRefunds = pgTable(
     id: serial().primaryKey().notNull(),
     saleId: integer("sale_id"),
     reason: text(),
-    createdAt: timestamp("created_at", { mode: "string" }).defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     status: varchar({ length: 20 }),
     refundTotal: numeric("refund_total", { mode: "number" }),
   },

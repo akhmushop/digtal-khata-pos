@@ -16,9 +16,7 @@ export const sales = pgTable(
   "sales",
   {
     id: serial().primaryKey().notNull(),
-    createdAt: timestamp("created_at", { mode: "string" }).default(
-      sql`CURRENT_TIMESTAMP`,
-    ),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     status: varchar({ length: 30 }).default("completed"),
     invoiceNumber: varchar("invoice_number", { length: 50 }),
     saleDate: date("sale_date").default(sql`CURRENT_DATE`),

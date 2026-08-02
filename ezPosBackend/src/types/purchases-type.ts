@@ -1,18 +1,7 @@
-import { pgEnum } from "drizzle-orm/pg-core";
 import type { ChangedItems } from "./changedItems-types.js";
 import type { suppliers } from "../db/schema/suppliers.js";
 
-export const statusEnum = pgEnum("status", [
-  "ordered",
-  "received",
-  "partially_received",
-]);
-export const paymentStatusEnum = pgEnum("payment_status", [
-  "received",
-  "paid",
-  "unpaid",
-  "partial_paid",
-]);
+
 
 export interface CreatePurchaseReturnInput {
   orderId: number;

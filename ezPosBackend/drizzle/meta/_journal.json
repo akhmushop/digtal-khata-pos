@@ -22,6 +22,27 @@
       "when": 1785686532214,
       "tag": "0002_low_flatman",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1785693669536,
+      "tag": "0003_elite_midnight",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1785693913884,
+      "tag": "0004_mature_silver_fox",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1785694608239,
+      "tag": "0005_cultured_spyke",
+      "breakpoints": true
     }
   ]
 }

@@ -23,9 +23,7 @@ export const supplierLedger = pgTable(
     debit: numeric({ precision: 12, scale: 2 }).default("0"),
     credit: numeric({ precision: 12, scale: 2, mode: "number" }).default(0),
     note: text(),
-    createdAt: timestamp("created_at", { mode: "string" }).default(
-      sql`CURRENT_TIMESTAMP`,
-    ),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },
   (table) => [
     foreignKey({

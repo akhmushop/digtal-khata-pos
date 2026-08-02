@@ -29,9 +29,7 @@ export const purchaseReturns = pgTable(
     })
       .default(0)
       .notNull(),
-    createdAt: timestamp("created_at", { mode: "string" })
-      .defaultNow()
-      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
     foreignKey({

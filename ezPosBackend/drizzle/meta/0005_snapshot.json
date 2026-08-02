@@ -1,6 +1,6 @@
 {
-  "id": "f2223887-ed2a-4767-8a40-f698d5b597e1",
-  "prevId": "a62d892d-10ba-430c-98d0-a8529d7be553",
+  "id": "e6e305f7-2587-4109-9e00-126a4a3cc851",
+  "prevId": "7535a5f3-0bf2-41c6-a684-200241681fab",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -34,7 +34,7 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
           "default": "now()"
@@ -245,17 +245,17 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "varchar(30)",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
-          "default": "CURRENT_DATE"
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "varchar(30)",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
-          "default": "CURRENT_DATE"
+          "default": "now()"
         },
         "tags": {
           "name": "tags",
@@ -323,33 +323,33 @@
         },
         "purchase_price": {
           "name": "purchase_price",
-          "type": "numeric",
+          "type": "numeric(12, 2)",
           "primaryKey": false,
           "notNull": true
         },
         "selling_price": {
           "name": "selling_price",
-          "type": "numeric",
+          "type": "numeric(12, 2)",
           "primaryKey": false,
           "notNull": true
         },
         "discount_percent": {
           "name": "discount_percent",
-          "type": "numeric",
+          "type": "numeric(12, 2)",
           "primaryKey": false,
           "notNull": false,
           "default": "'0'"
         },
         "flat_discount": {
           "name": "flat_discount",
-          "type": "numeric",
+          "type": "numeric(12, 2)",
           "primaryKey": false,
           "notNull": false,
           "default": "'0'"
         },
         "final_price": {
           "name": "final_price",
-          "type": "numeric",
+          "type": "numeric(12, 2)",
           "primaryKey": false,
           "notNull": false
         },
@@ -392,17 +392,17 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "varchar(30)",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
-          "default": "'CURRENT_DATE'"
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "varchar(30)",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
-          "default": "'CURRENT_DATE'"
+          "default": "now()"
         },
         "status": {
           "name": "status",
@@ -526,10 +526,10 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "varchar(30)",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
-          "default": "'CURRENT_DATE'"
+          "default": "now()"
         }
       },
       "indexes": {},
@@ -572,10 +572,10 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "varchar(30)",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
-          "default": "'CURRENT_DATE'"
+          "default": "now()"
         }
       },
       "indexes": {},
@@ -632,7 +632,15 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "variant_values_variant_id_option_id_pk": {
+          "name": "variant_values_variant_id_option_id_pk",
+          "columns": [
+            "variant_id",
+            "option_id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -880,7 +888,7 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -988,10 +996,10 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "now()"
         },
         "status": {
           "name": "status",
@@ -1230,7 +1238,7 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
           "default": "now()"
@@ -1282,7 +1290,7 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
           "default": "now()"
@@ -1334,10 +1342,10 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "now()"
         },
         "status": {
           "name": "status",
@@ -1492,10 +1500,10 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "now()"
         }
       },
       "indexes": {},
@@ -1600,17 +1608,17 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "now()"
         }
       },
       "indexes": {},
@@ -1635,7 +1643,27 @@
       "isRLSEnabled": false
     }
   },
-  "enums": {},
+  "enums": {
+    "public.payment_status": {
+      "name": "payment_status",
+      "schema": "public",
+      "values": [
+        "received",
+        "paid",
+        "unpaid",
+        "partial_paid"
+      ]
+    },
+    "public.status": {
+      "name": "status",
+      "schema": "public",
+      "values": [
+        "ordered",
+        "received",
+        "partially_received"
+      ]
+    }
+  },
   "schemas": {},
   "sequences": {},
   "roles": {},

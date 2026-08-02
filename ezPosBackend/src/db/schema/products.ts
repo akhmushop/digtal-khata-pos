@@ -8,6 +8,7 @@ import {
   unique,
   doublePrecision,
   boolean,
+  timestamp,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -22,8 +23,8 @@ export const products = pgTable("products", {
   supplier: varchar({ length: 50 }),
   image: varchar({ length: 200 }),
   status: varchar({ length: 30 }),
-  createdAt: varchar("created_at", { length: 30 }).default(sql`CURRENT_DATE`),
-  updatedAt: varchar("updated_at", { length: 30 }).default(sql`CURRENT_DATE`),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   tags: jsonb(),
   hasVariants: boolean("has_variants").default(false),
 });

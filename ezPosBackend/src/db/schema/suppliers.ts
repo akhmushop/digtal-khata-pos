@@ -29,12 +29,8 @@ export const suppliers = pgTable(
     openingBalanceType: varchar("opening_balance_type", { length: 10 }),
     status: boolean().default(true),
     note: text(),
-    createdAt: timestamp("created_at", { mode: "string" }).default(
-      sql`CURRENT_TIMESTAMP`,
-    ),
-    updatedAt: timestamp("updated_at", { mode: "string" }).default(
-      sql`CURRENT_TIMESTAMP`,
-    ),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   },
   (table) => [
     unique("suppliers_supplier_code_key").on(table.supplierCode),
