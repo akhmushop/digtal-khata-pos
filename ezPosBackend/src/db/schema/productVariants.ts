@@ -1,5 +1,6 @@
 import {
   boolean,
+  date,
   integer,
   numeric,
   pgTable,
@@ -9,14 +10,16 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import { products } from "./products.js";
+import { purchases } from "./purchases.js";
+import { sales } from "./sales.js";
 
 export const productVariants = pgTable("product_variants", {
   id: serial("id").primaryKey().notNull(),
   productId: integer("product_id")
     .references(() => products.id)
     .notNull(),
-  sku: varchar({ length: 100 }),
-  barcode: varchar({ length: 100 }),
+  sku: varchar({ length: 100 }).unique(),
+  barcode: varchar({ length: 100 }).unique(),
   quantity: integer().default(0).notNull(),
   alertQuantity: integer("alert_quantity").default(0),
   purchasePrice: numeric("purchase_price", {
@@ -40,7 +43,7 @@ export const productVariants = pgTable("product_variants", {
     scale: 2,
   }),
   batchNumber: varchar("batch_number", { length: 200 }),
-  expiryDate: varchar("expiry_date", { length: 30 }),
+  expiryDate: date("expiry_date"),
   weight: varchar({ length: 20 }),
   dimensions: varchar({ length: 80 }),
   image: varchar({ length: 200 }),
@@ -72,11 +75,11 @@ export const variantValues = pgTable(
       .references(() => variantOptions.id)
       .notNull(),
   },
-  (table) => ({
-    pk: primaryKey({
+  (table) => [
+    primaryKey({
       columns: [table.variantId, table.optionId],
     }),
-  }),
+  ],
 );
 export const serialNumbers = pgTable("serial_numbers", {
   id: serial("id").primaryKey().notNull(),
@@ -85,7 +88,7 @@ export const serialNumbers = pgTable("serial_numbers", {
     .notNull(),
   serialNumber: varchar("serial_number", { length: 100 }).notNull(),
   status: varchar({ length: 30 }),
-  purchaseId: integer("purchase_id"),
-  saleId: integer("sale_id"),
-  soldAt: varchar("sold_at", { length: 30 }),
+  purchaseId: integer("purchase_id").references(() => purchases.id),
+  saleId: integer("sale_id").references(() => sales.id),
+  soldAt: timestamp("sold_at", { withTimezone: true }),
 });

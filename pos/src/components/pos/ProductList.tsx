@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { SetStateAction, useState } from "react";
 import { useProductStore } from "../../store/useProductStore.js";
 import { useCartStore } from "../../store/useCartStore.js";
 import { PopupModal } from "./CartItems.js";
@@ -6,15 +6,71 @@ import { ProductsTypes } from "../../types/products.types.js";
 interface ProductListProps {
   search: string;
 }
+interface selectVariationType {
+  color: string;
+  size: string;
+}
+interface cartItemType {
+  productId: number;
+  variantId: number;
+  productName: string;
+  sellingPrice: number;
+  image: string;
+  quantity: number;
+}
+const getAvailableSizes = (product: ProductsTypes, value: string) => {
+  return product.variants
+    .filter((variant) => {
+      if (!variant.options) {
+        return;
+      }
+      return variant.options.some(
+        (o) => o.type === "color" && o.value === value,
+      );
+    })
+    .map((variant) => {
+      if (!variant.options) {
+        return;
+      }
+      return variant.options.find((o) => o.type === "size")?.value;
+    })
+    .filter(Boolean);
+};
+const getColors = (product: ProductsTypes) => {
+  return [
+    ...new Set(
+      product.variants
+        .map((v) => {
+          if (!v.options) {
+            return;
+          }
+          return v.options.find((o) => o.type === "color")?.value;
+        })
+        .filter(Boolean),
+    ),
+  ];
+};
+const getVariationInfo = (
+  product: ProductsTypes,
+  color: string,
+  size: string,
+) => {
+  return product?.variants.find((v) => {
+    if (!v.options) {
+      return;
+    }
+    return (
+      v.options.some((o) => o.type === "color" && o.value === color) &&
+      v.options.some((o) => o.type === "size" && o.value === size)
+    );
+  });
+};
 export function ProductList({ search }: ProductListProps) {
-  // const getProducts = useProductStore((state) => state.getProducts);
-  // const product = useProductStore((state) => state.product);
-  // const removeProductQty = useProductStore((state) => state.removeProductQty);
   const { addToCart } = useCartStore();
   const { products, removeProductQuantity } = useProductStore();
-  const filtered = products.filter((item) =>
-    item.productName.toLowerCase().includes(search.toLowerCase() || ""),
-  );
+  // const filtered = products.filter((item) =>
+  //   item.productName.toLowerCase().includes(search.toLowerCase() || ""),
+  // );
   const [isOpen, setIsOpen] = useState(false);
   const [isVariationOpen, setIsVariationOpen] = useState(false);
   const [selectVariationProduct, SetSelectVariationProduct] =
@@ -24,33 +80,54 @@ export function ProductList({ search }: ProductListProps) {
     setIsOpen(false);
   };
 
+  const [selectVariation, setSelectVariation] = useState<selectVariationType>({
+    color: "",
+    size: "",
+  });
+
+  const handleSelectProduct = (product: ProductsTypes) => {
+    SetSelectVariationProduct(product);
+    const colors = getColors(product);
+    const firstColor = colors[0] ?? "";
+    const availableSizes = getAvailableSizes(product, firstColor);
+    setSelectVariation({
+      color: firstColor,
+      size: availableSizes[0] ?? "",
+    });
+  };
   return (
     <div className="h-[calc(100vh-4.25rem)]">
       <div className=" h-full overflow-scroll  no-scrollbar bg-zuccini-50">
         <div className=" grid grid-cols-4  gap-1 p-5">
-          {filtered.map((product) => {
+          {products.map((product) => {
+            const variationInfo = product.variants?.[0];
+
+            if (!variationInfo) {
+              return;
+            }
             return (
               <div
                 key={product.id}
                 onClick={() => {
-                  if (product.variations) {
+                  if (product.hasVariants) {
                     setIsOpen(false);
                     setIsVariationOpen(true);
                     setTimeout(() => setIsOpen(true), 30);
-                    SetSelectVariationProduct(product);
-                    console.log("Product has variations:", product.variations);
+                    handleSelectProduct(product);
                     return;
                   }
-                  if (product.quantity <= 0) return;
+                  if (variationInfo.quantity <= 0) return;
                   addToCart(product);
                   removeProductQuantity(product.id);
                 }}
                 className={`select-none relative h-60 bg-zuccini-300 rounded-sm flex flex-col items-center justify-between py-2 
   ${
-    product.quantity <= 0 ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+    variationInfo.quantity <= 0
+      ? "cursor-not-allowed opacity-60"
+      : "cursor-pointer"
   }`}
               >
-                {product.quantity <= 0 && (
+                {variationInfo.quantity <= 0 && (
                   <div className="absolute inset-0 bg-black/50 rounded-sm flex items-center justify-center text-white text-xl">
                     Stock Out
                   </div>
@@ -58,8 +135,8 @@ export function ProductList({ search }: ProductListProps) {
                 <img className="h-20 rounded-sm " src={product.image} alt="" />
                 <h2 className="text-center">{product.productName}</h2>
                 <p className=" ">{product.category}</p>
-                <h1 className=" ">TK: {product.price}</h1>
-                <p className=" ">Stock: {product.quantity}</p>
+                <h1 className=" ">TK: {variationInfo.selling_price}</h1>
+                <p className=" ">Stock: {variationInfo.quantity}</p>
               </div>
             );
           })}
@@ -72,6 +149,8 @@ export function ProductList({ search }: ProductListProps) {
           selectVariationProduct={selectVariationProduct}
           addToCart={addToCart}
           removeProductQuantity={removeProductQuantity}
+          selectVariation={selectVariation}
+          setSelectVariation={setSelectVariation}
         />
       )}
     </div>
@@ -83,57 +162,86 @@ function ShowProductVariations({
   selectVariationProduct,
   addToCart,
   removeProductQuantity,
+  selectVariation,
+  setSelectVariation,
 }: {
   isOpen: boolean;
   handelClose: () => void;
   selectVariationProduct: ProductsTypes | null;
   addToCart: (product: ProductsTypes) => void;
   removeProductQuantity: (id: number) => void;
+  selectVariation: selectVariationType;
+  setSelectVariation: React.Dispatch<SetStateAction<selectVariationType>>;
 }) {
-  const variation = [
-    { id: 1, size: "US 8", color: "Black", quantity: 0 },
-    { id: 2, size: "US 9", color: "Black", quantity: 30 },
-    { id: 3, size: "US 10", color: "Black", quantity: 30 },
-    { id: 4, size: "US 11", color: "Black", quantity: 30 },
-    { id: 5, size: "US 8", color: "White", quantity: 0 },
-    { id: 6, size: "US 9", color: "White", quantity: 0 },
-    { id: 7, size: "US 10", color: "White", quantity: 30 },
-    { id: 8, size: "US 11", color: "White", quantity: 30 },
-  ];
-  const colors = [...new Set(variation.map((v) => v.color))];
-  const size = [...new Set(variation.map((v) => v.size))];
-  interface selectVariationType {
-    color: string | undefined;
-    size: string | undefined;
+  if (!selectVariationProduct) {
+    return;
   }
-  const [selectVariation, setSelectVariation] = useState<selectVariationType>({
-    color: colors[0],
-    size: "",
-  });
+  const colors = getColors(selectVariationProduct);
+  const sizes = [
+    ...new Set(
+      selectVariationProduct.variants
+        .map((v) => {
+          if (!v.options) {
+            return;
+          }
+          return v.options.find((o) => o.type === "size")?.value;
+        })
+        .filter(Boolean),
+    ),
+  ];
+
+  const variationInfo = getVariationInfo(
+    selectVariationProduct,
+    selectVariation.color,
+    selectVariation.size,
+  );
+
   const handleOnchange = (
     e: React.ChangeEvent<HTMLInputElement, HTMLInputElement>,
   ) => {
     const { name, ariaLabel } = e.target;
-    const value = ariaLabel ?? undefined;
-    setSelectVariation((prev) => {
-      if (name === "color") {
-        return {
-          ...prev,
-          color: value,
-        };
-      } else if (name === "size") {
-        return {
-          ...prev,
-          size: value,
-        };
-      }
-      return prev;
-    });
+    const value = ariaLabel ?? "";
+    if (name === "color") {
+      const availableSizes = getAvailableSizes(selectVariationProduct, value);
+      setSelectVariation({
+        color: value,
+        size: availableSizes[0] ?? "",
+      });
+      return;
+    }
+    if (name === "size") {
+      setSelectVariation((prev) => ({
+        ...prev,
+        size: value,
+      }));
+    }
   };
+  if (!variationInfo) {
+    return;
+  }
+  const {
+    productName,
+    id: productId,
+    image: productImage,
+  } = selectVariationProduct;
+  const {
+    id: variantId,
+    selling_price: sellingPrice,
+    image: variantImage,
+  } = variationInfo;
+  const cartItem: cartItemType = {
+    productId,
+    variantId,
+    productName: `${productName} ${selectVariation.color} ${selectVariation.size}`,
+    sellingPrice,
+    image: variantImage ?? productImage,
+    quantity: 1,
+  };
+  console.log(cartItem);
   const handleAddToCart = () => {
     if (!selectVariationProduct) return;
-    if (selectVariationProduct.quantity <= 0) return;
-    addToCart(selectVariationProduct);
+    if (variationInfo.quantity <= 0) return;
+    addToCart(cartItem);
     removeProductQuantity(selectVariationProduct.id);
     handelClose();
   };
@@ -156,7 +264,7 @@ function ShowProductVariations({
           <div className=" w-3/6 py-5">
             <img
               className="h-full rounded-sm"
-              src={selectVariationProduct?.image}
+              src={variationInfo?.image ?? selectVariationProduct?.image}
               alt=""
             />
           </div>
@@ -168,7 +276,7 @@ function ShowProductVariations({
                   Price:{" "}
                 </span>
                 <span className="text-black-200 text-3xl font-bold">
-                  {selectVariationProduct?.price} Taka
+                  {variationInfo?.selling_price} Taka
                 </span>
               </div>
 
@@ -190,9 +298,14 @@ function ShowProductVariations({
               </div>
               <span>Select Size</span>
               <div className="join">
-                {size.map((c, i) => {
-                  const variant = variation.find(
-                    (v) => v.color === selectVariation.color && v.size === c,
+                {sizes.map((s, i) => {
+                  if (!s) {
+                    return;
+                  }
+                  const variant = getVariationInfo(
+                    selectVariationProduct,
+                    selectVariation.color,
+                    s,
                   );
                   return (
                     <input
@@ -202,7 +315,8 @@ function ShowProductVariations({
                       className="join-item btn"
                       type="radio"
                       name="size"
-                      aria-label={c}
+                      aria-label={s}
+                      checked={selectVariation.size === s}
                     />
                   );
                 })}
