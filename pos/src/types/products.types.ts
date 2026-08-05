@@ -2,18 +2,9 @@ import { InitialFormData } from "./addProduct.types";
 
 export interface ProductsTypes {
   id: number;
-  barcode: string;
   productName: string;
   productUnit: string;
   productType: string;
-  alertQuantity: number;
-  cost: number;
-  price: number;
-  discountPercent: number;
-  flatDiscount: number;
-  quantity: number;
-  batchNumber: string;
-  expiryDate: string;
   description: string;
   brand: string;
   category: string;
@@ -21,13 +12,32 @@ export interface ProductsTypes {
   image: string;
   status: string;
   createdAt: string;
-  sku: string;
-  weight: string;
-  dimensions: string;
-  variations: string;
-  finalPrice: number;
+  updatedAt: string;
   tags: string[];
-  location: string;
+  hasVariants: boolean;
+  variants: {
+    id: number;
+    sku: string;
+    image: string;
+    status: string;
+    weight: number;
+    barcode: string;
+    options: { type: string; value: string }[] | null;
+    quantity: number;
+    created_at: string;
+    dimensions: string;
+    is_default: boolean;
+    product_id: number;
+    updated_at: string;
+    expiry_date: string;
+    final_price: number;
+    batch_number: number;
+    flat_discount: number;
+    selling_price: number;
+    alert_quantity: number;
+    purchase_price: number;
+    discount_percent: number;
+  }[];
 }
 
 export interface ProductsStore {
