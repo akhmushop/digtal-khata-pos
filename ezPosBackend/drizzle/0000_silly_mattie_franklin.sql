@@ -1,5 +1,19 @@
 CREATE TYPE "public"."payment_status" AS ENUM('received', 'paid', 'unpaid', 'partial_paid');--> statement-breakpoint
 CREATE TYPE "public"."status" AS ENUM('ordered', 'received', 'partially_received');--> statement-breakpoint
+CREATE TABLE "brands" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"name" varchar(100) NOT NULL,
+	"status" varchar(30)
+);
+--> statement-breakpoint
+CREATE TABLE "categories" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"name" varchar(100) NOT NULL,
+	"description" varchar(200),
+	"parent_id" integer,
+	"status" varchar(30)
+);
+--> statement-breakpoint
 CREATE TABLE "customers" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" varchar(255) NOT NULL,
@@ -29,21 +43,47 @@ CREATE TABLE "expenses" (
 	CONSTRAINT "expenses_payment_method_check" CHECK ((payment_method)::text = ANY ((ARRAY['Cash'::character varying, 'Mobile'::character varying, 'Card'::character varying])::text[]))
 );
 --> statement-breakpoint
+CREATE TABLE "inventory_batches" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"variant_id" integer,
+	"location_id" integer,
+	"purchase_item_id" integer,
+	"batch_number" varchar(100) NOT NULL,
+	"purchase_price" numeric(10, 2) NOT NULL,
+	"quantity_received" integer NOT NULL,
+	"quantity_remaining" integer NOT NULL,
+	"manufactured_date" date,
+	"expiry_date" date
+);
+--> statement-breakpoint
+CREATE TABLE "locations" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"name" varchar(100) NOT NULL,
+	"address" varchar(255),
+	"status" varchar(20) DEFAULT 'active' NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "product_images" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"product_id" integer,
+	"image_url" varchar(255) NOT NULL,
+	"is_primary" boolean DEFAULT false,
+	"sort_order" integer DEFAULT 0
+);
+--> statement-breakpoint
 CREATE TABLE "products" (
 	"id" serial PRIMARY KEY NOT NULL,
-	"product_name" varchar(100) NOT NULL,
-	"product_unit" varchar(20),
-	"product_type" varchar(20),
+	"name" varchar(100) NOT NULL,
+	"category_id" integer,
+	"brand_id" integer,
+	"unit_id" integer,
 	"description" varchar(200),
-	"brand" varchar(30),
-	"category" varchar(50),
-	"supplier" varchar(50),
-	"image" varchar(200),
+	"product_type" varchar(20),
+	"has_variants" boolean DEFAULT false,
+	"tracking_type" varchar(20),
 	"status" varchar(30),
 	"created_at" timestamp with time zone DEFAULT now(),
-	"updated_at" timestamp with time zone DEFAULT now(),
-	"tags" jsonb,
-	"has_variants" boolean DEFAULT false
+	"updated_at" timestamp with time zone DEFAULT now()
 );
 --> statement-breakpoint
 CREATE TABLE "product_variants" (
@@ -51,51 +91,12 @@ CREATE TABLE "product_variants" (
 	"product_id" integer NOT NULL,
 	"sku" varchar(100),
 	"barcode" varchar(100),
-	"quantity" integer DEFAULT 0 NOT NULL,
-	"alert_quantity" integer DEFAULT 0,
-	"purchase_price" numeric(12, 2) NOT NULL,
 	"selling_price" numeric(12, 2) NOT NULL,
-	"discount_percent" numeric(12, 2) DEFAULT '0',
-	"flat_discount" numeric(12, 2) DEFAULT '0',
-	"final_price" numeric(12, 2),
-	"batch_number" varchar(200),
-	"expiry_date" varchar(30),
-	"weight" varchar(20),
-	"dimensions" varchar(80),
-	"image" varchar(200),
+	"alert_quantity" integer DEFAULT 0,
 	"is_default" boolean DEFAULT false,
-	"created_at" timestamp with time zone DEFAULT now(),
-	"updated_at" timestamp with time zone DEFAULT now(),
-	"status" varchar(30)
-);
---> statement-breakpoint
-CREATE TABLE "serial_numbers" (
-	"id" serial PRIMARY KEY NOT NULL,
-	"variant_id" integer NOT NULL,
-	"serial_number" varchar(100) NOT NULL,
 	"status" varchar(30),
-	"purchase_id" integer,
-	"sale_id" integer,
-	"sold_at" varchar(30)
-);
---> statement-breakpoint
-CREATE TABLE "variant_options" (
-	"id" serial PRIMARY KEY NOT NULL,
-	"variant_type_id" integer NOT NULL,
-	"value" varchar(100) NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now()
-);
---> statement-breakpoint
-CREATE TABLE "variant_types" (
-	"id" serial PRIMARY KEY NOT NULL,
-	"name" varchar(100) NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now()
-);
---> statement-breakpoint
-CREATE TABLE "variant_values" (
-	"variant_id" integer NOT NULL,
-	"option_id" integer NOT NULL,
-	CONSTRAINT "variant_values_variant_id_option_id_pk" PRIMARY KEY("variant_id","option_id")
+	CONSTRAINT "product_variants_sku_unique" UNIQUE("sku"),
+	CONSTRAINT "product_variants_barcode_unique" UNIQUE("barcode")
 );
 --> statement-breakpoint
 CREATE TABLE "purchase_items" (
@@ -202,6 +203,17 @@ CREATE TABLE "sales" (
 	CONSTRAINT "sales_invoice_number_key" UNIQUE("invoice_number")
 );
 --> statement-breakpoint
+CREATE TABLE "serial_numbers" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"variant_id" integer NOT NULL,
+	"batch_id" integer NOT NULL,
+	"serial_number" varchar(100) NOT NULL,
+	"status" varchar(30),
+	"purchase_item_id" integer,
+	"sale_item_id" integer,
+	"sold_at" timestamp with time zone
+);
+--> statement-breakpoint
 CREATE TABLE "supplier_ledger" (
 	"id" bigserial PRIMARY KEY NOT NULL,
 	"supplier_id" bigint NOT NULL,
@@ -232,12 +244,47 @@ CREATE TABLE "suppliers" (
 	CONSTRAINT "suppliers_opening_balance_type_check" CHECK ((opening_balance_type)::text = ANY ((ARRAY['payable'::character varying, 'receivable'::character varying])::text[]))
 );
 --> statement-breakpoint
+CREATE TABLE "units" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"name" varchar(100) NOT NULL,
+	"abbreviation" varchar(20) NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "variant_images" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"variant_id" integer,
+	"image_url" varchar(255) NOT NULL,
+	"is_primary" boolean DEFAULT false,
+	"sort_order" integer DEFAULT 0
+);
+--> statement-breakpoint
+CREATE TABLE "variant_options" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"variant_type_id" integer NOT NULL,
+	"value" varchar(100) NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "variant_types" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"name" varchar(100) NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "variant_values" (
+	"variant_id" integer NOT NULL,
+	"option_id" integer NOT NULL,
+	CONSTRAINT "variant_values_variant_id_option_id_pk" PRIMARY KEY("variant_id","option_id")
+);
+--> statement-breakpoint
+ALTER TABLE "categories" ADD CONSTRAINT "categories_parent_id_categories_id_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."categories"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "expenses" ADD CONSTRAINT "expenses_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "public"."expense_categories"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "inventory_batches" ADD CONSTRAINT "inventory_batches_variant_id_product_variants_id_fk" FOREIGN KEY ("variant_id") REFERENCES "public"."product_variants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "inventory_batches" ADD CONSTRAINT "inventory_batches_location_id_locations_id_fk" FOREIGN KEY ("location_id") REFERENCES "public"."locations"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "inventory_batches" ADD CONSTRAINT "inventory_batches_purchase_item_id_purchase_items_id_fk" FOREIGN KEY ("purchase_item_id") REFERENCES "public"."purchase_items"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "product_images" ADD CONSTRAINT "product_images_product_id_products_id_fk" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "products" ADD CONSTRAINT "products_category_id_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "products" ADD CONSTRAINT "products_brand_id_brands_id_fk" FOREIGN KEY ("brand_id") REFERENCES "public"."brands"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "products" ADD CONSTRAINT "products_unit_id_units_id_fk" FOREIGN KEY ("unit_id") REFERENCES "public"."units"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "product_variants" ADD CONSTRAINT "product_variants_product_id_products_id_fk" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "serial_numbers" ADD CONSTRAINT "serial_numbers_variant_id_product_variants_id_fk" FOREIGN KEY ("variant_id") REFERENCES "public"."product_variants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "variant_options" ADD CONSTRAINT "variant_options_variant_type_id_variant_types_id_fk" FOREIGN KEY ("variant_type_id") REFERENCES "public"."variant_types"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "variant_values" ADD CONSTRAINT "variant_values_variant_id_product_variants_id_fk" FOREIGN KEY ("variant_id") REFERENCES "public"."product_variants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "variant_values" ADD CONSTRAINT "variant_values_option_id_variant_options_id_fk" FOREIGN KEY ("option_id") REFERENCES "public"."variant_options"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "purchase_items" ADD CONSTRAINT "purchase_items_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "purchase_items" ADD CONSTRAINT "purchase_items_purchase_id_fkey" FOREIGN KEY ("purchase_id") REFERENCES "public"."purchases"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "purchase_return_items" ADD CONSTRAINT "purchase_return_items_purchase_return_id_fkey" FOREIGN KEY ("purchase_return_id") REFERENCES "public"."purchase_returns"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -252,4 +299,12 @@ ALTER TABLE "sale_payments" ADD CONSTRAINT "sale_payments_customer_id_fkey" FORE
 ALTER TABLE "sale_refund_items" ADD CONSTRAINT "fk_sale_refunds_items" FOREIGN KEY ("refund_id") REFERENCES "public"."sale_refunds"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sale_refunds" ADD CONSTRAINT "refunds_sale_id_fkey" FOREIGN KEY ("sale_id") REFERENCES "public"."sales"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sales" ADD CONSTRAINT "sales_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "public"."customers"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "supplier_ledger" ADD CONSTRAINT "supplier_ledger_supplier_id_fkey" FOREIGN KEY ("supplier_id") REFERENCES "public"."suppliers"("id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "serial_numbers" ADD CONSTRAINT "serial_numbers_variant_id_product_variants_id_fk" FOREIGN KEY ("variant_id") REFERENCES "public"."product_variants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "serial_numbers" ADD CONSTRAINT "serial_numbers_batch_id_inventory_batches_id_fk" FOREIGN KEY ("batch_id") REFERENCES "public"."inventory_batches"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "serial_numbers" ADD CONSTRAINT "serial_numbers_purchase_item_id_purchase_items_id_fk" FOREIGN KEY ("purchase_item_id") REFERENCES "public"."purchase_items"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "serial_numbers" ADD CONSTRAINT "serial_numbers_sale_item_id_sale_items_id_fk" FOREIGN KEY ("sale_item_id") REFERENCES "public"."sale_items"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "supplier_ledger" ADD CONSTRAINT "supplier_ledger_supplier_id_fkey" FOREIGN KEY ("supplier_id") REFERENCES "public"."suppliers"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "variant_images" ADD CONSTRAINT "variant_images_variant_id_product_variants_id_fk" FOREIGN KEY ("variant_id") REFERENCES "public"."product_variants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "variant_options" ADD CONSTRAINT "variant_options_variant_type_id_variant_types_id_fk" FOREIGN KEY ("variant_type_id") REFERENCES "public"."variant_types"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "variant_values" ADD CONSTRAINT "variant_values_variant_id_product_variants_id_fk" FOREIGN KEY ("variant_id") REFERENCES "public"."product_variants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "variant_values" ADD CONSTRAINT "variant_values_option_id_variant_options_id_fk" FOREIGN KEY ("option_id") REFERENCES "public"."variant_options"("id") ON DELETE no action ON UPDATE no action;
