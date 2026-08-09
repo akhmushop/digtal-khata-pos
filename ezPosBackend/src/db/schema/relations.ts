@@ -14,13 +14,18 @@ import { products } from "./products.js";
 import { purchases } from "./purchases.js";
 import { expenses } from "./expenses.js";
 import { expenseCategories } from "./expenseCategories.js";
-import {
-  productVariants,
-  serialNumbers,
-  variantOptions,
-  variantTypes,
-  variantValues,
-} from "./productVariants.js";
+import { productVariants } from "./productVariants.js";
+import { categories } from "./categories.js";
+import { brands } from "./brands.js";
+import { units } from "./units.js";
+import { productImages } from "./productImages.js";
+import { variantImages } from "./variantImages.js";
+import { inventoryBatches } from "./inventoryBatches.js";
+import { locations } from "./locations.js";
+import { serialNumbers } from "./serialNumbers.js";
+import { variantTypes } from "./variantTypes.js";
+import { variantOptions } from "./variantOptions.js";
+import { variantValues } from "./variantValues.js";
 
 export const saleRefundsRelations = relations(saleRefunds, ({ one, many }) => ({
   sale: one(sales, {
@@ -191,9 +196,59 @@ export const variantValuesRelations = relations(variantValues, ({ one }) => ({
     references: [variantOptions.id],
   }),
 }));
+export const categoriesRelations = relations(categories, ({ many }) => ({
+  products: many(products),
+}));
+export const brandsRelations = relations(brands, ({ many }) => ({
+  products: many(products),
+}));
+export const unitsRelations = relations(units, ({ many }) => ({
+  products: many(products),
+}));
+export const productImagesRelations = relations(productImages, ({ one }) => ({
+  product: one(products, {
+    fields: [productImages.productId],
+    references: [products.id],
+  }),
+}));
+export const variantImagesRelations = relations(variantImages, ({ one }) => ({
+  variant: one(productVariants, {
+    fields: [variantImages.variantId],
+    references: [productVariants.id],
+  }),
+}));
+export const inventoryBatchesRelations = relations(
+  inventoryBatches,
+  ({ one }) => ({
+    variant: one(productVariants, {
+      fields: [inventoryBatches.variantId],
+      references: [productVariants.id],
+    }),
+    location: one(locations, {
+      fields: [inventoryBatches.locationId],
+      references: [locations.id],
+    }),
+    purchaseItem: one(purchaseItems, {
+      fields: [inventoryBatches.purchaseItemId],
+      references: [purchaseItems.id],
+    }),
+  }),
+);
 export const serialNumbersRelations = relations(serialNumbers, ({ one }) => ({
   variant: one(productVariants, {
     fields: [serialNumbers.variantId],
     references: [productVariants.id],
+  }),
+  batch: one(inventoryBatches, {
+    fields: [serialNumbers.batchId],
+    references: [inventoryBatches.id],
+  }),
+  purchaseItem: one(purchaseItems, {
+    fields: [serialNumbers.purchaseItemId],
+    references: [purchaseItems.id],
+  }),
+  sale: one(saleItems, {
+    fields: [serialNumbers.saleItemId],
+    references: [saleItems.id],
   }),
 }));

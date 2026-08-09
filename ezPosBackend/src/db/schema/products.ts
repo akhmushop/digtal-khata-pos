@@ -11,20 +11,21 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+import { categories } from "./categories.js";
+import { brands } from "./brands.js";
+import { units } from "./units.js";
 
 export const products = pgTable("products", {
   id: serial().primaryKey().notNull(),
-  productName: varchar("product_name", { length: 100 }).notNull(),
-  productUnit: varchar("product_unit", { length: 20 }),
-  productType: varchar("product_type", { length: 20 }),
+  name: varchar({ length: 100 }).notNull(),
+  categoryId: integer("category_id").references(() => categories.id),
+  brandId: integer("brand_id").references(() => brands.id),
+  unitId: integer("unit_id").references(() => units.id),
   description: varchar({ length: 200 }),
-  brand: varchar({ length: 30 }),
-  category: varchar({ length: 50 }),
-  supplier: varchar({ length: 50 }),
-  image: varchar({ length: 200 }),
+  productType: varchar("product_type", { length: 20 }),
+  hasVariants: boolean("has_variants").default(false),
+  trackingType: varchar("tracking_type", { length: 20 }),
   status: varchar({ length: 30 }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-  tags: jsonb(),
-  hasVariants: boolean("has_variants").default(false),
 });
