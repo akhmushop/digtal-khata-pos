@@ -27,6 +27,7 @@ import {
   ChevronDown,
   CheckCircle,
 } from "lucide-react";
+import { FaAnglesDown } from "react-icons/fa6";
 import {
   useProductStore,
   useEditProductStore,
@@ -93,6 +94,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Controller, useForm, useFieldArray } from "react-hook-form";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 const ProductStockForm = () => {
   // const editingProduct = useEditProductStore((state) => state.editingProduct);
   // const [imagePreview, setImagePreview] = useState<string | null>(
@@ -357,26 +359,11 @@ const ProductStockForm = () => {
     control: form.control,
     name: "variants",
   });
-  const productTypes = ["SIMPLE", "VARIABLE", "DIGITAL", "BUNDLE"];
-  const suppliers = [
-    "Global Suppliers Inc.",
-    "Premium Goods Co.",
-    "Tech Importers Ltd.",
-    "Quality Merchants LLC",
-  ];
+
   const handleOnChange = (e) => {
     const { value, name } = e.target;
     console.log(value);
   };
-  const categories = [
-    "Electronics",
-    "Clothing",
-    "Home & Garden",
-    "Sports",
-    "Beauty",
-    "Food & Beverage",
-    "Automotive",
-  ];
   const productUnits = [
     { label: "Select Unit", value: null },
     { label: "PC", value: "pc" },
@@ -386,6 +373,39 @@ const ProductStockForm = () => {
     { label: "SET", value: "set" },
     { label: "BOX", value: "box" },
     { label: "DOZEN", value: "dozen" },
+  ];
+  const categories = [
+    { label: "Select Categories", value: null },
+    { label: "Electronics", value: "electronics" },
+    { label: "Clothing", value: "clothing" },
+    { label: "Sports", value: "sports" },
+    { label: "Shoe", value: "shoe" },
+  ];
+  const brands = [
+    { label: "Select Brands", value: null },
+    { label: "Samsung", value: "samsung" },
+    { label: "Walton", value: "walton" },
+    { label: "Lotto", value: "lotto" },
+    { label: "Iphone", value: "iphone" },
+  ];
+  const productTypes = [
+    { label: "Select Product Type", value: null },
+    { label: "Physical", value: "physical" },
+    { label: "Service", value: "service" },
+    { label: "Digital", value: "digital" },
+  ];
+  const trackingType = [
+    { label: "Select Tracking Type", value: null },
+    { label: "None", value: "none" },
+    { label: "Batch", value: "batch" },
+    { label: "Serial", value: "serial" },
+  ];
+  const suppliers = [
+    { label: "Select Suppliers", value: null },
+    { label: "Global Suppliers Inc.", value: "global-suppliers-inc" },
+    { label: "Premium Goods Co", value: "premium-goods-co" },
+    { label: "Tech Importers Ltd", value: "tech-importers-ltd" },
+    { label: "Quality Merchants LLC", value: "quality-merchants-llc" },
   ];
   return (
     <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-4 md:p-8">
@@ -450,7 +470,7 @@ const ProductStockForm = () => {
                         placeholder="Enter Product Name"
                         label="Product Name"
                         type="text"
-                        name="productName"
+                        name="name"
                         form={form}
                       />
                     </div>
@@ -458,7 +478,7 @@ const ProductStockForm = () => {
                     {/* Product Unit */}
                     <div className="space-y-2">
                       <SelectOptions
-                        type={productUnits}
+                        options={productUnits}
                         label="Product Unit"
                         form={form}
                         name="productUnit"
@@ -468,7 +488,7 @@ const ProductStockForm = () => {
                     {/* Product Type */}
                     <div className="space-y-2">
                       <SelectOptions
-                        type={productUnits}
+                        options={productTypes}
                         label="Product Type"
                         form={form}
                         name="productType"
@@ -514,7 +534,7 @@ const ProductStockForm = () => {
                     {/* Supplier */}
                     <div className="space-y-2">
                       <SelectOptions
-                        type={productUnits}
+                        options={suppliers}
                         label="Select a supplier"
                         form={form}
                         name="supplier"
@@ -524,7 +544,7 @@ const ProductStockForm = () => {
                     {/* Brand */}
                     <div className="space-y-2">
                       <SelectOptions
-                        type={productUnits}
+                        options={brands}
                         label="Brand"
                         form={form}
                         name="brand"
@@ -534,15 +554,23 @@ const ProductStockForm = () => {
                     {/* Categories */}
                     <div className="space-y-2">
                       <SelectOptions
-                        type={productUnits}
+                        options={categories}
                         label="Categories"
                         form={form}
                         name="categories"
                       />
                     </div>
+                    <div className="space-y-2">
+                      <SelectOptions
+                        options={trackingType}
+                        label="Tracking Type"
+                        form={form}
+                        name="trackingType"
+                      />
+                    </div>
 
                     {/* Tags */}
-                    <div className="space-y-2">
+                    {/* <div className="space-y-2">
                       <InputField
                         placeholder="Add tags separated by commas"
                         label="Tags"
@@ -550,7 +578,7 @@ const ProductStockForm = () => {
                         name="tags"
                         form={form}
                       />
-                    </div>
+                    </div> */}
                   </div>
                 </div>
 
@@ -591,7 +619,7 @@ const ProductStockForm = () => {
     </div>
   );
 };
-const SelectOptions = ({ type, label, form, name }) => {
+const SelectOptions = ({ options, label, form, name }) => {
   return (
     <Controller
       name={name}
@@ -601,7 +629,7 @@ const SelectOptions = ({ type, label, form, name }) => {
           <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
           {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           <Select
-            items={type}
+            items={options}
             name={field.name}
             value={field.value}
             onValueChange={field.onChange}
@@ -615,7 +643,7 @@ const SelectOptions = ({ type, label, form, name }) => {
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                {type.map((item) => (
+                {options.map((item) => (
                   <SelectItem key={item.value} value={item.value}>
                     {item.label}
                   </SelectItem>
@@ -629,91 +657,57 @@ const SelectOptions = ({ type, label, form, name }) => {
   );
 };
 function InputField({ placeholder, label, type, name, form }) {
-  function renderInput() {
-    switch (type) {
-      case "number":
-        return (
-          <Controller
-            name={name}
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
-                <InputGroup>
-                  <InputGroupAddon>
-                    <InputGroupText>$</InputGroupText>
-                  </InputGroupAddon>
-                  <InputGroupInput
-                    id={field.name}
-                    {...field}
-                    aria-invalid={fieldState.invalid}
-                    placeholder={placeholder}
-                  />
-                  <InputGroupAddon align="inline-end">
-                    <InputGroupText>USD</InputGroupText>
-                  </InputGroupAddon>
-                </InputGroup>
-                {fieldState.invalid && (
-                  <FieldError errors={[fieldState.error]} />
-                )}
-              </Field>
-            )}
-          />
-        );
-      case "text":
-        return (
-          <Controller
-            name={name}
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
-                <Input
-                  id={field.name}
-                  {...field}
-                  aria-invalid={fieldState.invalid}
-                  placeholder={placeholder}
-                />
-                {fieldState.invalid && (
-                  <FieldError errors={[fieldState.error]} />
-                )}
-              </Field>
-            )}
-          />
-        );
-      case "textArea":
-        return (
-          <Controller
-            name={name}
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
-                <InputGroup>
-                  <InputGroupTextarea
-                    id={field.name}
-                    {...field}
-                    aria-invalid={fieldState.invalid}
-                    placeholder={placeholder}
-                  />
-                  <InputGroupAddon align="block-end">
-                    <InputGroupText className="text-xs text-muted-foreground">
-                      120 characters left
-                    </InputGroupText>
-                  </InputGroupAddon>
-                </InputGroup>
-                {fieldState.invalid && (
-                  <FieldError errors={[fieldState.error]} />
-                )}
-              </Field>
-            )}
-          />
-        );
-      default:
-        return null;
-    }
-  }
-  return renderInput();
+  return (
+    <Controller
+      name={name}
+      control={form.control}
+      render={({ field, fieldState }) => (
+        <Field data-invalid={fieldState.invalid}>
+          <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+          {type === "number" && (
+            <InputGroup>
+              <InputGroupAddon>
+                <InputGroupText>$</InputGroupText>
+              </InputGroupAddon>
+              <InputGroupInput
+                id={field.name}
+                {...field}
+                aria-invalid={fieldState.invalid}
+                placeholder={placeholder}
+              />
+              <InputGroupAddon align="inline-end">
+                <InputGroupText>USD</InputGroupText>
+              </InputGroupAddon>
+            </InputGroup>
+          )}
+          {type === "text" && (
+            <Input
+              id={field.name}
+              {...field}
+              aria-invalid={fieldState.invalid}
+              placeholder={placeholder}
+            />
+          )}
+          {type === "textArea" && (
+            <InputGroup>
+              <InputGroupTextarea
+                id={field.name}
+                {...field}
+                aria-invalid={fieldState.invalid}
+                placeholder={placeholder}
+              />
+              <InputGroupAddon align="block-end">
+                <InputGroupText className="text-xs text-muted-foreground">
+                  {120 - (field.value?.length || 0)} characters left
+                </InputGroupText>
+              </InputGroupAddon>
+            </InputGroup>
+          )}
+          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+        </Field>
+      )}
+    />
+  );
 }
 export function DatePickerSimple({ form, index }) {
   return (
@@ -753,30 +747,37 @@ export function DatePickerSimple({ form, index }) {
     />
   );
 }
-const productInfoInput = (form, index) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-    {" "}
-    <div className="space-y-2">
-      <InputField
-        placeholder="0.00"
-        label="Purchase Price"
-        type="number"
-        name={`variants.${index}.purchasePrice`}
-        form={form}
-      />
-    </div>
-    {/* Price */}
-    <div className="space-y-2">
-      <InputField
-        placeholder="0.00"
-        label="Selling Price"
-        type="number"
-        name={`variants.${index}.sellingPrice`}
-        form={form}
-      />
-    </div>
-    {/*WholeSale Price */}
-    <div className="space-y-2">
+const productInfoInput = (form, index) => {
+  const hasVariants = form.watch("hasVariants");
+  const status = [
+    { label: "Select Status", value: null },
+    { value: "inActive", label: "Inactive" },
+    { value: "active", label: "Active" },
+  ];
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      {" "}
+      <div className="space-y-2">
+        <InputField
+          placeholder="0.00"
+          label="Purchase Price"
+          type="number"
+          name={`variants.${index}.purchasePrice`}
+          form={form}
+        />
+      </div>
+      {/* Price */}
+      <div className="space-y-2">
+        <InputField
+          placeholder="0.00"
+          label="Selling Price"
+          type="number"
+          name={`variants.${index}.sellingPrice`}
+          form={form}
+        />
+      </div>
+      {/*WholeSale Price */}
+      {/* <div className="space-y-2">
       <InputField
         placeholder="0.00"
         label="WholeSale Price"
@@ -784,56 +785,65 @@ const productInfoInput = (form, index) => (
         name={`variants.${index}.wholeSalePrice`}
         form={form}
       />
+    </div> */}
+      {/* Quantity */}
+      <div className="space-y-2">
+        <InputField
+          placeholder="0.00"
+          label="Quantity"
+          type="number"
+          name={`variants.${index}.quantity`}
+          form={form}
+        />
+      </div>
+      {/* Alert Quantity */}
+      <div className="space-y-2">
+        <InputField
+          placeholder="0.00"
+          label="Alert Quantity"
+          type="number"
+          name={`variants.${index}.alertQuantity`}
+          form={form}
+        />
+      </div>
+      {/* Barcode */}
+      <div className="space-y-2">
+        <InputField
+          placeholder="Enter Barcode"
+          label="Barcode"
+          type="text"
+          name={`variants.${index}.barcode`}
+          form={form}
+        />
+      </div>
+      {/* Batch Number */}
+      <div className="space-y-2">
+        <InputField
+          placeholder="Enter Batch Number"
+          label="Batch Number"
+          type="text"
+          name={`variants.${index}.batchNumber`}
+          form={form}
+        />
+      </div>
+      {/* Expiry Date */}
+      <div className="space-y-2">
+        <DatePickerSimple form={form} index={index} />
+      </div>
+      <div className="space-y-2">
+        <InputFile name="image" form={form} label="Image" />
+      </div>
+      <div className="space-y-2">
+        <SelectOptions
+          options={status}
+          label="Status"
+          form={form}
+          name={hasVariants ? `variants.${index}.status` : "status"}
+        />
+      </div>
     </div>
-    {/* Quantity */}
-    <div className="space-y-2">
-      <InputField
-        placeholder="0.00"
-        label="Quantity"
-        type="number"
-        name={`variants.${index}.quantity`}
-        form={form}
-      />
-    </div>
-    {/* Alert Quantity */}
-    <div className="space-y-2">
-      <InputField
-        placeholder="0.00"
-        label="Alert Quantity"
-        type="number"
-        name={`variants.${index}.alertQuantity`}
-        form={form}
-      />
-    </div>
-    {/* Barcode */}
-    <div className="space-y-2">
-      <InputField
-        placeholder="Enter Barcode"
-        label="Barcode"
-        type="text"
-        name={`variants.${index}.barcode`}
-        form={form}
-      />
-    </div>
-    {/* Batch Number */}
-    <div className="space-y-2">
-      <InputField
-        placeholder="Enter Batch Number"
-        label="Batch Number"
-        type="text"
-        name={`variants.${index}.batchNumber`}
-        form={form}
-      />
-    </div>
-    {/* Expiry Date */}
-    <div className="space-y-2">
-      <DatePickerSimple form={form} index={index} />
-    </div>
-    <div className="space-y-2">
-      <InputFile name="image" form={form} label="Image" />
-    </div>
-  </div>
-);
+  );
+};
 
 export function AccordionCard({ form }) {
   const hasVariants = form.watch("hasVariants");
@@ -945,115 +955,139 @@ export function ComboboxBasic() {
 }
 export function VariantRow({ form }) {
   const [expanded, setExpanded] = useState<string | null>(null);
+  const variants = form.watch("variants") || [];
+  const defaultIndex = variants.findIndex(
+    (variant) => variant?.isDefault === true,
+  );
+  const handleDefaultChange = (value: string) => {
+    const selectedIndex = Number(value);
+
+    variants.forEach((_, index) => {
+      form.setValue(`variants.${index}.isDefault`, index === selectedIndex);
+    });
+  };
   return (
-    <Table>
-      <TableCaption>A list of your recent invoices.</TableCaption>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-[100px]">Color</TableHead>
-          <TableHead>size</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {allVariants.map((variant, index) => {
-          const id = `${variant.color}-${variant.size}`;
-          return (
-            <Fragment key={id}>
-              <TableRow>
-                <TableCell className="font-medium">
-                  {variant.color.charAt(0).toUpperCase() +
-                    variant.color.slice(1)}
-                </TableCell>
-                <TableCell>{variant.size}</TableCell>
-                <TableCell
-                  onClick={() => {
-                    setExpanded(expanded === id ? null : id);
-                    form.setValue(
-                      `variants.${index}.options.color`,
-                      variant.color,
-                    );
-                    form.setValue(
-                      `variants.${index}.options.size`,
-                      variant.size,
-                    );
-                  }}
-                  className="cursor-pointer"
-                >
-                  Add Variant
-                </TableCell>
-              </TableRow>
-              {expanded === id && (
+    <RadioGroup
+      className="contents"
+      value={defaultIndex === -1 ? "" : String(defaultIndex)}
+      onValueChange={handleDefaultChange}
+    >
+      <Table>
+        <TableCaption>A list of your recent invoices.</TableCaption>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[25%]">Default</TableHead>
+            <TableHead className="w-[25%]">Color</TableHead>
+            <TableHead className="w-[25%]">Size</TableHead>
+            <TableHead className="w-[5%]">Add Product</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {allVariants.map((variant, index) => {
+            const id = `${variant.color}-${variant.size}`;
+            const radioId = `radio-${id}`;
+            return (
+              <Fragment key={id}>
                 <TableRow>
-                  <TableCell className="py-5" colSpan={3}>
-                    {productInfoInput(form, index)}
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <RadioGroupItem value={String(index)} id={radioId} />
+                      <Label htmlFor={radioId}>Default</Label>
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    {variant.color.charAt(0).toUpperCase() +
+                      variant.color.slice(1)}
+                  </TableCell>
+                  <TableCell>{variant.size}</TableCell>
+                  <TableCell className=" flex justify-end">
+                    <FaAnglesDown
+                      onClick={() => {
+                        setExpanded(expanded === id ? null : id);
+                        form.setValue(
+                          `variants.${index}.options.color`,
+                          variant.color,
+                        );
+                        form.setValue(
+                          `variants.${index}.options.size`,
+                          variant.size,
+                        );
+                      }}
+                      className={`cursor-pointer size-5 transition-transform duration-300   ${expanded === id ? "rotate-180" : "rotate-0"}`}
+                    />
                   </TableCell>
                 </TableRow>
-              )}
-            </Fragment>
-          );
-        })}
-      </TableBody>
-    </Table>
+                {expanded === id && (
+                  <TableRow>
+                    <TableCell className="py-5" colSpan={4}>
+                      {productInfoInput(form, index)}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </Fragment>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </RadioGroup>
   );
 }
 export function InputFile({ name, form, label }) {
   const [addUrl, setAddUrl] = useState(false);
-  return addUrl ? (
-    <Controller
-      name={name}
-      control={form.control}
-      render={({ field, fieldState }) => (
-        <Field data-invalid={fieldState.invalid}>
-          <FieldLabel htmlFor={field.name}>
-            {label}
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="add-url"
-                onCheckedChange={(e) => {
-                  setAddUrl(e);
+
+  return (
+    <Field data-invalid={form.formState.errors[name]?.invalid}>
+      <div className="flex items-center justify-between">
+        <FieldLabel htmlFor={name}>{label}</FieldLabel>
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="add-url"
+            checked={addUrl}
+            onCheckedChange={(e) => {
+              setAddUrl(e);
+              form.setValue(name, null);
+              form.clearErrors(name);
+            }}
+          />
+          <Label htmlFor="add-url" className="cursor-pointer">
+            Add url
+          </Label>
+        </div>
+      </div>
+
+      <Controller
+        name={name}
+        control={form.control}
+        render={({ field, fieldState }) => (
+          <>
+            {addUrl ? (
+              <InputGroup>
+                <InputGroupAddon>
+                  <InputGroupText>https://</InputGroupText>
+                </InputGroupAddon>
+                <InputGroupInput
+                  id={field.name}
+                  {...field}
+                  placeholder="example.com"
+                  className="pl-0.5!"
+                />
+              </InputGroup>
+            ) : (
+              <Input
+                id={field.name}
+                name={field.name}
+                onBlur={field.onBlur}
+                type="file"
+                ref={field.ref}
+                onChange={(e) => {
+                  field.onChange(e.target.files);
                 }}
               />
-              <Label htmlFor="add-url">Add url</Label>
-            </div>
-          </FieldLabel>
-          <InputGroup>
-            <InputGroupAddon>
-              <InputGroupText>https://</InputGroupText>
-            </InputGroupAddon>
-            <InputGroupInput
-              id={field.name}
-              {...field}
-              placeholder="example.com"
-              className="pl-0.5!"
-            />
-            <InputGroupAddon align="inline-end"></InputGroupAddon>
-          </InputGroup>
-        </Field>
-      )}
-    />
-  ) : (
-    <Controller
-      name={name}
-      control={form.control}
-      render={({ field, fieldState }) => (
-        <Field data-invalid={fieldState.invalid}>
-          <FieldLabel htmlFor={field.name}>
-            {label}
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="add-url"
-                onCheckedChange={(e) => {
-                  setAddUrl(e);
-                }}
-              />
-              <Label htmlFor="add-url">Add url</Label>
-            </div>
-          </FieldLabel>
-          <Input id={field.name} {...field} type="file" />
-        </Field>
-      )}
-    />
+            )}
+          </>
+        )}
+      />
+    </Field>
   );
 }
-
 export default ProductStockForm;

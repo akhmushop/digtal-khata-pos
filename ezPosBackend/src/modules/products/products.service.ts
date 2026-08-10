@@ -4,10 +4,10 @@ import { products } from "../../db/schema/products.js";
 import type { ProductsTypes } from "../../types/product-types.js";
 import {
   productVariants,
-  variantOptions,
-  variantTypes,
-  variantValues,
 } from "../../db/schema/productVariants.js";
+import { variantTypes } from "../../db/schema/variantTypes.js";
+import { variantOptions } from "../../db/schema/variantOptions.js";
+import { variantValues } from "../../db/schema/variantValues.js";
 
 export async function getAllProducts() {
   return db
