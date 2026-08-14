@@ -26,6 +26,7 @@ import {
   Layers,
   ChevronDown,
   CheckCircle,
+  Trash2,
 } from "lucide-react";
 import { FaAnglesDown } from "react-icons/fa6";
 import {
@@ -41,6 +42,7 @@ import {
   FieldLabel,
   FieldDescription,
   FieldError,
+  FieldContent,
 } from "@/components/ui/field.js";
 import { Input } from "@/components/ui/input.js";
 import {
@@ -95,6 +97,10 @@ import {
 } from "@/components/ui/table";
 import { Controller, useForm, useFieldArray } from "react-hook-form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { productSchema } from "@/schemas/product.schema.js";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { number } from "zod";
+
 const ProductStockForm = () => {
   // const editingProduct = useEditProductStore((state) => state.editingProduct);
   // const [imagePreview, setImagePreview] = useState<string | null>(
@@ -350,12 +356,44 @@ const ProductStockForm = () => {
   //   setImagePreview(null);
   //   setErrors(initialErrors);
   // };
-  const form = useForm();
+  const form = useForm({
+    defaultValues: {
+      name: "",
+      categoryId: null,
+      brandId: null,
+      unitId: null,
+      description: "",
+      productType: null,
+      hasVariants: false,
+      trackingType: null,
+      status: "active",
+      image: "",
+      supplierId: null,
+      source: "purchase",
+      variants: [
+        {
+          sku: "",
+          barcode: "",
+          sellingPrice: 0,
+          alertQuantity: 0,
+          isDefault: true,
+          status: "active",
+          image: "",
+          batchNumber: "",
+          purchasePrice: 0,
+          quantity: 0,
+          expiryDate: null,
+          serialNumbers: [],
+        },
+      ],
+    },
+    resolver: zodResolver(productSchema),
+  });
 
   function onSubmit(data) {
     console.log(data);
   }
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: "variants",
   });
@@ -366,27 +404,27 @@ const ProductStockForm = () => {
   };
   const productUnits = [
     { label: "Select Unit", value: null },
-    { label: "PC", value: "pc" },
-    { label: "KG", value: "kg" },
-    { label: "L", value: "l" },
-    { label: "M", value: "m" },
-    { label: "SET", value: "set" },
-    { label: "BOX", value: "box" },
-    { label: "DOZEN", value: "dozen" },
+    { label: "PC", value: 1 },
+    { label: "KG", value: 2 },
+    { label: "L", value: 3 },
+    { label: "M", value: 4 },
+    { label: "SET", value: 5 },
+    { label: "BOX", value: 6 },
+    { label: "DOZEN", value: 8 },
   ];
   const categories = [
     { label: "Select Categories", value: null },
-    { label: "Electronics", value: "electronics" },
-    { label: "Clothing", value: "clothing" },
-    { label: "Sports", value: "sports" },
-    { label: "Shoe", value: "shoe" },
+    { label: "Electronics", value: 1 },
+    { label: "Clothing", value: 2 },
+    { label: "Sports", value: 3 },
+    { label: "Shoe", value: 4 },
   ];
   const brands = [
     { label: "Select Brands", value: null },
-    { label: "Samsung", value: "samsung" },
-    { label: "Walton", value: "walton" },
-    { label: "Lotto", value: "lotto" },
-    { label: "Iphone", value: "iphone" },
+    { label: "Samsung", value: 1 },
+    { label: "Walton", value: 2 },
+    { label: "Lotto", value: 3 },
+    { label: "Iphone", value: 4 },
   ];
   const productTypes = [
     { label: "Select Product Type", value: null },
@@ -402,10 +440,19 @@ const ProductStockForm = () => {
   ];
   const suppliers = [
     { label: "Select Suppliers", value: null },
-    { label: "Global Suppliers Inc.", value: "global-suppliers-inc" },
-    { label: "Premium Goods Co", value: "premium-goods-co" },
-    { label: "Tech Importers Ltd", value: "tech-importers-ltd" },
-    { label: "Quality Merchants LLC", value: "quality-merchants-llc" },
+    { label: "Global Suppliers Inc.", value: 1 },
+    { label: "Premium Goods Co", value: 2 },
+    { label: "Tech Importers Ltd", value: 3 },
+    { label: "Quality Merchants LLC", value: 4 },
+  ];
+  const productStatus = [
+    { value: "draft", label: "Draft" },
+    { value: "active", label: "Active" },
+    { value: "inactive", label: "Inactive" },
+  ];
+  const inventoryOptions = [
+    { value: "purchase", label: "Start with zero stock", title: "Default" },
+    { value: "opening", label: "I already have stock", title: "Opening Stock" },
   ];
   return (
     <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-4 md:p-8">
@@ -481,7 +528,7 @@ const ProductStockForm = () => {
                         options={productUnits}
                         label="Product Unit"
                         form={form}
-                        name="productUnit"
+                        name="unitId"
                       />
                     </div>
 
@@ -509,7 +556,7 @@ const ProductStockForm = () => {
 
                 {/* Stock Information Card */}
 
-                <AccordionCard form={form} />
+                <AccordionCard form={form} append={append} replace={replace} />
               </div>
 
               {/* Right Column - Image & Additional Info */}
@@ -531,13 +578,29 @@ const ProductStockForm = () => {
                   </div>
 
                   <div className="space-y-5">
+                    {/* status */}
+                    <div className="space-y-2">
+                      <SelectOptions
+                        options={productStatus}
+                        label="Status"
+                        form={form}
+                        name="status"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <RadioGroupDescription
+                        form={form}
+                        inventoryOptions={inventoryOptions}
+                      />
+                    </div>
                     {/* Supplier */}
                     <div className="space-y-2">
                       <SelectOptions
                         options={suppliers}
                         label="Select a supplier"
                         form={form}
-                        name="supplier"
+                        name="supplierId"
                       />
                     </div>
 
@@ -547,7 +610,7 @@ const ProductStockForm = () => {
                         options={brands}
                         label="Brand"
                         form={form}
-                        name="brand"
+                        name="brandId"
                       />
                     </div>
 
@@ -557,7 +620,7 @@ const ProductStockForm = () => {
                         options={categories}
                         label="Categories"
                         form={form}
-                        name="categories"
+                        name="categoryId"
                       />
                     </div>
                     <div className="space-y-2">
@@ -606,6 +669,11 @@ const ProductStockForm = () => {
                       </Button>
                     )}
                   </div>
+                  {form.formState.errors.variants?.root?.message && (
+                    <p className="text-sm font-medium text-destructive mt-2">
+                      {form.formState.errors.variants.root.message}
+                    </p>
+                  )}
                   <p className="text-xs text-gray-500 text-center mt-4">
                     All required fields are marked with{" "}
                     <span className="text-red-500">*</span>
@@ -674,6 +742,7 @@ function InputField({ placeholder, label, type, name, form }) {
                 {...field}
                 aria-invalid={fieldState.invalid}
                 placeholder={placeholder}
+                type={type}
               />
               <InputGroupAddon align="inline-end">
                 <InputGroupText>USD</InputGroupText>
@@ -686,6 +755,7 @@ function InputField({ placeholder, label, type, name, form }) {
               {...field}
               aria-invalid={fieldState.invalid}
               placeholder={placeholder}
+              type={type}
             />
           )}
           {type === "textArea" && (
@@ -747,12 +817,17 @@ export function DatePickerSimple({ form, index }) {
     />
   );
 }
-const productInfoInput = (form, index) => {
+function ProductInfoInput({ form, index }) {
+  const { fields, append, remove, replace } = useFieldArray({
+    control: form.control,
+    name: `variants.${index}.serialNumbers`,
+  });
+  const [hasSerials, setHasSerials] = useState(false);
   const hasVariants = form.watch("hasVariants");
-  const status = [
-    { label: "Select Status", value: null },
-    { value: "inActive", label: "Inactive" },
+  const serialNumbers = form.watch(`variants.${index}.serialNumbers`);
+  const variantStatus = [
     { value: "active", label: "Active" },
+    { value: "inactive", label: "Inactive" },
   ];
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -826,6 +901,15 @@ const productInfoInput = (form, index) => {
           form={form}
         />
       </div>
+      <div className="space-y-2">
+        <InputField
+          placeholder="Enter Sku Number"
+          label="Sku"
+          type="text"
+          name={`variants.${index}.sku`}
+          form={form}
+        />
+      </div>
       {/* Expiry Date */}
       <div className="space-y-2">
         <DatePickerSimple form={form} index={index} />
@@ -835,31 +919,115 @@ const productInfoInput = (form, index) => {
       </div>
       <div className="space-y-2">
         <SelectOptions
-          options={status}
+          options={variantStatus}
           label="Status"
           form={form}
-          name={hasVariants ? `variants.${index}.status` : "status"}
+          name={`variants.${index}.status`}
         />
       </div>
+      {/* switch */}
+      <div className="col-span-3">
+        <div className="flex justify-end mb-5">
+          <div className="flex items-center space-x-2">
+            <Switch
+              checked={hasSerials}
+              onCheckedChange={(checked) => {
+                setHasSerials(checked); // Update the state
+                if (!checked) {
+                  replace([]);
+                }
+              }}
+              id="track-serials"
+            />
+            <Label htmlFor="track-serials">Track Serials</Label>
+          </div>
+        </div>
+      </div>
+      {hasSerials && (
+        <div className="space-y-2 col-span-3">
+          {fields.map((field, serialIndex) => (
+            <Controller
+              key={serialIndex}
+              control={form.control}
+              name={`variants.${index}.serialNumbers.${serialIndex}.serial`}
+              render={({ field, fieldState }) => (
+                <>
+                  <Field>
+                    <FieldLabel>
+                      {fieldState.invalid && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </FieldLabel>
+                    <div className="flex gap-5 items-center">
+                      <Input
+                        {...field}
+                        aria-invalid={fieldState.invalid}
+                        type="text"
+                        placeholder="e.g.IMEI12345678"
+                      />
+                      <Trash2
+                        onClick={() => {
+                          remove(serialIndex);
+                        }}
+                      />
+                    </div>
+                  </Field>
+                </>
+              )}
+            />
+          ))}
+          {serialNumbers.length === 0 && (
+            <div className="h-15 w-full border border-black border-dashed rounded flex items-center justify-center">
+              <p>No serial numbers tracked. Click “Add serial” to start.</p>
+            </div>
+          )}
+          <Button
+            onClick={() => {
+              append({ serial: "" });
+            }}
+          >
+            Add Serial
+          </Button>
+        </div>
+      )}
+      {hasVariants && (
+        <div className="space-y-2 col-span-3 flex justify-end gap-5">
+          <Button>Remove</Button>
+          <Button>Add Variant</Button>
+        </div>
+      )}
     </div>
   );
-};
+}
 
-export function AccordionCard({ form }) {
+export function AccordionCard({ form, append, replace }) {
+  const emptyVariant = {
+    sku: "",
+    barcode: "",
+    sellingPrice: 0,
+    alertQuantity: 0,
+    isDefault: true,
+    status: null,
+    image: "",
+    batchNumber: "",
+    purchasePrice: 0,
+    quantity: 0,
+    expiryDate: null,
+    serialNumber: [],
+  };
+
+  const handleHasVariantsChange = (value: boolean) => {
+    form.setValue("hasVariants", value);
+
+    if (value) {
+      // Has variants → start with no variants
+      replace([]);
+    } else {
+      // No variants → one default inventory item
+      replace([emptyVariant]);
+    }
+  };
   const hasVariants = form.watch("hasVariants");
-  const items = [
-    {
-      value: "inventory",
-      trigger: "Stock & Pricing",
-      content: productInfoInput,
-    },
-    {
-      value: "serial",
-      trigger: "Add Serial",
-      content:
-        "Billing occurs automatically at the start of each billing cycle. We accept all major credit cards, PayPal, and ACH transfers for enterprise customers. You'll receive an invoice via email after each payment.",
-    },
-  ];
   return (
     <Card className="w-full">
       <CardHeader>
@@ -873,11 +1041,11 @@ export function AccordionCard({ form }) {
               <Controller
                 name="hasVariants"
                 control={form.control}
-                render={({ field, fieldState }) => (
+                render={({ field }) => (
                   <Switch
                     id="has-variants"
                     checked={field.value}
-                    onCheckedChange={field.onChange}
+                    onCheckedChange={handleHasVariantsChange}
                   />
                 )}
               />
@@ -892,21 +1060,10 @@ export function AccordionCard({ form }) {
         {hasVariants ? (
           <div>
             <ComboboxBasic />
-            <VariantRow form={form} />
+            <VariantRow form={form} append={append} />
           </div>
         ) : (
-          <Accordion defaultValue={["inventory"]}>
-            {items.map((item, index) => (
-              <AccordionItem key={item.value} value={item.value}>
-                <AccordionTrigger>{item.trigger}</AccordionTrigger>
-                <AccordionContent>
-                  {typeof item.content === "function"
-                    ? item.content(form, index)
-                    : item.content}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+          <ProductInfoInput form={form} index={0} />
         )}
       </CardContent>
     </Card>
@@ -953,8 +1110,26 @@ export function ComboboxBasic() {
     </Combobox>
   );
 }
-export function VariantRow({ form }) {
+export function VariantRow({ form, append }) {
   const [expanded, setExpanded] = useState<string | null>(null);
+  const createVariant = (variant) => ({
+    sku: "",
+    barcode: "",
+    sellingPrice: 0,
+    alertQuantity: 0,
+    isDefault: false,
+    status: "active",
+    image: "",
+    batchNumber: "",
+    purchasePrice: 0,
+    quantity: 0,
+    expiryDate: null,
+
+    options: {
+      color: variant.color,
+      size: variant.size,
+    },
+  });
   const variants = form.watch("variants") || [];
   const defaultIndex = variants.findIndex(
     (variant) => variant?.isDefault === true,
@@ -966,10 +1141,27 @@ export function VariantRow({ form }) {
       form.setValue(`variants.${index}.isDefault`, index === selectedIndex);
     });
   };
+  const isAdded = (variant) => {
+    return variants.some(
+      (item) =>
+        item.options?.color === variant.color &&
+        item.options?.size === variant.size,
+    );
+  };
+  const handleAddVariant = (variant) => {
+    if (isAdded(variant)) {
+      return;
+    }
+    const newVariant = createVariant(variant);
+    if (variants.length === 0) {
+      newVariant.isDefault = true;
+    }
+    append(newVariant);
+  };
   return (
     <RadioGroup
       className="contents"
-      value={defaultIndex === -1 ? "" : String(defaultIndex)}
+      value={String(defaultIndex)}
       onValueChange={handleDefaultChange}
     >
       <Table>
@@ -984,6 +1176,12 @@ export function VariantRow({ form }) {
         </TableHeader>
         <TableBody>
           {allVariants.map((variant, index) => {
+            const variantIndex = variants.findIndex(
+              (item) =>
+                item.options?.color === variant.color &&
+                item.options?.size === variant.size,
+            );
+            const added = isAdded(variant);
             const id = `${variant.color}-${variant.size}`;
             const radioId = `radio-${id}`;
             return (
@@ -991,7 +1189,13 @@ export function VariantRow({ form }) {
                 <TableRow>
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <RadioGroupItem value={String(index)} id={radioId} />
+                      <RadioGroupItem
+                        onClick={() => {
+                          setExpanded(expanded === id ? null : id);
+                        }}
+                        value={String(index)}
+                        id={radioId}
+                      />
                       <Label htmlFor={radioId}>Default</Label>
                     </div>
                   </TableCell>
@@ -1004,14 +1208,7 @@ export function VariantRow({ form }) {
                     <FaAnglesDown
                       onClick={() => {
                         setExpanded(expanded === id ? null : id);
-                        form.setValue(
-                          `variants.${index}.options.color`,
-                          variant.color,
-                        );
-                        form.setValue(
-                          `variants.${index}.options.size`,
-                          variant.size,
-                        );
+                        handleAddVariant(variant);
                       }}
                       className={`cursor-pointer size-5 transition-transform duration-300   ${expanded === id ? "rotate-180" : "rotate-0"}`}
                     />
@@ -1020,7 +1217,7 @@ export function VariantRow({ form }) {
                 {expanded === id && (
                   <TableRow>
                     <TableCell className="py-5" colSpan={4}>
-                      {productInfoInput(form, index)}
+                      <ProductInfoInput form={form} index={variantIndex} />
                     </TableCell>
                   </TableRow>
                 )}
@@ -1088,6 +1285,27 @@ export function InputFile({ name, form, label }) {
         )}
       />
     </Field>
+  );
+}
+export function RadioGroupDescription({ form, inventoryOptions }) {
+  return (
+    <Controller
+      name="source"
+      control={form.control}
+      render={({ field: { onChange, value } }) => (
+        <RadioGroup onValueChange={onChange} value={value} className="w-fit">
+          {inventoryOptions.map((option, index) => (
+            <Field key={index} orientation="horizontal">
+              <RadioGroupItem value={option.value} id="desc-r2" />
+              <FieldContent>
+                <FieldLabel htmlFor="desc-r2">{option.title}</FieldLabel>
+                <FieldDescription>{option.label}.</FieldDescription>
+              </FieldContent>
+            </Field>
+          ))}
+        </RadioGroup>
+      )}
+    />
   );
 }
 export default ProductStockForm;
