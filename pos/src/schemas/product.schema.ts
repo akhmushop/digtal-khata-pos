@@ -9,12 +9,12 @@ const variantSchema = z.object({
       size: z.string().min(1, "Size is required"),
     })
     .optional(),
-  sku: z.string().min(1, { message: "SKU is required" }).max(100),
+  sku: z.string().max(100),
   barcode: z.string().max(100),
   sellingPrice: z.coerce.number().min(0),
   alertQuantity: z.coerce.number().min(0),
   isDefault: z.boolean(),
-  status: z.string().nullable(),
+  status: z.string(),
   image: z.string().optional(),
   batchNumber: z.string().max(100),
   purchasePrice: z.coerce.number().min(0),
@@ -34,7 +34,7 @@ export const productSchema = z
     hasVariants: z.boolean().default(false),
     trackingType: z.string().nullable(),
     supplierId: z.number().int().nullable(),
-    status: z.string().nullable(),
+    status: z.string(),
     image: z.string().optional(),
     source: z.string(),
     variants: z.array(variantSchema),
@@ -65,6 +65,34 @@ export const productSchema = z
         }
       });
     }
+    data.variants.forEach((variant, index) => {
+      const openingRequiredFields = [
+        { key: "quantity" as const, label: "Quantity" },
+        { key: "purchasePrice" as const, label: "Purchase Price" },
+        { key: "batchNumber" as const, label: "Batch Number" },
+      ];
+      if (data.source === "opening") {
+        openingRequiredFields.forEach(({ key, label }) => {
+          if (!variant[key]) {
+            ctx.addIssue({
+              code: "custom",
+              path: ["variants", index, key],
+              message: `${label} is required for opening stock`,
+            });
+          }
+        });
+      }
+      if (data.source === "purchase") {
+        if (variant.quantity && variant.quantity > 0) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["variants", index, "quantity"],
+            message:
+              "Quantity must be 0 when registering a product for future purchase.",
+          });
+        }
+      }
+    });
     // data.variants.map((variant, index) => {
     //   if (variant.serialNumbers.length === 0) {
     //     ctx.addIssue({

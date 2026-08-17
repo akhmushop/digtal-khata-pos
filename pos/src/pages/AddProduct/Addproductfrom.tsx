@@ -27,13 +27,15 @@ import {
   ChevronDown,
   CheckCircle,
   Trash2,
+  SquareCheck,
+  Square,
 } from "lucide-react";
 import { FaAnglesDown } from "react-icons/fa6";
 import {
   useProductStore,
   useEditProductStore,
 } from "../../store/useProductStore.js";
-import { useLocation, useNavigate } from "react-router";
+import { replace, useLocation, useNavigate } from "react-router";
 import { useBlocker } from "react-router";
 import { ProductsTypes } from "../../types/products.types.js";
 import { Errors, InitialFormData } from "../../types/addProduct.types.js";
@@ -556,7 +558,12 @@ const ProductStockForm = () => {
 
                 {/* Stock Information Card */}
 
-                <AccordionCard form={form} append={append} replace={replace} />
+                <AccordionCard
+                  form={form}
+                  append={append}
+                  replace={replace}
+                  remove={remove}
+                />
               </div>
 
               {/* Right Column - Image & Additional Info */}
@@ -669,9 +676,12 @@ const ProductStockForm = () => {
                       </Button>
                     )}
                   </div>
-                  {form.formState.errors.variants?.root?.message && (
+                  {/* Check for both root.message and message to cover all states */}
+                  {(form.formState.errors.variants?.root?.message ||
+                    form.formState.errors.variants?.message) && (
                     <p className="text-sm font-medium text-destructive mt-2">
-                      {form.formState.errors.variants.root.message}
+                      {form.formState.errors.variants?.root?.message ||
+                        form.formState.errors.variants?.message}
                     </p>
                   )}
                   <p className="text-xs text-gray-500 text-center mt-4">
@@ -731,7 +741,7 @@ function InputField({ placeholder, label, type, name, form }) {
       control={form.control}
       render={({ field, fieldState }) => (
         <Field data-invalid={fieldState.invalid}>
-          <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+          {label && <FieldLabel htmlFor={field.name}>{label}</FieldLabel>}
           {type === "number" && (
             <InputGroup>
               <InputGroupAddon>
@@ -817,40 +827,57 @@ export function DatePickerSimple({ form, index }) {
     />
   );
 }
-function ProductInfoInput({ form, index }) {
-  const { fields, append, remove, replace } = useFieldArray({
+function ProductInfoInput({
+  form,
+  index,
+  handleAddVariant,
+  variant,
+  variantIndex,
+  added,
+  remove,
+}) {
+  const {
+    fields,
+    append,
+    remove: serialRemove,
+    replace,
+  } = useFieldArray({
     control: form.control,
-    name: `variants.${index}.serialNumbers`,
+    name: `variants.${variantIndex}.serialNumbers`,
   });
   const [hasSerials, setHasSerials] = useState(false);
   const hasVariants = form.watch("hasVariants");
-  const serialNumbers = form.watch(`variants.${index}.serialNumbers`);
+  const serialNumbers = form.watch(`variants.${variantIndex}.serialNumbers`);
   const variantStatus = [
     { value: "active", label: "Active" },
     { value: "inactive", label: "Inactive" },
   ];
+  const source = form.watch("source");
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-      {" "}
-      <div className="space-y-2">
-        <InputField
-          placeholder="0.00"
-          label="Purchase Price"
-          type="number"
-          name={`variants.${index}.purchasePrice`}
-          form={form}
-        />
-      </div>
+      {source === "opening" && (
+        <div className="space-y-2">
+          <InputField
+            placeholder="0.00"
+            label="Purchase Price"
+            type="number"
+            name={`variants.${variantIndex}.purchasePrice`}
+            form={form}
+          />
+        </div>
+      )}
       {/* Price */}
-      <div className="space-y-2">
-        <InputField
-          placeholder="0.00"
-          label="Selling Price"
-          type="number"
-          name={`variants.${index}.sellingPrice`}
-          form={form}
-        />
-      </div>
+      {!hasVariants && (
+        <div className="space-y-2">
+          <InputField
+            placeholder="0.00"
+            label="Selling Price"
+            type="number"
+            name={`variants.${variantIndex}.sellingPrice`}
+            form={form}
+          />
+        </div>
+      )}
       {/*WholeSale Price */}
       {/* <div className="space-y-2">
       <InputField
@@ -862,22 +889,24 @@ function ProductInfoInput({ form, index }) {
       />
     </div> */}
       {/* Quantity */}
-      <div className="space-y-2">
-        <InputField
-          placeholder="0.00"
-          label="Quantity"
-          type="number"
-          name={`variants.${index}.quantity`}
-          form={form}
-        />
-      </div>
+      {source === "opening" && (
+        <div className="space-y-2">
+          <InputField
+            placeholder="0.00"
+            label="Quantity"
+            type="number"
+            name={`variants.${variantIndex}.quantity`}
+            form={form}
+          />
+        </div>
+      )}
       {/* Alert Quantity */}
       <div className="space-y-2">
         <InputField
           placeholder="0.00"
           label="Alert Quantity"
           type="number"
-          name={`variants.${index}.alertQuantity`}
+          name={`variants.${variantIndex}.alertQuantity`}
           form={form}
         />
       </div>
@@ -887,42 +916,47 @@ function ProductInfoInput({ form, index }) {
           placeholder="Enter Barcode"
           label="Barcode"
           type="text"
-          name={`variants.${index}.barcode`}
+          name={`variants.${variantIndex}.barcode`}
           form={form}
         />
       </div>
       {/* Batch Number */}
-      <div className="space-y-2">
-        <InputField
-          placeholder="Enter Batch Number"
-          label="Batch Number"
-          type="text"
-          name={`variants.${index}.batchNumber`}
-          form={form}
-        />
-      </div>
-      <div className="space-y-2">
-        <InputField
-          placeholder="Enter Sku Number"
-          label="Sku"
-          type="text"
-          name={`variants.${index}.sku`}
-          form={form}
-        />
-      </div>
+      {source === "opening" && (
+        <div className="space-y-2">
+          <InputField
+            placeholder="Enter Batch Number"
+            label="Batch Number"
+            type="text"
+            name={`variants.${variantIndex}.batchNumber`}
+            form={form}
+          />
+        </div>
+      )}
+      {!hasVariants && (
+        <div className="space-y-2">
+          <InputField
+            placeholder="auto-generated if blank"
+            label="Sku"
+            type="text"
+            name={`variants.${variantIndex}.sku`}
+            form={form}
+          />
+        </div>
+      )}
       {/* Expiry Date */}
       <div className="space-y-2">
-        <DatePickerSimple form={form} index={index} />
+        <DatePickerSimple form={form} index={variantIndex} />
       </div>
       <div className="space-y-2">
         <InputFile name="image" form={form} label="Image" />
       </div>
+      {/* status */}
       <div className="space-y-2">
         <SelectOptions
           options={variantStatus}
           label="Status"
           form={form}
-          name={`variants.${index}.status`}
+          name={`variants.${variantIndex}.status`}
         />
       </div>
       {/* switch */}
@@ -949,7 +983,7 @@ function ProductInfoInput({ form, index }) {
             <Controller
               key={serialIndex}
               control={form.control}
-              name={`variants.${index}.serialNumbers.${serialIndex}.serial`}
+              name={`variants.${variantIndex}.serialNumbers.${serialIndex}.serial`}
               render={({ field, fieldState }) => (
                 <>
                   <Field>
@@ -967,7 +1001,7 @@ function ProductInfoInput({ form, index }) {
                       />
                       <Trash2
                         onClick={() => {
-                          remove(serialIndex);
+                          serialRemove(serialIndex);
                         }}
                       />
                     </div>
@@ -992,22 +1026,35 @@ function ProductInfoInput({ form, index }) {
       )}
       {hasVariants && (
         <div className="space-y-2 col-span-3 flex justify-end gap-5">
-          <Button>Remove</Button>
-          <Button>Add Variant</Button>
+          <Button
+            onClick={() => {
+              remove(variantIndex);
+            }}
+          >
+            Remove
+          </Button>
+          <Button
+            disabled={added}
+            onClick={() => {
+              handleAddVariant(variant);
+            }}
+          >
+            {added ? "Added" : "Add Variant"}
+          </Button>
         </div>
       )}
     </div>
   );
 }
 
-export function AccordionCard({ form, append, replace }) {
+export function AccordionCard({ form, append, replace, remove }) {
   const emptyVariant = {
     sku: "",
     barcode: "",
     sellingPrice: 0,
     alertQuantity: 0,
     isDefault: true,
-    status: null,
+    status: "active",
     image: "",
     batchNumber: "",
     purchasePrice: 0,
@@ -1060,10 +1107,15 @@ export function AccordionCard({ form, append, replace }) {
         {hasVariants ? (
           <div>
             <ComboboxBasic />
-            <VariantRow form={form} append={append} />
+            <VariantRow
+              form={form}
+              append={append}
+              remove={remove}
+              replace={replace}
+            />
           </div>
         ) : (
-          <ProductInfoInput form={form} index={0} />
+          <ProductInfoInput form={form} variantIndex={0} />
         )}
       </CardContent>
     </Card>
@@ -1110,7 +1162,7 @@ export function ComboboxBasic() {
     </Combobox>
   );
 }
-export function VariantRow({ form, append }) {
+export function VariantRow({ form, append, remove, replace }) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const createVariant = (variant) => ({
     sku: "",
@@ -1124,7 +1176,7 @@ export function VariantRow({ form, append }) {
     purchasePrice: 0,
     quantity: 0,
     expiryDate: null,
-
+    serialNumbers: [],
     options: {
       color: variant.color,
       size: variant.size,
@@ -1156,22 +1208,61 @@ export function VariantRow({ form, append }) {
     if (variants.length === 0) {
       newVariant.isDefault = true;
     }
-    append(newVariant);
+    append(newVariant, { shouldFocus: false });
   };
+  const [isAddedAll, setIsAddedAll] = useState(true);
+  const handleAddAllVariants = () => {
+    // Use getValues for synchronous reading inside loops
+    const currentVariants = form.getValues("variants") || [];
+    let isFirst = currentVariants.length === 0;
+
+    allVariants.forEach((variant) => {
+      const alreadyExists = currentVariants.some(
+        (item) =>
+          item.options?.color === variant.color &&
+          item.options?.size === variant.size,
+      );
+
+      if (!alreadyExists) {
+        const newVariant = createVariant(variant);
+        if (isFirst) {
+          newVariant.isDefault = true;
+          isFirst = false;
+        }
+        append(newVariant, { shouldFocus: false });
+      }
+    });
+    setIsAddedAll(false);
+  };
+  const source = form.watch("source");
   return (
     <RadioGroup
       className="contents"
-      value={String(defaultIndex)}
+      value={defaultIndex === -1 ? "" : String(defaultIndex)}
       onValueChange={handleDefaultChange}
     >
       <Table>
         <TableCaption>A list of your recent invoices.</TableCaption>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[25%]">Default</TableHead>
-            <TableHead className="w-[25%]">Color</TableHead>
-            <TableHead className="w-[25%]">Size</TableHead>
-            <TableHead className="w-[5%]">Add Product</TableHead>
+            <TableHead className="w-[20%]">Variant</TableHead>
+            <TableHead className="w-[35%]">Sku</TableHead>
+            <TableHead className="w-[35%]">Selling Price</TableHead>
+            <TableHead className="w-[5%]">
+              <div className="flex items-center justify-center">
+                Added({variants.length}){" "}
+                {isAddedAll ? (
+                  <Square onClick={handleAddAllVariants} />
+                ) : (
+                  <SquareCheck
+                    onClick={() => {
+                      replace([]);
+                      setIsAddedAll(true);
+                    }}
+                  />
+                )}
+              </div>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -1181,7 +1272,9 @@ export function VariantRow({ form, append }) {
                 item.options?.color === variant.color &&
                 item.options?.size === variant.size,
             );
-            const added = isAdded(variant);
+            const added = variantIndex !== -1;
+            const isDefault =
+              added && form.watch(`variants.${variantIndex}.isDefault`);
             const id = `${variant.color}-${variant.size}`;
             const radioId = `radio-${id}`;
             return (
@@ -1189,35 +1282,98 @@ export function VariantRow({ form, append }) {
                 <TableRow>
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <RadioGroupItem
+                      {added && (
+                        <RadioGroupItem
+                          value={String(variantIndex)}
+                          id={radioId}
+                        />
+                      )}
+                      {variant.color.charAt(0).toUpperCase() +
+                        variant.color.slice(1)}
+                      /{variant.size}
+                      {isDefault && <Label htmlFor={radioId}>Default</Label>}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {added ? (
+                      <InputField
+                        placeholder="auto-generated if blank"
+                        type="text"
+                        name={`variants.${variantIndex}.sku`}
+                        form={form}
+                      />
+                    ) : (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {added ? (
+                      <InputField
+                        placeholder="0.00"
+                        type="number"
+                        name={`variants.${variantIndex}.sellingPrice`}
+                        form={form}
+                      />
+                    ) : (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+
+                  <TableCell>
+                    <div className="flex justify-center items-center w-full">
+                      {added ? (
+                        <SquareCheck
+                          onClick={() => {
+                            const currentVariants =
+                              form.getValues("variants") || [];
+                            const wasDefault =
+                              currentVariants[variantIndex]?.isDefault;
+                            remove(variantIndex);
+
+                            if (wasDefault && currentVariants.length > 1) {
+                              let newDefaultIndex = variantIndex;
+                              if (variantIndex === currentVariants.length - 1) {
+                                newDefaultIndex = variantIndex - 1;
+                              }
+                              form.setValue(
+                                `variants.${newDefaultIndex}.isDefault`,
+                                true,
+                              );
+                            }
+                          }}
+                        />
+                      ) : (
+                        <Square
+                          onClick={() => {
+                            handleAddVariant(variant);
+                          }}
+                        />
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {added && (
+                      <ChevronDown
                         onClick={() => {
                           setExpanded(expanded === id ? null : id);
                         }}
-                        value={String(index)}
-                        id={radioId}
+                        className={`cursor-pointer size-5 transition-transform duration-300   ${expanded === id ? "rotate-180" : "rotate-0"}`}
                       />
-                      <Label htmlFor={radioId}>Default</Label>
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {variant.color.charAt(0).toUpperCase() +
-                      variant.color.slice(1)}
-                  </TableCell>
-                  <TableCell>{variant.size}</TableCell>
-                  <TableCell className=" flex justify-end">
-                    <FaAnglesDown
-                      onClick={() => {
-                        setExpanded(expanded === id ? null : id);
-                        handleAddVariant(variant);
-                      }}
-                      className={`cursor-pointer size-5 transition-transform duration-300   ${expanded === id ? "rotate-180" : "rotate-0"}`}
-                    />
+                    )}
                   </TableCell>
                 </TableRow>
-                {expanded === id && (
-                  <TableRow>
-                    <TableCell className="py-5" colSpan={4}>
-                      <ProductInfoInput form={form} index={variantIndex} />
+                {expanded === id && added && (
+                  <TableRow key={`${id}-${added}`}>
+                    <TableCell className="py-5" colSpan={5}>
+                      <ProductInfoInput
+                        form={form}
+                        variantIndex={variantIndex}
+                        handleAddVariant={handleAddVariant}
+                        variant={variant}
+                        index={index}
+                        added={added}
+                        remove={remove}
+                      />
                     </TableCell>
                   </TableRow>
                 )}
