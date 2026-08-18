@@ -19,8 +19,8 @@ const variantSchema = z.object({
   batchNumber: z.string().max(100),
   purchasePrice: z.coerce.number().min(0),
   quantity: z.coerce.number().int().min(0),
-  expiryDate: z.coerce.date().nullable(),
-  serialNumbers: z.array(serialNumberSchema),
+  expiryDate: z.date().nullable(),
+  serialNumbers: z.array(serialNumberSchema).optional(),
 });
 
 export const productSchema = z
@@ -31,7 +31,7 @@ export const productSchema = z
     unitId: z.number().int().nullable(),
     description: z.string().max(120),
     productType: z.string().nullable(),
-    hasVariants: z.boolean().default(false),
+    hasVariants: z.boolean(),
     trackingType: z.string().nullable(),
     supplierId: z.number().int().nullable(),
     status: z.string(),
@@ -104,3 +104,6 @@ export const productSchema = z
     //   }
     // });
   });
+
+  export type AddProductFormInput = z.input<typeof productSchema>;
+  export type AddProductFormOutput = z.output<typeof productSchema>;

@@ -1,3 +1,11 @@
+import { AddProductFormInput } from "@/schemas/product.schema";
+import {
+  FieldPath,
+  UseFieldArrayAppend,
+  UseFieldArrayRemove,
+  UseFieldArrayReplace,
+  UseFormReturn,
+} from "react-hook-form";
 export interface InitialFormData {
   id: number;
   barcode: string;
@@ -31,4 +39,63 @@ export interface Errors {
   price: string;
   quantity: string;
   image: string | null;
+}
+export interface SelectOptionsProps {
+  options: {
+    label: string;
+    value: number | string | null;
+    title?: string;
+  }[];
+  label: string;
+  form: UseFormReturn<AddProductFormInput>;
+  name: FieldPath<AddProductFormInput>;
+}
+export interface InputFieldProps {
+  placeholder: string;
+  label?: string;
+  name: FieldPath<AddProductFormInput>;
+  type: "text" | "number" | "textArea";
+  form: UseFormReturn<AddProductFormInput>;
+}
+export interface DatePickerSimpleProps {
+  form: UseFormReturn<AddProductFormInput>;
+  index: number;
+}
+export interface AllVariantsType {
+  color: string;
+  size: string;
+}
+export interface ProductInfoInputProps {
+  form: UseFormReturn<AddProductFormInput>;
+  index?: number;
+  handleAddVariant?: (variant: AllVariantsType) => void;
+  variant?: AllVariantsType;
+  variantIndex: number;
+  added?: boolean;
+  remove?: UseFieldArrayRemove;
+}
+export interface AccordionCardProps {
+  form: UseFormReturn<AddProductFormInput>;
+  append: UseFieldArrayAppend<AddProductFormInput, "variants">;
+  replace: UseFieldArrayReplace<AddProductFormInput, "variants">;
+  remove: UseFieldArrayRemove;
+}
+export interface VariantRowProps {
+  form: UseFormReturn<AddProductFormInput>;
+  append: UseFieldArrayAppend<AddProductFormInput, "variants">;
+  remove: UseFieldArrayRemove;
+  replace: UseFieldArrayReplace<AddProductFormInput, "variants">;
+}
+export interface InputFileProps {
+  name: FieldPath<AddProductFormInput>;
+  form: UseFormReturn<AddProductFormInput>;
+  label: string;
+}
+export interface RadioGroupDescriptionProps {
+  form: UseFormReturn<AddProductFormInput>;
+  inventoryOptions: {
+    value: string;
+    title: string;
+    label: string;
+  }[];
 }

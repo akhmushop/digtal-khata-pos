@@ -38,7 +38,19 @@ import {
 import { replace, useLocation, useNavigate } from "react-router";
 import { useBlocker } from "react-router";
 import { ProductsTypes } from "../../types/products.types.js";
-import { Errors, InitialFormData } from "../../types/addProduct.types.js";
+import {
+  AccordionCardProps,
+  AllVariantsType,
+  DatePickerSimpleProps,
+  Errors,
+  InitialFormData,
+  InputFieldProps,
+  InputFileProps,
+  ProductInfoInputProps,
+  RadioGroupDescriptionProps,
+  SelectOptionsProps,
+  VariantRowProps,
+} from "../../types/addProduct.types.js";
 import {
   Field,
   FieldLabel,
@@ -99,9 +111,14 @@ import {
 } from "@/components/ui/table";
 import { Controller, useForm, useFieldArray } from "react-hook-form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { productSchema } from "@/schemas/product.schema.js";
+import {
+  AddProductFormInput,
+  AddProductFormOutput,
+  productSchema,
+} from "@/schemas/product.schema.js";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { number } from "zod";
+import { VariantProps } from "class-variance-authority";
 
 const ProductStockForm = () => {
   // const editingProduct = useEditProductStore((state) => state.editingProduct);
@@ -358,7 +375,7 @@ const ProductStockForm = () => {
   //   setImagePreview(null);
   //   setErrors(initialErrors);
   // };
-  const form = useForm({
+  const form = useForm<AddProductFormInput, unknown, AddProductFormOutput>({
     defaultValues: {
       name: "",
       categoryId: null,
@@ -392,18 +409,13 @@ const ProductStockForm = () => {
     resolver: zodResolver(productSchema),
   });
 
-  function onSubmit(data) {
+  function onSubmit(data: AddProductFormOutput) {
     console.log(data);
   }
   const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: "variants",
   });
-
-  const handleOnChange = (e) => {
-    const { value, name } = e.target;
-    console.log(value);
-  };
   const productUnits = [
     { label: "Select Unit", value: null },
     { label: "PC", value: 1 },
@@ -548,7 +560,7 @@ const ProductStockForm = () => {
                         placeholder="Enter your message"
                         label="Product Description"
                         type="textArea"
-                        name="productDescription"
+                        name="description"
                         form={form}
                       />
                     </div>
@@ -697,7 +709,7 @@ const ProductStockForm = () => {
     </div>
   );
 };
-const SelectOptions = ({ options, label, form, name }) => {
+const SelectOptions = ({ options, label, form, name }: SelectOptionsProps) => {
   return (
     <Controller
       name={name}
@@ -734,7 +746,7 @@ const SelectOptions = ({ options, label, form, name }) => {
     />
   );
 };
-function InputField({ placeholder, label, type, name, form }) {
+function InputField({ placeholder, label, type, name, form }: InputFieldProps) {
   return (
     <Controller
       name={name}
@@ -750,6 +762,7 @@ function InputField({ placeholder, label, type, name, form }) {
               <InputGroupInput
                 id={field.name}
                 {...field}
+                value={typeof field.value === "number" ? field.value : ""}
                 aria-invalid={fieldState.invalid}
                 placeholder={placeholder}
                 type={type}
@@ -763,6 +776,7 @@ function InputField({ placeholder, label, type, name, form }) {
             <Input
               id={field.name}
               {...field}
+              value={typeof field.value === "string" ? field.value : ""}
               aria-invalid={fieldState.invalid}
               placeholder={placeholder}
               type={type}
@@ -773,12 +787,17 @@ function InputField({ placeholder, label, type, name, form }) {
               <InputGroupTextarea
                 id={field.name}
                 {...field}
+                value={typeof field.value === "string" ? field.value : ""}
                 aria-invalid={fieldState.invalid}
                 placeholder={placeholder}
               />
               <InputGroupAddon align="block-end">
                 <InputGroupText className="text-xs text-muted-foreground">
-                  {120 - (field.value?.length || 0)} characters left
+                  {120 -
+                    (typeof field.value === "string"
+                      ? field.value.length
+                      : 0)}{" "}
+                  characters left
                 </InputGroupText>
               </InputGroupAddon>
             </InputGroup>
@@ -789,7 +808,7 @@ function InputField({ placeholder, label, type, name, form }) {
     />
   );
 }
-export function DatePickerSimple({ form, index }) {
+export function DatePickerSimple({ form, index }: DatePickerSimpleProps) {
   return (
     <Controller
       name={`variants.${index}.expiryDate`}
@@ -816,7 +835,7 @@ export function DatePickerSimple({ form, index }) {
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar
                 mode="single"
-                selected={field.value}
+                selected={field.value !== null ? field.value : undefined}
                 onSelect={field.onChange}
                 defaultMonth={field.value ?? new Date()}
               />
@@ -835,7 +854,7 @@ function ProductInfoInput({
   variantIndex,
   added,
   remove,
-}) {
+}: ProductInfoInputProps) {
   const {
     fields,
     append,
@@ -1010,7 +1029,7 @@ function ProductInfoInput({
               )}
             />
           ))}
-          {serialNumbers.length === 0 && (
+          {serialNumbers?.length === 0 && (
             <div className="h-15 w-full border border-black border-dashed rounded flex items-center justify-center">
               <p>No serial numbers tracked. Click “Add serial” to start.</p>
             </div>
@@ -1028,7 +1047,7 @@ function ProductInfoInput({
         <div className="space-y-2 col-span-3 flex justify-end gap-5">
           <Button
             onClick={() => {
-              remove(variantIndex);
+              remove?.(variantIndex);
             }}
           >
             Remove
@@ -1036,7 +1055,9 @@ function ProductInfoInput({
           <Button
             disabled={added}
             onClick={() => {
-              handleAddVariant(variant);
+              if (variant) {
+                handleAddVariant?.(variant);
+              }
             }}
           >
             {added ? "Added" : "Add Variant"}
@@ -1047,7 +1068,12 @@ function ProductInfoInput({
   );
 }
 
-export function AccordionCard({ form, append, replace, remove }) {
+export function AccordionCard({
+  form,
+  append,
+  replace,
+  remove,
+}: AccordionCardProps) {
   const emptyVariant = {
     sku: "",
     barcode: "",
@@ -1162,9 +1188,9 @@ export function ComboboxBasic() {
     </Combobox>
   );
 }
-export function VariantRow({ form, append, remove, replace }) {
+export function VariantRow({ form, append, remove, replace }: VariantRowProps) {
   const [expanded, setExpanded] = useState<string | null>(null);
-  const createVariant = (variant) => ({
+  const createVariant = (variant: AllVariantsType) => ({
     sku: "",
     barcode: "",
     sellingPrice: 0,
@@ -1193,14 +1219,14 @@ export function VariantRow({ form, append, remove, replace }) {
       form.setValue(`variants.${index}.isDefault`, index === selectedIndex);
     });
   };
-  const isAdded = (variant) => {
+  const isAdded = (variant: AllVariantsType) => {
     return variants.some(
       (item) =>
         item.options?.color === variant.color &&
         item.options?.size === variant.size,
     );
   };
-  const handleAddVariant = (variant) => {
+  const handleAddVariant = (variant: AllVariantsType) => {
     if (isAdded(variant)) {
       return;
     }
@@ -1385,65 +1411,66 @@ export function VariantRow({ form, append, remove, replace }) {
     </RadioGroup>
   );
 }
-export function InputFile({ name, form, label }) {
+export function InputFile({ name, form, label }: InputFileProps) {
   const [addUrl, setAddUrl] = useState(false);
 
   return (
-    <Field data-invalid={form.formState.errors[name]?.invalid}>
-      <div className="flex items-center justify-between">
-        <FieldLabel htmlFor={name}>{label}</FieldLabel>
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="add-url"
-            checked={addUrl}
-            onCheckedChange={(e) => {
-              setAddUrl(e);
-              form.setValue(name, null);
-              form.clearErrors(name);
-            }}
-          />
-          <Label htmlFor="add-url" className="cursor-pointer">
-            Add url
-          </Label>
-        </div>
-      </div>
-
-      <Controller
-        name={name}
-        control={form.control}
-        render={({ field, fieldState }) => (
-          <>
-            {addUrl ? (
-              <InputGroup>
-                <InputGroupAddon>
-                  <InputGroupText>https://</InputGroupText>
-                </InputGroupAddon>
-                <InputGroupInput
-                  id={field.name}
-                  {...field}
-                  placeholder="example.com"
-                  className="pl-0.5!"
-                />
-              </InputGroup>
-            ) : (
-              <Input
-                id={field.name}
-                name={field.name}
-                onBlur={field.onBlur}
-                type="file"
-                ref={field.ref}
-                onChange={(e) => {
-                  field.onChange(e.target.files);
+    <Controller
+      name={name}
+      control={form.control}
+      render={({ field, fieldState }) => (
+        <Field data-invalid={fieldState.invalid}>
+          <div className="flex items-center justify-between">
+            <FieldLabel htmlFor={name}>{label}</FieldLabel>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="add-url"
+                checked={addUrl}
+                onCheckedChange={(e) => {
+                  setAddUrl(e);
+                  form.setValue(name, null);
+                  form.clearErrors(name);
                 }}
               />
-            )}
-          </>
-        )}
-      />
-    </Field>
+              <Label htmlFor="add-url" className="cursor-pointer">
+                Add url
+              </Label>
+            </div>
+          </div>
+          {addUrl ? (
+            <InputGroup>
+              <InputGroupAddon>
+                <InputGroupText>https://</InputGroupText>
+              </InputGroupAddon>
+              <InputGroupInput
+                id={field.name}
+                {...field}
+                value={typeof field.value === "string" ? field.value : ""}
+                placeholder="example.com"
+                className="pl-0.5!"
+              />
+            </InputGroup>
+          ) : (
+            <Input
+              id={field.name}
+              name={field.name}
+              onBlur={field.onBlur}
+              type="file"
+              ref={field.ref}
+              onChange={(e) => {
+                field.onChange(e.target.files);
+              }}
+            />
+          )}
+        </Field>
+      )}
+    />
   );
 }
-export function RadioGroupDescription({ form, inventoryOptions }) {
+export function RadioGroupDescription({
+  form,
+  inventoryOptions,
+}: RadioGroupDescriptionProps) {
   return (
     <Controller
       name="source"
