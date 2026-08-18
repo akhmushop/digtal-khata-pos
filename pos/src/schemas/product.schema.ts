@@ -15,7 +15,8 @@ const variantSchema = z.object({
   alertQuantity: z.coerce.number().min(0),
   isDefault: z.boolean(),
   status: z.string(),
-  image: z.string().optional(),
+  imageUrl: z.string().url("Invalid URL").nullable(),
+  imageFile: z.instanceof(File).nullable(),
   batchNumber: z.string().max(100),
   purchasePrice: z.coerce.number().min(0),
   quantity: z.coerce.number().int().min(0),
@@ -35,7 +36,8 @@ export const productSchema = z
     trackingType: z.string().nullable(),
     supplierId: z.number().int().nullable(),
     status: z.string(),
-    image: z.string().optional(),
+    imageUrl: z.string().url().nullable(),
+    imageFile: z.instanceof(File).nullable(),
     source: z.string(),
     variants: z.array(variantSchema),
   })
@@ -105,5 +107,5 @@ export const productSchema = z
     // });
   });
 
-  export type AddProductFormInput = z.input<typeof productSchema>;
-  export type AddProductFormOutput = z.output<typeof productSchema>;
+export type AddProductFormInput = z.input<typeof productSchema>;
+export type AddProductFormOutput = z.output<typeof productSchema>;
