@@ -386,7 +386,8 @@ const ProductStockForm = () => {
       hasVariants: false,
       trackingType: null,
       status: "active",
-      image: "",
+      imageUrl: null,
+      imageFile: null,
       supplierId: null,
       source: "purchase",
       variants: [
@@ -397,11 +398,12 @@ const ProductStockForm = () => {
           alertQuantity: 0,
           isDefault: true,
           status: "active",
-          image: "",
-          batchNumber: "",
+          imageUrl: null,
+          imageFile: null,
           purchasePrice: 0,
           quantity: 0,
           expiryDate: null,
+          batchNumber: "",
           serialNumbers: [],
         },
       ],
@@ -967,7 +969,12 @@ function ProductInfoInput({
         <DatePickerSimple form={form} index={variantIndex} />
       </div>
       <div className="space-y-2">
-        <InputFile name="image" form={form} label="Image" />
+        <InputFile
+          urlName={`variants.${variantIndex}.imageUrl`}
+          fileName={`variants.${variantIndex}.imageFile`}
+          form={form}
+          label="Image"
+        />
       </div>
       {/* status */}
       <div className="space-y-2">
@@ -1081,7 +1088,8 @@ export function AccordionCard({
     alertQuantity: 0,
     isDefault: true,
     status: "active",
-    image: "",
+    imageUrl: null,
+    imageFile: null,
     batchNumber: "",
     purchasePrice: 0,
     quantity: 0,
@@ -1197,7 +1205,8 @@ export function VariantRow({ form, append, remove, replace }: VariantRowProps) {
     alertQuantity: 0,
     isDefault: false,
     status: "active",
-    image: "",
+    imageUrl: null,
+    imageFile: null,
     batchNumber: "",
     purchasePrice: 0,
     quantity: 0,
@@ -1411,60 +1420,101 @@ export function VariantRow({ form, append, remove, replace }: VariantRowProps) {
     </RadioGroup>
   );
 }
-export function InputFile({ name, form, label }: InputFileProps) {
+export function InputFile({ urlName, fileName, form, label }: InputFileProps) {
   const [addUrl, setAddUrl] = useState(false);
-
+  console.log(form.formState.errors);
   return (
-    <Controller
-      name={name}
-      control={form.control}
-      render={({ field, fieldState }) => (
-        <Field data-invalid={fieldState.invalid}>
-          <div className="flex items-center justify-between">
-            <FieldLabel htmlFor={name}>{label}</FieldLabel>
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="add-url"
-                checked={addUrl}
-                onCheckedChange={(e) => {
-                  setAddUrl(e);
-                  form.setValue(name, null);
-                  form.clearErrors(name);
-                }}
-              />
-              <Label htmlFor="add-url" className="cursor-pointer">
-                Add url
-              </Label>
-            </div>
-          </div>
-          {addUrl ? (
-            <InputGroup>
-              <InputGroupAddon>
-                <InputGroupText>https://</InputGroupText>
-              </InputGroupAddon>
-              <InputGroupInput
-                id={field.name}
-                {...field}
-                value={typeof field.value === "string" ? field.value : ""}
-                placeholder="example.com"
-                className="pl-0.5!"
-              />
-            </InputGroup>
-          ) : (
-            <Input
-              id={field.name}
-              name={field.name}
-              onBlur={field.onBlur}
-              type="file"
-              ref={field.ref}
-              onChange={(e) => {
-                field.onChange(e.target.files);
-              }}
-            />
+    <Field>
+      <div className="flex items-center justify-between">
+        <FieldLabel>{label}</FieldLabel>
+
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="add-image-url"
+            checked={addUrl}
+            onCheckedChange={(checked) => {
+              setAddUrl(checked);
+
+              // Clear the inactive field
+              if (checked) {
+                form.setValue(fileName, null);
+                form.clearErrors(fileName);
+              } else {
+                form.setValue(urlName, null);
+                form.clearErrors(urlName);
+              }
+            }}
+          />
+
+          <Label htmlFor="add-image-url" className="cursor-pointer">
+            Add URL
+          </Label>
+        </div>
+      </div>
+
+      {addUrl ? (
+        <Controller
+          name={urlName}
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <InputGroup>
+                {!field.value && (
+                  <InputGroupAddon>
+                    <InputGroupText>https://</InputGroupText>
+                  </InputGroupAddon>
+                )}
+
+                <InputGroupInput
+                  id={field.name}
+                  name={field.name}
+                  value={typeof field.value === "string" ? field.value : ""}
+                  onChange={(e) => field.onChange(e.target.value)}
+                  onBlur={() => {
+                    const value =
+                      typeof field.value === "string" ? field.value.trim() : "";
+                    if (!value) {
+                      field.onChange(null);
+                    } else if (!/^https?:\/\//i.test(value)) {
+                      field.onChange(`https://${value}`);
+                    }
+                    field.onBlur();
+                  }}
+                  ref={field.ref}
+                  placeholder="example.com"
+                  className="pl-0.5!"
+                  aria-invalid={fieldState.invalid}
+                />
+              </InputGroup>
+
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
           )}
-        </Field>
+        />
+      ) : (
+        <Controller
+          name={fileName}
+          control={form.control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <Input
+                id={field.name}
+                name={field.name}
+                type="file"
+                ref={field.ref}
+                onBlur={field.onBlur}
+                onChange={(e) => {
+                  field.onChange(e.target.files?.[0] ?? null);
+                }}
+                aria-invalid={fieldState.invalid}
+              />
+
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
       )}
-    />
+    </Field>
   );
 }
 export function RadioGroupDescription({

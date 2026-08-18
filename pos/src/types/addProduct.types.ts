@@ -87,7 +87,8 @@ export interface VariantRowProps {
   replace: UseFieldArrayReplace<AddProductFormInput, "variants">;
 }
 export interface InputFileProps {
-  name: FieldPath<AddProductFormInput>;
+  urlName: FieldPath<AddProductFormInput>;
+  fileName: FieldPath<AddProductFormInput>;
   form: UseFormReturn<AddProductFormInput>;
   label: string;
 }
