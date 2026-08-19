@@ -67,11 +67,7 @@ export interface AllVariantsType {
 }
 export interface ProductInfoInputProps {
   form: UseFormReturn<AddProductFormInput>;
-  index?: number;
-  handleAddVariant?: (variant: AllVariantsType) => void;
-  variant?: AllVariantsType;
   variantIndex: number;
-  added?: boolean;
   remove?: UseFieldArrayRemove;
 }
 export interface AccordionCardProps {
