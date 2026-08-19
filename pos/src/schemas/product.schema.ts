@@ -1,3 +1,4 @@
+import { AllVariantsType } from "@/types/addProduct.types";
 import { z } from "zod";
 const serialNumberSchema = z.object({
   serial: z.string().min(1),
@@ -106,6 +107,73 @@ export const productSchema = z
     //   }
     // });
   });
+
+export const defaultValues = {
+  name: "",
+  categoryId: null,
+  brandId: null,
+  unitId: null,
+  description: "",
+  productType: null,
+  hasVariants: false,
+  trackingType: null,
+  status: "active",
+  imageUrl: null,
+  imageFile: null,
+  supplierId: null,
+  source: "purchase",
+  variants: [
+    {
+      sku: "",
+      barcode: "",
+      sellingPrice: 0,
+      alertQuantity: 0,
+      isDefault: true,
+      status: "active",
+      imageUrl: null,
+      imageFile: null,
+      purchasePrice: 0,
+      quantity: 0,
+      expiryDate: null,
+      batchNumber: "",
+      serialNumbers: [],
+    },
+  ],
+};
+export const createVariant = (variant: AllVariantsType) => ({
+  sku: "",
+  barcode: "",
+  sellingPrice: 0,
+  alertQuantity: 0,
+  isDefault: false,
+  status: "active",
+  imageUrl: null,
+  imageFile: null,
+  batchNumber: "",
+  purchasePrice: 0,
+  quantity: 0,
+  expiryDate: null,
+  serialNumbers: [],
+  options: {
+    color: variant.color,
+    size: variant.size,
+  },
+});
+export const emptyVariant = {
+  sku: "",
+  barcode: "",
+  sellingPrice: 0,
+  alertQuantity: 0,
+  isDefault: true,
+  status: "active",
+  imageUrl: null,
+  imageFile: null,
+  batchNumber: "",
+  purchasePrice: 0,
+  quantity: 0,
+  expiryDate: null,
+  serialNumber: [],
+};
 
 export type AddProductFormInput = z.input<typeof productSchema>;
 export type AddProductFormOutput = z.output<typeof productSchema>;

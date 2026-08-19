@@ -109,11 +109,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Controller, useForm, useFieldArray } from "react-hook-form";
+import {
+  Controller,
+  useForm,
+  useFieldArray,
+  ControllerRenderProps,
+} from "react-hook-form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   AddProductFormInput,
   AddProductFormOutput,
+  createVariant,
+  defaultValues,
+  emptyVariant,
   productSchema,
 } from "@/schemas/product.schema.js";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -376,38 +384,7 @@ const ProductStockForm = () => {
   //   setErrors(initialErrors);
   // };
   const form = useForm<AddProductFormInput, unknown, AddProductFormOutput>({
-    defaultValues: {
-      name: "",
-      categoryId: null,
-      brandId: null,
-      unitId: null,
-      description: "",
-      productType: null,
-      hasVariants: false,
-      trackingType: null,
-      status: "active",
-      imageUrl: null,
-      imageFile: null,
-      supplierId: null,
-      source: "purchase",
-      variants: [
-        {
-          sku: "",
-          barcode: "",
-          sellingPrice: 0,
-          alertQuantity: 0,
-          isDefault: true,
-          status: "active",
-          imageUrl: null,
-          imageFile: null,
-          purchasePrice: 0,
-          quantity: 0,
-          expiryDate: null,
-          batchNumber: "",
-          serialNumbers: [],
-        },
-      ],
-    },
+    defaultValues: defaultValues,
     resolver: zodResolver(productSchema),
   });
 
@@ -470,6 +447,8 @@ const ProductStockForm = () => {
     { value: "purchase", label: "Start with zero stock", title: "Default" },
     { value: "opening", label: "I already have stock", title: "Opening Stock" },
   ];
+  const rootErrors = form.formState.errors.variants?.root?.message;
+  const errors = form.formState.errors.variants?.message;
   return (
     <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
@@ -537,7 +516,6 @@ const ProductStockForm = () => {
                         form={form}
                       />
                     </div>
-
                     {/* Product Unit */}
                     <div className="space-y-2">
                       <SelectOptions
@@ -547,7 +525,6 @@ const ProductStockForm = () => {
                         name="unitId"
                       />
                     </div>
-
                     {/* Product Type */}
                     <div className="space-y-2">
                       <SelectOptions
@@ -557,6 +534,7 @@ const ProductStockForm = () => {
                         name="productType"
                       />
                     </div>
+                    {/* Product Description */}
                     <div className="col-span-3">
                       <InputField
                         placeholder="Enter your message"
@@ -567,7 +545,6 @@ const ProductStockForm = () => {
                       />
                     </div>
                   </div>
-                  {/* Description Card */}
                 </div>
 
                 {/* Stock Information Card */}
@@ -597,8 +574,16 @@ const ProductStockForm = () => {
                       </p>
                     </div>
                   </div>
-
                   <div className="space-y-5">
+                    {/* image */}
+                    <div className="space-y-2">
+                      <InputFile
+                        urlName={`imageUrl`}
+                        fileName={`imageFile`}
+                        form={form}
+                        label="Default Image"
+                      />
+                    </div>
                     {/* status */}
                     <div className="space-y-2">
                       <SelectOptions
@@ -608,7 +593,7 @@ const ProductStockForm = () => {
                         name="status"
                       />
                     </div>
-
+                    {/* inventoryOptions */}
                     <div className="space-y-2">
                       <RadioGroupDescription
                         form={form}
@@ -644,6 +629,7 @@ const ProductStockForm = () => {
                         name="categoryId"
                       />
                     </div>
+                    {/* Tracking Type */}
                     <div className="space-y-2">
                       <SelectOptions
                         options={trackingType}
@@ -691,11 +677,9 @@ const ProductStockForm = () => {
                     )}
                   </div>
                   {/* Check for both root.message and message to cover all states */}
-                  {(form.formState.errors.variants?.root?.message ||
-                    form.formState.errors.variants?.message) && (
+                  {(rootErrors || errors) && (
                     <p className="text-sm font-medium text-destructive mt-2">
-                      {form.formState.errors.variants?.root?.message ||
-                        form.formState.errors.variants?.message}
+                      {rootErrors || errors}
                     </p>
                   )}
                   <p className="text-xs text-gray-500 text-center mt-4">
@@ -850,11 +834,7 @@ export function DatePickerSimple({ form, index }: DatePickerSimpleProps) {
 }
 function ProductInfoInput({
   form,
-  index,
-  handleAddVariant,
-  variant,
   variantIndex,
-  added,
   remove,
 }: ProductInfoInputProps) {
   const {
@@ -968,14 +948,16 @@ function ProductInfoInput({
       <div className="space-y-2">
         <DatePickerSimple form={form} index={variantIndex} />
       </div>
-      <div className="space-y-2">
-        <InputFile
-          urlName={`variants.${variantIndex}.imageUrl`}
-          fileName={`variants.${variantIndex}.imageFile`}
-          form={form}
-          label="Image"
-        />
-      </div>
+      {hasVariants && (
+        <div className="space-y-2">
+          <InputFile
+            urlName={`variants.${variantIndex}.imageUrl`}
+            fileName={`variants.${variantIndex}.imageFile`}
+            form={form}
+            label="Image"
+          />
+        </div>
+      )}
       {/* status */}
       <div className="space-y-2">
         <SelectOptions
@@ -1059,16 +1041,6 @@ function ProductInfoInput({
           >
             Remove
           </Button>
-          <Button
-            disabled={added}
-            onClick={() => {
-              if (variant) {
-                handleAddVariant?.(variant);
-              }
-            }}
-          >
-            {added ? "Added" : "Add Variant"}
-          </Button>
         </div>
       )}
     </div>
@@ -1081,21 +1053,6 @@ export function AccordionCard({
   replace,
   remove,
 }: AccordionCardProps) {
-  const emptyVariant = {
-    sku: "",
-    barcode: "",
-    sellingPrice: 0,
-    alertQuantity: 0,
-    isDefault: true,
-    status: "active",
-    imageUrl: null,
-    imageFile: null,
-    batchNumber: "",
-    purchasePrice: 0,
-    quantity: 0,
-    expiryDate: null,
-    serialNumber: [],
-  };
 
   const handleHasVariantsChange = (value: boolean) => {
     form.setValue("hasVariants", value);
@@ -1198,25 +1155,6 @@ export function ComboboxBasic() {
 }
 export function VariantRow({ form, append, remove, replace }: VariantRowProps) {
   const [expanded, setExpanded] = useState<string | null>(null);
-  const createVariant = (variant: AllVariantsType) => ({
-    sku: "",
-    barcode: "",
-    sellingPrice: 0,
-    alertQuantity: 0,
-    isDefault: false,
-    status: "active",
-    imageUrl: null,
-    imageFile: null,
-    batchNumber: "",
-    purchasePrice: 0,
-    quantity: 0,
-    expiryDate: null,
-    serialNumbers: [],
-    options: {
-      color: variant.color,
-      size: variant.size,
-    },
-  });
   const variants = form.watch("variants") || [];
   const defaultIndex = variants.findIndex(
     (variant) => variant?.isDefault === true,
@@ -1270,6 +1208,19 @@ export function VariantRow({ form, append, remove, replace }: VariantRowProps) {
     setIsAddedAll(false);
   };
   const source = form.watch("source");
+  const handleSquareCheck = (variantIndex: number) => {
+    const currentVariants = form.getValues("variants") || [];
+    const wasDefault = currentVariants[variantIndex]?.isDefault;
+    remove(variantIndex);
+
+    if (wasDefault && currentVariants.length > 1) {
+      let newDefaultIndex = variantIndex;
+      if (variantIndex === currentVariants.length - 1) {
+        newDefaultIndex = variantIndex - 1;
+      }
+      form.setValue(`variants.${newDefaultIndex}.isDefault`, true);
+    }
+  };
   return (
     <RadioGroup
       className="contents"
@@ -1359,22 +1310,7 @@ export function VariantRow({ form, append, remove, replace }: VariantRowProps) {
                       {added ? (
                         <SquareCheck
                           onClick={() => {
-                            const currentVariants =
-                              form.getValues("variants") || [];
-                            const wasDefault =
-                              currentVariants[variantIndex]?.isDefault;
-                            remove(variantIndex);
-
-                            if (wasDefault && currentVariants.length > 1) {
-                              let newDefaultIndex = variantIndex;
-                              if (variantIndex === currentVariants.length - 1) {
-                                newDefaultIndex = variantIndex - 1;
-                              }
-                              form.setValue(
-                                `variants.${newDefaultIndex}.isDefault`,
-                                true,
-                              );
-                            }
+                            handleSquareCheck(variantIndex);
                           }}
                         />
                       ) : (
@@ -1403,10 +1339,6 @@ export function VariantRow({ form, append, remove, replace }: VariantRowProps) {
                       <ProductInfoInput
                         form={form}
                         variantIndex={variantIndex}
-                        handleAddVariant={handleAddVariant}
-                        variant={variant}
-                        index={index}
-                        added={added}
                         remove={remove}
                       />
                     </TableCell>
@@ -1421,8 +1353,28 @@ export function VariantRow({ form, append, remove, replace }: VariantRowProps) {
   );
 }
 export function InputFile({ urlName, fileName, form, label }: InputFileProps) {
+  const handleAddHttp = (field: ControllerRenderProps<AddProductFormInput>) => {
+    const value = typeof field.value === "string" ? field.value.trim() : "";
+    if (!value) {
+      field.onChange(null);
+    } else if (!/^https?:\/\//i.test(value)) {
+      field.onChange(`https://${value}`);
+    }
+    field.onBlur();
+  };
   const [addUrl, setAddUrl] = useState(false);
-  console.log(form.formState.errors);
+  const handleOnCheckedChange = (checked: boolean) => {
+    setAddUrl(checked);
+
+    // Clear the inactive field
+    if (checked) {
+      form.setValue(fileName, null);
+      form.clearErrors(fileName);
+    } else {
+      form.setValue(urlName, null);
+      form.clearErrors(urlName);
+    }
+  };
   return (
     <Field>
       <div className="flex items-center justify-between">
@@ -1432,18 +1384,7 @@ export function InputFile({ urlName, fileName, form, label }: InputFileProps) {
           <Switch
             id="add-image-url"
             checked={addUrl}
-            onCheckedChange={(checked) => {
-              setAddUrl(checked);
-
-              // Clear the inactive field
-              if (checked) {
-                form.setValue(fileName, null);
-                form.clearErrors(fileName);
-              } else {
-                form.setValue(urlName, null);
-                form.clearErrors(urlName);
-              }
-            }}
+            onCheckedChange={handleOnCheckedChange}
           />
 
           <Label htmlFor="add-image-url" className="cursor-pointer">
@@ -1471,14 +1412,7 @@ export function InputFile({ urlName, fileName, form, label }: InputFileProps) {
                   value={typeof field.value === "string" ? field.value : ""}
                   onChange={(e) => field.onChange(e.target.value)}
                   onBlur={() => {
-                    const value =
-                      typeof field.value === "string" ? field.value.trim() : "";
-                    if (!value) {
-                      field.onChange(null);
-                    } else if (!/^https?:\/\//i.test(value)) {
-                      field.onChange(`https://${value}`);
-                    }
-                    field.onBlur();
+                    handleAddHttp(field);
                   }}
                   ref={field.ref}
                   placeholder="example.com"
