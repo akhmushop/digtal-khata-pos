@@ -59,9 +59,14 @@ export interface AddProductType {
       label: string;
     }[];
   };
+  addProductVariantOptions: {
+    type: string;
+    values: string[];
+  }[];
   loading: boolean;
   error: string | null;
   getAddProductsSelectOptions: () => void;
+  getAddProductVariantOptions: () => void;
 }
 export interface SelectOptionsProps {
   options: {

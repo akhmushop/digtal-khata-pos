@@ -1,8 +1,11 @@
+import { eq, sql } from "drizzle-orm";
 import { brands } from "../../db/schema/brands.js";
 import { categories } from "../../db/schema/categories.js";
 import { db } from "../../db/schema/index.js";
 import { suppliers } from "../../db/schema/suppliers.js";
 import { units } from "../../db/schema/units.js";
+import { variantOptions } from "../../db/schema/variantOptions.js";
+import { variantTypes } from "../../db/schema/variantTypes.js";
 
 async function getBrands() {
   return db
@@ -49,4 +52,17 @@ export async function getAddProductsSelectOptions() {
     categories: allCategories,
     suppliers: allSuppliers,
   };
+}
+export async function getAddProductVariantOptions() {
+  return await db
+    .select({
+      typeId: variantTypes.id,
+      typeName: variantTypes.name,
+      options: sql<
+        { optionId: number; value: string }[]
+      >`ARRAY_AGG( JSON_BUILD_OBJECT('optionId',${variantOptions.id},'value',${variantOptions.value}) ORDER BY ${variantOptions.value})`,
+    })
+    .from(variantOptions)
+    .innerJoin(variantTypes, eq(variantOptions.variantTypeId, variantTypes.id))
+    .groupBy(variantTypes.id, variantTypes.name);
 }

@@ -9,3 +9,10 @@ export async function getAddProductsSelectOptions(req: Request, res: Response) {
     handleError(res, err);
   }
 }
+export async function getAddProductVariantOptions(req: Request, res: Response) {
+  try {
+    res.json(await addProductService.getAddProductVariantOptions())
+  } catch (err: unknown) {
+    handleError(res, err);
+  }
+}
