@@ -6,44 +6,67 @@ import {
   UseFieldArrayReplace,
   UseFormReturn,
 } from "react-hook-form";
-export interface InitialFormData {
-  id: number;
-  barcode: string;
-  productName: string;
-  productUnit: string;
-  productType: string;
-  alertQuantity: number;
-  cost: number;
-  price: number;
-  discountPercent: number;
-  flatDiscount: number;
-  quantity: number;
-  batchNumber: string;
-  expiryDate: string;
-  description: string;
-  brand: string;
-  category: string;
-  supplier: string;
-  tags: string[];
-  sku: string;
-  weight: string;
-  dimensions: string;
-  variations: string;
-  status: string;
-  location: string;
-}
-export interface Errors {
-  barcode: string;
-  productName: string;
-  cost: string;
-  price: string;
-  quantity: string;
-  image: string | null;
+// export interface InitialFormData {
+//   id: number;
+//   barcode: string;
+//   productName: string;
+//   productUnit: string;
+//   productType: string;
+//   alertQuantity: number;
+//   cost: number;
+//   price: number;
+//   discountPercent: number;
+//   flatDiscount: number;
+//   quantity: number;
+//   batchNumber: string;
+//   expiryDate: string;
+//   description: string;
+//   brand: string;
+//   category: string;
+//   supplier: string;
+//   tags: string[];
+//   sku: string;
+//   weight: string;
+//   dimensions: string;
+//   variations: string;
+//   status: string;
+//   location: string;
+// }
+// export interface Errors {
+//   barcode: string;
+//   productName: string;
+//   cost: string;
+//   price: string;
+//   quantity: string;
+//   image: string | null;
+// }
+export interface AddProductType {
+  addProductsSelectOptions: {
+    brands: {
+      value: number;
+      label: string;
+    }[];
+    units: {
+      value: number;
+      label: string;
+    }[];
+    categories: {
+      value: number;
+      label: string;
+    }[];
+    suppliers: {
+      value: number;
+      label: string;
+    }[];
+  };
+  loading: boolean;
+  error: string | null;
+  getAddProductsSelectOptions: () => void;
 }
 export interface SelectOptionsProps {
   options: {
+    value: number | string;
     label: string;
-    value: number | string | null;
     title?: string;
   }[];
   label: string;

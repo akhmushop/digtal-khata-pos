@@ -15,7 +15,7 @@ const variantSchema = z.object({
   sellingPrice: z.coerce.number().min(0),
   alertQuantity: z.coerce.number().min(0),
   isDefault: z.boolean(),
-  status: z.string(),
+  status: z.enum([ "active", "inactive"]),
   imageUrl: z.string().url("Invalid URL").nullable(),
   imageFile: z.instanceof(File).nullable(),
   batchNumber: z.string().max(100),
@@ -32,14 +32,14 @@ export const productSchema = z
     brandId: z.number().int().nullable(),
     unitId: z.number().int().nullable(),
     description: z.string().max(120),
-    productType: z.string().nullable(),
+    productType: z.enum(["physical", "service", "digital"]),
     hasVariants: z.boolean(),
-    trackingType: z.string().nullable(),
+    trackingType: z.enum(["none", "batch", "serial"]),
     supplierId: z.number().int().nullable(),
-    status: z.string(),
+    status: z.enum(["draft", "active", "inactive"]),
     imageUrl: z.string().url().nullable(),
     imageFile: z.instanceof(File).nullable(),
-    source: z.string(),
+    source: z.enum(["purchase","opening"]),
     variants: z.array(variantSchema),
   })
   .superRefine((data, ctx) => {
@@ -108,15 +108,15 @@ export const productSchema = z
     // });
   });
 
-export const defaultValues = {
+export const defaultValues:AddProductFormInput = {
   name: "",
   categoryId: null,
   brandId: null,
   unitId: null,
   description: "",
-  productType: null,
+  productType: "physical",
   hasVariants: false,
-  trackingType: null,
+  trackingType: "none",
   status: "active",
   imageUrl: null,
   imageFile: null,
@@ -140,7 +140,7 @@ export const defaultValues = {
     },
   ],
 };
-export const createVariant = (variant: AllVariantsType) => ({
+export const createVariant = (variant: AllVariantsType):VariantType => ({
   sku: "",
   barcode: "",
   sellingPrice: 0,
@@ -159,7 +159,7 @@ export const createVariant = (variant: AllVariantsType) => ({
     size: variant.size,
   },
 });
-export const emptyVariant = {
+export const emptyVariant: VariantType = {
   sku: "",
   barcode: "",
   sellingPrice: 0,
@@ -172,8 +172,8 @@ export const emptyVariant = {
   purchasePrice: 0,
   quantity: 0,
   expiryDate: null,
-  serialNumber: [],
+  serialNumbers: [],
 };
-
+export type VariantType = z.infer<typeof variantSchema>
 export type AddProductFormInput = z.input<typeof productSchema>;
 export type AddProductFormOutput = z.output<typeof productSchema>;

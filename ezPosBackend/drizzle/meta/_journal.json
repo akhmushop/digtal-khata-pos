@@ -8,6 +8,13 @@
       "when": 1786294517027,
       "tag": "0000_silly_mattie_franklin",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1787161890551,
+      "tag": "0001_burly_longshot",
+      "breakpoints": true
     }
   ]
 }
