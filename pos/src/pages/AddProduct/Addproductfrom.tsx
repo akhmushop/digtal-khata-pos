@@ -127,6 +127,13 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { number } from "zod";
 import { VariantProps } from "class-variance-authority";
+import useAddProductStore from "@/store/useAddProductStore.js";
+import {
+  inventorySources,
+  productStatus,
+  productTypes,
+  trackingType,
+} from "@/lib/constants.js";
 
 const ProductStockForm = () => {
   // const editingProduct = useEditProductStore((state) => state.editingProduct);
@@ -395,60 +402,13 @@ const ProductStockForm = () => {
     control: form.control,
     name: "variants",
   });
-  const productUnits = [
-    { label: "Select Unit", value: null },
-    { label: "PC", value: 1 },
-    { label: "KG", value: 2 },
-    { label: "L", value: 3 },
-    { label: "M", value: 4 },
-    { label: "SET", value: 5 },
-    { label: "BOX", value: 6 },
-    { label: "DOZEN", value: 8 },
-  ];
-  const categories = [
-    { label: "Select Categories", value: null },
-    { label: "Electronics", value: 1 },
-    { label: "Clothing", value: 2 },
-    { label: "Sports", value: 3 },
-    { label: "Shoe", value: 4 },
-  ];
-  const brands = [
-    { label: "Select Brands", value: null },
-    { label: "Samsung", value: 1 },
-    { label: "Walton", value: 2 },
-    { label: "Lotto", value: 3 },
-    { label: "Iphone", value: 4 },
-  ];
-  const productTypes = [
-    { label: "Select Product Type", value: null },
-    { label: "Physical", value: "physical" },
-    { label: "Service", value: "service" },
-    { label: "Digital", value: "digital" },
-  ];
-  const trackingType = [
-    { label: "Select Tracking Type", value: null },
-    { label: "None", value: "none" },
-    { label: "Batch", value: "batch" },
-    { label: "Serial", value: "serial" },
-  ];
-  const suppliers = [
-    { label: "Select Suppliers", value: null },
-    { label: "Global Suppliers Inc.", value: 1 },
-    { label: "Premium Goods Co", value: 2 },
-    { label: "Tech Importers Ltd", value: 3 },
-    { label: "Quality Merchants LLC", value: 4 },
-  ];
-  const productStatus = [
-    { value: "draft", label: "Draft" },
-    { value: "active", label: "Active" },
-    { value: "inactive", label: "Inactive" },
-  ];
-  const inventoryOptions = [
-    { value: "purchase", label: "Start with zero stock", title: "Default" },
-    { value: "opening", label: "I already have stock", title: "Opening Stock" },
-  ];
   const rootErrors = form.formState.errors.variants?.root?.message;
   const errors = form.formState.errors.variants?.message;
+  const { addProductsSelectOptions, getAddProductsSelectOptions } =
+    useAddProductStore();
+  useEffect(() => {
+    getAddProductsSelectOptions();
+  }, []);
   return (
     <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
@@ -519,7 +479,7 @@ const ProductStockForm = () => {
                     {/* Product Unit */}
                     <div className="space-y-2">
                       <SelectOptions
-                        options={productUnits}
+                        options={addProductsSelectOptions.units}
                         label="Product Unit"
                         form={form}
                         name="unitId"
@@ -534,6 +494,7 @@ const ProductStockForm = () => {
                         name="productType"
                       />
                     </div>
+
                     {/* Product Description */}
                     <div className="col-span-3">
                       <InputField
@@ -584,6 +545,15 @@ const ProductStockForm = () => {
                         label="Default Image"
                       />
                     </div>
+                    {/* Tracking Type */}
+                    <div className="space-y-2">
+                      <SelectOptions
+                        options={trackingType}
+                        label="Tracking Type"
+                        form={form}
+                        name="trackingType"
+                      />
+                    </div>
                     {/* status */}
                     <div className="space-y-2">
                       <SelectOptions
@@ -597,13 +567,13 @@ const ProductStockForm = () => {
                     <div className="space-y-2">
                       <RadioGroupDescription
                         form={form}
-                        inventoryOptions={inventoryOptions}
+                        inventoryOptions={inventorySources}
                       />
                     </div>
                     {/* Supplier */}
                     <div className="space-y-2">
                       <SelectOptions
-                        options={suppliers}
+                        options={addProductsSelectOptions.suppliers}
                         label="Select a supplier"
                         form={form}
                         name="supplierId"
@@ -613,7 +583,7 @@ const ProductStockForm = () => {
                     {/* Brand */}
                     <div className="space-y-2">
                       <SelectOptions
-                        options={brands}
+                        options={addProductsSelectOptions.brands}
                         label="Brand"
                         form={form}
                         name="brandId"
@@ -623,19 +593,10 @@ const ProductStockForm = () => {
                     {/* Categories */}
                     <div className="space-y-2">
                       <SelectOptions
-                        options={categories}
+                        options={addProductsSelectOptions.categories}
                         label="Categories"
                         form={form}
                         name="categoryId"
-                      />
-                    </div>
-                    {/* Tracking Type */}
-                    <div className="space-y-2">
-                      <SelectOptions
-                        options={trackingType}
-                        label="Tracking Type"
-                        form={form}
-                        name="trackingType"
                       />
                     </div>
 
@@ -696,6 +657,10 @@ const ProductStockForm = () => {
   );
 };
 const SelectOptions = ({ options, label, form, name }: SelectOptionsProps) => {
+  const items =
+    name === "productType" || name === "status" || name === "trackingType"
+      ? options
+      : [{ label: `Select ${label}`, value: null }, ...options];
   return (
     <Controller
       name={name}
@@ -705,7 +670,7 @@ const SelectOptions = ({ options, label, form, name }: SelectOptionsProps) => {
           <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
           {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           <Select
-            items={options}
+            items={items}
             name={field.name}
             value={field.value}
             onValueChange={field.onChange}
@@ -719,7 +684,7 @@ const SelectOptions = ({ options, label, form, name }: SelectOptionsProps) => {
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                {options.map((item) => (
+                {items.map((item) => (
                   <SelectItem key={item.value} value={item.value}>
                     {item.label}
                   </SelectItem>
@@ -1053,7 +1018,6 @@ export function AccordionCard({
   replace,
   remove,
 }: AccordionCardProps) {
-
   const handleHasVariantsChange = (value: boolean) => {
     form.setValue("hasVariants", value);
 

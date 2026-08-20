@@ -8,35 +8,15 @@ import {
   bigserial,
   check,
   boolean,
+  serial,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
-export const suppliers = pgTable(
-  "suppliers",
-  {
-    id: bigserial({ mode: "bigint" }).primaryKey().notNull(),
-    supplierCode: varchar("supplier_code", { length: 30 }),
-    name: varchar({ length: 150 }).notNull(),
-    contactPerson: varchar("contact_person", { length: 150 }),
-    phone: varchar({ length: 30 }),
-    email: varchar({ length: 150 }),
-    companyName: varchar("company_name", { length: 150 }),
-    address: text(),
-    openingBalance: numeric("opening_balance", {
-      precision: 12,
-      scale: 2,
-    }).default("0"),
-    openingBalanceType: varchar("opening_balance_type", { length: 10 }),
-    status: boolean().default(true),
-    note: text(),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-  },
-  (table) => [
-    unique("suppliers_supplier_code_key").on(table.supplierCode),
-    check(
-      "suppliers_opening_balance_type_check",
-      sql`(opening_balance_type)::text = ANY ((ARRAY['payable'::character varying, 'receivable'::character varying])::text[])`,
-    ),
-  ],
-);
+export const suppliers = pgTable("suppliers", {
+  id: serial().primaryKey().notNull(),
+  name: varchar({ length: 100 }).notNull(),
+  phone: varchar({ length: 20 }),
+  email: varchar({ length: 255 }),
+  address: text(),
+  status: varchar({ length: 50 }).default("active"),
+});
