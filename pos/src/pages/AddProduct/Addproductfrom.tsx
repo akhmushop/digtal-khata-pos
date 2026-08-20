@@ -405,11 +405,17 @@ const ProductStockForm = () => {
   });
   const rootErrors = form.formState.errors.variants?.root?.message;
   const errors = form.formState.errors.variants?.message;
-  const { addProductsSelectOptions, getAddProductsSelectOptions } =
-    useAddProductStore();
+  const {
+    addProductsSelectOptions,
+    getAddProductsSelectOptions,
+    getAddProductVariantOptions,
+    addProductVariantOptions,
+  } = useAddProductStore();
   useEffect(() => {
     getAddProductsSelectOptions();
+    getAddProductVariantOptions();
   }, []);
+  console.log(addProductVariantOptions);
   return (
     <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
