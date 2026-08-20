@@ -1,7 +1,7 @@
 import { AllVariantsType } from "@/types/addProduct.types";
 import { z } from "zod";
 const serialNumberSchema = z.object({
-  serial: z.string().min(1),
+  serial: z.string().min(1, { message: "Serial number is required" }),
 });
 const variantSchema = z.object({
   options: z
@@ -15,7 +15,7 @@ const variantSchema = z.object({
   sellingPrice: z.coerce.number().min(0),
   alertQuantity: z.coerce.number().min(0),
   isDefault: z.boolean(),
-  status: z.enum([ "active", "inactive"]),
+  status: z.enum(["active", "inactive"]),
   imageUrl: z.string().url("Invalid URL").nullable(),
   imageFile: z.instanceof(File).nullable(),
   batchNumber: z.string().max(100),
@@ -30,16 +30,27 @@ export const productSchema = z
     name: z.string().min(1, { message: "Product name is required" }).max(100),
     categoryId: z.number().int().nullable(),
     brandId: z.number().int().nullable(),
-    unitId: z.number().int().nullable(),
+    unitId: z
+      .number()
+      .int()
+      .nullable()
+      .refine((val) => val !== null, {
+        message: "Product Unit is required. Please select a product unit",
+      }),
     description: z.string().max(120),
     productType: z.enum(["physical", "service", "digital"]),
     hasVariants: z.boolean(),
-    trackingType: z.enum(["none", "batch", "serial"]),
+    trackingType: z
+      .enum(["none", "batch", "serial"])
+      .nullable()
+      .refine((val) => val !== null, {
+        message: "Tracking type is required. Please select a tracking type",
+      }),
     supplierId: z.number().int().nullable(),
     status: z.enum(["draft", "active", "inactive"]),
     imageUrl: z.string().url().nullable(),
     imageFile: z.instanceof(File).nullable(),
-    source: z.enum(["purchase","opening"]),
+    source: z.enum(["purchase", "opening"]),
     variants: z.array(variantSchema),
   })
   .superRefine((data, ctx) => {
@@ -77,6 +88,12 @@ export const productSchema = z
       if (data.source === "opening") {
         openingRequiredFields.forEach(({ key, label }) => {
           if (!variant[key]) {
+            if (
+              (data.trackingType === "serial" && key === "quantity") ||
+              (data.trackingType !== "batch" && key === "batchNumber")
+            ) {
+              return;
+            }
             ctx.addIssue({
               code: "custom",
               path: ["variants", index, key],
@@ -108,7 +125,7 @@ export const productSchema = z
     // });
   });
 
-export const defaultValues:AddProductFormInput = {
+export const defaultValues: AddProductFormInput = {
   name: "",
   categoryId: null,
   brandId: null,
@@ -116,7 +133,7 @@ export const defaultValues:AddProductFormInput = {
   description: "",
   productType: "physical",
   hasVariants: false,
-  trackingType: "none",
+  trackingType: null,
   status: "active",
   imageUrl: null,
   imageFile: null,
@@ -140,7 +157,7 @@ export const defaultValues:AddProductFormInput = {
     },
   ],
 };
-export const createVariant = (variant: AllVariantsType):VariantType => ({
+export const createVariant = (variant: AllVariantsType): VariantType => ({
   sku: "",
   barcode: "",
   sellingPrice: 0,
@@ -174,6 +191,6 @@ export const emptyVariant: VariantType = {
   expiryDate: null,
   serialNumbers: [],
 };
-export type VariantType = z.infer<typeof variantSchema>
+export type VariantType = z.infer<typeof variantSchema>;
 export type AddProductFormInput = z.input<typeof productSchema>;
 export type AddProductFormOutput = z.output<typeof productSchema>;

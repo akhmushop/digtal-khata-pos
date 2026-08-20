@@ -17,3 +17,7 @@ export const inventorySources = [
   { value: "purchase", label: "Start with zero stock", title: "Default" },
   { value: "opening", label: "I already have stock", title: "Opening Stock" },
 ];
+export const variantStatus = [
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+];
