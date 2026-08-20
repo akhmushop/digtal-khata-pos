@@ -79,6 +79,7 @@ export interface InputFieldProps {
   name: FieldPath<AddProductFormInput>;
   type: "text" | "number" | "textArea";
   form: UseFormReturn<AddProductFormInput>;
+  disabled?: boolean;
 }
 export interface DatePickerSimpleProps {
   form: UseFormReturn<AddProductFormInput>;

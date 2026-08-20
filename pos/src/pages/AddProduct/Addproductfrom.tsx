@@ -133,6 +133,7 @@ import {
   productStatus,
   productTypes,
   trackingType,
+  variantStatus,
 } from "@/lib/constants.js";
 
 const ProductStockForm = () => {
@@ -658,7 +659,10 @@ const ProductStockForm = () => {
 };
 const SelectOptions = ({ options, label, form, name }: SelectOptionsProps) => {
   const items =
-    name === "productType" || name === "status" || name === "trackingType"
+    name === "productType" ||
+    name === "status" ||
+    name === "trackingType" ||
+    name === "unitId"
       ? options
       : [{ label: `Select ${label}`, value: null }, ...options];
   return (
@@ -680,7 +684,13 @@ const SelectOptions = ({ options, label, form, name }: SelectOptionsProps) => {
               aria-invalid={fieldState.invalid}
               className="w-full"
             >
-              <SelectValue />
+              <SelectValue
+                placeholder={
+                  name === "trackingType" || name === "unitId"
+                    ? `Select ${label}`
+                    : ""
+                }
+              />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
@@ -697,7 +707,14 @@ const SelectOptions = ({ options, label, form, name }: SelectOptionsProps) => {
     />
   );
 };
-function InputField({ placeholder, label, type, name, form }: InputFieldProps) {
+function InputField({
+  placeholder,
+  label,
+  type,
+  name,
+  form,
+  disabled,
+}: InputFieldProps) {
   return (
     <Controller
       name={name}
@@ -711,9 +728,15 @@ function InputField({ placeholder, label, type, name, form }: InputFieldProps) {
                 <InputGroupText>$</InputGroupText>
               </InputGroupAddon>
               <InputGroupInput
+                disabled={disabled}
                 id={field.name}
                 {...field}
-                value={typeof field.value === "number" ? field.value : ""}
+                value={
+                  typeof field.value === "string" ||
+                  typeof field.value === "number"
+                    ? field.value
+                    : ""
+                }
                 aria-invalid={fieldState.invalid}
                 placeholder={placeholder}
                 type={type}
@@ -814,11 +837,8 @@ function ProductInfoInput({
   const [hasSerials, setHasSerials] = useState(false);
   const hasVariants = form.watch("hasVariants");
   const serialNumbers = form.watch(`variants.${variantIndex}.serialNumbers`);
-  const variantStatus = [
-    { value: "active", label: "Active" },
-    { value: "inactive", label: "Inactive" },
-  ];
   const source = form.watch("source");
+  const trackingType = form.watch("trackingType");
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
       {source === "opening" && (
@@ -857,13 +877,16 @@ function ProductInfoInput({
       {/* Quantity */}
       {source === "opening" && (
         <div className="space-y-2">
-          <InputField
-            placeholder="0.00"
-            label="Quantity"
-            type="number"
-            name={`variants.${variantIndex}.quantity`}
-            form={form}
-          />
+          {
+            <InputField
+              disabled={trackingType !== "serial" ? false : true}
+              placeholder="0.00"
+              label="Quantity"
+              type="number"
+              name={`variants.${variantIndex}.quantity`}
+              form={form}
+            />
+          }
         </div>
       )}
       {/* Alert Quantity */}
@@ -887,7 +910,7 @@ function ProductInfoInput({
         />
       </div>
       {/* Batch Number */}
-      {source === "opening" && (
+      {source === "opening" && trackingType === "batch" && (
         <div className="space-y-2">
           <InputField
             placeholder="Enter Batch Number"
@@ -910,9 +933,11 @@ function ProductInfoInput({
         </div>
       )}
       {/* Expiry Date */}
-      <div className="space-y-2">
-        <DatePickerSimple form={form} index={variantIndex} />
-      </div>
+      {source === "opening" && trackingType === "batch" && (
+        <div className="space-y-2">
+          <DatePickerSimple form={form} index={variantIndex} />
+        </div>
+      )}
       {hasVariants && (
         <div className="space-y-2">
           <InputFile
@@ -933,25 +958,30 @@ function ProductInfoInput({
         />
       </div>
       {/* switch */}
-      <div className="col-span-3">
-        <div className="flex justify-end mb-5">
-          <div className="flex items-center space-x-2">
-            <Switch
-              checked={hasSerials}
-              onCheckedChange={(checked) => {
-                setHasSerials(checked); // Update the state
-                if (!checked) {
-                  replace([]);
-                }
-              }}
-              id="track-serials"
-            />
-            <Label htmlFor="track-serials">Track Serials</Label>
+      {/* {trackingType === "serial" && (
+        <div className="col-span-3">
+          <div className="flex justify-end mb-5">
+            <div className="flex items-center space-x-2">
+              <Switch
+                checked={hasSerials}
+                onCheckedChange={(checked) => {
+                  setHasSerials(checked); // Update the state
+                  if (!checked) {
+                    replace([]);
+                  }
+                }}
+                id="track-serials"
+              />
+              <Label htmlFor="track-serials">Track Serials</Label>
+            </div>
           </div>
         </div>
-      </div>
-      {hasSerials && (
+      )} */}
+      {trackingType === "serial" && source === "opening" && (
         <div className="space-y-2 col-span-3">
+          <p className="text-center">
+            The quantity will automatically equal the number of serial numbers
+          </p>
           {fields.map((field, serialIndex) => (
             <Controller
               key={serialIndex}
