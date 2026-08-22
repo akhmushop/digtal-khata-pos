@@ -1,4 +1,4 @@
-import { AddProductFormInput } from "@/schemas/product.schema";
+import { AddProductFormInput } from "@/features/products/product.schema";
 import {
   FieldPath,
   UseFieldArrayAppend,
@@ -110,8 +110,8 @@ export interface VariantRowProps {
   append: UseFieldArrayAppend<AddProductFormInput, "variants">;
   remove: UseFieldArrayRemove;
   replace: UseFieldArrayReplace<AddProductFormInput, "variants">;
-  comboboxVariantTypeName:string[]
-  allVariants:GeneratedVariant[]
+  comboboxVariantTypeName: string[];
+  allVariants: GeneratedVariant[];
 }
 export interface InputFileProps {
   urlName: FieldPath<AddProductFormInput>;

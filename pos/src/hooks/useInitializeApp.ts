@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useCustomerStore } from "../store/useCustomerStore";
-import { useProductStore } from "../store/useProductStore";
+import { useProductStore } from "../features/products/useProductStore";
 import { usePurchasesStore } from "../store/usePurchaseStore";
 import { useSoldStore } from "../store/useSalesStore";
 

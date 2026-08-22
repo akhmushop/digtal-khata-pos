@@ -1,10 +1,8 @@
-import {
-  getAddProductsSelectOptionsApi,
-  getAddProductVariantOptionsApi,
-} from "@/api/addProduct.api";
-import { AddProductType } from "@/types/addProduct.types";
+
+import { AddProductType } from "@/features/products/addProduct.types";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { create } from "zustand";
+import { getAddProductsSelectOptionsApi, getAddProductVariantOptionsApi } from "./addProduct.api";
 
 const useAddProductStore = create<AddProductType>((set) => ({
   addProductsSelectOptions: {

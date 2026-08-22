@@ -1,5 +1,5 @@
 import React, { SetStateAction, useState } from "react";
-import { useProductStore } from "../../store/useProductStore.js";
+import { useProductStore } from "../../features/products/useProductStore.js";
 import { useCartStore } from "../../store/useCartStore.js";
 import { PopupModal } from "./CartItems.js";
 import { ProductsTypes } from "../../types/products.types.js";

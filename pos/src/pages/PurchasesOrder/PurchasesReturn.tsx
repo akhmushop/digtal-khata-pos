@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import Sidebar from "../../components/layout/Sidebar.js";
 import { useNavigate, useParams } from "react-router";
 import { usePurchasesStore } from "../../store/usePurchaseStore.js";
-import { useProductStore } from "../../store/useProductStore.js";
+import { useProductStore } from "../../features/products/useProductStore.js";
 import toast, { Toaster } from "react-hot-toast";
 import type {
   ChangedItems,

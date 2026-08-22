@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useSoldStore } from "../../store/useSalesStore.js";
 import { PopupModal } from "../../components/pos/CartItems.jsx";
-import { useProductStore } from "../../store/useProductStore.js";
+import { useProductStore } from "../../features/products/useProductStore.js";
 import { create } from "zustand";
 import { AllSoldProduct, SalesStoreType } from "../../types/sales.types.js";
 

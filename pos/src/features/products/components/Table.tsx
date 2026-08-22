@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router";
-import { useSoldStore } from "../../store/useSalesStore.js";
 import {
   Search,
   ChevronDown,
@@ -36,14 +35,12 @@ import {
   Check,
   Minus,
 } from "lucide-react";
-import {
-  useProductStore,
-  useEditProductStore,
-} from "../../store/useProductStore.js";
-import { PopupModal } from "../pos/CartItems.js";
-import { Resizing, SortConfig } from "../../types/table.types.js";
-import { ProductsTypes } from "../../types/products.types.js";
-import { SalesStoreType } from "../../types/sales.types.js";
+import { Resizing, SortConfig } from "@/types/table.types";
+import { ProductsTypes } from "../products.types";
+import { useSoldStore } from "@/store/useSalesStore";
+import { useEditProductStore, useProductStore } from "../useProductStore";
+import {PopupModal} from "../../../components/pos/CartItems"
+
 const AdvancedPOSTable = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<SortConfig>({

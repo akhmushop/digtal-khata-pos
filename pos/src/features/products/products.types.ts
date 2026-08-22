@@ -1,4 +1,4 @@
-import { InitialFormData } from "./addProduct.types";
+
 
 export interface ProductsTypes {
   id: number;

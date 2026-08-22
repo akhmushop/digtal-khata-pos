@@ -1,6 +1,6 @@
 import React from "react";
 import { useCartStore } from "../../store/useCartStore.js";
-import { useProductStore } from "../../store/useProductStore.js";
+import { useProductStore } from "../../features/products/useProductStore.js";
 import type { ClickEmptyToResetCartProps } from "../../types/cart.types.js";
 export function ClickEmptyToResetCart({
   isOpen,

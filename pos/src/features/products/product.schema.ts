@@ -1,5 +1,5 @@
-import { GeneratedVariant } from "@/pages/AddProduct/Addproductfrom";
-import { AllVariantsType } from "@/types/addProduct.types";
+
+import { AllVariantsType, GeneratedVariant } from "@/features/products/addProduct.types";
 import { z } from "zod";
 const serialNumberSchema = z.object({
   serial: z.string().min(1, { message: "Serial number is required" }),
