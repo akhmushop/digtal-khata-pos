@@ -110,6 +110,8 @@ export interface VariantRowProps {
   append: UseFieldArrayAppend<AddProductFormInput, "variants">;
   remove: UseFieldArrayRemove;
   replace: UseFieldArrayReplace<AddProductFormInput, "variants">;
+  comboboxVariantTypeName:string[]
+  allVariants:GeneratedVariant[]
 }
 export interface InputFileProps {
   urlName: FieldPath<AddProductFormInput>;
@@ -125,3 +127,23 @@ export interface RadioGroupDescriptionProps {
     label: string;
   }[];
 }
+export type VariantOption = {
+  typeId: number;
+  typeName: string;
+  optionId: number;
+  value: string;
+};
+export type VariantOptionGroup = {
+  typeId: number;
+  typeName: string;
+  options: {
+    optionId: number;
+    value: string;
+  }[];
+};
+export type GeneratedVariant = {
+  options: VariantOption[];
+};
+export type HasVariantOptions = {
+  options?: VariantOption[] | undefined;
+};

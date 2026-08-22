@@ -1,3 +1,4 @@
+import { GeneratedVariant } from "@/pages/AddProduct/Addproductfrom";
 import { AllVariantsType } from "@/types/addProduct.types";
 import { z } from "zod";
 const serialNumberSchema = z.object({
@@ -5,10 +6,14 @@ const serialNumberSchema = z.object({
 });
 const variantSchema = z.object({
   options: z
-    .object({
-      color: z.string().min(1, "Color is required"),
-      size: z.string().min(1, "Size is required"),
-    })
+    .array(
+      z.object({
+        typeId: z.number().int(),
+        typeName: z.string(),
+        optionId: z.number().int(),
+        value: z.string(),
+      }),
+    )
     .optional(),
   sku: z.string().max(100),
   barcode: z.string().max(100),
@@ -63,18 +68,11 @@ export const productSchema = z
         });
       }
       data.variants.forEach((variant, index) => {
-        if (!variant.options?.color) {
+        if (!variant.options?.length) {
           ctx.addIssue({
             code: "custom",
-            path: ["variants", index, "options", "color"],
-            message: "Color is required",
-          });
-        }
-        if (!variant.options?.size) {
-          ctx.addIssue({
-            code: "custom",
-            path: ["variants", index, "options", "size"],
-            message: "Size is required",
+            path: ["variants", index, "options"],
+            message: "Variant options are required",
           });
         }
       });
@@ -157,7 +155,7 @@ export const defaultValues: AddProductFormInput = {
     },
   ],
 };
-export const createVariant = (variant: AllVariantsType): VariantType => ({
+export const createVariant = (variant: GeneratedVariant): VariantType => ({
   sku: "",
   barcode: "",
   sellingPrice: 0,
@@ -171,10 +169,7 @@ export const createVariant = (variant: AllVariantsType): VariantType => ({
   quantity: 0,
   expiryDate: null,
   serialNumbers: [],
-  options: {
-    color: variant.color,
-    size: variant.size,
-  },
+  options: variant.options,
 });
 export const emptyVariant: VariantType = {
   sku: "",

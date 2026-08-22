@@ -1,5 +1,4 @@
 import React, { Fragment, useEffect, useState } from "react";
-import toast, { Toaster } from "react-hot-toast";
 import {
   Select,
   SelectContent,
@@ -29,6 +28,7 @@ import {
   Trash2,
   SquareCheck,
   Square,
+  Group,
 } from "lucide-react";
 import { FaAnglesDown } from "react-icons/fa6";
 import {
@@ -43,12 +43,15 @@ import {
   AllVariantsType,
   DatePickerSimpleProps,
   Errors,
+  GeneratedVariant,
+  HasVariantOptions,
   InitialFormData,
   InputFieldProps,
   InputFileProps,
   ProductInfoInputProps,
   RadioGroupDescriptionProps,
   SelectOptionsProps,
+  VariantOptionGroup,
   VariantRowProps,
 } from "../../types/addProduct.types.js";
 import {
@@ -93,12 +96,17 @@ import { Label } from "@/components/ui/label";
 
 import {
   Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
   ComboboxContent,
   ComboboxEmpty,
-  ComboboxInput,
   ComboboxItem,
   ComboboxList,
+  ComboboxValue,
+  useComboboxAnchor,
 } from "@/components/ui/combobox";
+
 import {
   Table,
   TableBody,
@@ -114,6 +122,7 @@ import {
   useForm,
   useFieldArray,
   ControllerRenderProps,
+  UseFieldArrayReplace,
 } from "react-hook-form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
@@ -135,7 +144,92 @@ import {
   trackingType,
   variantStatus,
 } from "@/lib/constants.js";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge.js";
+import { toast } from "@/components/ui/toast.js";
+const variantOptions = [
+  {
+    typeId: 1,
+    typeName: "Color",
+    options: [
+      { optionId: 10, value: "Red" },
+      { optionId: 11, value: "Black" },
+      { optionId: 12, value: "White" },
+    ],
+  },
+  {
+    typeId: 2,
+    typeName: "Size",
+    options: [
+      { optionId: 250, value: "40" },
+      { optionId: 251, value: "41" },
+      { optionId: 242, value: "42" },
+    ],
+  },
+  {
+    typeId: 3,
+    typeName: "SizeT",
+    options: [
+      { optionId: 20, value: "40" },
+      { optionId: 21, value: "41" },
+      { optionId: 22, value: "42" },
+    ],
+  },
+];
 
+function generateVariants(
+  variantOptions: VariantOptionGroup[],
+): GeneratedVariant[] {
+  if (variantOptions.length === 0) {
+    return [];
+  }
+  return variantOptions.reduce<GeneratedVariant[]>(
+    (combinations, group) => {
+      return combinations.flatMap((combination) =>
+        group.options.map((option) => ({
+          options: [
+            ...combination.options,
+            {
+              typeId: group.typeId,
+              typeName: group.typeName,
+              optionId: option.optionId,
+              value: option.value,
+            },
+          ],
+        })),
+      );
+    },
+    [{ options: [] }],
+  );
+}
+const isSameVariant = (a: HasVariantOptions, b: HasVariantOptions) => {
+  const aOptions = a.options;
+  const bOptions = b.options;
+
+  if (!aOptions || !bOptions) {
+    return false;
+  }
+
+  if (aOptions.length !== bOptions.length) {
+    return false;
+  }
+
+  return aOptions.every((optionA) =>
+    bOptions.some(
+      (optionB) =>
+        optionA.typeId === optionB.typeId &&
+        optionA.optionId === optionB.optionId,
+    ),
+  );
+};
+
+const getVariantLabel = (variant: GeneratedVariant) => {
+  return variant.options.map((option) => option.value).join(" / ");
+};
 const ProductStockForm = () => {
   // const editingProduct = useEditProductStore((state) => state.editingProduct);
   // const [imagePreview, setImagePreview] = useState<string | null>(
@@ -415,7 +509,6 @@ const ProductStockForm = () => {
     getAddProductsSelectOptions();
     getAddProductVariantOptions();
   }, []);
-  console.log(addProductVariantOptions);
   return (
     <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
@@ -1020,7 +1113,7 @@ function ProductInfoInput({
             />
           ))}
           {serialNumbers?.length === 0 && (
-            <div className="h-15 w-full border border-black border-dashed rounded flex items-center justify-center">
+            <div className="h-15 w-full border border-gray border-dashed rounded flex items-center justify-center">
               <p>No serial numbers tracked. Click “Add serial” to start.</p>
             </div>
           )}
@@ -1054,6 +1147,13 @@ export function AccordionCard({
   replace,
   remove,
 }: AccordionCardProps) {
+  const [comboboxVariantTypeName, setComboboxVariantTypeName] = useState<
+    string[]
+  >([]);
+  const filtered = variantOptions.filter((option) =>
+    comboboxVariantTypeName.includes(option.typeName),
+  );
+  const allVariants = generateVariants(filtered);
   const handleHasVariantsChange = (value: boolean) => {
     form.setValue("hasVariants", value);
 
@@ -1066,6 +1166,7 @@ export function AccordionCard({
     }
   };
   const hasVariants = form.watch("hasVariants");
+  const variants = form.watch("variants") || [];
   return (
     <Card className="w-full">
       <CardHeader>
@@ -1092,68 +1193,112 @@ export function AccordionCard({
             </div>
           </div>
         </div>
-        <CardDescription>Inventory and pricing details</CardDescription>
+        <CardDescription>
+          Toggle on if this product comes in multiple sizes, colors, or other
+          options.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         {hasVariants ? (
-          <div>
-            <ComboboxBasic />
+          <div className="flex flex-col gap-5">
+            <ComboboxMultiple
+              setComboboxVariantTypeName={setComboboxVariantTypeName}
+              replace={replace}
+            />
+            {allVariants.length !== 0 && (
+              <div className="flex justify-between">
+                <div className="flex gap-5">
+                  <p>
+                    Generated Variants
+                    <Badge variant="outline"> {allVariants.length} </Badge>
+                  </p>
+                  <p>
+                    Variant Added
+                    <Badge variant="outline"> {variants.length} </Badge>
+                  </p>
+                </div>
+                <p>Click Square Icon to Add Variant</p>
+              </div>
+            )}
             <VariantRow
               form={form}
               append={append}
               remove={remove}
               replace={replace}
+              comboboxVariantTypeName={comboboxVariantTypeName}
+              allVariants={allVariants}
             />
           </div>
         ) : (
-          <ProductInfoInput form={form} variantIndex={0} />
+          <Card>
+            <CardHeader>Pricing & Inventory</CardHeader>
+            <CardContent>
+              <ProductInfoInput form={form} variantIndex={0} />
+            </CardContent>
+          </Card>
         )}
       </CardContent>
     </Card>
   );
 }
-const variants = ["Shoe", "Fashion", "Nuxt.js", "Remix", "Astro"] as const;
-const shoe = [
-  { type: "color", value: "red" },
-  { type: "color", value: "black" },
-  { type: "color", value: "white" },
-  { type: "size", value: "40" },
-  { type: "size", value: "41" },
-  { type: "size", value: "42" },
-];
-const colors = shoe.filter((v) => v.type === "color").map((v) => v.value);
-
-const sizes = shoe.filter((v) => v.type === "size").map((v) => v.value);
-
-const allVariants = colors.flatMap((color) =>
-  sizes.map((size) => ({
-    color,
-    size,
-  })),
-);
-export function ComboboxBasic() {
+export function ComboboxMultiple({
+  setComboboxVariantTypeName,
+  replace,
+}: {
+  setComboboxVariantTypeName: React.Dispatch<React.SetStateAction<string[]>>;
+  replace: UseFieldArrayReplace<AddProductFormInput, "variants">;
+}) {
+  const anchor = useComboboxAnchor();
   return (
-    <Combobox
-      items={variants}
-      onValueChange={(value) => {
-        console.log(value);
-      }}
-    >
-      <ComboboxInput placeholder="Select a Variant" showClear />
-      <ComboboxContent>
-        <ComboboxEmpty>No Variant found.</ComboboxEmpty>
-        <ComboboxList>
-          {(item) => (
-            <ComboboxItem key={item} value={item}>
-              {item}
-            </ComboboxItem>
-          )}
-        </ComboboxList>
-      </ComboboxContent>
-    </Combobox>
+    <Field>
+      <FieldLabel>Variant Types</FieldLabel>
+
+      <Combobox
+        multiple
+        autoHighlight
+        items={variantOptions.map((item) => item.typeName)}
+        onValueChange={(value) => {
+          replace([]);
+          setComboboxVariantTypeName(value as string[]);
+        }}
+      >
+        <ComboboxChips ref={anchor} className="w-full">
+          <ComboboxValue>
+            {(values) => (
+              <React.Fragment>
+                {values.map((value: string) => (
+                  <ComboboxChip key={value}>{value}</ComboboxChip>
+                ))}
+                <ComboboxChipsInput placeholder="Select a Variant Types" />
+              </React.Fragment>
+            )}
+          </ComboboxValue>
+        </ComboboxChips>
+        <ComboboxContent anchor={anchor}>
+          <ComboboxEmpty>No Variant Type found.</ComboboxEmpty>
+          <ComboboxList>
+            {(item) => (
+              <ComboboxItem key={item} value={item}>
+                {item}
+              </ComboboxItem>
+            )}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
+      <FieldDescription>
+        Pick the dimensions you want to vary on.{" "}
+      </FieldDescription>
+    </Field>
   );
 }
-export function VariantRow({ form, append, remove, replace }: VariantRowProps) {
+export function VariantRow({
+  form,
+  append,
+  remove,
+  replace,
+  comboboxVariantTypeName,
+  allVariants,
+}: VariantRowProps) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const variants = form.watch("variants") || [];
   const defaultIndex = variants.findIndex(
@@ -1165,15 +1310,27 @@ export function VariantRow({ form, append, remove, replace }: VariantRowProps) {
     variants.forEach((_, index) => {
       form.setValue(`variants.${index}.isDefault`, index === selectedIndex);
     });
-  };
-  const isAdded = (variant: AllVariantsType) => {
-    return variants.some(
-      (item) =>
-        item.options?.color === variant.color &&
-        item.options?.size === variant.size,
+
+    const defaultVariant = variants.find(
+      (variant) => variant.isDefault === true,
     );
+    toast.add({
+      description: (
+        <span>
+          Default variant updated{" "}
+          {defaultVariant?.options?.map((option) => (
+            <span key={option.typeId}>
+              {option.typeName} {option.value}{" "}
+            </span>
+          ))}
+        </span>
+      ),
+    });
   };
-  const handleAddVariant = (variant: AllVariantsType) => {
+  const isAdded = (variant: GeneratedVariant) => {
+    return variants.some((item) => isSameVariant(item, variant));
+  };
+  const handleAddVariant = (variant: GeneratedVariant) => {
     if (isAdded(variant)) {
       return;
     }
@@ -1190,10 +1347,8 @@ export function VariantRow({ form, append, remove, replace }: VariantRowProps) {
     let isFirst = currentVariants.length === 0;
 
     allVariants.forEach((variant) => {
-      const alreadyExists = currentVariants.some(
-        (item) =>
-          item.options?.color === variant.color &&
-          item.options?.size === variant.size,
+      const alreadyExists = currentVariants.some((item) =>
+        isSameVariant(item, variant),
       );
 
       if (!alreadyExists) {
@@ -1221,135 +1376,186 @@ export function VariantRow({ form, append, remove, replace }: VariantRowProps) {
       form.setValue(`variants.${newDefaultIndex}.isDefault`, true);
     }
   };
-  return (
-    <RadioGroup
-      className="contents"
-      value={defaultIndex === -1 ? "" : String(defaultIndex)}
-      onValueChange={handleDefaultChange}
-    >
-      <Table>
-        <TableCaption>A list of your recent invoices.</TableCaption>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[20%]">Variant</TableHead>
-            <TableHead className="w-[35%]">Sku</TableHead>
-            <TableHead className="w-[35%]">Selling Price</TableHead>
-            <TableHead className="w-[5%]">
-              <div className="flex items-center justify-center">
-                Added({variants.length}){" "}
-                {isAddedAll ? (
-                  <Square onClick={handleAddAllVariants} />
-                ) : (
-                  <SquareCheck
-                    onClick={() => {
+  const isAllAdded =
+    allVariants.length > 0 && variants.length === allVariants.length;
+  const isSomethingAdded =
+    variants.length > 0 && variants.length !== allVariants.length;
+  return allVariants.length !== 0 ? (
+    <div className="border rounded">
+      <RadioGroup
+        className="contents"
+        value={defaultIndex === -1 ? "" : String(defaultIndex)}
+        onValueChange={handleDefaultChange}
+      >
+        <Table>
+          <TableCaption>A list of Variations.</TableCaption>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[20%]">Variant</TableHead>
+              <TableHead className="w-[35%]">Sku</TableHead>
+              <TableHead className="w-[35%]">Selling Price</TableHead>
+              <TableHead className="w-[10%]">
+                <Button
+                  size="icon"
+                  variant={
+                    isAllAdded
+                      ? "default"
+                      : isSomethingAdded
+                        ? "secondary"
+                        : "ghost"
+                  }
+                  onClick={() => {
+                    if (isAllAdded) {
                       replace([]);
-                      setIsAddedAll(true);
-                    }}
-                  />
-                )}
-              </div>
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {allVariants.map((variant, index) => {
-            const variantIndex = variants.findIndex(
-              (item) =>
-                item.options?.color === variant.color &&
-                item.options?.size === variant.size,
-            );
-            const added = variantIndex !== -1;
-            const isDefault =
-              added && form.watch(`variants.${variantIndex}.isDefault`);
-            const id = `${variant.color}-${variant.size}`;
-            const radioId = `radio-${id}`;
-            return (
-              <Fragment key={id}>
-                <TableRow>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      {added && (
-                        <RadioGroupItem
-                          value={String(variantIndex)}
-                          id={radioId}
-                        />
-                      )}
-                      {variant.color.charAt(0).toUpperCase() +
-                        variant.color.slice(1)}
-                      /{variant.size}
-                      {isDefault && <Label htmlFor={radioId}>Default</Label>}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {added ? (
-                      <InputField
-                        placeholder="auto-generated if blank"
-                        type="text"
-                        name={`variants.${variantIndex}.sku`}
-                        form={form}
-                      />
-                    ) : (
-                      <span className="text-sm text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {added ? (
-                      <InputField
-                        placeholder="0.00"
-                        type="number"
-                        name={`variants.${variantIndex}.sellingPrice`}
-                        form={form}
-                      />
-                    ) : (
-                      <span className="text-sm text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-
-                  <TableCell>
-                    <div className="flex justify-center items-center w-full">
+                    } else {
+                      handleAddAllVariants();
+                    }
+                  }}
+                >
+                  {isAllAdded || isSomethingAdded ? (
+                    <SquareCheck className="text-blue-60" />
+                  ) : (
+                    <Square />
+                  )}
+                </Button>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {allVariants.map((variant, index) => {
+              const variantIndex = variants.findIndex((item) =>
+                isSameVariant(item, variant),
+              );
+              const added = variantIndex !== -1;
+              const isDefault =
+                added && form.watch(`variants.${variantIndex}.isDefault`);
+              const id = variant.options
+                .map((option) => `${option.typeId}-${option.optionId}`)
+                .join("-");
+              const radioId = `radio-${id}`;
+              return (
+                <Fragment key={id}>
+                  <TableRow>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        {added && (
+                          <RadioGroupItem
+                            value={String(variantIndex)}
+                            id={radioId}
+                          />
+                        )}
+                        {getVariantLabel(variant)}
+                        {isDefault && <Label htmlFor={radioId}>Default</Label>}
+                      </div>
+                    </TableCell>
+                    <TableCell>
                       {added ? (
-                        <SquareCheck
-                          onClick={() => {
-                            handleSquareCheck(variantIndex);
-                          }}
+                        <InputField
+                          placeholder="auto-generated if blank"
+                          type="text"
+                          name={`variants.${variantIndex}.sku`}
+                          form={form}
                         />
                       ) : (
-                        <Square
-                          onClick={() => {
-                            handleAddVariant(variant);
-                          }}
-                        />
+                        <span className="text-sm text-muted-foreground">—</span>
                       )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {added && (
-                      <ChevronDown
-                        onClick={() => {
-                          setExpanded(expanded === id ? null : id);
-                        }}
-                        className={`cursor-pointer size-5 transition-transform duration-300   ${expanded === id ? "rotate-180" : "rotate-0"}`}
-                      />
-                    )}
-                  </TableCell>
-                </TableRow>
-                {expanded === id && added && (
-                  <TableRow key={`${id}-${added}`}>
-                    <TableCell className="py-5" colSpan={5}>
-                      <ProductInfoInput
-                        form={form}
-                        variantIndex={variantIndex}
-                        remove={remove}
-                      />
+                    </TableCell>
+                    <TableCell>
+                      {added ? (
+                        <InputField
+                          placeholder="0.00"
+                          type="number"
+                          name={`variants.${variantIndex}.sellingPrice`}
+                          form={form}
+                        />
+                      ) : (
+                        <span className="text-sm text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+
+                    <TableCell>
+                      <div className="flex">
+                        {added ? (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => {
+                              setExpanded(null);
+                              handleSquareCheck(variantIndex);
+                            }}
+                          >
+                            <SquareCheck />
+                          </Button>
+                        ) : (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => {
+                              handleAddVariant(variant);
+                            }}
+                          >
+                            <Square />
+                          </Button>
+                        )}
+                        <Tooltip>
+                          <TooltipTrigger
+                            render={
+                              <span>
+                                <Button
+                                  onClick={() => {
+                                    if (!added) return;
+                                    setExpanded(expanded === id ? null : id);
+                                  }}
+                                  variant="ghost"
+                                  size="icon"
+                                  className={
+                                    !added
+                                      ? "opacity-50 cursor-not-allowed"
+                                      : ""
+                                  }
+                                >
+                                  <ChevronDown
+                                    className={`cursor-pointer size-5 transition-transform duration-300  ${expanded === id ? "rotate-180" : "rotate-0"}`}
+                                  />
+                                </Button>
+                              </span>
+                            }
+                          />
+                          <TooltipContent>
+                            {added ? (
+                              <p>Expand / Collapse</p>
+                            ) : (
+                              <p>Add variant first</p>
+                            )}
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                     </TableCell>
                   </TableRow>
-                )}
-              </Fragment>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </RadioGroup>
+                  {expanded === id && added && (
+                    <TableRow key={`${id}-${added}`}>
+                      <TableCell className="py-5" colSpan={5}>
+                        <ProductInfoInput
+                          form={form}
+                          variantIndex={variantIndex}
+                          remove={remove}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </Fragment>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </RadioGroup>
+    </div>
+  ) : (
+    <div className="h-15 w-full border border-gray border-dashed rounded flex items-center justify-center">
+      <p>
+        Select at least one variant type above to generate the variant matrix.
+      </p>
+    </div>
   );
 }
 export function InputFile({ urlName, fileName, form, label }: InputFileProps) {
