@@ -4,7 +4,7 @@ import { FiMinusCircle } from "react-icons/fi";
 import { HiDotsVertical } from "react-icons/hi";
 import { ClickToShowMore } from "./CartMoreMenu.js";
 import { ClickEmptyToResetCart } from "./CartEmptyBtn.js";
-import { useProductStore } from "../../store/useProductStore.js";
+import { useProductStore } from "../../features/products/useProductStore.js";
 import { useCartStore } from "../../store/useCartStore.js";
 import { useSoldStore } from "../../store/useSalesStore.js";
 import axios from "../../api/axios.js";

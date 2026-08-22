@@ -31,13 +31,9 @@ import {
   Group,
 } from "lucide-react";
 import { FaAnglesDown } from "react-icons/fa6";
-import {
-  useProductStore,
-  useEditProductStore,
-} from "../../store/useProductStore.js";
+import { useProductStore, useEditProductStore } from "../useProductStore.js";
 import { replace, useLocation, useNavigate } from "react-router";
 import { useBlocker } from "react-router";
-import { ProductsTypes } from "../../types/products.types.js";
 import {
   AccordionCardProps,
   AllVariantsType,
@@ -53,7 +49,7 @@ import {
   SelectOptionsProps,
   VariantOptionGroup,
   VariantRowProps,
-} from "../../types/addProduct.types.js";
+} from "../addProduct.types.js";
 import {
   Field,
   FieldLabel,
@@ -132,18 +128,18 @@ import {
   defaultValues,
   emptyVariant,
   productSchema,
-} from "@/schemas/product.schema.js";
+} from "@/features/products/product.schema.js";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { number } from "zod";
 import { VariantProps } from "class-variance-authority";
-import useAddProductStore from "@/store/useAddProductStore.js";
+import useAddProductStore from "@/features/products/useAddProductStore.js";
 import {
   inventorySources,
   productStatus,
   productTypes,
   trackingType,
   variantStatus,
-} from "@/lib/constants.js";
+} from "@/features/products/constants.js";
 import {
   Tooltip,
   TooltipContent,

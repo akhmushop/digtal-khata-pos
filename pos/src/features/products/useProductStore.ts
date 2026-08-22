@@ -1,19 +1,11 @@
 import { Network } from "lucide-react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import axios from "../api/axios.js";
-import type {
-  ProductsStore,
-  EditingProductsStore,
-} from "../types/products.types.js";
-import {
-  createProductApi,
-  deleteProductByIdApi,
-  duplicateProductApi,
-  getProductsApi,
-  updateProductByIdApi,
-  updateStockByIdApi,
-} from "../api/products.api.js";
+import axios from "../../api/axios.js";
+import { EditingProductsStore, ProductsStore } from "./products.types.js";
+import { createProductApi, deleteProductByIdApi, duplicateProductApi, getProductsApi, updateProductByIdApi, updateStockByIdApi } from "./products.api.js";
+
+
 // export const useProductStore = create(
 //   persist(
 //     (set) => ({

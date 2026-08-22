@@ -5,7 +5,7 @@ import { RiHome9Fill } from "react-icons/ri";
 import { MdOutlineAddCircleOutline, MdDeleteOutline } from "react-icons/md";
 import { FiMinusCircle } from "react-icons/fi";
 import { HiDotsVertical } from "react-icons/hi";
-import { useProductStore } from "../../store/useProductStore.js";
+import { useProductStore } from "../../features/products/useProductStore.js";
 import axios from "../../api/axios.js";
 import type { PurchaseCart, Suppliers } from "../../types/purchases.types.js";
 import type { ProductsTypes } from "../../types/products.types.js";

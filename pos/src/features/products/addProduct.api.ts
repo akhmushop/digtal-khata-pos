@@ -1,4 +1,4 @@
-import axios from "./axios.js";
+import axios from "./../../api/axios.js";
 
 export async function getAddProductsSelectOptionsApi() {
   const { data } = await axios.get("/add-product/select-options");

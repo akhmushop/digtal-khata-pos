@@ -1,8 +1,8 @@
 import { createBrowserRouter, RouterProvider } from "react-router";
 import Pos from "../pages/POS/POS";
 import { AddCustomerModal } from "../pages/Customer/Customer";
-import AddProduct from "../pages/AddProduct/AddProduct";
-import ProductStockForm from "../pages/AddProduct/Addproductfrom";
+import AddProduct from "../features/products/pages/ProductsPage";
+import ProductStockForm from "../features/products/pages/AddProductPage";
 import DashboardComponent from "../pages/Dashboard/Dashboard";
 import { Sales } from "../pages/Sales/Sales";
 import { Expense } from "../pages/Expense/Expense";
