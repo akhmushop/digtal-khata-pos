@@ -22,7 +22,6 @@ export function VariantTableRow({
   onAddVariant,
   onRemoveVariant,
 }: VariantTableRowProps) {
-  console.log(variant);
   const variants = form.watch("variants") || [];
   const variantIndex = variants.findIndex((item) =>
     isSameVariant(item, variant),

@@ -1,12 +1,4 @@
 import { useEffect } from "react";
-
-import { Package, Grid, Save } from "lucide-react";
-import { useProductStore, useEditProductStore } from "../useProductStore.js";
-import { replace, useLocation, useNavigate } from "react-router";
-import { useBlocker } from "react-router";
-
-import { Button } from "@/components/ui/button";
-
 import { useForm, useFieldArray } from "react-hook-form";
 import {
   AddProductFormInput,
@@ -16,12 +8,17 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import useAddProductStore from "@/features/products/useAddProductStore.js";
 import { defaultValues } from "../constants/form-defaults.js";
-import { InputField } from "../components/addProductPage/InputField.js";
-import { SelectOptions } from "../components/addProductPage/SelectOptions.js";
-import { inventorySources, productStatus, productTypes, trackingType } from "../constants/form-status.js";
-import { AccordionCard } from "../components/addProductPage/AccordionCard.js";
-import { InputFile } from "../components/addProductPage/InputFile.js";
-import { InventorySourceSelector } from "../components/addProductPage/InventorySourceSelector.js";
+import { VariantsInfoCard } from "../components/addProductPage/VariantsInfoCard.js";
+import { GeneralInfoCard } from "../components/addProductPage/GeneralInfoCard.js";
+import { RightColumnInfoCard } from "../components/addProductPage/RightColumnInfoCard.js";
+import { SaveAndUpdateActionsCard } from "../components/addProductPage/SaveAndUpdateActionsCard.js";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card.js";
 
 const ProductStockForm = () => {
   // const editingProduct = useEditProductStore((state) => state.editingProduct);
@@ -290,259 +287,51 @@ const ProductStockForm = () => {
     control: form.control,
     name: "variants",
   });
-  const rootErrors = form.formState.errors.variants?.root?.message;
-  const errors = form.formState.errors.variants?.message;
-  const {
-    addProductsSelectOptions,
-    getAddProductsSelectOptions,
-    getAddProductVariantOptions,
-    addProductVariantOptions,
-  } = useAddProductStore();
+  const { getAddProductsSelectOptions, getAddProductVariantOptions } =
+    useAddProductStore();
   useEffect(() => {
     getAddProductsSelectOptions();
     getAddProductVariantOptions();
   }, []);
   return (
     <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Success Message */}
-        {/* {showSuccess && (
-          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3 animate-fade-in">
-            <CheckCircle className="w-5 h-5 text-green-600" />
-            <span className="text-green-800 font-medium">
-              Product saved successfully!
-            </span>
-          </div>
-        )} */}
+      <Card className="max-w-7xl mx-auto">
+        <CardHeader>
+          <CardTitle>Product Stock Management</CardTitle>
+          <CardDescription>
+            Add and manage inventory with detailed specifications
+          </CardDescription>
+        </CardHeader>
 
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Product Stock Management
-              </h1>
-              <p className="text-gray-600 mt-1">
-                Add and manage inventory with detailed specifications
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
-                Active Form
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="bg-white rounded-2xl shadow-xl overflow-hidden"
-        >
-          <div className="p-6 md:p-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Left Column - Form Fields */}
-              <div className="lg:col-span-2 space-y-8">
-                {/* General Information Card */}
-                <div className="bg-linear-to-br from-white to-gray-50 rounded-xl border border-gray-200 p-6">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 bg-blue-50 rounded-lg">
-                      <Package className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-semibold text-gray-800">
-                        General Information
-                      </h2>
-                      <p className="text-sm text-gray-500">
-                        Basic product details
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {/* Product Name */}
-                    <div className="space-y-2">
-                      <InputField
-                        placeholder="Enter Product Name"
-                        label="Product Name"
-                        type="text"
-                        name="name"
-                        form={form}
-                      />
-                    </div>
-                    {/* Product Unit */}
-                    <div className="space-y-2">
-                      <SelectOptions
-                        options={addProductsSelectOptions.units}
-                        label="Product Unit"
-                        form={form}
-                        name="unitId"
-                      />
-                    </div>
-                    {/* Product Type */}
-                    <div className="space-y-2">
-                      <SelectOptions
-                        options={productTypes}
-                        label="Product Type"
-                        form={form}
-                        name="productType"
-                      />
-                    </div>
-
-                    {/* Product Description */}
-                    <div className="col-span-3">
-                      <InputField
-                        placeholder="Enter your message"
-                        label="Product Description"
-                        type="textArea"
-                        name="description"
-                        form={form}
-                      />
-                    </div>
-                  </div>
+        <CardContent>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <div className="md:p-8">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left Column - Form Fields */}
+                <div className="lg:col-span-2 space-y-8">
+                  {/* General Information Card */}
+                  <GeneralInfoCard form={form} />
+                  {/* Stock Information Card */}
+                  <VariantsInfoCard
+                    form={form}
+                    append={append}
+                    replace={replace}
+                    remove={remove}
+                  />
                 </div>
 
-                {/* Stock Information Card */}
-
-                <AccordionCard
-                  form={form}
-                  append={append}
-                  replace={replace}
-                  remove={remove}
-                />
-              </div>
-
-              {/* Right Column - Image & Additional Info */}
-              <div className="space-y-8">
-                {/* More Information Card */}
-                <div className="bg-linear-to-br from-white to-gray-50 rounded-xl border border-gray-200 p-6">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 bg-purple-50 rounded-lg">
-                      <Grid className="w-5 h-5 text-purple-600" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-semibold text-gray-800">
-                        More Information
-                      </h2>
-                      <p className="text-sm text-gray-500">
-                        Additional product details
-                      </p>
-                    </div>
-                  </div>
-                  <div className="space-y-5">
-                    {/* image */}
-                    <div className="space-y-2">
-                      <InputFile
-                        urlName={`imageUrl`}
-                        fileName={`imageFile`}
-                        form={form}
-                        label="Default Image"
-                      />
-                    </div>
-                    {/* Tracking Type */}
-                    <div className="space-y-2">
-                      <SelectOptions
-                        options={trackingType}
-                        label="Tracking Type"
-                        form={form}
-                        name="trackingType"
-                      />
-                    </div>
-                    {/* status */}
-                    <div className="space-y-2">
-                      <SelectOptions
-                        options={productStatus}
-                        label="Status"
-                        form={form}
-                        name="status"
-                      />
-                    </div>
-                    {/* inventoryOptions */}
-                    <div className="space-y-2">
-                      <InventorySourceSelector
-                        form={form}
-                        inventoryOptions={inventorySources}
-                      />
-                    </div>
-                    {/* Supplier */}
-                    <div className="space-y-2">
-                      <SelectOptions
-                        options={addProductsSelectOptions.suppliers}
-                        label="Select a supplier"
-                        form={form}
-                        name="supplierId"
-                      />
-                    </div>
-
-                    {/* Brand */}
-                    <div className="space-y-2">
-                      <SelectOptions
-                        options={addProductsSelectOptions.brands}
-                        label="Brand"
-                        form={form}
-                        name="brandId"
-                      />
-                    </div>
-
-                    {/* Categories */}
-                    <div className="space-y-2">
-                      <SelectOptions
-                        options={addProductsSelectOptions.categories}
-                        label="Categories"
-                        form={form}
-                        name="categoryId"
-                      />
-                    </div>
-
-                    {/* Tags */}
-                    {/* <div className="space-y-2">
-                      <InputField
-                        placeholder="Add tags separated by commas"
-                        label="Tags"
-                        type="text"
-                        name="tags"
-                        form={form}
-                      />
-                    </div> */}
-                  </div>
-                </div>
-
-                {/* Save Actions */}
-                <div className="bg-linear-to-br from-white to-gray-50 rounded-xl border border-gray-200 p-6">
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <Button type="button" className=" px-4 py-3 ">
-                      Cancel
-                    </Button>
-                    {false ? (
-                      <Button
-                        type="submit"
-                        className="flex-1 px-4 py-3 bg-green-700 "
-                      >
-                        <Save className="w-5 h-5" />
-                        Update Product
-                      </Button>
-                    ) : (
-                      <Button type="submit" className="flex-1 px-4 py-3 ">
-                        <Save className="w-5 h-5" />
-                        Save Product
-                      </Button>
-                    )}
-                  </div>
-                  {/* Check for both root.message and message to cover all states */}
-                  {(rootErrors || errors) && (
-                    <p className="text-sm font-medium text-destructive mt-2">
-                      {rootErrors || errors}
-                    </p>
-                  )}
-                  <p className="text-xs text-gray-500 text-center mt-4">
-                    All required fields are marked with{" "}
-                    <span className="text-red-500">*</span>
-                  </p>
+                {/* Right Column - Image & Additional Info */}
+                <div className="space-y-8">
+                  {/* More Information Card */}
+                  <RightColumnInfoCard form={form} />
+                  {/* Save Actions */}
+                  <SaveAndUpdateActionsCard form={form} />
                 </div>
               </div>
             </div>
-          </div>
-        </form>
-      </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 };
