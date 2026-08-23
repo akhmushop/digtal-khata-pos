@@ -1,5 +1,4 @@
 
-import { AllVariantsType, GeneratedVariant } from "@/features/products/addProduct.types";
 import { z } from "zod";
 const serialNumberSchema = z.object({
   serial: z.string().min(1, { message: "Serial number is required" }),
@@ -122,70 +121,6 @@ export const productSchema = z
     //   }
     // });
   });
-
-export const defaultValues: AddProductFormInput = {
-  name: "",
-  categoryId: null,
-  brandId: null,
-  unitId: null,
-  description: "",
-  productType: "physical",
-  hasVariants: false,
-  trackingType: null,
-  status: "active",
-  imageUrl: null,
-  imageFile: null,
-  supplierId: null,
-  source: "purchase",
-  variants: [
-    {
-      sku: "",
-      barcode: "",
-      sellingPrice: 0,
-      alertQuantity: 0,
-      isDefault: true,
-      status: "active",
-      imageUrl: null,
-      imageFile: null,
-      purchasePrice: 0,
-      quantity: 0,
-      expiryDate: null,
-      batchNumber: "",
-      serialNumbers: [],
-    },
-  ],
-};
-export const createVariant = (variant: GeneratedVariant): VariantType => ({
-  sku: "",
-  barcode: "",
-  sellingPrice: 0,
-  alertQuantity: 0,
-  isDefault: false,
-  status: "active",
-  imageUrl: null,
-  imageFile: null,
-  batchNumber: "",
-  purchasePrice: 0,
-  quantity: 0,
-  expiryDate: null,
-  serialNumbers: [],
-  options: variant.options,
-});
-export const emptyVariant: VariantType = {
-  sku: "",
-  barcode: "",
-  sellingPrice: 0,
-  alertQuantity: 0,
-  isDefault: true,
-  status: "active",
-  imageUrl: null,
-  imageFile: null,
-  batchNumber: "",
-  purchasePrice: 0,
-  quantity: 0,
-  expiryDate: null,
-  serialNumbers: [],
-};
 export type VariantType = z.infer<typeof variantSchema>;
 export type AddProductFormInput = z.input<typeof productSchema>;
 export type AddProductFormOutput = z.output<typeof productSchema>;

@@ -59,10 +59,7 @@ export interface AddProductType {
       label: string;
     }[];
   };
-  addProductVariantOptions: {
-    type: string;
-    values: string[];
-  }[];
+  addProductVariantOptions: VariantOptionGroup[];
   loading: boolean;
   error: string | null;
   getAddProductsSelectOptions: () => void;
@@ -86,7 +83,7 @@ export interface InputFieldProps {
   form: UseFormReturn<AddProductFormInput>;
   disabled?: boolean;
 }
-export interface DatePickerSimpleProps {
+export interface ExpiryDatePickerProps {
   form: UseFormReturn<AddProductFormInput>;
   index: number;
 }
@@ -119,7 +116,7 @@ export interface InputFileProps {
   form: UseFormReturn<AddProductFormInput>;
   label: string;
 }
-export interface RadioGroupDescriptionProps {
+export interface InventorySourceSelectorProps {
   form: UseFormReturn<AddProductFormInput>;
   inventoryOptions: {
     value: string;
@@ -146,4 +143,13 @@ export type GeneratedVariant = {
 };
 export type HasVariantOptions = {
   options?: VariantOption[] | undefined;
+};
+export type VariantTableRowProps = {
+  variant: GeneratedVariant;
+  form: UseFormReturn<AddProductFormInput>;
+  remove: UseFieldArrayRemove;
+  expanded: string | null;
+  setExpanded: React.Dispatch<React.SetStateAction<string | null>>;
+  onAddVariant: (variant: GeneratedVariant) => void;
+  onRemoveVariant: (variantIndex: number) => void;
 };
