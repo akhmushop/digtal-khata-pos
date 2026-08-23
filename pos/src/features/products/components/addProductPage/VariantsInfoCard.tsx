@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -15,10 +16,10 @@ import useAddProductStore from "../../useAddProductStore";
 import { generateVariants } from "../../utils/generate-variants";
 import { emptyVariant } from "../../constants/form-defaults";
 import { MultipleVariantSelector } from "./MultipleVariantSelector";
-import { VariantRow } from "./VariantRow";
+import { VariantsTable } from "./VariantsTable";
 import { ProductInfoInput } from "./ProductInfoInput";
 import { AccordionCardProps } from "../../addProduct.types";
-export function AccordionCard({
+export function VariantsInfoCard({
   form,
   append,
   replace,
@@ -48,33 +49,28 @@ export function AccordionCard({
   return (
     <Card className="w-full">
       <CardHeader>
-        <div className="flex justify-between">
-          <div className="flex gap-2 justify-between">
-            <ShoppingBag className="w-5 h-5 text-green-600" />
-            <CardTitle>Variants</CardTitle>
-          </div>
-          <div>
-            <div className="flex items-center space-x-2">
-              <Controller
-                name="hasVariants"
-                control={form.control}
-                render={({ field }) => (
-                  <Switch
-                    id="has-variants"
-                    checked={field.value}
-                    onCheckedChange={handleHasVariantsChange}
-                  />
-                )}
-              />
-
-              <Label htmlFor="has-variants">Has Variants</Label>
-            </div>
-          </div>
-        </div>
+        <CardTitle className="flex items-center gap-2">
+          <ShoppingBag className="text-green-500" />
+          Variants
+        </CardTitle>
         <CardDescription>
           Toggle on if this product comes in multiple sizes, colors, or other
           options.
         </CardDescription>
+        <CardAction className="flex items-center gap-2">
+          <Controller
+            name="hasVariants"
+            control={form.control}
+            render={({ field }) => (
+              <Switch
+                id="has-variants"
+                checked={field.value}
+                onCheckedChange={handleHasVariantsChange}
+              />
+            )}
+          />
+          <Label htmlFor="has-variants">Has Variants</Label>
+        </CardAction>
       </CardHeader>
       <CardContent>
         {hasVariants ? (
@@ -98,7 +94,7 @@ export function AccordionCard({
                 <p>Click Square Icon to Add Variant</p>
               </div>
             )}
-            <VariantRow
+            <VariantsTable
               form={form}
               append={append}
               remove={remove}
@@ -109,7 +105,9 @@ export function AccordionCard({
           </div>
         ) : (
           <Card>
-            <CardHeader>Pricing & Inventory</CardHeader>
+            <CardHeader>
+              <CardTitle>Pricing & Inventory</CardTitle>
+            </CardHeader>
             <CardContent>
               <ProductInfoInput form={form} variantIndex={0} />
             </CardContent>

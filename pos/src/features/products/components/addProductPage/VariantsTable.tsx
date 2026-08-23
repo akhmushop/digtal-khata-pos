@@ -16,7 +16,7 @@ import { isSameVariant } from "../../utils/is-same-variant";
 import { createVariant } from "../../constants/form-defaults";
 import { VariantTableRow } from "./VariantTableRow";
 
-export function VariantRow({
+export function VariantsTable({
   form,
   append,
   remove,

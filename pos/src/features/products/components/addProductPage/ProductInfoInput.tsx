@@ -29,7 +29,6 @@ export function ProductInfoInput({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
       {source === "opening" && (
-        <div className="space-y-2">
           <InputField
             placeholder="0.00"
             label="Purchase Price"
@@ -37,11 +36,9 @@ export function ProductInfoInput({
             name={`variants.${variantIndex}.purchasePrice`}
             form={form}
           />
-        </div>
       )}
       {/* Price */}
       {!hasVariants && (
-        <div className="space-y-2">
           <InputField
             placeholder="0.00"
             label="Selling Price"
@@ -49,7 +46,6 @@ export function ProductInfoInput({
             name={`variants.${variantIndex}.sellingPrice`}
             form={form}
           />
-        </div>
       )}
       {/*WholeSale Price */}
       {/* <div className="space-y-2">
@@ -63,8 +59,6 @@ export function ProductInfoInput({
     </div> */}
       {/* Quantity */}
       {source === "opening" && (
-        <div className="space-y-2">
-          {
             <InputField
               disabled={trackingType !== "serial" ? false : true}
               placeholder="0.00"
@@ -73,11 +67,8 @@ export function ProductInfoInput({
               name={`variants.${variantIndex}.quantity`}
               form={form}
             />
-          }
-        </div>
       )}
       {/* Alert Quantity */}
-      <div className="space-y-2">
         <InputField
           placeholder="0.00"
           label="Alert Quantity"
@@ -85,9 +76,7 @@ export function ProductInfoInput({
           name={`variants.${variantIndex}.alertQuantity`}
           form={form}
         />
-      </div>
       {/* Barcode */}
-      <div className="space-y-2">
         <InputField
           placeholder="Enter Barcode"
           label="Barcode"
@@ -95,10 +84,8 @@ export function ProductInfoInput({
           name={`variants.${variantIndex}.barcode`}
           form={form}
         />
-      </div>
       {/* Batch Number */}
       {source === "opening" && trackingType === "batch" && (
-        <div className="space-y-2">
           <InputField
             placeholder="Enter Batch Number"
             label="Batch Number"
@@ -106,10 +93,8 @@ export function ProductInfoInput({
             name={`variants.${variantIndex}.batchNumber`}
             form={form}
           />
-        </div>
       )}
       {!hasVariants && (
-        <div className="space-y-2">
           <InputField
             placeholder="auto-generated if blank"
             label="Sku"
@@ -117,33 +102,26 @@ export function ProductInfoInput({
             name={`variants.${variantIndex}.sku`}
             form={form}
           />
-        </div>
       )}
       {/* Expiry Date */}
       {source === "opening" && trackingType === "batch" && (
-        <div className="space-y-2">
           <ExpiryDatePicker form={form} index={variantIndex} />
-        </div>
       )}
       {hasVariants && (
-        <div className="space-y-2">
           <InputFile
             urlName={`variants.${variantIndex}.imageUrl`}
             fileName={`variants.${variantIndex}.imageFile`}
             form={form}
             label="Image"
           />
-        </div>
       )}
       {/* status */}
-      <div className="space-y-2">
         <SelectOptions
           options={variantStatus}
           label="Status"
           form={form}
           name={`variants.${variantIndex}.status`}
         />
-      </div>
       {/* switch */}
       {/* {trackingType === "serial" && (
         <div className="col-span-3">
@@ -165,7 +143,7 @@ export function ProductInfoInput({
         </div>
       )} */}
       {trackingType === "serial" && source === "opening" && (
-        <div className="space-y-2 col-span-3">
+        <div className="space-y-2 col-span-1 md:col-span-2 lg:col-span-3">
           <p className="text-center">
             The quantity will automatically equal the number of serial numbers
           </p>
@@ -215,7 +193,7 @@ export function ProductInfoInput({
         </div>
       )}
       {hasVariants && (
-        <div className="space-y-2 col-span-3 flex justify-end gap-5">
+        <div className="space-y-2 col-span-1 md:col-span-2 lg:col-span-3 flex justify-end gap-5">
           <Button
             onClick={() => {
               remove?.(variantIndex);
