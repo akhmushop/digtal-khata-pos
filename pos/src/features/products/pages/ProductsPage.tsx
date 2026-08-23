@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef, Children } from "react";
 import Sidebar from "../../../components/layout/Sidebar.js";
-import AdvancedPOSTable from "../components/Table.js";
+import AdvancedPOSTable from "../components/ProductsPage/Table.js";
 function AddProduct() {
   return (
     <div className="flex min-h-screen">

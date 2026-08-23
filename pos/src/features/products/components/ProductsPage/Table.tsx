@@ -36,10 +36,9 @@ import {
   Minus,
 } from "lucide-react";
 import { Resizing, SortConfig } from "@/types/table.types";
-import { ProductsTypes } from "../products.types";
 import { useSoldStore } from "@/store/useSalesStore";
-import { useEditProductStore, useProductStore } from "../useProductStore";
-import {PopupModal} from "../../../components/pos/CartItems"
+import { ProductsTypes } from "../../products.types";
+import { useEditProductStore, useProductStore } from "../../useProductStore";
 
 const AdvancedPOSTable = () => {
   const [searchTerm, setSearchTerm] = useState("");
