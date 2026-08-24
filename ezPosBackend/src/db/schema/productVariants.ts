@@ -21,6 +21,7 @@ export const productVariants = pgTable("product_variants", {
   sellingPrice: numeric("selling_price", {
     precision: 12,
     scale: 2,
+    mode: "number",
   }).notNull(),
   alertQuantity: integer("alert_quantity").default(0),
   isDefault: boolean("is_default").default(false),

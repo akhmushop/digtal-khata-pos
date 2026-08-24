@@ -13,18 +13,18 @@ import {
   useComboboxAnchor,
 } from "@/components/ui/combobox";
 import React from "react";
-import { AddProductFormInput } from "../../product.schema";
-import useAddProductStore from "../../useProductStore";
+import { ProductTypeInput } from "../../product.schema";
+import useProductStore from "../../useProductStore";
 
 export function MultipleVariantSelector({
   setComboboxVariantTypeName,
   replace,
 }: {
   setComboboxVariantTypeName: React.Dispatch<React.SetStateAction<string[]>>;
-  replace: UseFieldArrayReplace<AddProductFormInput, "variants">;
+  replace: UseFieldArrayReplace<ProductTypeInput, "variants">;
 }) {
   const anchor = useComboboxAnchor();
-  const { addProductVariantOptions } = useAddProductStore();
+  const { productVariantOptions } = useProductStore();
   return (
     <Field>
       <FieldLabel>Variant Types</FieldLabel>
@@ -32,7 +32,7 @@ export function MultipleVariantSelector({
       <Combobox
         multiple
         autoHighlight
-        items={addProductVariantOptions.map((item) => item.typeName)}
+        items={productVariantOptions.map((item) => item.typeName)}
         onValueChange={(value) => {
           replace([]);
           setComboboxVariantTypeName(value as string[]);

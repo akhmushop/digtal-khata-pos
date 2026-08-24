@@ -26,6 +26,7 @@ import { serialNumbers } from "./serialNumbers.js";
 import { variantTypes } from "./variantTypes.js";
 import { variantOptions } from "./variantOptions.js";
 import { variantValues } from "./variantValues.js";
+import { inventoryStock } from "./inventoryStock.js";
 
 export const saleRefundsRelations = relations(saleRefunds, ({ one, many }) => ({
   sale: one(sales, {
@@ -250,5 +251,15 @@ export const serialNumbersRelations = relations(serialNumbers, ({ one }) => ({
   sale: one(saleItems, {
     fields: [serialNumbers.saleItemId],
     references: [saleItems.id],
+  }),
+}));
+export const inventoryStockRelations = relations(inventoryStock, ({ one }) => ({
+  variant: one(productVariants, {
+    fields: [inventoryStock.variantId],
+    references: [productVariants.id],
+  }),
+  location: one(locations, {
+    fields: [inventoryStock.locationId],
+    references: [locations.id],
   }),
 }));

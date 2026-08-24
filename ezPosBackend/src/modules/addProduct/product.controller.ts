@@ -19,8 +19,18 @@ export async function getProductVariantOptions(req: Request, res: Response) {
 }
 export async function createProduct(req: Request, res: Response) {
   try {
-    const result = productSchema.safeParse(req.body)
-    console.log(result)
+    const result = productSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({
+        message: "Invalid product data",
+        errors: result.error.flatten(),
+      });
+    }
+    const product = await productService.createProduct(result.data);
+    return res.status(201).json({
+      message: "Product created successfully",
+      data: product,
+    });
   } catch (err: unknown) {
     handleError(res, err);
   }
