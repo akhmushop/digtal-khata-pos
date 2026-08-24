@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { useSoldStore } from "../../store/useSalesStore.js";
 import { PopupModal } from "../../components/pos/CartItems.jsx";
-import { useProductStore } from "../../features/products/useProductStore.js";
 import { create } from "zustand";
 import { AllSoldProduct, SalesStoreType } from "../../types/sales.types.js";
+import { useProductStore } from "@/features/products/usedashboardProductStore.js";
 
 export const Sales = () => {
   const soldProducts = useSoldStore((state) => state.soldProducts);

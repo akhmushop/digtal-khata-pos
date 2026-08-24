@@ -38,7 +38,7 @@ import {
 import { Resizing, SortConfig } from "@/types/table.types";
 import { useSoldStore } from "@/store/useSalesStore";
 import { ProductsTypes } from "../../products.types";
-import { useEditProductStore, useProductStore } from "../../useProductStore";
+import { useEditProductStore, useProductStore } from "../../usedashboardProductStore";
 
 const AdvancedPOSTable = () => {
   const [searchTerm, setSearchTerm] = useState("");

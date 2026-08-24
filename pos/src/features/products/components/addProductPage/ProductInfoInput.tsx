@@ -1,5 +1,5 @@
 import { Controller, useFieldArray } from "react-hook-form";
-import { ProductInfoInputProps } from "../../addProduct.types";
+import { ProductInfoInputProps } from "../../product.types";
 import { Field, FieldLabel, FieldError } from "@/components/ui/field.js";
 import { Trash2 } from "lucide-react";
 import { InputField } from "./InputField";
@@ -29,23 +29,23 @@ export function ProductInfoInput({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
       {source === "opening" && (
-          <InputField
-            placeholder="0.00"
-            label="Purchase Price"
-            type="number"
-            name={`variants.${variantIndex}.purchasePrice`}
-            form={form}
-          />
+        <InputField
+          placeholder="0.00"
+          label="Purchase Price"
+          type="number"
+          name={`variants.${variantIndex}.purchasePrice`}
+          form={form}
+        />
       )}
       {/* Price */}
       {!hasVariants && (
-          <InputField
-            placeholder="0.00"
-            label="Selling Price"
-            type="number"
-            name={`variants.${variantIndex}.sellingPrice`}
-            form={form}
-          />
+        <InputField
+          placeholder="0.00"
+          label="Selling Price"
+          type="number"
+          name={`variants.${variantIndex}.sellingPrice`}
+          form={form}
+        />
       )}
       {/*WholeSale Price */}
       {/* <div className="space-y-2">
@@ -59,69 +59,69 @@ export function ProductInfoInput({
     </div> */}
       {/* Quantity */}
       {source === "opening" && (
-            <InputField
-              disabled={trackingType !== "serial" ? false : true}
-              placeholder="0.00"
-              label="Quantity"
-              type="number"
-              name={`variants.${variantIndex}.quantity`}
-              form={form}
-            />
+        <InputField
+          disabled={trackingType !== "serial" ? false : true}
+          placeholder="0.00"
+          label="Quantity"
+          type="number"
+          name={`variants.${variantIndex}.quantity`}
+          form={form}
+        />
       )}
       {/* Alert Quantity */}
-        <InputField
-          placeholder="0.00"
-          label="Alert Quantity"
-          type="number"
-          name={`variants.${variantIndex}.alertQuantity`}
-          form={form}
-        />
+      <InputField
+        placeholder="0.00"
+        label="Alert Quantity"
+        type="number"
+        name={`variants.${variantIndex}.alertQuantity`}
+        form={form}
+      />
       {/* Barcode */}
-        <InputField
-          placeholder="Enter Barcode"
-          label="Barcode"
-          type="text"
-          name={`variants.${variantIndex}.barcode`}
-          form={form}
-        />
+      <InputField
+        placeholder="Enter Barcode"
+        label="Barcode"
+        type="text"
+        name={`variants.${variantIndex}.barcode`}
+        form={form}
+      />
       {/* Batch Number */}
       {source === "opening" && trackingType === "batch" && (
-          <InputField
-            placeholder="Enter Batch Number"
-            label="Batch Number"
-            type="text"
-            name={`variants.${variantIndex}.batchNumber`}
-            form={form}
-          />
+        <InputField
+          placeholder="Enter Batch Number"
+          label="Batch Number"
+          type="text"
+          name={`variants.${variantIndex}.batchNumber`}
+          form={form}
+        />
       )}
       {!hasVariants && (
-          <InputField
-            placeholder="auto-generated if blank"
-            label="Sku"
-            type="text"
-            name={`variants.${variantIndex}.sku`}
-            form={form}
-          />
+        <InputField
+          placeholder="auto-generated if blank"
+          label="Sku"
+          type="text"
+          name={`variants.${variantIndex}.sku`}
+          form={form}
+        />
       )}
       {/* Expiry Date */}
       {source === "opening" && trackingType === "batch" && (
-          <ExpiryDatePicker form={form} index={variantIndex} />
+        <ExpiryDatePicker form={form} index={variantIndex} />
       )}
       {hasVariants && (
-          <InputFile
-            urlName={`variants.${variantIndex}.imageUrl`}
-            fileName={`variants.${variantIndex}.imageFile`}
-            form={form}
-            label="Image"
-          />
+        <InputFile
+          urlName={`variants.${variantIndex}.imageUrl`}
+          fileName={`variants.${variantIndex}.imageFile`}
+          form={form}
+          label="Image"
+        />
       )}
       {/* status */}
-        <SelectOptions
-          options={variantStatus}
-          label="Status"
-          form={form}
-          name={`variants.${variantIndex}.status`}
-        />
+      <SelectOptions
+        options={variantStatus}
+        label="Status"
+        form={form}
+        name={`variants.${variantIndex}.status`}
+      />
       {/* switch */}
       {/* {trackingType === "serial" && (
         <div className="col-span-3">

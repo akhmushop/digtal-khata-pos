@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { GeneratedVariant, VariantRowProps } from "../../addProduct.types";
+import { GeneratedVariant, VariantRowProps } from "../../product.types";
 import {
   Table,
   TableBody,

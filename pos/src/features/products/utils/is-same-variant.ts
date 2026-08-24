@@ -1,4 +1,4 @@
-import { HasVariantOptions } from "../addProduct.types";
+import { HasVariantOptions } from "../product.types";
 
 export const isSameVariant = (a: HasVariantOptions, b: HasVariantOptions) => {
   const aOptions = a.options;

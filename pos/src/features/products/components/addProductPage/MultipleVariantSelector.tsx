@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/combobox";
 import React from "react";
 import { AddProductFormInput } from "../../product.schema";
-import useAddProductStore from "../../useAddProductStore";
+import useAddProductStore from "../../useProductStore";
 
 export function MultipleVariantSelector({
   setComboboxVariantTypeName,

@@ -6,7 +6,7 @@ import {
   FieldContent,
 } from "@/components/ui/field.js";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { InventorySourceSelectorProps } from "../../addProduct.types";
+import { InventorySourceSelectorProps } from "../../product.types";
 export function InventorySourceSelector({
   form,
   inventoryOptions,

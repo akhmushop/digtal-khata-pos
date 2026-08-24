@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { ChevronDown, Square, SquareCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RadioGroupItem } from "@/components/ui/radio-group";
-import { GeneratedVariant, VariantTableRowProps } from "../../addProduct.types";
+import { GeneratedVariant, VariantTableRowProps } from "../../product.types";
 import { isSameVariant } from "../../utils/is-same-variant";
 export function VariantTableRow({
   variant,

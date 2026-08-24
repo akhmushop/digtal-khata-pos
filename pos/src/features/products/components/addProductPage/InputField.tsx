@@ -9,7 +9,7 @@ import {
   InputGroupTextarea,
 } from "@/components/ui/input-group";
 import { Input } from "@/components/ui/input.js";
-import { InputFieldProps } from "../../addProduct.types";
+import { InputFieldProps } from "../../product.types";
 export function InputField({
   placeholder,
   label,

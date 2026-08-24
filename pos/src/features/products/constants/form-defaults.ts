@@ -1,4 +1,4 @@
-import { GeneratedVariant } from "../addProduct.types";
+import { GeneratedVariant } from "../product.types";
 import { AddProductFormInput, VariantType } from "../product.schema";
 
 export const defaultValues: AddProductFormInput = {
