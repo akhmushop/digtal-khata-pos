@@ -1,0 +1,14 @@
+import axios from "../../api/axios.js";
+import { ProductTypeOutput } from "./product.schema.js";
+
+export async function getProductSelectOptionsApi() {
+  const { data } = await axios.get("/product/select-options");
+  return data;
+}
+export async function getProductVariantOptionsApi() {
+  const { data } = await axios.get("/product/variant-options");
+  return data;
+}
+export async function createProductApi(data: ProductTypeOutput) {
+  return axios.post("/product", data);
+}

@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/select";
 import { Field, FieldLabel, FieldError } from "@/components/ui/field.js";
 import { Controller } from "react-hook-form";
-import { SelectOptionsProps } from "../../addProduct.types";
+import { SelectOptionsProps } from "../../product.types";
 export const SelectOptions = ({
   options,
   label,

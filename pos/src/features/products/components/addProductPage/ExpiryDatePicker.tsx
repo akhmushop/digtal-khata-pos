@@ -8,7 +8,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { ExpiryDatePickerProps } from "../../addProduct.types";
+import { ExpiryDatePickerProps } from "../../product.types";
 export function ExpiryDatePicker({ form, index }: ExpiryDatePickerProps) {
   return (
     <Controller

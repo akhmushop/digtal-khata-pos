@@ -6,7 +6,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Grid } from "lucide-react";
-import useAddProductStore from "../../useAddProductStore";
 import { InputFile } from "./InputFile";
 import {
   inventorySources,
@@ -16,14 +15,15 @@ import {
 import { SelectOptions } from "./SelectOptions";
 import { InventorySourceSelector } from "./InventorySourceSelector";
 import { UseFormReturn } from "react-hook-form";
-import { AddProductFormInput } from "../../product.schema";
+import { ProductTypeInput } from "../../product.schema";
+import useProductStore from "../../useProductStore";
 
 export function RightColumnInfoCard({
   form,
 }: {
-  form: UseFormReturn<AddProductFormInput>;
+  form: UseFormReturn<ProductTypeInput>;
 }) {
-  const { addProductsSelectOptions } = useAddProductStore();
+  const { productSelectOptions } = useProductStore();
   return (
     <Card>
       <CardHeader>
@@ -34,55 +34,55 @@ export function RightColumnInfoCard({
         <CardDescription> Additional product details</CardDescription>
       </CardHeader>
       <CardContent>
-          {/* image */}
-          <InputFile
-            urlName={`imageUrl`}
-            fileName={`imageFile`}
-            form={form}
-            label="Default Image"
-          />
-          {/* Tracking Type */}
-          <SelectOptions
-            options={trackingType}
-            label="Tracking Type"
-            form={form}
-            name="trackingType"
-          />
-          {/* status */}
-          <SelectOptions
-            options={productStatus}
-            label="Status"
-            form={form}
-            name="status"
-          />
-          {/* inventoryOptions */}
-          <InventorySourceSelector
-            form={form}
-            inventoryOptions={inventorySources}
-          />
-          {/* Supplier */}
-          <SelectOptions
-            options={addProductsSelectOptions.suppliers}
-            label="Select a supplier"
-            form={form}
-            name="supplierId"
-          />
-          {/* Brand */}
-          <SelectOptions
-            options={addProductsSelectOptions.brands}
-            label="Brand"
-            form={form}
-            name="brandId"
-          />
-          {/* Categories */}
-          <SelectOptions
-            options={addProductsSelectOptions.categories}
-            label="Categories"
-            form={form}
-            name="categoryId"
-          />
-          {/* Tags */}
-          {/* <InputField
+        {/* image */}
+        <InputFile
+          urlName={`imageUrl`}
+          fileName={`imageFile`}
+          form={form}
+          label="Default Image"
+        />
+        {/* Tracking Type */}
+        <SelectOptions
+          options={trackingType}
+          label="Tracking Type"
+          form={form}
+          name="trackingType"
+        />
+        {/* status */}
+        <SelectOptions
+          options={productStatus}
+          label="Status"
+          form={form}
+          name="status"
+        />
+        {/* inventoryOptions */}
+        <InventorySourceSelector
+          form={form}
+          inventoryOptions={inventorySources}
+        />
+        {/* Supplier */}
+        <SelectOptions
+          options={productSelectOptions.suppliers}
+          label="Select a supplier"
+          form={form}
+          name="supplierId"
+        />
+        {/* Brand */}
+        <SelectOptions
+          options={productSelectOptions.brands}
+          label="Brand"
+          form={form}
+          name="brandId"
+        />
+        {/* Categories */}
+        <SelectOptions
+          options={productSelectOptions.categories}
+          label="Categories"
+          form={form}
+          name="categoryId"
+        />
+        {/* Tags */}
+        {/* <InputField
               placeholder="Add tags separated by commas"
               label="Tags"
               type="text"

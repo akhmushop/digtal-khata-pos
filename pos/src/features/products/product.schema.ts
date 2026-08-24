@@ -1,4 +1,3 @@
-
 import { z } from "zod";
 const serialNumberSchema = z.object({
   serial: z.string().min(1, { message: "Serial number is required" }),
@@ -121,6 +120,6 @@ export const productSchema = z
     //   }
     // });
   });
-export type VariantType = z.infer<typeof variantSchema>;
-export type AddProductFormInput = z.input<typeof productSchema>;
-export type AddProductFormOutput = z.output<typeof productSchema>;
+export type ProductVariantType = z.infer<typeof variantSchema>;
+export type ProductTypeInput = z.input<typeof productSchema>;
+export type ProductTypeOutput = z.output<typeof productSchema>;

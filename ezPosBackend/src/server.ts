@@ -6,7 +6,7 @@ import customersRouter from "./modules/customers/customers.routes.js";
 import expenseRouter from "./modules/expenses/expenses.routes.js";
 import purchasesRouter from "./modules/purchases/purchases.routes.js";
 import purchasesReturnRouter from "./modules/purchaseReturn/purchaseReturn.routes.js";
-import addProductRouter from "./modules/addProduct/addProduct.routes.js";
+import addProductRouter from "./modules/addProduct/product.routes.js";
 import cors from "cors";
 const app = express();
 // middleware

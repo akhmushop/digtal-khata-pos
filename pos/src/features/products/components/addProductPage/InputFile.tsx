@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/input-group";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { InputFileProps } from "../../addProduct.types";
+import { InputFileProps } from "../../product.types";
 import { AddProductFormInput } from "../../product.schema";
 export function InputFile({ urlName, fileName, form, label }: InputFileProps) {
   const handleAddHttp = (field: ControllerRenderProps<AddProductFormInput>) => {

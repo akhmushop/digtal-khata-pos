@@ -1,4 +1,7 @@
-import { AddProductFormInput } from "@/features/products/product.schema";
+import {
+  ProductTypeInput,
+  ProductTypeOutput,
+} from "@/features/products/product.schema";
 import {
   FieldPath,
   UseFieldArrayAppend,
@@ -6,42 +9,8 @@ import {
   UseFieldArrayReplace,
   UseFormReturn,
 } from "react-hook-form";
-// export interface InitialFormData {
-//   id: number;
-//   barcode: string;
-//   productName: string;
-//   productUnit: string;
-//   productType: string;
-//   alertQuantity: number;
-//   cost: number;
-//   price: number;
-//   discountPercent: number;
-//   flatDiscount: number;
-//   quantity: number;
-//   batchNumber: string;
-//   expiryDate: string;
-//   description: string;
-//   brand: string;
-//   category: string;
-//   supplier: string;
-//   tags: string[];
-//   sku: string;
-//   weight: string;
-//   dimensions: string;
-//   variations: string;
-//   status: string;
-//   location: string;
-// }
-// export interface Errors {
-//   barcode: string;
-//   productName: string;
-//   cost: string;
-//   price: string;
-//   quantity: string;
-//   image: string | null;
-// }
-export interface AddProductType {
-  addProductsSelectOptions: {
+export interface ProductStoreType {
+  productSelectOptions: {
     brands: {
       value: number;
       label: string;
@@ -59,11 +28,12 @@ export interface AddProductType {
       label: string;
     }[];
   };
-  addProductVariantOptions: VariantOptionGroup[];
+  productVariantOptions: VariantOptionGroup[];
   loading: boolean;
   error: string | null;
-  getAddProductsSelectOptions: () => void;
-  getAddProductVariantOptions: () => void;
+  getProductSelectOptions: () => void;
+  getProductVariantOptions: () => void;
+  createProduct: (data: ProductTypeOutput) => void;
 }
 export interface SelectOptionsProps {
   options: {
@@ -72,19 +42,19 @@ export interface SelectOptionsProps {
     title?: string;
   }[];
   label: string;
-  form: UseFormReturn<AddProductFormInput>;
-  name: FieldPath<AddProductFormInput>;
+  form: UseFormReturn<ProductTypeInput>;
+  name: FieldPath<ProductTypeInput>;
 }
 export interface InputFieldProps {
   placeholder: string;
   label?: string;
-  name: FieldPath<AddProductFormInput>;
+  name: FieldPath<ProductTypeInput>;
   type: "text" | "number" | "textArea";
-  form: UseFormReturn<AddProductFormInput>;
+  form: UseFormReturn<ProductTypeInput>;
   disabled?: boolean;
 }
 export interface ExpiryDatePickerProps {
-  form: UseFormReturn<AddProductFormInput>;
+  form: UseFormReturn<ProductTypeInput>;
   index: number;
 }
 export interface AllVariantsType {
@@ -92,32 +62,32 @@ export interface AllVariantsType {
   size: string;
 }
 export interface ProductInfoInputProps {
-  form: UseFormReturn<AddProductFormInput>;
+  form: UseFormReturn<ProductTypeInput>;
   variantIndex: number;
   remove?: UseFieldArrayRemove;
 }
 export interface AccordionCardProps {
-  form: UseFormReturn<AddProductFormInput>;
-  append: UseFieldArrayAppend<AddProductFormInput, "variants">;
-  replace: UseFieldArrayReplace<AddProductFormInput, "variants">;
+  form: UseFormReturn<ProductTypeInput>;
+  append: UseFieldArrayAppend<ProductTypeInput, "variants">;
+  replace: UseFieldArrayReplace<ProductTypeInput, "variants">;
   remove: UseFieldArrayRemove;
 }
 export interface VariantRowProps {
-  form: UseFormReturn<AddProductFormInput>;
-  append: UseFieldArrayAppend<AddProductFormInput, "variants">;
+  form: UseFormReturn<ProductTypeInput>;
+  append: UseFieldArrayAppend<ProductTypeInput, "variants">;
   remove: UseFieldArrayRemove;
-  replace: UseFieldArrayReplace<AddProductFormInput, "variants">;
+  replace: UseFieldArrayReplace<ProductTypeInput, "variants">;
   comboboxVariantTypeName: string[];
   allVariants: GeneratedVariant[];
 }
 export interface InputFileProps {
-  urlName: FieldPath<AddProductFormInput>;
-  fileName: FieldPath<AddProductFormInput>;
-  form: UseFormReturn<AddProductFormInput>;
+  urlName: FieldPath<ProductTypeInput>;
+  fileName: FieldPath<ProductTypeInput>;
+  form: UseFormReturn<ProductTypeInput>;
   label: string;
 }
 export interface InventorySourceSelectorProps {
-  form: UseFormReturn<AddProductFormInput>;
+  form: UseFormReturn<ProductTypeInput>;
   inventoryOptions: {
     value: string;
     title: string;
@@ -146,7 +116,7 @@ export type HasVariantOptions = {
 };
 export type VariantTableRowProps = {
   variant: GeneratedVariant;
-  form: UseFormReturn<AddProductFormInput>;
+  form: UseFormReturn<ProductTypeInput>;
   remove: UseFieldArrayRemove;
   expanded: string | null;
   setExpanded: React.Dispatch<React.SetStateAction<string | null>>;

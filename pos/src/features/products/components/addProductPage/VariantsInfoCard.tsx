@@ -12,13 +12,13 @@ import { Badge } from "@/components/ui/badge.js";
 import { ShoppingBag } from "lucide-react";
 import { Controller } from "react-hook-form";
 import { Switch } from "@/components/ui/switch";
-import useAddProductStore from "../../useAddProductStore";
 import { generateVariants } from "../../utils/generate-variants";
 import { emptyVariant } from "../../constants/form-defaults";
 import { MultipleVariantSelector } from "./MultipleVariantSelector";
 import { VariantsTable } from "./VariantsTable";
 import { ProductInfoInput } from "./ProductInfoInput";
-import { AccordionCardProps } from "../../addProduct.types";
+import { AccordionCardProps } from "../../product.types";
+import useProductStore from "../../useProductStore";
 export function VariantsInfoCard({
   form,
   append,
@@ -28,8 +28,8 @@ export function VariantsInfoCard({
   const [comboboxVariantTypeName, setComboboxVariantTypeName] = useState<
     string[]
   >([]);
-  const { addProductVariantOptions } = useAddProductStore();
-  const filtered = addProductVariantOptions.filter((option) =>
+  const { productVariantOptions } = useProductStore();
+  const filtered = productVariantOptions.filter((option) =>
     comboboxVariantTypeName.includes(option.typeName),
   );
   const allVariants = generateVariants(filtered);

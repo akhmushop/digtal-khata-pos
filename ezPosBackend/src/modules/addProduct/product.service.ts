@@ -39,7 +39,7 @@ async function getSuppliers() {
     })
     .from(suppliers);
 }
-export async function getAddProductsSelectOptions() {
+export async function getProductSelectOptions() {
   const [allBrands, allUnits, allCategories, allSuppliers] = await Promise.all([
     getBrands(),
     getUnits(),
@@ -53,7 +53,7 @@ export async function getAddProductsSelectOptions() {
     suppliers: allSuppliers,
   };
 }
-export async function getAddProductVariantOptions() {
+export async function getProductVariantOptions() {
   return await db
     .select({
       typeId: variantTypes.id,

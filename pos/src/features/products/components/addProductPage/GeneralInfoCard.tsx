@@ -5,20 +5,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import useAddProductStore from "../../useAddProductStore";
 import { InputField } from "./InputField";
 import { Package } from "lucide-react";
 import { SelectOptions } from "./SelectOptions";
 import { productTypes } from "../../constants/form-status";
 import { UseFormReturn } from "react-hook-form";
-import { AddProductFormInput } from "../../product.schema";
+import { ProductTypeInput } from "../../product.schema";
+import useProductStore from "../../useProductStore";
 
 export function GeneralInfoCard({
   form,
 }: {
-  form: UseFormReturn<AddProductFormInput>;
+  form: UseFormReturn<ProductTypeInput>;
 }) {
-  const { addProductsSelectOptions } = useAddProductStore();
+  const { productSelectOptions } = useProductStore();
   return (
     <Card>
       <CardHeader>
@@ -39,7 +39,7 @@ export function GeneralInfoCard({
         />
         {/* Product Unit */}
         <SelectOptions
-          options={addProductsSelectOptions.units}
+          options={productSelectOptions.units}
           label="Product Unit"
           form={form}
           name="unitId"

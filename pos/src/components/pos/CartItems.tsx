@@ -4,7 +4,6 @@ import { FiMinusCircle } from "react-icons/fi";
 import { HiDotsVertical } from "react-icons/hi";
 import { ClickToShowMore } from "./CartMoreMenu.js";
 import { ClickEmptyToResetCart } from "./CartEmptyBtn.js";
-import { useProductStore } from "../../features/products/useProductStore.js";
 import { useCartStore } from "../../store/useCartStore.js";
 import { useSoldStore } from "../../store/useSalesStore.js";
 import axios from "../../api/axios.js";
@@ -26,6 +25,7 @@ import type {
   PeerInputProps,
   PopupModalProps,
 } from "../../types/cart.types.js";
+import { useProductStore } from "@/features/products/usedashboardProductStore.js";
 
 export default function CartItems() {
   const {
