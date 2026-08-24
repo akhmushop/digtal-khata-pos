@@ -120,3 +120,5 @@ export const productSchema = z
     //   }
     // });
   });
+  export type ProductType = z.infer<typeof productSchema>
+  export type VariantType = z.infer<typeof variantSchema>

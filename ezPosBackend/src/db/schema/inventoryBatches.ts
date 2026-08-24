@@ -22,11 +22,12 @@ export const inventoryBatches = pgTable("inventory_batches", {
   purchasePrice: numeric("purchase_price", {
     precision: 10,
     scale: 2,
+    mode: "number",
   }).notNull(),
 
   quantityReceived: integer("quantity_received").notNull(),
   quantityRemaining: integer("quantity_remaining").notNull(),
 
-  manufacturedDate: date("manufactured_date"),
-  expiryDate: date("expiry_date"),
+  manufacturedDate: date("manufactured_date", { mode: "date" }),
+  expiryDate: date("expiry_date", { mode: "date" }),
 });

@@ -1,7 +1,8 @@
+import { ProductTypeInput, ProductVariantType } from "../product.schema";
 import { GeneratedVariant } from "../product.types";
-import { AddProductFormInput, VariantType } from "../product.schema";
 
-export const defaultValues: AddProductFormInput = {
+
+export const defaultValues: ProductTypeInput = {
   name: "",
   categoryId: null,
   brandId: null,
@@ -33,7 +34,7 @@ export const defaultValues: AddProductFormInput = {
     },
   ],
 };
-export const createVariant = (variant: GeneratedVariant): VariantType => ({
+export const createVariant = (variant: GeneratedVariant): ProductVariantType => ({
   sku: "",
   barcode: "",
   sellingPrice: 0,
@@ -49,7 +50,7 @@ export const createVariant = (variant: GeneratedVariant): VariantType => ({
   serialNumbers: [],
   options: variant.options,
 });
-export const emptyVariant: VariantType = {
+export const emptyVariant: ProductVariantType = {
   sku: "",
   barcode: "",
   sellingPrice: 0,
