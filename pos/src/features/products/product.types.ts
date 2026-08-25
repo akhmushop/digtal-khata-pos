@@ -9,6 +9,13 @@ import {
   UseFieldArrayReplace,
   UseFormReturn,
 } from "react-hook-form";
+export type CreateProductResponse = {
+  success: boolean;
+  message: string;
+  data: {
+    productId: number;
+  };
+};
 export interface ProductStoreType {
   productSelectOptions: {
     brands: {
@@ -33,7 +40,7 @@ export interface ProductStoreType {
   error: string | null;
   getProductSelectOptions: () => void;
   getProductVariantOptions: () => void;
-  createProduct: (data: ProductTypeOutput) => void;
+  createProduct: (data: ProductTypeOutput) => Promise<CreateProductResponse>;
 }
 export interface SelectOptionsProps {
   options: {
