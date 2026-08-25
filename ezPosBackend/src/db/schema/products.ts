@@ -9,12 +9,17 @@ import {
   doublePrecision,
   boolean,
   timestamp,
+  pgSequence,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { categories } from "./categories.js";
 import { brands } from "./brands.js";
 import { units } from "./units.js";
-
+// Sequence
+export const productSkuSeq = pgSequence("product_sku_seq", {
+  startWith: 1,
+  increment: 1,
+});
 export const products = pgTable("products", {
   id: serial().primaryKey().notNull(),
   name: varchar({ length: 100 }).notNull(),

@@ -16,7 +16,7 @@ export const productVariants = pgTable("product_variants", {
   productId: integer("product_id")
     .references(() => products.id)
     .notNull(),
-  sku: varchar({ length: 100 }).unique(),
+  sku: varchar({ length: 100 }).notNull().unique(),
   barcode: varchar({ length: 100 }).unique(),
   sellingPrice: numeric("selling_price", {
     precision: 12,

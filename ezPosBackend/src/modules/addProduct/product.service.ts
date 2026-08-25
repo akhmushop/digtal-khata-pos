@@ -267,12 +267,13 @@ async function insertVariant(
   >,
   productId: number,
   variant: VariantType,
+  sku: string,
 ) {
   const [variantResult] = await tx
     .insert(productVariants)
     .values({
       productId,
-      sku: variant.sku,
+      sku,
       barcode: variant.barcode,
       sellingPrice: variant.sellingPrice,
       alertQuantity: variant.alertQuantity,
@@ -369,6 +370,23 @@ async function insertInventoryStock(
     quantity,
   });
 }
+async function generateSku(
+  tx: PgTransaction<
+    NodePgQueryResultHKT,
+    Record<string, never>,
+    ExtractTablesWithRelations<Record<string, never>>
+  >,
+) {
+  const result = await tx.execute(
+    sql`SELECT nextval('product_sku_seq') AS number`,
+  );
+  const row = result.rows[0];
+  if (!row) {
+    throw new NotFoundError("Failed to generate product SKU");
+  }
+  const number = Number(row.number);
+  return `SKU-${number.toString().padStart(6, "0")}`;
+}
 export async function createProduct(data: ProductType) {
   try {
     await db.transaction(async (tx) => {
@@ -381,7 +399,13 @@ export async function createProduct(data: ProductType) {
       const product = await insertProduct(tx, data);
 
       for (const variant of data.variants) {
-        const createdVariant = await insertVariant(tx, product.id, variant);
+        const sku = variant.sku?.trim() || (await generateSku(tx));
+        const createdVariant = await insertVariant(
+          tx,
+          product.id,
+          variant,
+          sku,
+        );
 
         await insertVariantOptions(tx, data, variant, createdVariant.id);
         await insertInventoryStock(tx, createdVariant.id, variant.quantity);
