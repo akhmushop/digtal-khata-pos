@@ -19,6 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card.js";
 import useProductStore from "@/features/products/useProductStore.js";
+import { createProductPromiseToast } from "../utils/productPromiseToast.js";
 
 const ProductStockForm = () => {
   // const editingProduct = useEditProductStore((state) => state.editingProduct);
@@ -101,10 +102,10 @@ const ProductStockForm = () => {
     defaultValues: defaultValues,
     resolver: zodResolver(productSchema),
   });
-  const { getProductSelectOptions, getProductVariantOptions ,createProduct } =
+  const { getProductSelectOptions, getProductVariantOptions, createProduct } =
     useProductStore();
-  function onSubmit(data: ProductTypeOutput) {
-    createProduct(data)
+  async function onSubmit(data: ProductTypeOutput) {
+    await createProductPromiseToast(data, createProduct);
   }
   const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
@@ -115,7 +116,7 @@ const ProductStockForm = () => {
     getProductSelectOptions();
     getProductVariantOptions();
   }, []);
-  console.log(form.formState.errors)
+  console.log(form.formState.errors);
   return (
     <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-4 md:p-8">
       <Card className="max-w-7xl mx-auto">

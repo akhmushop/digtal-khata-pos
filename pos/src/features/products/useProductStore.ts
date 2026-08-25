@@ -36,12 +36,9 @@ const useProductStore = create<ProductStoreType>((set) => ({
     }
   },
   createProduct: async (data) => {
-    try {
-      console.log(data);
-      createProductApi(data);
-    } catch (err) {
-      console.error(err);
-    }
+    console.log(data)
+    const response = await createProductApi(data);
+    return response.data;
   },
 }));
 export default useProductStore;

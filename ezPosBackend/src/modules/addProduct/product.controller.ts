@@ -1,4 +1,4 @@
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { handleError } from "../../utils/handleError.js";
 import * as productService from "./product.service.js";
 import { productSchema } from "./schemas/product.schema.js";
@@ -17,7 +17,11 @@ export async function getProductVariantOptions(req: Request, res: Response) {
     handleError(res, err);
   }
 }
-export async function createProduct(req: Request, res: Response) {
+export async function createProduct(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
     const result = productSchema.safeParse(req.body);
     if (!result.success) {
@@ -32,6 +36,6 @@ export async function createProduct(req: Request, res: Response) {
       data: product,
     });
   } catch (err: unknown) {
-    handleError(res, err);
+    next(err)
   }
 }
