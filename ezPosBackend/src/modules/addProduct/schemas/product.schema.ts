@@ -14,7 +14,11 @@ const variantSchema = z.object({
     )
     .optional(),
   sku: z.string().max(100),
-  barcode: z.string().max(100),
+  barcode: z
+    .string()
+    .max(100)
+    .nullable()
+    .transform((val) => (val?.trim() === "" ? null : val)),
   sellingPrice: z.coerce.number().min(0),
   alertQuantity: z.coerce.number().min(0),
   isDefault: z.boolean(),
@@ -120,5 +124,5 @@ export const productSchema = z
     //   }
     // });
   });
-  export type ProductType = z.infer<typeof productSchema>
-  export type VariantType = z.infer<typeof variantSchema>
+export type ProductType = z.infer<typeof productSchema>;
+export type VariantType = z.infer<typeof variantSchema>;
