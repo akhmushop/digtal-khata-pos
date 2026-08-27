@@ -41,8 +41,8 @@ import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from "./ui/avatar";
 export function AppSidebar() {
   const location = useLocation();
   return (
-    <Sidebar>
-      <SidebarHeader className="bg-sidebar-accent border-b border-sidebar-border">
+    <Sidebar variant="inset">
+      <SidebarHeader className="bg-sidebar-accent border-b border-sidebar-border rounded mb-2">
         <div className="flex items-center gap-2 px-4 py-3 justify-center">
           {/* The Logo Box */}
           <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
