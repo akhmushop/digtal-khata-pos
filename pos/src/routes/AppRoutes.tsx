@@ -1,7 +1,6 @@
 import { createBrowserRouter, RouterProvider } from "react-router";
 import Pos from "../pages/POS/POS";
 import { AddCustomerModal } from "../pages/Customer/Customer";
-import AddProduct from "../features/products/pages/ProductsPage";
 import ProductStockForm from "../features/products/pages/AddProductPage";
 import DashboardComponent from "../pages/Dashboard/Dashboard";
 import { Sales } from "../pages/Sales/Sales";
@@ -10,6 +9,8 @@ import { PurchasesOrder } from "../pages/PurchasesOrder/PurchasesOrder";
 import { PurchasesList } from "../pages/PurchasesOrder/PurchasesList";
 import { ReceiveItems } from "../pages/PurchasesOrder/ReceiveItems";
 import { PurchaseViewItems } from "../pages/PurchasesOrder/PurchasesReturn";
+import AppLayout from "@/layouts/AppLayout";
+import Products from "../features/products/pages/ProductsPage";
 
 const router = createBrowserRouter([
   {
@@ -21,8 +22,13 @@ const router = createBrowserRouter([
     element: <AddCustomerModal />,
   },
   {
-    path: "/product",
-    element: <AddProduct />,
+    element: <AppLayout />,
+    children: [
+      {
+        path: "/product",
+        element: <Products />,
+      },
+    ],
   },
   {
     path: "/product/addproduct",
