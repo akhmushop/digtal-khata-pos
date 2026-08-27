@@ -241,7 +241,7 @@ const DashboardComponent = () => {
     },
   ];
   return (
-      <div className=" w-full min-h-screen bg-gray-50 p-5">
+      <div className=" w-full min-h-screen bg-gray-50 px-5">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>

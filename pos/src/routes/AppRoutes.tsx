@@ -32,6 +32,10 @@ const router = createBrowserRouter([
         path: "/dashboard",
         element: <DashboardComponent />,
       },
+      {
+        path: "/sales",
+        element: <Sales />,
+      },
     ],
   },
   {
@@ -42,10 +46,7 @@ const router = createBrowserRouter([
     path: "/dashboard",
     element: <DashboardComponent />,
   },
-  {
-    path: "/sales",
-    element: <Sales />,
-  },
+
   {
     path: "/expense",
     element: <Expense />,

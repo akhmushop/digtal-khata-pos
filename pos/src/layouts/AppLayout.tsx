@@ -13,7 +13,7 @@ export default function AppLayout() {
       <AppSidebar />
       <SidebarInset>
         <main>
-          <SidebarTrigger className="absolute" />
+          <SidebarTrigger />
           <Outlet />
         </main>
         <SidebarRail />
