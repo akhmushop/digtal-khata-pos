@@ -1,13 +1,23 @@
 import { AppSidebar } from "@/components/app-sidebar";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarRail,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { Outlet } from "react-router";
 
 export default function AppLayout() {
-  <SidebarProvider>
-    <AppSidebar />
-    <main>
-      <SidebarTrigger />
-      <Outlet />
-    </main>
-  </SidebarProvider>;
+  return (
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <main>
+          <SidebarTrigger className="absolute" />
+          <Outlet />
+        </main>
+        <SidebarRail />
+      </SidebarInset>
+    </SidebarProvider>
+  );
 }
