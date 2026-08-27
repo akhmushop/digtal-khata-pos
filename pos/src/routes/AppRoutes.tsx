@@ -28,6 +28,10 @@ const router = createBrowserRouter([
         path: "/product",
         element: <Products />,
       },
+      {
+        path: "/dashboard",
+        element: <DashboardComponent />,
+      },
     ],
   },
   {
