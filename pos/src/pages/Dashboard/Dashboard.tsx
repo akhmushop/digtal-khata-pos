@@ -241,11 +241,7 @@ const DashboardComponent = () => {
     },
   ];
   return (
-    <div className="flex">
-      <div className="fixed left-0 top-0 h-screen z-40">
-        <Sidebar />
-      </div>
-      <div className="ml-60 w-full min-h-screen bg-gray-50 p-6">
+      <div className=" w-full min-h-screen bg-gray-50 px-5">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
@@ -486,7 +482,6 @@ const DashboardComponent = () => {
           />
         </div>
       </div>
-    </div>
   );
 };
 

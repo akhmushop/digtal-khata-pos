@@ -95,12 +95,8 @@ export function PurchasesOrder() {
   };
   return (
     <div className="h-screen overflow-hidden grid grid-cols-12">
-      {/* Sidebar */}
-      <div className="col-span-2">
-        <Sidebar />
-      </div>
       {/* product_show */}
-      <div className="col-span-4">
+      <div className="col-span-5">
         {/* Products Headers */}
         <div className=" flex text-black-200  rounded-md mx-5 mt-2  bg-zuccini-400  h-17 sticky top-1 ">
           <div className=" flex justify-between  items-center w-full   ">
@@ -160,7 +156,7 @@ export function PurchasesOrder() {
         </div>
       </div>
       {/* purchases cart */}
-      <div className=" col-span-6">
+      <div className=" col-span-7">
         {/* cart header */}
         <div className="px-5 gap-4 grid grid-cols-12  items-center bg-zuccini-400   h-17 rounded-md mx-2 mt-2 sticky top-1 ">
           <div className="relative  col-span-4">
