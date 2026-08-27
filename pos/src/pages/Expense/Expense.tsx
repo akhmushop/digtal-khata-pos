@@ -42,9 +42,7 @@ export const Expense = () => {
     });
   };
   return (
-    <div className="flex gap-5">
-      <Sidebar />
-
+    <div className="px-5">
       <button
         className="btn"
         onClick={() =>

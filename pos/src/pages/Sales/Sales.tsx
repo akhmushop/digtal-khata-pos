@@ -71,7 +71,7 @@ export const Sales = () => {
     },
   );
   return (
-    <div>
+    <div className="px-5">
       {showProductDetailsModal && (
         <PopupModal isOpen={isOpen} handelClose={handelClose} className="">
           <ShowProductDetails
