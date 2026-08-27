@@ -18,10 +18,6 @@ const router = createBrowserRouter([
     element: <Pos />,
   },
   {
-    path: "/customer",
-    element: <AddCustomerModal />,
-  },
-  {
     element: <AppLayout />,
     children: [
       {
@@ -36,36 +32,35 @@ const router = createBrowserRouter([
         path: "/sales",
         element: <Sales />,
       },
+      {
+        path: "/expense",
+        element: <Expense />,
+      },
+      {
+        path: "/purchases",
+        element: <PurchasesOrder />,
+      },
+      {
+        path: "/purchases-list",
+        element: <PurchasesList />,
+      },
+      {
+        path: "/customer",
+        element: <AddCustomerModal />,
+      },
+      {
+        path: "/receive-items/:id",
+        element: <ReceiveItems />,
+      },
+      {
+        path: "/purchase-return/:id",
+        element: <PurchaseViewItems />,
+      },
     ],
   },
   {
     path: "/product/addproduct",
     element: <ProductStockForm />,
-  },
-  {
-    path: "/dashboard",
-    element: <DashboardComponent />,
-  },
-
-  {
-    path: "/expense",
-    element: <Expense />,
-  },
-  {
-    path: "/purchases",
-    element: <PurchasesOrder />,
-  },
-  {
-    path: "/purchases-list",
-    element: <PurchasesList />,
-  },
-  {
-    path: "/receive-items/:id",
-    element: <ReceiveItems />,
-  },
-  {
-    path: "/purchase-return/:id",
-    element: <PurchaseViewItems />,
   },
 ]);
 export default function AppRoutes() {

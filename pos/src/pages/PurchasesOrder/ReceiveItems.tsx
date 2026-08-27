@@ -204,15 +204,8 @@ export const ReceiveItems = () => {
     Number(dueAmount) + (Number(grandTotal) - Number(amountToReceive));
   console.log(updatedDue);
   return (
-    <div className="grid grid-cols-12">
-      {/* Sidebar */}
-      <div className="col-span-2">
-        <div className="fixed w-60">
-          <Sidebar />
-        </div>
-      </div>
+      <div className="col-span-10 px-5">
       {/* receive items */}
-      <div className="col-span-10 m-5">
         <div className="flex justify-between mb-5">
           <div>
             <p>Back to Purchase Orders</p>
@@ -420,7 +413,6 @@ export const ReceiveItems = () => {
           <button className="btn btn-soft  flex-none">Cancel</button>
         </div>
       </div>
-    </div>
   );
 };
 const SummaryCard = ({ card, formatCurrency }: SummaryCardProps) => {

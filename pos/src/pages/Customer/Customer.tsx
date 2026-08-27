@@ -11,63 +11,58 @@ export function AddCustomerModal({}) {
   const { customerInfo, handleOnchange, resetCustomerInfo, handleAddCustomer } =
     useCustomerStore();
   return (
-    <div className="grid grid-cols-12">
-      <div className="col-span-2">
-        <Sidebar />
-      </div>
-      <div className="col-span-10">
-        <h1 className="text-3xl">Add Customer</h1>
-        <div className="grid grid-cols-4 w-full gap-3 pr-10">
-          <fieldset className="fieldset w-full col-span-2 ">
-            <legend className="fieldset-legend">Enter your Name</legend>
-            <input
-              id="name"
-              value={customerInfo.name}
-              onChange={handleOnchange}
-              type="text"
-              className="input w-full"
-              placeholder="Name"
-            />
-          </fieldset>
-          <fieldset className="fieldset w-full col-span-2">
-            <legend className="fieldset-legend">Enter your Phone Number</legend>
-            <input
-              id="phone"
-              value={customerInfo.phone}
-              onChange={handleOnchange}
-              type="text"
-              className="input w-full"
-              placeholder="Number"
-              maxLength={11}
-            />
-          </fieldset>
-          <fieldset className="fieldset w-full col-span-4">
-            <legend className="fieldset-legend">Enter your Address</legend>
-            <input
-              id="address"
-              value={customerInfo.address}
-              onChange={handleOnchange}
-              type="text"
-              className="input w-full"
-              placeholder="Address"
-            />
-          </fieldset>
-          <div className="col-start-4 col-end-5 grid grid-cols-3 gap-3">
-            <button
-              onClick={() => {
-                resetCustomerInfo();
-              }}
-              className="btn btn-warning col-span-1"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleAddCustomer}
-              className="btn btn-success col-span-2"
-            >
-              Add Customer
-            </button>
-          </div>
+    <div className="px-5">
+      <h1 className="text-3xl">Add Customer</h1>
+      <div className="grid grid-cols-4 w-full gap-3 pr-10">
+        <fieldset className="fieldset w-full col-span-2 ">
+          <legend className="fieldset-legend">Enter your Name</legend>
+          <input
+            id="name"
+            value={customerInfo.name}
+            onChange={handleOnchange}
+            type="text"
+            className="input w-full"
+            placeholder="Name"
+          />
+        </fieldset>
+        <fieldset className="fieldset w-full col-span-2">
+          <legend className="fieldset-legend">Enter your Phone Number</legend>
+          <input
+            id="phone"
+            value={customerInfo.phone}
+            onChange={handleOnchange}
+            type="text"
+            className="input w-full"
+            placeholder="Number"
+            maxLength={11}
+          />
+        </fieldset>
+        <fieldset className="fieldset w-full col-span-4">
+          <legend className="fieldset-legend">Enter your Address</legend>
+          <input
+            id="address"
+            value={customerInfo.address}
+            onChange={handleOnchange}
+            type="text"
+            className="input w-full"
+            placeholder="Address"
+          />
+        </fieldset>
+        <div className="col-start-4 col-end-5 grid grid-cols-3 gap-3">
+          <button
+            onClick={() => {
+              resetCustomerInfo();
+            }}
+            className="btn btn-warning col-span-1"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleAddCustomer}
+            className="btn btn-success col-span-2"
+          >
+            Add Customer
+          </button>
         </div>
       </div>
     </div>
