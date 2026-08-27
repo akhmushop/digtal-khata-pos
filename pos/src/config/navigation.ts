@@ -1,4 +1,10 @@
-import { LayoutDashboard, Package, ShoppingCart, Tags, Users } from "lucide-react";
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  Tags,
+  Users,
+} from "lucide-react";
 import { GiExpense } from "react-icons/gi";
 import { MdOutlinePointOfSale } from "react-icons/md";
 import { FcSalesPerformance } from "react-icons/fc";
@@ -18,7 +24,7 @@ export const navigation = [
     icon: Package,
     items: [
       { title: "All Products", url: "/product" },
-      { title: "Add Product", url: "/products/new" },
+      { title: "Add Product", url: "/product/addproduct" },
     ],
   },
   {

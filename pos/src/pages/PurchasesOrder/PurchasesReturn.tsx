@@ -156,31 +156,108 @@ export const PurchaseViewItems = () => {
     [purchasesReturnItems],
   );
   return (
-    <div className="grid grid-cols-12">
-      {/* Sidebar */}
-      <div className="col-span-2">
-        <div className="fixed w-60">
-          <Sidebar />
+    <div className="px-5">
+      {/* receive items */}
+      <div className="flex justify-between mb-5">
+        <div>
+          <p>Back to Purchase Orders</p>
+          <h1>Receive Items</h1>
+          <p>
+            OrderId: {id} | Supplier: {supplierName}
+          </p>
+        </div>
+        <div>
+          <p>Order Total</p>
+          <p>{finalTotal}</p>
         </div>
       </div>
-      {/* receive items */}
-      <div className="col-span-10 m-5">
-        <div className="flex justify-between mb-5">
-          <div>
-            <p>Back to Purchase Orders</p>
-            <h1>Receive Items</h1>
-            <p>
-              OrderId: {id} | Supplier: {supplierName}
-            </p>
-          </div>
-          <div>
-            <p>Order Total</p>
-            <p>{finalTotal}</p>
-          </div>
+      {/* summer card */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {itemsStatusCards.map((card, index) => (
+          <SummaryCard
+            key={index}
+            card={card}
+            formatCurrency={formatCurrency}
+          />
+        ))}
+      </div>
+      {/* Items To Receive */}
+      <div>
+        <h1>Items To Receive</h1>
+        <div className="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
+          <table className="table">
+            {/* head */}
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Type/Variant</th>
+                <th>Ordered</th>
+                <th>Received</th>
+                <th>Already Return</th>
+                <th>Return Now</th>
+                <th>Purchase Price</th>
+                <th>Total</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {/* row 1 */}
+              {receiveItems.map((item) => {
+                const returnItem = purchaseReturnMap.get(item.id);
+                const returnQuantity = returnItem?.return_quantity ?? 0;
+                const maxReturn =
+                  Number(item.receiveQuantity) - Number(returnQuantity);
+                return (
+                  <tr key={item.id}>
+                    <th>{item.productName}</th>
+                    <td>{item.productUnit}</td>
+                    <td>{item.quantity}</td>
+                    <td>{item.receiveQuantity}</td>
+                    <td>{returnQuantity}</td>
+                    <td>
+                      <input
+                        name="returnPurchaseQty"
+                        max={maxReturn}
+                        onChange={(e) => {
+                          handleReceiveOnchange(e, item);
+                        }}
+                        value={item.returnPurchaseQty}
+                        className="input"
+                        type="number"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        disabled
+                        name="purchasePrice"
+                        onChange={(e) => {
+                          handleReceiveOnchange(e, item);
+                        }}
+                        value={item.purchasePrice}
+                        className="input"
+                        type="number"
+                      />
+                    </td>
+                    <td>
+                      {(item.returnPurchaseQty * item.purchasePrice).toFixed(2)}
+                    </td>
+                    <td>
+                      <button className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 hover:cursor-pointer">
+                        Return
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-        {/* summer card */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {itemsStatusCards.map((card, index) => (
+      </div>
+      {/* payment details */}
+      <div>
+        <h1>Payment Details</h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {paymentsInfoCards.map((card, index) => (
             <SummaryCard
               key={index}
               card={card}
@@ -188,126 +265,36 @@ export const PurchaseViewItems = () => {
             />
           ))}
         </div>
-        {/* Items To Receive */}
-        <div>
-          <h1>Items To Receive</h1>
-          <div className="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
-            <table className="table">
-              {/* head */}
-              <thead>
-                <tr>
-                  <th>Product</th>
-                  <th>Type/Variant</th>
-                  <th>Ordered</th>
-                  <th>Received</th>
-                  <th>Already Return</th>
-                  <th>Return Now</th>
-                  <th>Purchase Price</th>
-                  <th>Total</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {/* row 1 */}
-                {receiveItems.map((item) => {
-                  const returnItem = purchaseReturnMap.get(item.id);
-                  const returnQuantity = returnItem?.return_quantity ?? 0;
-                  const maxReturn =
-                    Number(item.receiveQuantity) - Number(returnQuantity);
-                  return (
-                    <tr key={item.id}>
-                      <th>{item.productName}</th>
-                      <td>{item.productUnit}</td>
-                      <td>{item.quantity}</td>
-                      <td>{item.receiveQuantity}</td>
-                      <td>{returnQuantity}</td>
-                      <td>
-                        <input
-                          name="returnPurchaseQty"
-                          max={maxReturn}
-                          onChange={(e) => {
-                            handleReceiveOnchange(e, item);
-                          }}
-                          value={item.returnPurchaseQty}
-                          className="input"
-                          type="number"
-                        />
-                      </td>
-                      <td>
-                        <input
-                          disabled
-                          name="purchasePrice"
-                          onChange={(e) => {
-                            handleReceiveOnchange(e, item);
-                          }}
-                          value={item.purchasePrice}
-                          className="input"
-                          type="number"
-                        />
-                      </td>
-                      <td>
-                        {(item.returnPurchaseQty * item.purchasePrice).toFixed(
-                          2,
-                        )}
-                      </td>
-                      <td>
-                        <button className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 hover:cursor-pointer">
-                          Return
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+      </div>
+      {/* payment summary */}
+      <div className="border-dashed rounded border border-gray-400  w-full mt-2">
+        <div className="flex justify-between gap-6 p-2">
+          <div className="flex justify-between w-full">
+            <p>Receiving Now</p>
+            <p>{formatCurrency(totalRefund)}</p>
+          </div>
+          <div className="flex justify-between w-full">
+            <p>Paying Now</p>
+            <p>{}</p>
           </div>
         </div>
-        {/* payment details */}
-        <div>
-          <h1>Payment Details</h1>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {paymentsInfoCards.map((card, index) => (
-              <SummaryCard
-                key={index}
-                card={card}
-                formatCurrency={formatCurrency}
-              />
-            ))}
+        <div className="flex justify-between gap-6 p-2">
+          <div className="flex justify-between w-full">
+            <p>Previous Balance</p>
+            <p>{dueAmount}</p>
+          </div>
+          <div className="flex justify-between w-full">
+            <p>New Balance Due</p>
+            <p>{}</p>
           </div>
         </div>
-        {/* payment summary */}
-        <div className="border-dashed rounded border border-gray-400  w-full mt-2">
-          <div className="flex justify-between gap-6 p-2">
-            <div className="flex justify-between w-full">
-              <p>Receiving Now</p>
-              <p>{formatCurrency(totalRefund)}</p>
-            </div>
-            <div className="flex justify-between w-full">
-              <p>Paying Now</p>
-              <p>{}</p>
-            </div>
-          </div>
-          <div className="flex justify-between gap-6 p-2">
-            <div className="flex justify-between w-full">
-              <p>Previous Balance</p>
-              <p>{dueAmount}</p>
-            </div>
-            <div className="flex justify-between w-full">
-              <p>New Balance Due</p>
-              <p>{}</p>
-            </div>
-          </div>
-        </div>
-        <div className="flex mt-5">
-          <button
-            onClick={handleSubmit}
-            className="btn btn-success flex-1 mr-2"
-          >
-            Process Purchase Return
-          </button>
-          <Toaster />
-          <button className="btn btn-soft  flex-none">Cancel</button>
-        </div>
+      </div>
+      <div className="flex mt-5">
+        <button onClick={handleSubmit} className="btn btn-success flex-1 mr-2">
+          Process Purchase Return
+        </button>
+        <Toaster />
+        <button className="btn btn-soft  flex-none">Cancel</button>
       </div>
     </div>
   );
