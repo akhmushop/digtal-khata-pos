@@ -17,6 +17,8 @@ import { inventoryBatches } from "../../db/schema/inventoryBatches.js";
 import type { PgTransaction } from "drizzle-orm/pg-core";
 import type { NodePgQueryResultHKT } from "drizzle-orm/node-postgres";
 import { inventoryStock } from "../../db/schema/inventoryStock.js";
+import type { AddCategorySchemaType } from "./schemas/category.schema.js";
+import { number } from "zod";
 
 async function getBrands() {
   return db
@@ -422,4 +424,16 @@ export async function createProduct(data: ProductType) {
     console.error(err);
     throw err;
   }
+}
+export async function createCategory(data: AddCategorySchemaType) {
+  const [category] = await db
+    .insert(categories)
+    .values({
+      name: data.categoryName,
+      description: data.description,
+      status: data.status,
+      parentId: data.parentCategoryId,
+    })
+    .returning({ value: categories.id, label: categories.name });
+  return category;
 }
