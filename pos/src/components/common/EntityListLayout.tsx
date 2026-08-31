@@ -19,8 +19,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-
-export function EntityListLayout({ title, description, action, children }) {
+interface EntityListLayoutProps {
+  title: string;
+  description: string;
+  action: React.ReactNode;
+  children: React.ReactNode;
+}
+export function EntityListLayout({
+  title,
+  description,
+  action,
+  children,
+}: EntityListLayoutProps) {
   return (
     <div className="p-5 space-y-5">
       <Card>
@@ -38,15 +48,17 @@ export function EntityListLayout({ title, description, action, children }) {
               </InputGroupAddon>
               <InputGroupAddon align="inline-end">12 results</InputGroupAddon>
             </InputGroup>
-            <DropdownMenu>
-              <DropdownMenuTrigger render={<Button variant="outline" />}>
-                Status <ChevronDown />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem>Active</DropdownMenuItem>
-                <DropdownMenuItem>Inactive</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {title !== "Units" && (
+              <DropdownMenu>
+                <DropdownMenuTrigger render={<Button variant="outline" />}>
+                  Status <ChevronDown />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem>Active</DropdownMenuItem>
+                  <DropdownMenuItem>Inactive</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </CardContent>
       </Card>
