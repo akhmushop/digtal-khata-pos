@@ -11,6 +11,7 @@ import {
 } from "react-hook-form";
 import { AddCategorySchemaType } from "./addCategory.schema";
 import { BrandSchemaType } from "./brand.schema";
+import { UnitSchemaType } from "./schemas/unit.schema";
 export type CreateProductResponse = {
   success: boolean;
   message: string;
@@ -18,7 +19,7 @@ export type CreateProductResponse = {
     productId: number;
   };
 };
-export type CreateCategoryResponse = {
+export type CreateEntityResponse = {
   success: boolean;
   message: string;
   data: {
@@ -26,7 +27,7 @@ export type CreateCategoryResponse = {
     label: string;
   };
 };
-export type CreateBrandResponse = CreateCategoryResponse & {};
+
 export interface ProductStoreType {
   productSelectOptions: {
     brands: {
@@ -54,8 +55,9 @@ export interface ProductStoreType {
   createProduct: (data: ProductTypeOutput) => Promise<CreateProductResponse>;
   createCategory: (
     data: AddCategorySchemaType,
-  ) => Promise<CreateCategoryResponse>;
-  createBrand: (data: BrandSchemaType) => Promise<CreateBrandResponse>;
+  ) => Promise<CreateEntityResponse>;
+  createBrand: (data: BrandSchemaType) => Promise<CreateEntityResponse>;
+  createUnit: (data: UnitSchemaType) => Promise<CreateEntityResponse>;
 }
 export interface SelectOptionsProps {
   options: {
