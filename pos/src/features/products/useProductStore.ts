@@ -2,6 +2,7 @@ import { ProductStoreType } from "@/features/products/product.types";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { create } from "zustand";
 import {
+  createBrandApi,
   createCategoryApi,
   createProductApi,
   getProductSelectOptionsApi,
@@ -50,6 +51,16 @@ const useProductStore = create<ProductStoreType>((set) => ({
           response.data.data,
           ...state.productSelectOptions.categories,
         ],
+      },
+    }));
+    return response.data;
+  },
+  createBrand: async (data) => {
+    const response = await createBrandApi(data);
+    set((state) => ({
+      productSelectOptions: {
+        ...state.productSelectOptions,
+        brands: [response.data.data, ...state.productSelectOptions.brands],
       },
     }));
     return response.data;

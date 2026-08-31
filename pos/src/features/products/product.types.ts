@@ -10,6 +10,7 @@ import {
   UseFormReturn,
 } from "react-hook-form";
 import { AddCategorySchemaType } from "./addCategory.schema";
+import { BrandSchemaType } from "./brand.schema";
 export type CreateProductResponse = {
   success: boolean;
   message: string;
@@ -22,9 +23,10 @@ export type CreateCategoryResponse = {
   message: string;
   data: {
     value: number;
-    label: string
+    label: string;
   };
 };
+export type CreateBrandResponse = CreateCategoryResponse & {};
 export interface ProductStoreType {
   productSelectOptions: {
     brands: {
@@ -53,6 +55,7 @@ export interface ProductStoreType {
   createCategory: (
     data: AddCategorySchemaType,
   ) => Promise<CreateCategoryResponse>;
+  createBrand: (data: BrandSchemaType) => Promise<CreateBrandResponse>;
 }
 export interface SelectOptionsProps {
   options: {
