@@ -33,10 +33,10 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import useProductStore from "../../useProductStore";
-import { addCategoryStatus } from "../../constants/addCategory-status";
 import { createCategoryPromiseToast } from "../../utils/categoryPromiseToast";
 import { Spinner } from "@/components/ui/spinner";
 import { useState } from "react";
+import { addCategoryStatus } from "../../constants/status";
 
 export function AddCategoryDialog() {
   const [open, setOpen] = useState(false);

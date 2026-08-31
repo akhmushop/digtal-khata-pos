@@ -3,6 +3,7 @@ import { handleError } from "../../utils/handleError.js";
 import * as productService from "./product.service.js";
 import { productSchema } from "./schemas/product.schema.js";
 import { addCategorySchema } from "./schemas/category.schema.js";
+import { brandSchema } from "./schemas/brand.schema.js";
 
 export async function getProductSelectOptions(req: Request, res: Response) {
   try {
@@ -57,6 +58,28 @@ export async function createCategory(
     return res.status(201).json({
       message: "Category created successfully",
       data: category,
+    });
+  } catch (err: unknown) {
+    next(err);
+  }
+}
+export async function createBrand(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const result = brandSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({
+        message: "Invalid brand data",
+        errors: result.error.flatten(),
+      });
+    }
+    const brand = await productService.createBrand(result.data);
+    return res.status(201).json({
+      message: "Brand created successfully",
+      data: brand,
     });
   } catch (err: unknown) {
     next(err);
