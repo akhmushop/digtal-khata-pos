@@ -13,6 +13,7 @@ import AppLayout from "@/layouts/AppLayout";
 import Products from "../features/products/pages/ProductsPage";
 import { Categories } from "@/features/products/pages/Categories";
 import { Brands } from "@/features/products/pages/Brands";
+import { Units } from "@/features/products/pages/Units";
 
 const router = createBrowserRouter([
   {
@@ -33,6 +34,10 @@ const router = createBrowserRouter([
       {
         path: "/brands",
         element: <Brands />,
+      },
+      {
+        path: "/units",
+        element: <Units />,
       },
       {
         path: "/dashboard",
