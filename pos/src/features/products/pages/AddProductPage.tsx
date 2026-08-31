@@ -102,8 +102,7 @@ const ProductStockForm = () => {
     defaultValues: defaultValues,
     resolver: zodResolver(productSchema),
   });
-  const { getProductSelectOptions, getProductVariantOptions, createProduct } =
-    useProductStore();
+  const { createProduct } = useProductStore();
   async function onSubmit(data: ProductTypeOutput) {
     await createProductPromiseToast(data, createProduct);
   }
@@ -111,11 +110,6 @@ const ProductStockForm = () => {
     control: form.control,
     name: "variants",
   });
-
-  useEffect(() => {
-    getProductSelectOptions();
-    getProductVariantOptions();
-  }, []);
   console.log(form.formState.errors);
   return (
     <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-4 md:p-8">

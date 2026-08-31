@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import { handleError } from "../../utils/handleError.js";
 import * as productService from "./product.service.js";
 import { productSchema } from "./schemas/product.schema.js";
+import { addCategorySchema } from "./schemas/category.schema.js";
 
 export async function getProductSelectOptions(req: Request, res: Response) {
   try {
@@ -36,6 +37,28 @@ export async function createProduct(
       data: product,
     });
   } catch (err: unknown) {
-    next(err)
+    next(err);
+  }
+}
+export async function createCategory(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const result = addCategorySchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({
+        message: "Invalid category data",
+        errors: result.error.flatten(),
+      });
+    }
+    const category = await productService.createCategory(result.data);
+    return res.status(201).json({
+      message: "Category created successfully",
+      data: category,
+    });
+  } catch (err: unknown) {
+    next(err);
   }
 }

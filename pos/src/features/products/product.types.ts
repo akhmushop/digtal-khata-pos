@@ -9,11 +9,20 @@ import {
   UseFieldArrayReplace,
   UseFormReturn,
 } from "react-hook-form";
+import { AddCategorySchemaType } from "./addCategory.schema";
 export type CreateProductResponse = {
   success: boolean;
   message: string;
   data: {
     productId: number;
+  };
+};
+export type CreateCategoryResponse = {
+  success: boolean;
+  message: string;
+  data: {
+    value: number;
+    label: string
   };
 };
 export interface ProductStoreType {
@@ -41,6 +50,9 @@ export interface ProductStoreType {
   getProductSelectOptions: () => void;
   getProductVariantOptions: () => void;
   createProduct: (data: ProductTypeOutput) => Promise<CreateProductResponse>;
+  createCategory: (
+    data: AddCategorySchemaType,
+  ) => Promise<CreateCategoryResponse>;
 }
 export interface SelectOptionsProps {
   options: {
