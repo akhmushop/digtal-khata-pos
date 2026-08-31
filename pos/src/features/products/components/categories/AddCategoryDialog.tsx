@@ -16,7 +16,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Plus } from "lucide-react";
+import { Plus, Save } from "lucide-react";
 import { Controller, FieldPath, useForm, UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -34,8 +34,12 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import useProductStore from "../../useProductStore";
 import { addCategoryStatus } from "../../constants/addCategory-status";
+import { createCategoryPromiseToast } from "../../utils/categoryPromiseToast";
+import { Spinner } from "@/components/ui/spinner";
+import { useState } from "react";
 
 export function AddCategoryDialog() {
+  const [open, setOpen] = useState(false);
   const form = useForm<AddCategorySchemaType>({
     resolver: zodResolver(addCategorySchema),
     defaultValues: {
@@ -45,14 +49,22 @@ export function AddCategoryDialog() {
       status: "active",
     },
   });
-  const submit = (data: AddCategorySchemaType) => {
-    console.log(data);
-  };
-  const { productSelectOptions } = useProductStore();
+  const { productSelectOptions, createCategory } = useProductStore();
+  function handleOpenChange(nextOpen: boolean) {
+    setOpen(nextOpen);
+    if (!nextOpen) {
+      form.reset();
+    }
+  }
+  async function onSubmit(data: AddCategorySchemaType) {
+    await createCategoryPromiseToast(data, createCategory);
+    form.reset();
+  }
+  const isSubmitting = form.formState.isSubmitting;
   console.log(form.formState.errors);
   return (
-    <Dialog>
-      <form id="add-category-form" onSubmit={form.handleSubmit(submit)}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <form id="add-category-form" onSubmit={form.handleSubmit(onSubmit)}>
         <DialogTrigger
           render={
             <Button variant="outline">
@@ -112,20 +124,23 @@ export function AddCategoryDialog() {
             />
           </FieldGroup>
           <DialogFooter>
-            <DialogClose
-              render={
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    form.reset();
-                  }}
-                >
-                  Cancel
-                </Button>
-              }
-            />
-            <Button form="add-category-form" type="submit">
-              Save Category
+            <DialogClose render={<Button variant="outline">Cancel</Button>} />
+
+            <Button
+              disabled={isSubmitting}
+              form="add-category-form"
+              type="submit"
+            >
+              {isSubmitting ? (
+                <>
+                  <Spinner /> Creating
+                </>
+              ) : (
+                <>
+                  <Save />
+                  Create Category
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
