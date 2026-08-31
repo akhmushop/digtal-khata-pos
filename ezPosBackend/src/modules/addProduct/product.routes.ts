@@ -9,5 +9,6 @@ router.get(
   "/api/product/variant-options",
   productController.getProductVariantOptions,
 );
-router.post("/api/product",productController.createProduct)
+router.post("/api/product", productController.createProduct);
+router.post("/api/product/category", productController.createCategory);
 export default router;

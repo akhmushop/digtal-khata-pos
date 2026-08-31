@@ -11,6 +11,7 @@ import { ReceiveItems } from "../pages/PurchasesOrder/ReceiveItems";
 import { PurchaseViewItems } from "../pages/PurchasesOrder/PurchasesReturn";
 import AppLayout from "@/layouts/AppLayout";
 import Products from "../features/products/pages/ProductsPage";
+import { Categories } from "@/features/products/pages/Categories";
 
 const router = createBrowserRouter([
   {
@@ -23,6 +24,10 @@ const router = createBrowserRouter([
       {
         path: "/product",
         element: <Products />,
+      },
+      {
+        path: "/categories",
+        element: <Categories />,
       },
       {
         path: "/dashboard",

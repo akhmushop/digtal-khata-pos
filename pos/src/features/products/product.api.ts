@@ -1,4 +1,5 @@
 import axios from "../../api/axios.js";
+import { AddCategorySchemaType } from "./addCategory.schema.js";
 import { ProductTypeOutput } from "./product.schema.js";
 
 export async function getProductSelectOptionsApi() {
@@ -11,4 +12,7 @@ export async function getProductVariantOptionsApi() {
 }
 export async function createProductApi(data: ProductTypeOutput) {
   return axios.post("/product", data);
+}
+export async function createCategoryApi(data: AddCategorySchemaType) {
+  return axios.post("/product/category", data);
 }
