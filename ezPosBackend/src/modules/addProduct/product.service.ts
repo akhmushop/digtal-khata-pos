@@ -20,6 +20,7 @@ import { inventoryStock } from "../../db/schema/inventoryStock.js";
 import type { AddCategorySchemaType } from "./schemas/category.schema.js";
 import { number } from "zod";
 import type { BrandSchemaType } from "./schemas/brand.schema.js";
+import type { UnitSchemaType } from "./schemas/unit.schema.js";
 
 async function getBrands() {
   return db
@@ -450,4 +451,17 @@ export async function createBrand(data: BrandSchemaType) {
       label: brands.name,
     });
   return brand;
+}
+export async function createUnit(data: UnitSchemaType) {
+  const [unit] = await db
+    .insert(units)
+    .values({
+      name: data.unitName,
+      abbreviation: data.abbreviation,
+    })
+    .returning({
+      value: units.id,
+      label: units.name,
+    });
+  return unit;
 }

@@ -5,6 +5,7 @@ import {
   createBrandApi,
   createCategoryApi,
   createProductApi,
+  createUnitApi,
   getProductSelectOptionsApi,
   getProductVariantOptionsApi,
 } from "./product.api";
@@ -61,6 +62,16 @@ const useProductStore = create<ProductStoreType>((set) => ({
       productSelectOptions: {
         ...state.productSelectOptions,
         brands: [response.data.data, ...state.productSelectOptions.brands],
+      },
+    }));
+    return response.data;
+  },
+  createUnit: async (data) => {
+    const response = await createUnitApi(data);
+    set((state) => ({
+      productSelectOptions: {
+        ...state.productSelectOptions,
+        units: [response.data.data, ...state.productSelectOptions.units],
       },
     }));
     return response.data;

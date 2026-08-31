@@ -4,6 +4,7 @@ import * as productService from "./product.service.js";
 import { productSchema } from "./schemas/product.schema.js";
 import { addCategorySchema } from "./schemas/category.schema.js";
 import { brandSchema } from "./schemas/brand.schema.js";
+import { unitSchema } from "./schemas/unit.schema.js";
 
 export async function getProductSelectOptions(req: Request, res: Response) {
   try {
@@ -80,6 +81,28 @@ export async function createBrand(
     return res.status(201).json({
       message: "Brand created successfully",
       data: brand,
+    });
+  } catch (err: unknown) {
+    next(err);
+  }
+}
+export async function createUnit(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const result = unitSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({
+        message: "Invalid unit data",
+        errors: result.error.flatten(),
+      });
+    }
+    const unit = await productService.createUnit(result.data);
+    return res.status(201).json({
+      message: "Unit created successfully",
+      data: unit,
     });
   } catch (err: unknown) {
     next(err);
