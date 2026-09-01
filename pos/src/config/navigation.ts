@@ -1,4 +1,5 @@
 import {
+  ContactRound,
   LayoutDashboard,
   Package,
   ShoppingCart,
@@ -36,9 +37,13 @@ export const navigation = [
     icon: FcSalesPerformance,
   },
   {
-    title: "Customers",
-    url: "/customer",
-    icon: Users,
+    title: "Contacts",
+
+    icon: ContactRound,
+    items: [
+      { title: "Customers", url: "/customer" },
+      { title: "Suppliers", url: "/suppliers" },
+    ],
   },
   {
     title: "Expense",
