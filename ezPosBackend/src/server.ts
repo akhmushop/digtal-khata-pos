@@ -11,6 +11,7 @@ import expenseRouter from "./modules/expenses/expenses.routes.js";
 import purchasesRouter from "./modules/purchases/purchases.routes.js";
 import purchasesReturnRouter from "./modules/purchaseReturn/purchaseReturn.routes.js";
 import addProductRouter from "./modules/addProduct/product.routes.js";
+import contactRouter from "./modules/contact/contact.routes.js";
 import cors from "cors";
 import { NotFoundError } from "./utils/handleError.js";
 import { success } from "zod";
@@ -25,6 +26,7 @@ app.use("/", expenseRouter);
 app.use("/", purchasesRouter);
 app.use("/", purchasesReturnRouter);
 app.use("/", addProductRouter);
+app.use("/", contactRouter);
 // routes
 app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
   console.error(err);
