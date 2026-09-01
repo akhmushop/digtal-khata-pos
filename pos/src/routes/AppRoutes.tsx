@@ -15,6 +15,7 @@ import { Categories } from "@/features/products/pages/Categories";
 import { Brands } from "@/features/products/pages/Brands";
 import { Units } from "@/features/products/pages/Units";
 import { Suppliers } from "@/features/Contacts/pages/Suppliers";
+import { VariantManager } from "@/features/products/pages/Variants";
 
 const router = createBrowserRouter([
   {
@@ -39,6 +40,10 @@ const router = createBrowserRouter([
       {
         path: "/units",
         element: <Units />,
+      },
+      {
+        path: "/variants",
+        element: <VariantManager />,
       },
       {
         path: "/suppliers",
