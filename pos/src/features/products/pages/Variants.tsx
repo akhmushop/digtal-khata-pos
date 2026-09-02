@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, MoreHorizontal } from "lucide-react";
 import useProductStore from "../useProductStore";
 import { useState } from "react";
+import { VariantTypeDialog } from "../components/variants/VariantTypeDialog";
 export function VariantManager() {
   const { productVariantOptions } = useProductStore();
   const [activeId, setActiveId] = useState(productVariantOptions[0]?.typeId);
@@ -35,9 +36,7 @@ export function VariantManager() {
               <CardHeader>
                 <CardTitle>Variant Type</CardTitle>
                 <CardAction>
-                  <Button variant="outline">
-                    <Plus /> Add Type
-                  </Button>
+                  <VariantTypeDialog />
                 </CardAction>
               </CardHeader>
               <CardContent>
@@ -52,17 +51,16 @@ export function VariantManager() {
                       className={`flex items-center justify-between ${active ? "bg-accent" : "text-muted-foreground"} hover:bg-accent/50 rounded-md px-3 py-2 font-medium cursor-pointer`}
                     >
                       <span>{variant.typeName}</span>
-                      
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                          }}
-                        >
-                          <MoreHorizontal />
-                        </Button>
-                     
+
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
+                      >
+                        <MoreHorizontal />
+                      </Button>
                     </div>
                   );
                 })}

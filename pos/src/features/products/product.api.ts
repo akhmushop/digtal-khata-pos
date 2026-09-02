@@ -3,6 +3,7 @@ import { AddCategorySchemaType } from "./addCategory.schema.js";
 import { BrandSchemaType } from "./brand.schema.js";
 import { ProductTypeOutput } from "./product.schema.js";
 import { UnitSchemaType } from "./schemas/unit.schema.js";
+import { VariantTypeSchemaType } from "./schemas/variant.schema.js";
 
 export async function getProductSelectOptionsApi() {
   const { data } = await axios.get("/product/select-options");
@@ -23,4 +24,7 @@ export async function createBrandApi(data: BrandSchemaType) {
 }
 export async function createUnitApi(data: UnitSchemaType) {
   return axios.post("/product/unit", data);
+}
+export async function createVariantTypeApi(data: VariantTypeSchemaType) {
+  return axios.post("/product/variant-type", data);
 }
