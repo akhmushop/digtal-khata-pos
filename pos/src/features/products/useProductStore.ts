@@ -6,6 +6,7 @@ import {
   createCategoryApi,
   createProductApi,
   createUnitApi,
+  createVariantTypeApi,
   getProductSelectOptionsApi,
   getProductVariantOptionsApi,
 } from "./product.api";
@@ -76,5 +77,9 @@ const useProductStore = create<ProductStoreType>((set) => ({
     }));
     return response.data;
   },
+  createVariantType: async (data) => {
+    const response = await createVariantTypeApi(data)
+    return response.data
+  }
 }));
 export default useProductStore;
