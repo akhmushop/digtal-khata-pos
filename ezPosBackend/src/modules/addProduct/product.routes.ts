@@ -14,4 +14,8 @@ router.post("/api/product/category", productController.createCategory);
 router.post("/api/product/brand", productController.createBrand);
 router.post("/api/product/unit", productController.createUnit);
 router.post("/api/product/variant-type", productController.createVariantType);
+router.post(
+  "/api/product/variant-option",
+  productController.createVariantOption,
+);
 export default router;

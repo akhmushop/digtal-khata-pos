@@ -38,7 +38,7 @@ export type VariantTypeData = {
 export type VariantOptionData = {
   id: number;
   variantTypeId: number;
-  variantOptionName: string;
+  value: string;
 };
 export type ApiResponse<T> = {
   success: boolean;
