@@ -11,13 +11,13 @@ import { Plus, MoreHorizontal } from "lucide-react";
 import useProductStore from "../useProductStore";
 import { useState } from "react";
 import { VariantTypeDialog } from "../components/variants/VariantTypeDialog";
+import { VariantOptionDialog } from "../components/variants/VariantOptionDialog";
 export function VariantManager() {
   const { productVariantOptions } = useProductStore();
-  const [activeId, setActiveId] = useState(productVariantOptions[0]?.typeId);
+  const [activeId, setActiveId] = useState<number | null>(null);
   const activeVariant = productVariantOptions.find(
     (variant) => variant.typeId === activeId,
   );
-  console.log(productVariantOptions[0]?.typeId);
   return (
     <div className="p-5 space-y-5">
       <Card>
@@ -69,11 +69,11 @@ export function VariantManager() {
             {/* 3. RIGHT PANEL: Options List */}
             <Card className="w-2/3">
               <CardHeader>
-                <CardTitle>Color Options</CardTitle>
+                <CardTitle>{activeVariant? `${activeVariant?.typeName} Options`:"Select Variant Type First"} </CardTitle>
                 <CardAction>
-                  <Button variant="outline">
-                    <Plus /> Add Option
-                  </Button>
+                  {activeVariant && (
+                    <VariantOptionDialog activeVariant={activeVariant} />
+                  )}
                 </CardAction>
               </CardHeader>
               <CardContent>
