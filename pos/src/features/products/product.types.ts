@@ -33,7 +33,7 @@ export type CreateEntityResponse = {
 };
 export type VariantTypeData = {
   id: number;
-  variantTypeName: string;
+  name: string;
 };
 export type VariantOptionData = {
   id: number;

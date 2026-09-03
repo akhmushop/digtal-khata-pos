@@ -59,7 +59,7 @@ export function VariantOptionDialog({
     await createEntityPromiseToast({
       data,
       apiCall: createVariantOption,
-      entityName: "Variant Type",
+      entityName: "Variant Option",
       displayName:
         data.variantOptionName.length > 0
           ? (data.variantOptionName[0] ?? "Variant option")

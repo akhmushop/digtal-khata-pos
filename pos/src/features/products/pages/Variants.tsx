@@ -18,6 +18,7 @@ export function VariantManager() {
   const activeVariant = productVariantOptions.find(
     (variant) => variant.typeId === activeId,
   );
+  console.log(productVariantOptions);
   return (
     <div className="p-5 space-y-5">
       <Card>
@@ -69,7 +70,11 @@ export function VariantManager() {
             {/* 3. RIGHT PANEL: Options List */}
             <Card className="w-2/3">
               <CardHeader>
-                <CardTitle>{activeVariant? `${activeVariant?.typeName} Options`:"Select Variant Type First"} </CardTitle>
+                <CardTitle>
+                  {activeVariant
+                    ? `${activeVariant?.typeName} Options`
+                    : "Select Variant Type First"}{" "}
+                </CardTitle>
                 <CardAction>
                   {activeVariant && (
                     <VariantOptionDialog activeVariant={activeVariant} />
@@ -77,23 +82,27 @@ export function VariantManager() {
                 </CardAction>
               </CardHeader>
               <CardContent>
-                {activeVariant?.options.map((option) => (
-                  <div
-                    key={option.optionId}
-                    className="flex items-center justify-between border rounded-md px-3 py-2 "
-                  >
-                    <span>{option.value}</span>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                      }}
-                    >
-                      <MoreHorizontal />
-                    </Button>
-                  </div>
-                ))}
+                {activeVariant?.options.length !== 0
+                  ? activeVariant?.options.map((option) => (
+                      <div
+                        key={option.optionId}
+                        className="flex items-center justify-between border rounded-md px-3 py-2 "
+                      >
+                        <span>{option.value}</span>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                        >
+                          <MoreHorizontal />
+                        </Button>
+                      </div>
+                    ))
+                  : <span className="text-center border border-dashed rounded p-5 text-xl">
+                    Add Variant Options First
+                    </span>}
               </CardContent>
             </Card>
           </div>
