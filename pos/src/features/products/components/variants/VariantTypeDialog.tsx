@@ -13,9 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Plus, Save } from "lucide-react";
-import {
-  FieldGroup,
-} from "@/components/ui/field";
+import { FieldGroup } from "@/components/ui/field";
 
 import { Spinner } from "@/components/ui/spinner";
 
@@ -49,6 +47,7 @@ export function VariantTypeDialog() {
       displayName: data.variantTypeName,
     });
     form.reset();
+    setOpen(false)
   }
   const isSubmitting = form.formState.isSubmitting;
   return (
@@ -70,7 +69,7 @@ export function VariantTypeDialog() {
             <InputField
               name="variantTypeName"
               form={form}
-              fieldLabel="Unit Name"
+              fieldLabel="Variant Type Name"
               placeholder="Type VariantType Name"
             />
           </FieldGroup>
