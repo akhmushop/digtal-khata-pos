@@ -484,3 +484,17 @@ export async function createVariantType(data: VariantTypeSchemaType) {
     .returning();
   return variantType;
 }
+export async function createVariantOption(data: VariantOptionSchemaType) {
+  if (data.variantOptionName.length === 0) {
+    throw new NotFoundError("Please add at least one variant option");
+  }
+  const optionsToInsert = data.variantOptionName.map((optionName) => ({
+    variantTypeId: data.variantTypeId,
+    value: optionName,
+  }));
+  const insertedOptions = await db
+    .insert(variantOptions)
+    .values(optionsToInsert)
+    .returning();
+  return insertedOptions;
+}

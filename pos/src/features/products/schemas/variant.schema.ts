@@ -9,8 +9,7 @@ export const variantOptionSchema = z.object({
   variantTypeId: z
     .number()
     .int()
-    .min(1, { message: "Variant type is required" })
-    .nullable(),
+    .min(1, { message: "Variant type is required" }),
   variantOptionName: z
     .array(z.string().min(1, { message: "Option name cannot be empty" }))
     .min(1, { message: "Please add at least one variant option" }),
