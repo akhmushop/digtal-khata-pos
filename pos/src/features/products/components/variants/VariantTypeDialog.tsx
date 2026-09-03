@@ -58,20 +58,20 @@ export function VariantTypeDialog() {
           render={
             <Button variant="outline">
               <Plus />
-              Add Unit
+              Add Type
             </Button>
           }
         />
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Add Unit</DialogTitle>
+            <DialogTitle>Add Type</DialogTitle>
           </DialogHeader>
           <FieldGroup>
             <InputField
               name="variantTypeName"
               form={form}
               fieldLabel="Unit Name"
-              placeholder="Type Unit Name"
+              placeholder="Type VariantType Name"
             />
           </FieldGroup>
           <DialogFooter>

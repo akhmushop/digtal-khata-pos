@@ -12,7 +12,10 @@ import {
 import { AddCategorySchemaType } from "./addCategory.schema";
 import { BrandSchemaType } from "./brand.schema";
 import { UnitSchemaType } from "./schemas/unit.schema";
-import { VariantTypeSchemaType } from "./schemas/variant.schema";
+import {
+  VariantOptionSchemaType,
+  VariantTypeSchemaType,
+} from "./schemas/variant.schema";
 export type CreateProductResponse = {
   success: boolean;
   message: string;
@@ -31,6 +34,11 @@ export type CreateEntityResponse = {
 export type VariantTypeData = {
   id: number;
   variantTypeName: string;
+};
+export type VariantOptionData = {
+  id: number;
+  variantTypeId: number;
+  variantOptionName: string;
 };
 export type ApiResponse<T> = {
   success: boolean;
@@ -70,6 +78,9 @@ export interface ProductStoreType {
   createVariantType: (
     data: VariantTypeSchemaType,
   ) => Promise<ApiResponse<VariantTypeData>>;
+  createVariantOption: (
+    data: VariantOptionSchemaType,
+  ) => Promise<ApiResponse<VariantOptionData>>;
 }
 export interface SelectOptionsProps {
   options: {
