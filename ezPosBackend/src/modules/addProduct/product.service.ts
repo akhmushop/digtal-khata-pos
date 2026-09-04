@@ -21,6 +21,10 @@ import type { AddCategorySchemaType } from "./schemas/category.schema.js";
 import { number } from "zod";
 import type { BrandSchemaType } from "./schemas/brand.schema.js";
 import type { UnitSchemaType } from "./schemas/unit.schema.js";
+import type {
+  VariantOptionSchemaType,
+  VariantTypeSchemaType,
+} from "./schemas/variant.schema.js";
 
 async function getBrands() {
   return db
@@ -73,12 +77,18 @@ export async function getProductVariantOptions() {
     .select({
       typeId: variantTypes.id,
       typeName: variantTypes.name,
-      options: sql<
-        { optionId: number; value: string }[]
-      >`ARRAY_AGG( JSON_BUILD_OBJECT('optionId',${variantOptions.id},'value',${variantOptions.value}) ORDER BY ${variantOptions.value})`,
+      options: sql<{ optionId: number; value: string }[]>`
+        COALESCE(
+          ARRAY_AGG(
+              JSON_BUILD_OBJECT('optionId',${variantOptions.id},'value',${variantOptions.value})
+              ORDER BY ${variantOptions.value}
+            ) FILTER (WHERE ${variantOptions.id} IS NOT NULL),
+            ARRAY[]::json[]
+        )
+      `,
     })
-    .from(variantOptions)
-    .innerJoin(variantTypes, eq(variantOptions.variantTypeId, variantTypes.id))
+    .from(variantTypes)
+    .leftJoin(variantOptions, eq(variantOptions.variantTypeId, variantTypes.id))
     .groupBy(variantTypes.id, variantTypes.name);
 }
 async function validateProductReferences(
@@ -464,4 +474,27 @@ export async function createUnit(data: UnitSchemaType) {
       label: units.name,
     });
   return unit;
+}
+export async function createVariantType(data: VariantTypeSchemaType) {
+  const [variantType] = await db
+    .insert(variantTypes)
+    .values({
+      name: data.variantTypeName,
+    })
+    .returning();
+  return variantType;
+}
+export async function createVariantOption(data: VariantOptionSchemaType) {
+  if (data.variantOptionName.length === 0) {
+    throw new NotFoundError("Please add at least one variant option");
+  }
+  const optionsToInsert = data.variantOptionName.map((optionName) => ({
+    variantTypeId: data.variantTypeId,
+    value: optionName,
+  }));
+  const insertedOptions = await db
+    .insert(variantOptions)
+    .values(optionsToInsert)
+    .returning();
+  return insertedOptions;
 }

@@ -29,6 +29,7 @@ export const navigation = [
       { title: "Categories", url: "/categories" },
       { title: "Brands", url: "/brands" },
       { title: "Units", url: "/units" },
+      { title: "Variants", url: "/variants" },
     ],
   },
   {

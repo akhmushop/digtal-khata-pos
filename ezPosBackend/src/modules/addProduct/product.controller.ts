@@ -5,6 +5,10 @@ import { productSchema } from "./schemas/product.schema.js";
 import { addCategorySchema } from "./schemas/category.schema.js";
 import { brandSchema } from "./schemas/brand.schema.js";
 import { unitSchema } from "./schemas/unit.schema.js";
+import {
+  variantOptionSchema,
+  variantTypeSchema,
+} from "./schemas/variant.schema.js";
 
 export async function getProductSelectOptions(req: Request, res: Response) {
   try {
@@ -103,6 +107,52 @@ export async function createUnit(
     return res.status(201).json({
       message: "Unit created successfully",
       data: unit,
+    });
+  } catch (err: unknown) {
+    next(err);
+  }
+}
+export async function createVariantType(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const result = variantTypeSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({
+        message: "Invalid Variant Type data",
+        errors: result.error.flatten(),
+      });
+    }
+    const variantType = await productService.createVariantType(result.data);
+    return res.status(201).json({
+      message: "Variant Type created successfully",
+      data: variantType,
+    });
+  } catch (err: unknown) {
+    next(err);
+  }
+}
+export async function createVariantOption(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const result = variantOptionSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({
+        message: "Invalid Variant Option data",
+        errors: result.error.flatten(),
+      });
+    }
+    const variantOptions = await productService.createVariantOption(
+      result.data,
+    );
+    return res.status(201).json({
+      message: "Variant Options created successfully",
+      data: variantOptions,
     });
   } catch (err: unknown) {
     next(err);

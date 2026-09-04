@@ -1,4 +1,8 @@
-import { ProductStoreType } from "@/features/products/product.types";
+import {
+  ProductStoreType,
+  VariantOptionData,
+  VariantTypeData,
+} from "@/features/products/product.types";
 import { getErrorMessage } from "@/utils/getErrorMessage";
 import { create } from "zustand";
 import {
@@ -6,6 +10,8 @@ import {
   createCategoryApi,
   createProductApi,
   createUnitApi,
+  createVariantOptionApi,
+  createVariantTypeApi,
   getProductSelectOptionsApi,
   getProductVariantOptionsApi,
 } from "./product.api";
@@ -74,6 +80,46 @@ const useProductStore = create<ProductStoreType>((set) => ({
         units: [response.data.data, ...state.productSelectOptions.units],
       },
     }));
+    return response.data;
+  },
+  createVariantType: async (data) => {
+    const response = await createVariantTypeApi(data);
+    const newType: VariantTypeData = response.data.data;
+    const typeToAdd = {
+      typeId: newType.id,
+      typeName: newType.name,
+      options: [],
+    };
+    set((state) => ({
+      productVariantOptions: [...state.productVariantOptions, typeToAdd],
+    }));
+    return response.data;
+  },
+  createVariantOption: async (data) => {
+    const response = await createVariantOptionApi(data);
+    const newOptions = response.data.data;
+
+    set((state) => ({
+      ...state,
+      productVariantOptions: state.productVariantOptions.map((group) => {
+        const optionsToAdd = newOptions
+          .filter(
+            (opt: VariantOptionData) => opt.variantTypeId === group.typeId,
+          )
+          .map((opt: VariantOptionData) => ({
+            optionId: opt.id,
+            value: opt.value,
+          }));
+        if (optionsToAdd.length > 0) {
+          return {
+            ...group,
+            options: [...group.options, ...optionsToAdd],
+          };
+        }
+        return group;
+      }),
+    }));
+
     return response.data;
   },
 }));
