@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, ControllerRenderProps, useForm } from "react-hook-form";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import useProductStore from "../../useProductStore";
 import {
   Dialog,
@@ -46,6 +46,12 @@ export function VariantOptionDialog({
       variantTypeId: activeVariant.typeId,
     },
   });
+  useEffect(() => {
+    form.reset({
+      variantOptionName: [],
+      variantTypeId: activeVariant.typeId,
+    });
+  }, [activeVariant, form]);
   const { createVariantOption } = useProductStore();
   function handleOpenChange(nextOpen: boolean) {
     setOpen(nextOpen);
@@ -55,18 +61,15 @@ export function VariantOptionDialog({
     }
   }
   async function onSubmit(data: VariantOptionSchemaType) {
-    console.log(data);
     await createEntityPromiseToast({
       data,
       apiCall: createVariantOption,
       entityName: "Variant Option",
-      displayName:
-        data.variantOptionName.length > 0
-          ? (data.variantOptionName[0] ?? "Variant option")
-          : "Multiple Options",
+      displayName: data.variantOptionName.join(", "),
     });
     form.reset();
     setOptionInput("");
+    setOpen(false);
   }
   const isSubmitting = form.formState.isSubmitting;
   const options = form.watch("variantOptionName") || [];
