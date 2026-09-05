@@ -1,4 +1,5 @@
 import {
+  ProductType,
   ProductTypeInput,
   ProductTypeOutput,
 } from "@/features/products/product.schema";
@@ -46,6 +47,7 @@ export type ApiResponse<T> = {
   data: T;
 };
 export interface ProductStoreType {
+  products: ProductType[];
   productSelectOptions: {
     brands: {
       value: number;
@@ -67,6 +69,7 @@ export interface ProductStoreType {
   productVariantOptions: VariantOptionGroup[];
   loading: boolean;
   error: string | null;
+  getProducts: () => void;
   getProductSelectOptions: () => void;
   getProductVariantOptions: () => void;
   createProduct: (data: ProductTypeOutput) => Promise<CreateProductResponse>;
@@ -170,3 +173,6 @@ export type VariantTableRowProps = {
   onAddVariant: (variant: GeneratedVariant) => void;
   onRemoveVariant: (variantIndex: number) => void;
 };
+export interface PurchaseCart extends ProductType {
+  purchaseQty: number;
+}

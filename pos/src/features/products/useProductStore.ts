@@ -12,11 +12,13 @@ import {
   createUnitApi,
   createVariantOptionApi,
   createVariantTypeApi,
+  getProductsApi,
   getProductSelectOptionsApi,
   getProductVariantOptionsApi,
 } from "./product.api";
 
 const useProductStore = create<ProductStoreType>((set) => ({
+  products: [],
   productSelectOptions: {
     brands: [],
     categories: [],
@@ -26,6 +28,15 @@ const useProductStore = create<ProductStoreType>((set) => ({
   productVariantOptions: [],
   loading: false,
   error: null,
+  getProducts: async () => {
+    set({ loading: true });
+    try {
+      const productsData = await getProductsApi();
+      set({ products: productsData, loading: false });
+    } catch (err: unknown) {
+      set({ error: getErrorMessage(err), loading: false });
+    }
+  },
   getProductSelectOptions: async () => {
     set({ loading: true });
     try {

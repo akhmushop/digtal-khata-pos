@@ -1,21 +1,25 @@
 import React, { useState } from "react";
-import Sidebar from "../../components/layout/Sidebar.js";
 import { Link } from "react-router";
 import { RiHome9Fill } from "react-icons/ri";
-import { MdOutlineAddCircleOutline, MdDeleteOutline } from "react-icons/md";
-import { FiMinusCircle } from "react-icons/fi";
-import { HiDotsVertical } from "react-icons/hi";
-import axios from "../../api/axios.js";
-import type { PurchaseCart, Suppliers } from "../../types/purchases.types.js";
-import type { ProductsTypes } from "../../types/products.types.js";
-import { useProductStore } from "@/features/products/usedashboardProductStore.js";
+import axios from "../../../api/axios.js";
+import useProductStore from "@/features/products/useProductStore.js";
+import { ProductType } from "@/features/products/product.schema.js";
+import { PurchaseCart } from "@/features/products/product.types.js";
+
+import { Card, CardContent, CardFooter } from "@/components/ui/card.js";
+import { Badge } from "@/components/ui/badge.js";
+import { AspectRatio } from "@/components/ui/aspect-ratio.js";
+import { ProductCard } from "../components/ProductCard.js";
+import { ShowVariantsProps } from "../purchase.types.js";
+import { ShowVariants } from "../components/ShowVariants.js";
+import { PurchaseTable } from "../components/PurchaseTable.js";
 export function PurchasesOrder() {
   const [searchProducts, setSearchProducts] = useState("");
   const [searchSuppliers, setSearchSuppliers] = useState("");
   const [purchasesCart, setPurchasesCart] = useState<PurchaseCart[]>([]);
   const { products } = useProductStore();
   const filteredProducts = products.filter((item) =>
-    item.productName.toLowerCase().includes(searchProducts.toLowerCase() || ""),
+    item.name.toLowerCase().includes(searchProducts.toLowerCase() || ""),
   );
   const [showSupplierSearch, setShowSupplierSearch] = useState(true);
   const [showSupplier, setShowSupplier] = useState<Suppliers | null>(null);
@@ -27,8 +31,12 @@ export function PurchasesOrder() {
   const filteredSuppliers = suppliers.filter((item) =>
     item.name.toLowerCase().includes(searchSuppliers.toLowerCase() || ""),
   );
-  const handleAddPurchase = (product: ProductsTypes) => {
-    if (product.quantity <= 0) return;
+  const handleAddPurchase = (product: ProductType) => {
+    const variant = product.variants[0];
+    if (!variant) {
+      return;
+    }
+    if (variant.quantity <= 0) return;
     setPurchasesCart((prev) => {
       const exists = prev.find((p) => p.id === product.id);
 
@@ -47,7 +55,7 @@ export function PurchasesOrder() {
   const [purchasesCartNotes, setPurchasesCartNotes] = useState("");
   const handleOnchange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-    purchaseProduct: ProductsTypes,
+    purchaseProduct: ProductType,
   ) => {
     const { value, id } = e.target;
     if (id === "notes") {
@@ -65,7 +73,11 @@ export function PurchasesOrder() {
           case "estPrice":
             return {
               ...p,
-              cost: Number(value),
+              variants: p.variants.map((variant, index) =>
+                index === 0
+                  ? { ...variant, purchasePrice: Number(value) }
+                  : variant,
+              ),
             };
           default:
             return p;
@@ -123,32 +135,26 @@ export function PurchasesOrder() {
           <div className=" h-full overflow-scroll  no-scrollbar bg-zuccini-50">
             <div className=" grid grid-cols-3  gap-1 p-5">
               {filteredProducts.map((product) => {
-                return (
-                  <div
+                const defaultVariant = product.variants.find(
+                  (variant) => variant.isDefault,
+                );
+                if (!defaultVariant) {
+                  return;
+                }
+                return product.hasVariants ? (
+                  <ShowVariants
                     key={product.id}
-                    onClick={() => {
-                      handleAddPurchase(product);
-                    }}
-                    className={`select-none relative h-60 bg-zuccini-300 rounded-sm flex flex-col items-center justify-between py-2 
-  ${
-    product.quantity <= 0 ? "cursor-not-allowed opacity-60" : "cursor-pointer"
-  }`}
-                  >
-                    {product.quantity <= 0 && (
-                      <div className="absolute inset-0 bg-black/50 rounded-sm flex items-center justify-center text-white text-xl">
-                        Stock Out
-                      </div>
-                    )}
-                    <img
-                      className="h-20 rounded-sm "
-                      src={product.image}
-                      alt=""
-                    />
-                    <h2 className="text-center">{product.productName}</h2>
-                    <p className=" ">{product.category}</p>
-                    <h1 className=" ">TK: {product.price}</h1>
-                    <p className=" ">Stock: {product.quantity}</p>
-                  </div>
+                    product={product}
+                    handleAddPurchase={handleAddPurchase}
+                    defaultVariant={defaultVariant}
+                  />
+                ) : (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    handleAddPurchase={handleAddPurchase}
+                    defaultVariant={defaultVariant}
+                  />
                 );
               })}
             </div>
@@ -258,75 +264,7 @@ export function PurchasesOrder() {
               )}
             </div>
             <div className="overflow-x-auto rounded-box border border-base-content/5 bg-base-100 m-2">
-              <table className="table">
-                {/* head */}
-                <thead>
-                  <tr>
-                    <th>S.No</th>
-                    <th>Product</th>
-                    <th>Type</th>
-                    <th>Unit</th>
-                    <th>Ordered Qty</th>
-                    <th>Est Price</th>
-                    <th>Est Total</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {purchasesCart.map((pur, i) => (
-                    <tr key={pur.id}>
-                      <th>{i + 1}</th>
-                      <td>{pur.productName}</td>
-                      <td>{pur.productType}</td>
-                      <td>{pur.productUnit}</td>
-                      {/* ordered qty */}
-                      <td>
-                        <input
-                          id="orderedQty"
-                          onChange={(e) => {
-                            handleOnchange(e, pur);
-                          }}
-                          onFocus={(e) => {
-                            e.target.select();
-                          }}
-                          value={pur.purchaseQty}
-                          className="w-full input"
-                          type="number"
-                        />
-                      </td>
-                      {/* est price */}
-                      <td>
-                        <input
-                          id="estPrice"
-                          onChange={(e) => {
-                            handleOnchange(e, pur);
-                          }}
-                          onFocus={(e) => {
-                            e.target.select();
-                          }}
-                          defaultValue={pur.cost}
-                          className="w-full input"
-                          type="number"
-                        />
-                      </td>
-                      {/* est total */}
-                      <td>{(pur.purchaseQty * pur.cost).toFixed(2)}</td>
-                      <td>
-                        <button
-                          onClick={() => {
-                            setPurchasesCart((prev) =>
-                              prev.filter((p) => p.id !== pur.id),
-                            );
-                          }}
-                          className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 hover:cursor-pointer"
-                        >
-                          X
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <PurchaseTable purchasesCart={purchasesCart} handleOnchange={handleOnchange} setPurchasesCart={setPurchasesCart} />
             </div>
             {/* footer area */}
             <div className="m-2">
@@ -336,7 +274,7 @@ export function PurchasesOrder() {
                 <textarea
                   id="notes"
                   onChange={(e) => {
-                    handleOnchange(e, {} as ProductsTypes);
+                    handleOnchange(e, {} as ProductType);
                   }}
                   className="textarea h-24 w-full"
                   placeholder="Add nots for this purchase order..."

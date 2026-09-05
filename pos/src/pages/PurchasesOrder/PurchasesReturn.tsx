@@ -9,7 +9,7 @@ import type {
   PaymentsInfoCard,
   PurchasesItems,
   SummaryCardProps,
-} from "../../types/purchases.types.js";
+} from "../../features/purchases/purchase.types.js";
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
