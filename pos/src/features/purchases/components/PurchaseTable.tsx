@@ -1,5 +1,6 @@
 import { ProductType } from "@/features/products/product.schema";
 import { PurchaseCart } from "@/features/products/product.types";
+import useProductStore from "@/features/products/useProductStore";
 
 export function PurchaseTable({
   purchasesCart,
@@ -13,6 +14,7 @@ export function PurchaseTable({
   ) => void;
   setPurchasesCart: React.Dispatch<React.SetStateAction<PurchaseCart[]>>;
 }) {
+  const { productSelectOptions } = useProductStore();
   return (
     <table className="table">
       {/* head */}
@@ -34,12 +36,16 @@ export function PurchaseTable({
           if (!variant) {
             return;
           }
+          const variantName = `${pur.name} (${variant.options?.map((opt) => opt.value).join(", ")})`;
+          const unitName = productSelectOptions.units.find(
+            (u) => u.value === pur.unitId,
+          );
           return (
-            <tr key={pur.id}>
+            <tr key={variant.id}>
               <th>{i + 1}</th>
-              <td>{pur.name}</td>
+              <td>{pur.hasVariants ? variantName : pur.name}</td>
               <td>{pur.productType}</td>
-              <td>{pur.unitId}</td>
+              <td>{unitName?.label}</td>
               {/* ordered qty */}
               <td>
                 <input
@@ -78,7 +84,9 @@ export function PurchaseTable({
                 <button
                   onClick={() => {
                     setPurchasesCart((prev) =>
-                      prev.filter((p) => p.id !== pur.id),
+                      prev.filter((p) =>
+                        p.variants.some((v) => v.id !== variant.id),
+                      ),
                     );
                   }}
                   className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 hover:cursor-pointer"

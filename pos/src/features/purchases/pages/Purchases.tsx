@@ -3,14 +3,12 @@ import { Link } from "react-router";
 import { RiHome9Fill } from "react-icons/ri";
 import axios from "../../../api/axios.js";
 import useProductStore from "@/features/products/useProductStore.js";
-import { ProductType } from "@/features/products/product.schema.js";
+import {
+  ProductType,
+  ProductVariantType,
+} from "@/features/products/product.schema.js";
 import { PurchaseCart } from "@/features/products/product.types.js";
-
-import { Card, CardContent, CardFooter } from "@/components/ui/card.js";
-import { Badge } from "@/components/ui/badge.js";
-import { AspectRatio } from "@/components/ui/aspect-ratio.js";
 import { ProductCard } from "../components/ProductCard.js";
-import { ShowVariantsProps } from "../purchase.types.js";
 import { ShowVariants } from "../components/ShowVariants.js";
 import { PurchaseTable } from "../components/PurchaseTable.js";
 export function PurchasesOrder() {
@@ -38,11 +36,15 @@ export function PurchasesOrder() {
     }
     if (variant.quantity <= 0) return;
     setPurchasesCart((prev) => {
-      const exists = prev.find((p) => p.id === product.id);
+      const exists = prev.find((p) =>
+        p.variants.some((v) => v.id === variant.id),
+      );
 
       if (exists) {
         return prev.map((p) =>
-          p.id === product.id ? { ...p, purchaseQty: p.purchaseQty + 1 } : p,
+          p.variants.some((v) => v.id === variant.id)
+            ? { ...p, purchaseQty: p.purchaseQty + 1 }
+            : p,
         );
       }
       return [...prev, { ...product, purchaseQty: 1 }];
@@ -264,7 +266,11 @@ export function PurchasesOrder() {
               )}
             </div>
             <div className="overflow-x-auto rounded-box border border-base-content/5 bg-base-100 m-2">
-              <PurchaseTable purchasesCart={purchasesCart} handleOnchange={handleOnchange} setPurchasesCart={setPurchasesCart} />
+              <PurchaseTable
+                purchasesCart={purchasesCart}
+                handleOnchange={handleOnchange}
+                setPurchasesCart={setPurchasesCart}
+              />
             </div>
             {/* footer area */}
             <div className="m-2">
