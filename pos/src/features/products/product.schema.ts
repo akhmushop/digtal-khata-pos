@@ -124,10 +124,15 @@ export const productSchema = z
     //   }
     // });
   });
-export const productDbSchema = productSchema.extend({
+export const variantDbSchema = variantSchema.safeExtend({
   id: z.number(),
 });
+export const productDbSchema = productSchema.safeExtend({
+  id: z.number(),
+  variants: z.array(variantDbSchema),
+});
+
 export type ProductType = z.infer<typeof productDbSchema>;
-export type ProductVariantType = z.infer<typeof variantSchema>;
+export type ProductVariantType = z.infer<typeof variantDbSchema>;
 export type ProductTypeInput = z.input<typeof productSchema>;
 export type ProductTypeOutput = z.output<typeof productSchema>;

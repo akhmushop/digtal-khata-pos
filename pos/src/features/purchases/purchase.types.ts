@@ -106,7 +106,7 @@ export interface ProductCardProps {
   defaultVariant: ProductVariantType;
 }
 export interface ShowVariantsProps extends ProductCardProps {}
-export interface  GroupedVariantOption {
+export interface GroupedVariantOption {
   typeName: string;
   optionsName: string[];
 }

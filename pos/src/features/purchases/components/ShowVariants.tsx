@@ -8,12 +8,11 @@ import {
 } from "@/components/ui/dialog.js";
 import { ProductCard } from "./ProductCard";
 import { GroupedVariantOption, ShowVariantsProps } from "../purchase.types";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { ProductType } from "@/features/products/product.schema";
 import { useState } from "react";
-import { id } from "date-fns/locale";
+import { Button } from "@/components/ui/button";
 export function ShowVariants({
   product,
   handleAddPurchase,
@@ -59,7 +58,6 @@ export function ShowVariants({
       : undefined;
   function isOptionAvailable(typeName: string, optionName: string) {
     const candidateSelection = { ...selectedVariant, [typeName]: optionName };
-    console.log(candidateSelection);
 
     return product.variants.some((variant) => {
       if (variant.quantity <= 0) return false;
@@ -71,6 +69,28 @@ export function ShowVariants({
       );
     });
   }
+  const handleValueChange = (
+    value: string[],
+    variant: GroupedVariantOption,
+  ) => {
+    const selectedValue = Array.isArray(value) ? value[0] : value;
+
+    setSelectedVariant((prev) => {
+      const updated = { ...prev };
+
+      if (!selectedValue) {
+        // deselected — remove this attribute type entirely
+        delete updated[variant.typeName];
+      } else {
+        updated[variant.typeName] = selectedValue;
+      }
+
+      return updated;
+    });
+  };
+  const variantFullName = findVariant
+    ? `${product.name} (${findVariant.options?.map((opt) => opt.value).join(", ")})`
+    : "Select Variant";
   return (
     <Dialog>
       <DialogTrigger>
@@ -88,7 +108,7 @@ export function ShowVariants({
         </DialogHeader>
         <Card>
           <CardContent>
-            <AspectRatio ratio={1} className="w-full">
+            <AspectRatio ratio={16 / 9} className="w-full max-w-sm rounded-lg">
               <img
                 className="h-full w-full object-contain rounded-md"
                 src={
@@ -98,32 +118,17 @@ export function ShowVariants({
                 alt={product.name}
               />
             </AspectRatio>
-
+            <span className="text-xl"> {variantFullName}</span>
             {variantsGroup.map((variant) => (
-              <div key={variant.typeName}>
-                <span>{variant.typeName}</span>
+              <div key={variant.typeName} className="flex flex-col gap-3">
+                <span className="text-lg">{variant.typeName}</span>
                 <ToggleGroup
                   value={(() => {
                     const selectedValue = selectedVariant[variant.typeName];
                     return selectedValue ? [selectedValue] : [];
                   })()}
                   onValueChange={(value) => {
-                    const selectedValue = Array.isArray(value)
-                      ? value[0]
-                      : value;
-
-                    setSelectedVariant((prev) => {
-                      const updated = { ...prev };
-
-                      if (!selectedValue) {
-                        // deselected — remove this attribute type entirely
-                        delete updated[variant.typeName];
-                      } else {
-                        updated[variant.typeName] = selectedValue;
-                      }
-
-                      return updated;
-                    });
+                    handleValueChange(value, variant);
                   }}
                   variant="outline"
                 >
@@ -148,6 +153,21 @@ export function ShowVariants({
               </div>
             ))}
           </CardContent>
+          <CardFooter className="justify-end gap-2">
+            <Button variant="outline">Cancel</Button>
+            <Button
+              onClick={() => {
+                if (findVariant === undefined) return;
+                const { variants, ...updatedProduct } = product;
+                handleAddPurchase({
+                  ...updatedProduct,
+                  variants: findVariant ? [findVariant] : [],
+                });
+              }}
+            >
+              Add Variant
+            </Button>
+          </CardFooter>
         </Card>
       </DialogContent>
     </Dialog>
