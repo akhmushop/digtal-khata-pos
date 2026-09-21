@@ -15,19 +15,23 @@ export function PurchasesOrder() {
   const [searchProducts, setSearchProducts] = useState("");
   const [searchSuppliers, setSearchSuppliers] = useState("");
   const [purchasesCart, setPurchasesCart] = useState<PurchaseCart[]>([]);
+  const [purchasesDate, setPurchasesDate] = useState(
+    new Date().toISOString().split("T")[0],
+  );
   const { products } = useProductStore();
   const filteredProducts = products.filter((item) =>
     item.name.toLowerCase().includes(searchProducts.toLowerCase() || ""),
   );
   const [showSupplierSearch, setShowSupplierSearch] = useState(true);
-  const [showSupplier, setShowSupplier] = useState<Suppliers | null>(null);
-  const [suppliers, setSupplier] = useState([
-    {
-      name: "ezPos",
-    },
-  ]);
+  const [purchaseSource, setPurchaseSource] = useState("supplier");
+  const [showSupplier, setShowSupplier] = useState<{
+    value: number;
+    label: string;
+  } | null>(null);
+  const { productSelectOptions } = useProductStore();
+  const suppliers = productSelectOptions.suppliers;
   const filteredSuppliers = suppliers.filter((item) =>
-    item.name.toLowerCase().includes(searchSuppliers.toLowerCase() || ""),
+    item.label.toLowerCase().includes(searchSuppliers.toLowerCase() || ""),
   );
   const handleAddPurchase = (product: ProductType) => {
     const variant = product.variants[0];
@@ -59,9 +63,10 @@ export function PurchasesOrder() {
   const [purchasesCartNotes, setPurchasesCartNotes] = useState("");
   const handleOnchange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-    variantId: number,
+    purchaseProduct: ProductType,
   ) => {
     const { value, id } = e.target;
+    const variantId = purchaseProduct.variants[0]?.id;
     if (id === "notes") {
       return setPurchasesCartNotes(value);
     }
@@ -86,7 +91,7 @@ export function PurchasesOrder() {
     });
   };
   const handleCreatePurchaseOrder = async () => {
-    if (showSupplier === null) {
+    if (showSupplier === null && purchaseSource === "supplier") {
       alert("add supplier");
       return;
     }
@@ -96,16 +101,27 @@ export function PurchasesOrder() {
     }
     if (!window.confirm("Do you want to create Purchase")) return;
 
-    const updated = {
-      purchasesCart,
+    const payload  = {
+      items: purchasesCart.map((item) => ({
+        variantId: item.variants[0]?.id,
+        quantity: item.purchaseQty,
+        purchasePrice: item.purchasePrice,
+      })),
       finalTotal: estGrandPurchaseTotal,
-      supplier: showSupplier,
+      supplierId: purchaseSource === "supplier" ? showSupplier?.value : null,
+      purchasesDate,
       notes: purchasesCartNotes,
     };
-    axios.post("/purchases", updated);
+    axios.post("/purchases", payload);
     setPurchasesCart([]);
+    setShowSupplier(null);
+    setShowSupplierSearch(true);
   };
-  console.log(purchasesCart);
+  const handlePurchaseSourceChange = (
+    e: React.ChangeEvent<HTMLInputElement, HTMLInputElement>,
+  ) => {
+    setPurchaseSource(e.target.value);
+  };
   return (
     <div className="h-screen overflow-hidden grid grid-cols-12">
       {/* product_show */}
@@ -171,7 +187,10 @@ export function PurchasesOrder() {
               id="date"
               className="h-10 pl-2 rounded-md border peer w-full "
               type="date"
-              defaultValue={new Date().toISOString().split("T")[0]}
+              onChange={(e) => {
+                setPurchasesDate(e.target.value);
+              }}
+              value={purchasesDate}
             />
             <label
               htmlFor="date"
@@ -182,17 +201,21 @@ export function PurchasesOrder() {
           </div>
           <div className="join col-span-8 grid grid-cols-2">
             <input
+              onChange={handlePurchaseSourceChange}
               defaultChecked
               className="join-item btn"
               type="radio"
               name="options"
               aria-label="From Supplier"
+              value="supplier"
             />
             <input
+              onChange={handlePurchaseSourceChange}
               className="join-item btn"
               type="radio"
               name="options"
               aria-label="Walk-in/Own Buy"
+              value="walk_in"
             />
           </div>
         </div>
@@ -200,70 +223,72 @@ export function PurchasesOrder() {
         <div className="h-[calc(100vh-4.25rem)]">
           <div className="h-full overflow-scroll  no-scrollbar bg-zuccini-50">
             {/* suppliers info */}
-            <div className="my-2 px-2">
-              <h6 className="mb-2">Suppliers*</h6>
-              {showSupplierSearch && (
-                <div className="dropdown w-full">
-                  <label tabIndex={0} className="input w-full">
-                    <svg
-                      className="h-[1em] opacity-50"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                    >
-                      <g
-                        strokeLinejoin="round"
-                        strokeLinecap="round"
-                        strokeWidth="2.5"
-                        fill="none"
-                        stroke="currentColor"
+            {purchaseSource === "supplier" && (
+              <div className="my-2 px-2">
+                <h6 className="mb-2">Suppliers*</h6>
+                {showSupplierSearch && (
+                  <div className="dropdown w-full">
+                    <label tabIndex={0} className="input w-full">
+                      <svg
+                        className="h-[1em] opacity-50"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
                       >
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <path d="m21 21-4.3-4.3"></path>
-                      </g>
-                    </svg>
-                    <input
-                      onChange={(e) => {
-                        setSearchSuppliers(e.target.value);
-                      }}
-                      className="w-full"
-                      type="search"
-                      required
-                      placeholder="Search"
-                    />
-                  </label>
-                  <ul
-                    tabIndex={-1}
-                    className="dropdown-content bg-base-100 rounded-box z-1 w-full p-2 shadow-sm max-h-50 overflow-y-scroll"
-                  >
-                    {filteredSuppliers.map((sup, i) => (
-                      <li
-                        key={i}
-                        className="w-full my-1 p-1 hover:bg-gray-100 active:bg-gray-800 active:text-white rounded hover:cursor-pointer"
-                        onClick={() => {
-                          setShowSupplierSearch(false);
-                          setShowSupplier(sup);
+                        <g
+                          strokeLinejoin="round"
+                          strokeLinecap="round"
+                          strokeWidth="2.5"
+                          fill="none"
+                          stroke="currentColor"
+                        >
+                          <circle cx="11" cy="11" r="8"></circle>
+                          <path d="m21 21-4.3-4.3"></path>
+                        </g>
+                      </svg>
+                      <input
+                        onChange={(e) => {
+                          setSearchSuppliers(e.target.value);
                         }}
-                      >
-                        <a>{sup.name}</a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {!showSupplierSearch && (
-                <div className="border border-gray-400 rounded h-8 flex items-center bg-zuccini-50 p-2 justify-between">
-                  <h1>Supplier: {showSupplier?.name}</h1>
-                  <button
-                    onClick={() => {
-                      setShowSupplierSearch(true);
-                    }}
-                    className="hover:cursor-pointer active:text-red-500 transition-colors duration-100 "
-                  >
-                    x
-                  </button>
-                </div>
-              )}
-            </div>
+                        className="w-full"
+                        type="search"
+                        required
+                        placeholder="Search"
+                      />
+                    </label>
+                    <ul
+                      tabIndex={-1}
+                      className="dropdown-content bg-base-100 rounded-box z-1 w-full p-2 shadow-sm max-h-50 overflow-y-scroll"
+                    >
+                      {filteredSuppliers.map((sup, i) => (
+                        <li
+                          key={i}
+                          className="w-full my-1 p-1 hover:bg-gray-100 active:bg-gray-800 active:text-white rounded hover:cursor-pointer"
+                          onClick={() => {
+                            setShowSupplierSearch(false);
+                            setShowSupplier(sup);
+                          }}
+                        >
+                          <a>{sup.label}</a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {!showSupplierSearch && (
+                  <div className="border border-gray-400 rounded h-8 flex items-center bg-zuccini-50 p-2 justify-between">
+                    <h1>Supplier: {showSupplier?.label}</h1>
+                    <button
+                      onClick={() => {
+                        setShowSupplierSearch(true);
+                      }}
+                      className="hover:cursor-pointer active:text-red-500 transition-colors duration-100 "
+                    >
+                      x
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="overflow-x-auto rounded-box border border-base-content/5 bg-base-100 m-2">
               <PurchaseTable
                 purchasesCart={purchasesCart}

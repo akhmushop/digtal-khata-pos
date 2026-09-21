@@ -71,7 +71,7 @@ export function PurchaseTable({
                   onFocus={(e) => {
                     e.target.select();
                   }}
-                  defaultValue={pur.purchasePrice}
+                  value={pur.purchasePrice}
                   className="w-full input"
                   type="number"
                 />
