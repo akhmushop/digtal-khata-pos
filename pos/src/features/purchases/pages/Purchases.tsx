@@ -34,30 +34,32 @@ export function PurchasesOrder() {
     if (!variant) {
       return;
     }
-    if (variant.quantity <= 0) return;
     setPurchasesCart((prev) => {
       const exists = prev.find((p) =>
         p.variants.some((v) => v.id === variant.id),
       );
 
       if (exists) {
-        return prev.map((p) =>
-          p.variants.some((v) => v.id === variant.id)
-            ? { ...p, purchaseQty: p.purchaseQty + 1 }
-            : p,
+        return prev.map((item) =>
+          item.variants.some((v) => v.id === variant.id)
+            ? { ...item, purchaseQty: item.purchaseQty + 1 }
+            : item,
         );
       }
-      return [...prev, { ...product, purchaseQty: 1 }];
+      return [
+        ...prev,
+        { ...product, variants: [variant], purchaseQty: 1, purchasePrice: 0 },
+      ];
     });
   };
   const estGrandPurchaseTotal = purchasesCart.reduce(
-    (sum, item) => sum + item.purchaseQty * item.cost,
+    (sum, v) => sum + v.purchaseQty * v.purchasePrice,
     0,
   );
   const [purchasesCartNotes, setPurchasesCartNotes] = useState("");
   const handleOnchange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-    purchaseProduct: ProductType,
+    variantId: number,
   ) => {
     const { value, id } = e.target;
     if (id === "notes") {
@@ -65,7 +67,7 @@ export function PurchasesOrder() {
     }
     setPurchasesCart((prev) => {
       return prev.map((p) => {
-        if (p.id !== purchaseProduct.id) return p;
+        if (p.variants.some((v) => v.id !== variantId)) return p;
         switch (id) {
           case "orderedQty":
             return {
@@ -75,11 +77,7 @@ export function PurchasesOrder() {
           case "estPrice":
             return {
               ...p,
-              variants: p.variants.map((variant, index) =>
-                index === 0
-                  ? { ...variant, purchasePrice: Number(value) }
-                  : variant,
-              ),
+              purchasePrice: Math.max(0, Number(value)),
             };
           default:
             return p;
@@ -107,6 +105,7 @@ export function PurchasesOrder() {
     axios.post("/purchases", updated);
     setPurchasesCart([]);
   };
+  console.log(purchasesCart);
   return (
     <div className="h-screen overflow-hidden grid grid-cols-12">
       {/* product_show */}
