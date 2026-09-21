@@ -11,11 +11,7 @@ export function ProductCard({ product, handleAddPurchase, defaultVariant }:Produ
         if (product.hasVariants) return;
         handleAddPurchase(product);
       }}
-      className={`relative select-none p-3 flex flex-col items-center justify-between gap-2 transition-colors ${
-        outOfStock
-          ? "cursor-not-allowed opacity-60"
-          : "cursor-pointer hover:bg-accent/50"
-      }`}
+      className={`relative select-none p-3 flex flex-col items-center justify-between gap-2 transition-colors`}
     >
       {outOfStock && (
         <div className="absolute inset-0 z-10 bg-black/50 rounded-xl flex items-center justify-center text-white text-lg font-medium">

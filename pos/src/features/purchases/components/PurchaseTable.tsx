@@ -71,14 +71,14 @@ export function PurchaseTable({
                   onFocus={(e) => {
                     e.target.select();
                   }}
-                  defaultValue={variant?.purchasePrice}
+                  defaultValue={pur.purchasePrice}
                   className="w-full input"
                   type="number"
                 />
               </td>
               {/* est total */}
               <td>
-                {(pur.purchaseQty * variant?.purchasePrice || 0).toFixed(2)}
+                {(pur.purchaseQty * pur.purchasePrice || 0).toFixed(2)}
               </td>
               <td>
                 <button

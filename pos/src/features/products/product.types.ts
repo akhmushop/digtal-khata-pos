@@ -175,4 +175,5 @@ export type VariantTableRowProps = {
 };
 export interface PurchaseCart extends ProductType {
   purchaseQty: number;
+  purchasePrice:number
 }
