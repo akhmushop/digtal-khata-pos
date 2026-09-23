@@ -3,7 +3,7 @@ import { db } from "../../db/schema/index.js";
 import { purchaseItems } from "../../db/schema/purchaseItems.js";
 import { purchases } from "../../db/schema/purchases.js";
 import type { purchasesUpdateInput } from "../../types/purchases-type.js";
-import { eq, inArray } from "drizzle-orm";
+import { eq, getTableColumns, inArray } from "drizzle-orm";
 import { products } from "../../db/schema/products.js";
 import type { ChangedItems } from "../../types/changedItems-types.js";
 import { NotFoundError } from "../../utils/handleError.js";
@@ -92,7 +92,11 @@ export async function getPurchasesSummary() {
     partiallyPaidPurchase,
     completedPurchase,
   ] = await Promise.all([
-    db.select().from(purchases).where(eq(purchases.status, "ordered")),
+    db
+      .select({ ...getTableColumns(purchases), supplierName: suppliers.name })
+      .from(purchases)
+      .leftJoin(suppliers, eq(purchases.supplierId, suppliers.id))
+      .where(eq(purchases.status, "ordered")),
     db.select().from(purchases),
     db
       .select()

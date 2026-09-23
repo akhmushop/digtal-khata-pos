@@ -1,8 +1,8 @@
 import React from "react";
-import Sidebar from "../../components/layout/Sidebar.js";
+import Sidebar from "../../../components/layout/Sidebar.js";
 import { Link } from "react-router";
-import { usePurchasesStore } from "../../store/usePurchaseStore.js";
-import type { PurchaseNewProps } from "../../features/purchases/purchase.types.js";
+import { usePurchasesStore } from "../../../store/usePurchaseStore.js";
+import type { PurchaseNewProps } from "../purchase.types.js";
 export const PurchasesList = () => {
   const { purchases } = usePurchasesStore();
   return (
@@ -37,11 +37,11 @@ export const PurchasesList = () => {
             type="radio"
             name="my_tabs_2"
             className="tab"
-            aria-label="Purchase New"
+            aria-label="Purchase Orders"
             defaultChecked
           />
           <div className="tab-content border-base-300 bg-base-100">
-            <PurchaseNew purchases={purchases.orderedPurchase} />
+            <PurchaseOrder purchases={purchases.orderedPurchase} />
           </div>
           <input
             type="radio"
@@ -50,7 +50,7 @@ export const PurchasesList = () => {
             aria-label="Purchase Progress"
           />
           <div className="tab-content border-base-300 bg-base-100 ">
-            <PurchaseNew purchases={purchases.partiallyPaidPurchase} />
+            <PurchaseOrder purchases={purchases.partiallyPaidPurchase} />
           </div>
           <input
             type="radio"
@@ -59,14 +59,14 @@ export const PurchasesList = () => {
             aria-label="Completed"
           />
           <div className="tab-content border-base-300 bg-base-100">
-            <PurchaseNew purchases={purchases.completedPurchase} />
+            <PurchaseOrder purchases={purchases.completedPurchase} />
           </div>
         </div>
       </div>
     </div>
   );
 };
-const PurchaseNew = ({ purchases }: PurchaseNewProps) => {
+const PurchaseOrder = ({ purchases }: PurchaseNewProps) => {
   return (
     <div className="rounded-box border border-base-content/5 bg-base-100">
       <table className="table table-sm ">
@@ -89,19 +89,23 @@ const PurchaseNew = ({ purchases }: PurchaseNewProps) => {
         <tbody>
           {/* row 1 */}
           {purchases?.map((pur) => {
-            const date = new Date(pur.createdAt);
+            const purchaseDate = new Date(pur.purchaseDate).toLocaleDateString();
+            const updatedDate = new Date(pur.updatedAt).toLocaleDateString();
+            const supplierName =pur.supplierName ? pur.supplierName : "walk-in purchases"
             return (
               <tr key={pur.id}>
-                <th>{pur.id}</th>
-                <th>{pur.supplierName}</th>
-                <th>demo</th>
+                <th>{pur.purchaseOrderNumber}</th>
+                <th>
+                  {supplierName}
+                </th>
+                <th>Akhmu Shop</th>
                 <th>1items</th>
-                <th>{pur.finalTotal}</th>
+                <th>{pur.totalAmount}</th>
                 <th>{pur.dueAmount}</th>
                 <th>{pur.paymentStatus}</th>
                 <th>{pur.status}</th>
-                <th>{date.toLocaleDateString()}</th>
-                <th>{date.toLocaleDateString()}</th>
+                <th>{purchaseDate}</th>
+                <th>{updatedDate}</th>
                 <th>
                   <div className="dropdown dropdown-end">
                     <div tabIndex={0} role="button" className="btn">
