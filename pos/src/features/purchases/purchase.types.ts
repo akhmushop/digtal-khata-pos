@@ -1,4 +1,5 @@
-import type { ProductsTypes } from "./products.types.js";
+import { ProductType, ProductVariantType } from "../products/product.schema";
+
 interface PurchasesStoreType {
   createdAt: string;
   discount: number;
@@ -12,10 +13,10 @@ interface PurchasesStoreType {
   subtotal: number;
   supplierName: number;
 }
-export interface PurchaseCart extends ProductsTypes {
+export interface PurchaseCart extends ProductType {
   purchaseQty: number;
 }
-export interface PurchasesItems extends ProductsTypes {
+export interface PurchasesItems extends ProductType {
   purchaseId: number;
   receiveQuantity: number;
   costPrice: number;
@@ -24,7 +25,7 @@ export interface PurchasesItems extends ProductsTypes {
   purchasePrice: number;
   sellingPrice: number;
 }
-export interface PurchasesReturnItems extends ProductsTypes {
+export interface PurchasesReturnItems extends ProductType {
   purchaseItemId: number;
   return_quantity: number;
 }
@@ -99,3 +100,25 @@ export interface PaymentDetails {
   paymentMethod: string;
   payment_notes: string;
 }
+export interface ProductCardProps {
+  product: ProductType;
+  handleAddPurchase: (product: ProductType) => void;
+  defaultVariant: ProductVariantType;
+}
+export interface ShowVariantsProps extends ProductCardProps {}
+export interface GroupedVariantOption {
+  typeName: string;
+  optionsName: string[];
+}
+export type CreatePurchaseItem = {
+  variantId: number | undefined;
+  quantity: number;
+  purchasePrice: number;
+};
+
+export type CreatePurchaseInput = {
+  items: CreatePurchaseItem[];
+  supplierId: number | null | undefined;
+  purchaseDate: string | undefined;
+  notes:string
+};

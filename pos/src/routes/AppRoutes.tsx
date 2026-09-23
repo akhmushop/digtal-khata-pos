@@ -5,7 +5,7 @@ import ProductStockForm from "../features/products/pages/AddProductPage";
 import DashboardComponent from "../pages/Dashboard/Dashboard";
 import { Sales } from "../pages/Sales/Sales";
 import { Expense } from "../pages/Expense/Expense";
-import { PurchasesOrder } from "../pages/PurchasesOrder/PurchasesOrder";
+import { PurchasesOrder } from "../features/purchases/pages/Purchases";
 import { PurchasesList } from "../pages/PurchasesOrder/PurchasesList";
 import { ReceiveItems } from "../pages/PurchasesOrder/ReceiveItems";
 import { PurchaseViewItems } from "../pages/PurchasesOrder/PurchasesReturn";

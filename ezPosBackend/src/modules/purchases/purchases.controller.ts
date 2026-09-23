@@ -1,18 +1,32 @@
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import * as purchasesService from "./purchases.service.js";
 import type {
   createPurchaseInput,
   purchasesUpdateInput,
 } from "../../types/purchases-type.js";
 import { handleError } from "../../utils/handleError.js";
+import { createPurchaseSchema } from "./schemas/purchase.schema.js";
 
-export async function createPurchase(req: Request, res: Response) {
+export async function createPurchase(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
-    const input = req.body as createPurchaseInput;
-    const insertedItems = await purchasesService.createPurchase(input);
-    return res.status(201).json(insertedItems);
+    const result = createPurchaseSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({
+        message: "Invalid purchase data",
+        errors: result.error.flatten(),
+      });
+    }
+    const purchase = await purchasesService.createPurchase(result.data)
+    return res.status(201).json({
+      message: "Purchase created successfully",
+      data:purchase
+    })
   } catch (err) {
-    handleError(res, err);
+    next(err);
   }
 }
 export async function getPurchasesSummary(req: Request, res: Response) {

@@ -7,7 +7,10 @@ import {
   VariantOptionSchemaType,
   VariantTypeSchemaType,
 } from "./schemas/variant.schema.js";
-
+export async function getProductsApi() {
+  const { data } = await axios.get("/products");
+  return data;
+}
 export async function getProductSelectOptionsApi() {
   const { data } = await axios.get("/product/select-options");
   return data;

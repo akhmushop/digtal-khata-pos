@@ -9,9 +9,10 @@ export function useInitializeApp() {
   const { getSoldProducts } = useSoldStore();
   const { getPurchases, getPurchaseItems, getPurchasesReturnItems } =
     usePurchasesStore();
-  const { getProductSelectOptions, getProductVariantOptions } =
+  const { getProductSelectOptions, getProductVariantOptions, getProducts } =
     useProductStore();
   useEffect(() => {
+    getProducts();
     getSoldProducts();
     getCustomers();
     getPurchases();
