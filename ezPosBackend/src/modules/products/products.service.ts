@@ -2,39 +2,54 @@ import { eq, getTableColumns, sql } from "drizzle-orm";
 import { db } from "../../db/schema/index.js";
 import { products } from "../../db/schema/products.js";
 import type { ProductsTypes } from "../../types/product-types.js";
-import {
-  productVariants,
-} from "../../db/schema/productVariants.js";
+import { productVariants } from "../../db/schema/productVariants.js";
 import { variantTypes } from "../../db/schema/variantTypes.js";
 import { variantOptions } from "../../db/schema/variantOptions.js";
 import { variantValues } from "../../db/schema/variantValues.js";
+import { inventoryStock } from "../../db/schema/inventoryStock.js";
 
 export async function getAllProducts() {
-  return db
-    .select({
-      ...getTableColumns(products),
-      variants: sql`
-      json_agg(
-        to_jsonb(${productVariants}.*) || jsonb_build_object(
-          'options', (
-            SELECT json_agg(
-              json_build_object(
-                'type', ${variantTypes.name},
-                'value', ${variantOptions.value}
+  return (
+    db
+      .select({
+        ...getTableColumns(products),
+        variants: sql`
+        COALESCE(json_agg(
+          jsonb_build_object(
+            'id', ${productVariants.id},
+            'productId', ${productVariants.productId},
+            'sku', ${productVariants.sku},
+            'barcode', ${productVariants.barcode},
+            'sellingPrice', ${productVariants.sellingPrice},
+            'alertQuantity', ${productVariants.alertQuantity},
+            'isDefault', ${productVariants.isDefault},
+            'status', ${productVariants.status},
+            'quantity', ${inventoryStock.quantity},
+            'options', (
+              SELECT json_agg(
+                json_build_object(
+                  'typeName', ${variantTypes.name},
+                  'value', ${variantOptions.value}
+                )
               )
+              FROM ${variantValues}
+              JOIN ${variantOptions} ON ${variantOptions.id} = ${variantValues.optionId}
+              JOIN ${variantTypes} ON ${variantTypes.id} = ${variantOptions.variantTypeId}
+              -- Removed inventoryStock from here!
+              WHERE ${variantValues.variantId} = ${productVariants.id}
             )
-            FROM ${variantValues}
-            JOIN ${variantOptions} ON ${variantOptions.id} = ${variantValues.optionId}
-            JOIN ${variantTypes} ON ${variantTypes.id} = ${variantOptions.variantTypeId}
-            WHERE ${variantValues.variantId} = ${productVariants.id}
           )
-        )
+        ), '[]'::json) -- Returns [] instead of null if no variants exist
+      `.as("variants"),
+      })
+      .from(products)
+      .leftJoin(productVariants, eq(productVariants.productId, products.id))
+      .leftJoin(
+        inventoryStock,
+        eq(inventoryStock.variantId, productVariants.id),
       )
-    `.as("variants"),
-    })
-    .from(products)
-    .leftJoin(productVariants, eq(productVariants.productId, products.id))
-    .groupBy(products.id);
+      .groupBy(products.id)
+  );
 }
 export async function createProduct(product: ProductsTypes) {
   const [created] = await db.insert(products).values(product).returning();

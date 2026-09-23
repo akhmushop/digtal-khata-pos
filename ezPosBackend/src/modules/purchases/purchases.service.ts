@@ -2,44 +2,88 @@ import { error } from "node:console";
 import { db } from "../../db/schema/index.js";
 import { purchaseItems } from "../../db/schema/purchaseItems.js";
 import { purchases } from "../../db/schema/purchases.js";
-import type {
-  createPurchaseInput,
-  purchasesUpdateInput,
-} from "../../types/purchases-type.js";
+import type { purchasesUpdateInput } from "../../types/purchases-type.js";
 import { eq, inArray } from "drizzle-orm";
 import { products } from "../../db/schema/products.js";
 import type { ChangedItems } from "../../types/changedItems-types.js";
 import { NotFoundError } from "../../utils/handleError.js";
+import type { CreatePurchaseInput } from "./schemas/purchase.schema.js";
+import { suppliers } from "../../db/schema/suppliers.js";
+import { productVariants } from "../../db/schema/productVariants.js";
 
-export async function createPurchase(input: createPurchaseInput) {
-  const { purchasesCart, final_total, supplier, note } = input;
-  const [purchaseId] = await db
-    .insert(purchases)
-    .values({
-      supplierName: supplier.name,
-      finalTotal: final_total,
-      dueAmount: final_total,
-      note,
-    })
-    .returning({ id: purchases.id });
-  if (!purchaseId?.id) {
-    throw new Error("Purchase id not found");
-  }
-  const insertedItems = [];
-  for (let item of purchasesCart) {
-    const { id, purchaseQty, cost } = item;
-    const [created] = await db
-      .insert(purchaseItems)
+export async function createPurchase(data: CreatePurchaseInput) {
+  return db.transaction(async (tx) => {
+    const { supplierId, items, purchaseDate, notes } = data;
+
+    // 1. Validate Supplier
+    if (supplierId) {
+      const supplier = await tx
+        .select({ id: suppliers.id })
+        .from(suppliers)
+        .where(eq(suppliers.id, supplierId));
+      if (supplier.length === 0) {
+        throw new NotFoundError("Supplier not found");
+      }
+    }
+
+    // 2. Validate Variants
+    const variantIds = [...new Set(items.map((item) => item.variantId))];
+    const existingVariants = await tx
+      .select({ id: productVariants.id, status: productVariants.status })
+      .from(productVariants)
+      .where(inArray(productVariants.id, variantIds));
+
+    if (existingVariants.length !== variantIds.length) {
+      const foundIds = existingVariants.map((v) => v.id);
+      const missingIds = variantIds.filter((id) => !foundIds.includes(id));
+      throw new NotFoundError(
+        `These variant IDs do not exist: ${missingIds.join(", ")}`,
+      );
+    }
+
+    // Check for inactive variants
+    for (const variant of existingVariants) {
+      if (variant.status !== "active") {
+        throw new NotFoundError(`Variant ${variant.id} is inactive`);
+      }
+    }
+
+    // 3. Calculate totals
+    const subtotal = items.reduce(
+      (sum, item) => sum + item.purchasePrice * item.quantity,
+      0,
+    );
+
+    // 4. Create Purchase
+    const [newPurchase] = await tx
+      .insert(purchases)
       .values({
-        purchaseId: purchaseId.id,
-        productId: id,
-        quantity: purchaseQty,
-        costPrice: cost,
+        supplierId,
+        purchaseDate,
+        notes,
+        subtotal,
       })
       .returning();
-    insertedItems.push(created);
-  }
-  return { purchaseId: purchaseId.id, items: insertedItems };
+
+    if (!newPurchase) {
+      throw new Error("Failed to create purchase record");
+    }
+
+    // 5. Create Purchase Items (BULK INSERT)
+    const itemsToInsert = items.map((item) => ({
+      purchaseId: newPurchase.id,
+      variantId: item.variantId,
+      quantity: item.quantity,
+      receivedQuantity: 0,
+      unitCost: item.purchasePrice,
+    }));
+
+    // Insert them all in ONE single database query!
+    await tx.insert(purchaseItems).values(itemsToInsert);
+
+    // 6. Return the new purchase so the frontend can use it
+    return newPurchase;
+  });
 }
 export async function getPurchasesSummary() {
   const [
@@ -206,6 +250,6 @@ export async function createPurchaseUpdate(input: purchasesUpdateInput) {
           .where(eq(products.id, product_id));
       }
     }
-    return { orderId, newStatus, updatedDue, updatedPaidAmount }
+    return { orderId, newStatus, updatedDue, updatedPaidAmount };
   });
 }

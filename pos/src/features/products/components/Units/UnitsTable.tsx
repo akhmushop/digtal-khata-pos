@@ -22,9 +22,9 @@ export function UnitsTable() {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {productSelectOptions.units.map((brand) => (
-          <TableRow key={brand.value}>
-            <TableCell className="font-medium">{brand.label}</TableCell>
+        {productSelectOptions.units.map((unit) => (
+          <TableRow key={unit.value}>
+            <TableCell className="font-medium">{unit.label}</TableCell>
             <TableCell>25</TableCell>
             <TableCell>Active</TableCell>
             <TableCell className="text-right">

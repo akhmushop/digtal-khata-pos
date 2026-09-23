@@ -3,7 +3,7 @@ import {
   ChangedItems,
   PaymentDetails,
   UpdateStockChangedItems,
-} from "../types/purchases.types.js";
+} from "../features/purchases/purchase.types.js";
 
 export async function getPurchasesItemsApi() {
   const { data } = await axios.get("/purchases/items");

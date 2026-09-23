@@ -29,6 +29,13 @@
       "when": 1787636566956,
       "tag": "0003_calm_black_widow",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790133912544,
+      "tag": "0004_gorgeous_sprite",
+      "breakpoints": true
     }
   ]
 }

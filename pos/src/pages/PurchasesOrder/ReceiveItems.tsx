@@ -9,7 +9,7 @@ import type {
   PaymentsInfoCard,
   PurchasesItems,
   SummaryCardProps,
-} from "../../types/purchases.types.js";
+} from "../../features/purchases/purchase.types.js";
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
@@ -204,24 +204,127 @@ export const ReceiveItems = () => {
     Number(dueAmount) + (Number(grandTotal) - Number(amountToReceive));
   console.log(updatedDue);
   return (
-      <div className="col-span-10 px-5">
+    <div className="col-span-10 px-5">
       {/* receive items */}
-        <div className="flex justify-between mb-5">
-          <div>
-            <p>Back to Purchase Orders</p>
-            <h1>Receive Items</h1>
-            <p>
-              OrderId: {id} | Supplier: {supplierName}
-            </p>
-          </div>
-          <div>
-            <p>Order Total</p>
-            <p>{finalTotal}</p>
-          </div>
+      <div className="flex justify-between mb-5">
+        <div>
+          <p>Back to Purchase Orders</p>
+          <h1>Receive Items</h1>
+          <p>
+            OrderId: {id} | Supplier: {supplierName}
+          </p>
         </div>
-        {/* summer card */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {itemsStatusCards.map((card, index) => (
+        <div>
+          <p>Order Total</p>
+          <p>{finalTotal}</p>
+        </div>
+      </div>
+      {/* summer card */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {itemsStatusCards.map((card, index) => (
+          <SummaryCard
+            key={index}
+            card={card}
+            formatCurrency={formatCurrency}
+          />
+        ))}
+      </div>
+      {/* Items To Receive */}
+      <div>
+        <h1>Items To Receive</h1>
+        <div className="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
+          <table className="table">
+            {/* head */}
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Type/Variant</th>
+                <th>Ordered</th>
+                <th>Already Receive</th>
+                <th>Receive Now</th>
+                <th>Purchase Price</th>
+                <th>Selling Price</th>
+                <th>Total</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {/* row 1 */}
+              {receiveItems.map((item) => {
+                const itemsReceived =
+                  Number(item.receiveQuantity) === Number(item.quantity);
+
+                return (
+                  <tr key={item.id}>
+                    <th>{item.productName}</th>
+                    <td>{item.productUnit}</td>
+                    <td>{item.quantity}</td>
+                    <td>{item.receiveQuantity}</td>
+                    <td>
+                      <input
+                        disabled={itemsReceived}
+                        min={0}
+                        max={item.quantity - item.receiveQuantity}
+                        name="receiveQuantity"
+                        onChange={(e) => {
+                          handleReceiveOnchange(e, item);
+                        }}
+                        value={item.receiveQuantity}
+                        className="input"
+                        type="number"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        disabled={itemsReceived}
+                        name="purchasePrice"
+                        onChange={(e) => {
+                          handleReceiveOnchange(e, item);
+                        }}
+                        value={item.purchasePrice}
+                        className="input"
+                        type="number"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        disabled={itemsReceived}
+                        name="sellingPrice"
+                        onChange={(e) => {
+                          handleReceiveOnchange(e, item);
+                        }}
+                        value={item.sellingPrice}
+                        className="input"
+                        type="number"
+                      />
+                    </td>
+                    <td>
+                      {(item.receiveQuantity * item.purchasePrice).toFixed(2)}
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => {
+                          setReceiveItems((prev) =>
+                            prev.filter((p) => p.id !== item.id),
+                          );
+                        }}
+                        className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 hover:cursor-pointer"
+                      >
+                        X
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {/* payment details */}
+      <div>
+        <h1>Payment Details</h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {paymentsInfoCards.map((card, index) => (
             <SummaryCard
               key={index}
               card={card}
@@ -229,190 +332,80 @@ export const ReceiveItems = () => {
             />
           ))}
         </div>
-        {/* Items To Receive */}
-        <div>
-          <h1>Items To Receive</h1>
-          <div className="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
-            <table className="table">
-              {/* head */}
-              <thead>
-                <tr>
-                  <th>Product</th>
-                  <th>Type/Variant</th>
-                  <th>Ordered</th>
-                  <th>Already Receive</th>
-                  <th>Receive Now</th>
-                  <th>Purchase Price</th>
-                  <th>Selling Price</th>
-                  <th>Total</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {/* row 1 */}
-                {receiveItems.map((item) => {
-                  const itemsReceived =
-                    Number(item.receiveQuantity) === Number(item.quantity);
-
-                  return (
-                    <tr key={item.id}>
-                      <th>{item.productName}</th>
-                      <td>{item.productUnit}</td>
-                      <td>{item.quantity}</td>
-                      <td>{item.receiveQuantity}</td>
-                      <td>
-                        <input
-                          disabled={itemsReceived}
-                          min={0}
-                          max={item.quantity - item.receiveQuantity}
-                          name="receiveQuantity"
-                          onChange={(e) => {
-                            handleReceiveOnchange(e, item);
-                          }}
-                          value={item.receiveQuantity}
-                          className="input"
-                          type="number"
-                        />
-                      </td>
-                      <td>
-                        <input
-                          disabled={itemsReceived}
-                          name="purchasePrice"
-                          onChange={(e) => {
-                            handleReceiveOnchange(e, item);
-                          }}
-                          value={item.purchasePrice}
-                          className="input"
-                          type="number"
-                        />
-                      </td>
-                      <td>
-                        <input
-                          disabled={itemsReceived}
-                          name="sellingPrice"
-                          onChange={(e) => {
-                            handleReceiveOnchange(e, item);
-                          }}
-                          value={item.sellingPrice}
-                          className="input"
-                          type="number"
-                        />
-                      </td>
-                      <td>
-                        {(item.receiveQuantity * item.purchasePrice).toFixed(2)}
-                      </td>
-                      <td>
-                        <button
-                          onClick={() => {
-                            setReceiveItems((prev) =>
-                              prev.filter((p) => p.id !== item.id),
-                            );
-                          }}
-                          className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 hover:cursor-pointer"
-                        >
-                          X
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        {/* payment details */}
-        <div>
-          <h1>Payment Details</h1>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {paymentsInfoCards.map((card, index) => (
-              <SummaryCard
-                key={index}
-                card={card}
-                formatCurrency={formatCurrency}
-              />
-            ))}
-          </div>
-        </div>
-        <div className="flex justify-between gap-6">
-          {/* payment amount */}
-          <fieldset className="fieldset w-full">
-            <legend className="fieldset-legend">Payment Amount</legend>
-            <input
-              min={0}
-              max={updatedDue}
-              name="payment_amount"
-              onChange={handlePaymentOnchange}
-              type="number"
-              className="input w-full"
-              value={paymentDetails.payment_amount}
-            />
-            <p className="label">Maximum {formatCurrency(updatedDue)}</p>
-          </fieldset>
-          {/* payment method */}
-          <fieldset className="fieldset w-full">
-            <legend className="fieldset-legend">Payment Method</legend>
-            <select
-              name="paymentMethod"
-              onChange={handlePaymentOnchange}
-              value={paymentDetails.paymentMethod}
-              className="select w-full"
-            >
-              {PAYMENT_METHODS.map((method) => (
-                <option key={method}>{method}</option>
-              ))}
-            </select>
-          </fieldset>
-        </div>
-        {/* Payment notes */}
-        <div>
-          <fieldset className="fieldset">
-            <legend className="fieldset-legend">
-              Payment Notes (Optional)
-            </legend>
-            <textarea
-              name="payment_notes"
-              onChange={handlePaymentOnchange}
-              className="textarea h-24 w-full"
-              placeholder="Add any notes about payment"
-            ></textarea>
-          </fieldset>
-        </div>
-        {/* payment summary */}
-        <div className="border-dashed rounded border border-gray-400  w-full mt-2">
-          <div className="flex justify-between gap-6 p-2">
-            <div className="flex justify-between w-full">
-              <p>Receiving Now</p>
-              <p>{formatCurrency(grandTotal)}</p>
-            </div>
-            <div className="flex justify-between w-full">
-              <p>Paying Now</p>
-              <p>{paymentDetails.payment_amount}</p>
-            </div>
-          </div>
-          <div className="flex justify-between gap-6 p-2">
-            <div className="flex justify-between w-full">
-              <p>Previous Balance</p>
-              <p>{dueAmount}</p>
-            </div>
-            <div className="flex justify-between w-full">
-              <p>New Balance Due</p>
-              <p>
-                {formatCurrency(updatedDue - paymentDetails.payment_amount)}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="flex mt-5">
-          <button
-            onClick={handleSubmit}
-            className="btn btn-success flex-1 mr-2"
+      </div>
+      <div className="flex justify-between gap-6">
+        {/* payment amount */}
+        <fieldset className="fieldset w-full">
+          <legend className="fieldset-legend">Payment Amount</legend>
+          <input
+            min={0}
+            max={updatedDue}
+            name="payment_amount"
+            onChange={handlePaymentOnchange}
+            type="number"
+            className="input w-full"
+            value={paymentDetails.payment_amount}
+          />
+          <p className="label">Maximum {formatCurrency(updatedDue)}</p>
+        </fieldset>
+        {/* payment method */}
+        <fieldset className="fieldset w-full">
+          <legend className="fieldset-legend">Payment Method</legend>
+          <select
+            name="paymentMethod"
+            onChange={handlePaymentOnchange}
+            value={paymentDetails.paymentMethod}
+            className="select w-full"
           >
-            Receive Items & Update Stock
-          </button>
-          <Toaster />
-          <button className="btn btn-soft  flex-none">Cancel</button>
+            {PAYMENT_METHODS.map((method) => (
+              <option key={method}>{method}</option>
+            ))}
+          </select>
+        </fieldset>
+      </div>
+      {/* Payment notes */}
+      <div>
+        <fieldset className="fieldset">
+          <legend className="fieldset-legend">Payment Notes (Optional)</legend>
+          <textarea
+            name="payment_notes"
+            onChange={handlePaymentOnchange}
+            className="textarea h-24 w-full"
+            placeholder="Add any notes about payment"
+          ></textarea>
+        </fieldset>
+      </div>
+      {/* payment summary */}
+      <div className="border-dashed rounded border border-gray-400  w-full mt-2">
+        <div className="flex justify-between gap-6 p-2">
+          <div className="flex justify-between w-full">
+            <p>Receiving Now</p>
+            <p>{formatCurrency(grandTotal)}</p>
+          </div>
+          <div className="flex justify-between w-full">
+            <p>Paying Now</p>
+            <p>{paymentDetails.payment_amount}</p>
+          </div>
+        </div>
+        <div className="flex justify-between gap-6 p-2">
+          <div className="flex justify-between w-full">
+            <p>Previous Balance</p>
+            <p>{dueAmount}</p>
+          </div>
+          <div className="flex justify-between w-full">
+            <p>New Balance Due</p>
+            <p>{formatCurrency(updatedDue - paymentDetails.payment_amount)}</p>
+          </div>
         </div>
       </div>
+      <div className="flex mt-5">
+        <button onClick={handleSubmit} className="btn btn-success flex-1 mr-2">
+          Receive Items & Update Stock
+        </button>
+        <Toaster />
+        <button className="btn btn-soft  flex-none">Cancel</button>
+      </div>
+    </div>
   );
 };
 const SummaryCard = ({ card, formatCurrency }: SummaryCardProps) => {
