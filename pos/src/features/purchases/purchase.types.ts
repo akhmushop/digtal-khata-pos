@@ -1,17 +1,23 @@
 import { ProductType, ProductVariantType } from "../products/product.schema";
 
-interface PurchasesStoreType {
-  createdAt: string;
-  discount: number;
-  dueAmount: number;
-  finalTotal: number;
+interface PurchaseStoreType {
   id: number;
-  note: string;
-  paidAmount: number;
-  paymentStatus: string;
-  status: string;
+  supplierId: number | null;
+  purchaseOrderNumber: string;
+  purchaseDate: Date;
   subtotal: number;
-  supplierName: number;
+  discount: string;
+  tax: string;
+  shippingCost: string;
+  totalAmount: number;
+  paidAmount: number;
+  dueAmount: number;
+  status: "ordered" | "received" | "partially_received";
+  paymentStatus: "received" | "paid" | "unpaid" | "partial_paid";
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  supplierName: string | null;
 }
 export interface PurchaseCart extends ProductType {
   purchaseQty: number;
@@ -47,10 +53,10 @@ interface UpdateStockResponse {
 }
 export interface PurchasesStore {
   purchases: {
-    orderedPurchase: PurchasesStoreType[];
-    partiallyPaidPurchase: PurchasesStoreType[];
-    completedPurchase: PurchasesStoreType[];
-    allPurchases: PurchasesStoreType[];
+    orderedPurchase: PurchaseStoreType[];
+    partiallyPaidPurchase: PurchaseStoreType[];
+    completedPurchase: PurchaseStoreType[];
+    allPurchases: PurchaseStoreType[];
   };
   purchasesItems: PurchasesItems[];
   purchasesReturnItems: PurchasesReturnItems[];
@@ -69,7 +75,7 @@ export interface PurchasesStore {
   ) => Promise<void>;
 }
 export interface PurchaseNewProps {
-  purchases: PurchasesStoreType[];
+  purchases: PurchaseStoreType[];
 }
 
 export interface Suppliers {
@@ -120,5 +126,5 @@ export type CreatePurchaseInput = {
   items: CreatePurchaseItem[];
   supplierId: number | null | undefined;
   purchaseDate: string | undefined;
-  notes:string
+  notes: string;
 };

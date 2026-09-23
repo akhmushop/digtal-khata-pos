@@ -6,7 +6,7 @@ import DashboardComponent from "../pages/Dashboard/Dashboard";
 import { Sales } from "../pages/Sales/Sales";
 import { Expense } from "../pages/Expense/Expense";
 import { PurchasesOrder } from "../features/purchases/pages/Purchases";
-import { PurchasesList } from "../pages/PurchasesOrder/PurchasesList";
+import { PurchasesList } from "../features/purchases/pages/PurchasesList";
 import { ReceiveItems } from "../pages/PurchasesOrder/ReceiveItems";
 import { PurchaseViewItems } from "../pages/PurchasesOrder/PurchasesReturn";
 import AppLayout from "@/layouts/AppLayout";
