@@ -110,3 +110,15 @@ export interface GroupedVariantOption {
   typeName: string;
   optionsName: string[];
 }
+export type CreatePurchaseItem = {
+  variantId: number | undefined;
+  quantity: number;
+  purchasePrice: number;
+};
+
+export type CreatePurchaseInput = {
+  items: CreatePurchaseItem[];
+  supplierId: number | null | undefined;
+  purchaseDate: string | undefined;
+  notes:string
+};

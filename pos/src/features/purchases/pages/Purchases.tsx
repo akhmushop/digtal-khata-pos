@@ -11,11 +11,12 @@ import { PurchaseCart } from "@/features/products/product.types.js";
 import { ProductCard } from "../components/ProductCard.js";
 import { ShowVariants } from "../components/ShowVariants.js";
 import { PurchaseTable } from "../components/PurchaseTable.js";
+import { createPurchaseApi } from "../purchase.api.js";
 export function PurchasesOrder() {
   const [searchProducts, setSearchProducts] = useState("");
   const [searchSuppliers, setSearchSuppliers] = useState("");
   const [purchasesCart, setPurchasesCart] = useState<PurchaseCart[]>([]);
-  const [purchasesDate, setPurchasesDate] = useState(
+  const [purchaseDate, setPurchaseDate] = useState(
     new Date().toISOString().split("T")[0],
   );
   const { products } = useProductStore();
@@ -100,19 +101,19 @@ export function PurchasesOrder() {
       return;
     }
     if (!window.confirm("Do you want to create Purchase")) return;
-
-    const payload  = {
+    const supplierId =
+      purchaseSource === "supplier" ? showSupplier?.value : null;
+    const payload = {
       items: purchasesCart.map((item) => ({
         variantId: item.variants[0]?.id,
         quantity: item.purchaseQty,
         purchasePrice: item.purchasePrice,
       })),
-      finalTotal: estGrandPurchaseTotal,
-      supplierId: purchaseSource === "supplier" ? showSupplier?.value : null,
-      purchasesDate,
+      supplierId,
+      purchaseDate,
       notes: purchasesCartNotes,
     };
-    axios.post("/purchases", payload);
+    createPurchaseApi(payload);
     setPurchasesCart([]);
     setShowSupplier(null);
     setShowSupplierSearch(true);
@@ -188,9 +189,9 @@ export function PurchasesOrder() {
               className="h-10 pl-2 rounded-md border peer w-full "
               type="date"
               onChange={(e) => {
-                setPurchasesDate(e.target.value);
+                setPurchaseDate(e.target.value);
               }}
-              value={purchasesDate}
+              value={purchaseDate}
             />
             <label
               htmlFor="date"
