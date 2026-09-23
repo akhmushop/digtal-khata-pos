@@ -7,16 +7,40 @@ import {
   timestamp,
   varchar,
   numeric,
+  pgSequence,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { paymentStatusEnum, statusEnum } from "./enums.js";
-
+import { suppliers } from "./suppliers.js";
+// 1. purchaseInvoice Sequence
+export const purchaseOrderSeq = pgSequence("purchase_order_seq", {
+  startWith: 1,
+  increment: 1,
+});
 export const purchases = pgTable("purchases", {
   id: serial().primaryKey().notNull(),
-  supplierName: varchar("supplier_name", { length: 255 }),
-  subtotal: numeric({ precision: 10, scale: 2 }).default("0").notNull(),
+  supplierId: integer("supplier_id").references(() => suppliers.id),
+  purchaseOrderNumber: varchar("purchase_order_number", { length: 50 })
+    .notNull()
+    .unique()
+    .default(
+      sql`'PO-' || to_char(CURRENT_DATE, 'YYYY') || '-' ||
+        lpad(nextval('purchase_order_seq')::text, 6, '0')`,
+    ),
+  purchaseDate: timestamp("purchase_date").defaultNow().notNull(),
+  subtotal: numeric({ precision: 10, scale: 2, mode: "number" })
+    .default(0)
+    .notNull(),
   discount: numeric({ precision: 10, scale: 2 }).default("0").notNull(),
-  finalTotal: numeric("final_total", { precision: 10, scale: 2, mode:'number' })
+  tax: numeric({ precision: 10, scale: 2 }).notNull().default("0"),
+  shippingCost: numeric("shipping_cost", { precision: 10, scale: 2 })
+    .notNull()
+    .default("0"),
+  totalAmount: numeric("total_amount", {
+    precision: 10,
+    scale: 2,
+    mode: "number",
+  })
     .default(0)
     .notNull(),
   paidAmount: numeric("paid_amount", {
@@ -29,10 +53,11 @@ export const purchases = pgTable("purchases", {
   dueAmount: numeric("due_amount", { precision: 10, scale: 2, mode: "number" })
     .default(0)
     .notNull(),
+  status: statusEnum("status").default("ordered").notNull(),
   paymentStatus: paymentStatusEnum("payment_status")
     .default("unpaid")
     .notNull(),
-  note: text(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  status: statusEnum("status").default("ordered").notNull(),
+  notes: text(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

@@ -121,9 +121,9 @@ export const purchaseItemsRelations = relations(
   purchaseItems,
   ({ one, many }) => ({
     purchaseReturnItems: many(purchaseReturnItems),
-    product: one(products, {
-      fields: [purchaseItems.productId],
-      references: [products.id],
+    productVariants: one(productVariants, {
+      fields: [purchaseItems.variantId],
+      references: [productVariants.id],
     }),
     purchase: one(purchases, {
       fields: [purchaseItems.purchaseId],
@@ -150,9 +150,13 @@ export const saleItemsRelations = relations(saleItems, ({ one }) => ({
   }),
 }));
 
-export const purchasesRelations = relations(purchases, ({ many }) => ({
+export const purchasesRelations = relations(purchases, ({ one, many }) => ({
   purchaseItems: many(purchaseItems),
   purchaseReturns: many(purchaseReturns),
+  supplier: one(suppliers, {
+    fields: [purchases.supplierId],
+    references: [suppliers.id],
+  }),
 }));
 
 export const expensesRelations = relations(expenses, ({ one }) => ({
