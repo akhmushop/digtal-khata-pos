@@ -10,6 +10,7 @@ import { NotFoundError } from "../../utils/handleError.js";
 import type { CreatePurchaseInput } from "./schemas/purchase.schema.js";
 import { suppliers } from "../../db/schema/suppliers.js";
 import { productVariants } from "../../db/schema/productVariants.js";
+import { units } from "../../db/schema/units.js";
 
 export async function createPurchase(data: CreatePurchaseInput) {
   return db.transaction(async (tx) => {
@@ -115,16 +116,30 @@ export async function getPurchasesSummary() {
   };
 }
 export async function getPurchasesItems() {
-  return db
-    .select({
-      purchaseItems,
-      productName: products.productName,
-      productUnit: products.productUnit,
-      price: products.price,
-      cost: products.cost,
-    })
-    .from(purchaseItems)
-    .innerJoin(products, eq(purchaseItems.productId, products.id));
+  return (
+    db
+      .select({
+        // 1. Spread the table to get all its columns
+        ...getTableColumns(purchaseItems),
+
+        // 2. Select specific related columns
+        productName: products.name,
+        productUnit: units.name,
+        sellingPrice: productVariants.sellingPrice,
+        productId: products.id,
+        trackingType: products.trackingType,
+      })
+      .from(purchaseItems)
+      // 3. Join Variant (Purchase Items link to Variants, not directly to Products!)
+      .innerJoin(
+        productVariants,
+        eq(purchaseItems.variantId, productVariants.id),
+      )
+      // 4. Join Product (Variants link to Products)
+      .innerJoin(products, eq(productVariants.productId, products.id))
+      // 5. Join Unit (Products link to Units)
+      .leftJoin(units, eq(units.id, products.unitId))
+  ); // leftJoin is safer in case a product has no unit
 }
 export async function createPurchaseUpdate(input: purchasesUpdateInput) {
   const { paymentDetails, changedItems } = input;

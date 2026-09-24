@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
-import Sidebar from "../../components/layout/Sidebar.js";
 import { useNavigate, useParams } from "react-router";
 import { usePurchasesStore } from "../../store/usePurchaseStore.js";
-import { useProductStore } from "../../features/products/useProductStore.js";
 import toast, { Toaster } from "react-hot-toast";
 import type {
   PaymentDetails,
@@ -10,6 +8,50 @@ import type {
   PurchasesItems,
   SummaryCardProps,
 } from "../../features/purchases/purchase.types.js";
+import { Button } from "@/components/ui/button.js";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog.js";
+import { Controller, FieldPath, useForm, UseFormReturn } from "react-hook-form";
+import { createEntityPromiseToast } from "@/lib/toast-utils.js";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field.js";
+import { Input } from "@/components/ui/input.js";
+import { InputField } from "@/components/common/InputField.js";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover.js";
+import { Calendar } from "@/components/ui/calendar.js";
+import {
+  batchSchema,
+  BatchSchemaTypeInput,
+  BatchSchemaTypeOutput,
+} from "@/features/purchases/schemas/batch.schema.js";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table.js";
+import { Trash } from "lucide-react";
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
@@ -28,12 +70,13 @@ export const ReceiveItems = () => {
   const { id } = useParams();
 
   const { purchases, purchasesItems, updateStock } = usePurchasesStore();
+  console.log(purchasesItems);
   const purchaseOrder = purchases.allPurchases?.find(
     (item) => item.id === Number(id),
   );
   const {
     supplierName,
-    finalTotal,
+    totalAmount,
     paymentStatus,
     dueAmount,
     paidAmount,
@@ -71,8 +114,8 @@ export const ReceiveItems = () => {
   ];
   const [receiveItems, setReceiveItems] = useState<PurchasesItems[]>([]);
   const grandTotal = receiveItems.reduce((total, item) => {
-    const quantity = item.receiveQuantity ?? 0;
-    const price = item.purchasePrice ?? 0;
+    const quantity = item.receivedQuantity ?? 0;
+    const price = item.unitCost ?? 0;
     return total + quantity * price;
   }, 0);
   const paymentsInfoCards: PaymentsInfoCard[] = [
@@ -128,9 +171,9 @@ export const ReceiveItems = () => {
     setReceiveItems(
       receivePurchasesItems.map((item) => ({
         ...item,
-        receiveQuantity: item.quantity - item.receiveQuantity,
-        purchasePrice: item.costPrice,
-        sellingPrice: item.price,
+        receiveNow: item.quantity - item.receivedQuantity,
+        unitCost: item.unitCost,
+        sellingPrice: item.sellingPrice,
       })),
     );
   }, [receivePurchasesItems]);
@@ -166,15 +209,15 @@ export const ReceiveItems = () => {
       const current = receiveItems.find((r) => r.id === original.id);
 
       // If deleted, treat receiveQuantity as 0. Otherwise, use current state.
-      const currentQty = current ? Number(current.receiveQuantity) : 0;
+      const currentQty = current ? Number(current.sellingPrice) : 0;
       const currentPurchasePrice = current
-        ? Number(current.purchasePrice)
-        : Number(original.cost);
+        ? Number(current.unitCost)
+        : Number(original.unitCost);
       const currentSellingPrice = current
         ? Number(current.sellingPrice)
-        : Number(original.price);
+        : Number(original.sellingPrice);
       const quantityChanged =
-        currentQty + Number(original.receiveQuantity) !==
+        currentQty + Number(original.sellingPrice) !==
         Number(original.quantity);
       return {
         id: original.id,
@@ -196,13 +239,13 @@ export const ReceiveItems = () => {
     });
   };
   const receivedItemsTotalCost = receivePurchasesItems.reduce(
-    (sum, item) => sum + item.costPrice * item.receiveQuantity,
+    (sum, item) => sum + item.unitCost * item.receivedQuantity,
     0,
   );
-  const amountToReceive = Number(finalTotal) - Number(receivedItemsTotalCost);
+  const amountToReceive = Number(totalAmount) - Number(receivedItemsTotalCost);
   const updatedDue =
     Number(dueAmount) + (Number(grandTotal) - Number(amountToReceive));
-  console.log(updatedDue);
+
   return (
     <div className="col-span-10 px-5">
       {/* receive items */}
@@ -216,7 +259,7 @@ export const ReceiveItems = () => {
         </div>
         <div>
           <p>Order Total</p>
-          <p>{finalTotal}</p>
+          <p>{totalAmount}</p>
         </div>
       </div>
       {/* summer card */}
@@ -240,36 +283,38 @@ export const ReceiveItems = () => {
                 <th>Product</th>
                 <th>Type/Variant</th>
                 <th>Ordered</th>
-                <th>Already Receive</th>
+                <th>Already Received</th>
+                <th>Remaining</th>
                 <th>Receive Now</th>
-                <th>Purchase Price</th>
+                <th>Unit Cost</th>
                 <th>Selling Price</th>
                 <th>Total</th>
-                <th>Action</th>
+                <th>Details</th>
               </tr>
             </thead>
             <tbody>
               {/* row 1 */}
               {receiveItems.map((item) => {
                 const itemsReceived =
-                  Number(item.receiveQuantity) === Number(item.quantity);
-
+                  Number(item.receivedQuantity) === Number(item.quantity);
+                const remaining = item.quantity - item.receivedQuantity;
                 return (
                   <tr key={item.id}>
                     <th>{item.productName}</th>
                     <td>{item.productUnit}</td>
                     <td>{item.quantity}</td>
-                    <td>{item.receiveQuantity}</td>
+                    <td>{item.receivedQuantity}</td>
+                    <td>{remaining}</td>
                     <td>
                       <input
                         disabled={itemsReceived}
                         min={0}
-                        max={item.quantity - item.receiveQuantity}
-                        name="receiveQuantity"
+                        max={item.quantity - item.receivedQuantity}
+                        name="receiveNow"
                         onChange={(e) => {
                           handleReceiveOnchange(e, item);
                         }}
-                        value={item.receiveQuantity}
+                        value={item.receiveNow}
                         className="input"
                         type="number"
                       />
@@ -277,11 +322,11 @@ export const ReceiveItems = () => {
                     <td>
                       <input
                         disabled={itemsReceived}
-                        name="purchasePrice"
+                        name="unitCost"
                         onChange={(e) => {
                           handleReceiveOnchange(e, item);
                         }}
-                        value={item.purchasePrice}
+                        value={item.unitCost}
                         className="input"
                         type="number"
                       />
@@ -298,20 +343,9 @@ export const ReceiveItems = () => {
                         type="number"
                       />
                     </td>
+                    <td>{(item.receiveNow * item.unitCost).toFixed(2)}</td>
                     <td>
-                      {(item.receiveQuantity * item.purchasePrice).toFixed(2)}
-                    </td>
-                    <td>
-                      <button
-                        onClick={() => {
-                          setReceiveItems((prev) =>
-                            prev.filter((p) => p.id !== item.id),
-                          );
-                        }}
-                        className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 hover:cursor-pointer"
-                      >
-                        X
-                      </button>
+                      <DetailsDialog item={item} />
                     </td>
                   </tr>
                 );
@@ -423,3 +457,192 @@ const SummaryCard = ({ card, formatCurrency }: SummaryCardProps) => {
     </div>
   );
 };
+function DetailsDialog({ item }: { item: PurchasesItems }) {
+  const [open, setOpen] = useState(false);
+  function handleOpenChange(nextOpen: boolean) {
+    setOpen(nextOpen);
+    if (!nextOpen) {
+      form.reset();
+    }
+  }
+  const form = useForm<BatchSchemaTypeInput, unknown, BatchSchemaTypeOutput>({
+    resolver: zodResolver(batchSchema),
+    defaultValues: {
+      batchNumber: "",
+      quantity: 0,
+      manufacturedDate: null,
+      expiryDate: null,
+    },
+  });
+  const [batchList, setBatchList] = useState<BatchSchemaTypeOutput[]>([]);
+  async function onSubmit(data: BatchSchemaTypeOutput) {
+    console.log(data);
+    setBatchList((prev) => [...prev, data]);
+    // await createEntityPromiseToast({
+    //   data,
+    //   apiCall: createBrand,
+    //   entityName: "Brand",
+    //   displayName: data.brandName,
+    // });
+    form.reset();
+  }
+  console.log(batchList)
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <form id="add-batch-number" onSubmit={form.handleSubmit(onSubmit)}>
+        <DialogTrigger
+          render={
+            <Button onClick={() => {}} className="hover:cursor-pointer">
+              {item.trackingType}
+            </Button>
+          }
+        />
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Batch Information</DialogTitle>
+            <DialogTitle>Product Name: {item.productName}</DialogTitle>
+          </DialogHeader>
+          <FieldGroup>
+            <div className="flex gap-3">
+              {/* batchNumber */}
+              <InputField
+                name="batchNumber"
+                form={form}
+                fieldLabel="Batch Number"
+                placeholder="Type Batch Number"
+              />
+              {/* Quantity */}
+              <Controller
+                name="quantity"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor={field.name}>Quantity</FieldLabel>
+                    <Input
+                      min={1}
+                      id={field.name}
+                      {...field}
+                      placeholder="0"
+                      type="number"
+                    />
+                    {fieldState.error && (
+                      <FieldError> {fieldState.error.message}</FieldError>
+                    )}
+                  </Field>
+                )}
+              />
+            </div>
+            <div className="flex gap-3">
+              <BatchDatePicker
+                name="manufacturedDate"
+                form={form}
+                label="Manufactured Date"
+              />
+              <BatchDatePicker
+                name="expiryDate"
+                form={form}
+                label="Expiry Date"
+              />
+            </div>
+          </FieldGroup>
+          {/* batch list */}
+          <div>
+            <h1 className="text-lg font-semibold mb-2">Batch List</h1>
+            <div className="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
+            <BatchListTable batchList={batchList} />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline">Cancel</Button>} />
+            <Button form="add-batch-number" type="submit">
+              Add Batch
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </form>
+    </Dialog>
+  );
+}
+interface BatchDatePickerProps {
+  name: FieldPath<BatchSchemaTypeInput>;
+  form: UseFormReturn<BatchSchemaTypeInput>;
+  label: string;
+}
+export function BatchDatePicker({ name, form, label }: BatchDatePickerProps) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Controller
+      name={name}
+      control={form.control}
+      render={({ field, fieldState }) => (
+        <Field data-invalid={fieldState.invalid}>
+          <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger
+              render={
+                <Button
+                  variant="outline"
+                  id={field.name}
+                  className="justify-start font-normal"
+                >
+                  {field.value
+                    ? new Date(field.value).toLocaleDateString()
+                    : "Select date"}
+                </Button>
+              }
+            />
+            <PopoverContent
+              className="w-auto overflow-hidden p-0"
+              align="start"
+            >
+              <Calendar
+                mode="single"
+                selected={field.value ? new Date(field.value) : undefined}
+                defaultMonth={field.value ? new Date(field.value) : new Date()}
+                captionLayout="dropdown"
+                onSelect={(date) => {
+                  field.onChange(date);
+                  setOpen(false);
+                }}
+              />
+            </PopoverContent>
+          </Popover>
+          {fieldState.error && (
+            <FieldError>{fieldState.error.message}</FieldError>
+          )}
+        </Field>
+      )}
+    />
+  );
+}
+export function BatchListTable({batchList}:{batchList:BatchSchemaTypeOutput[]}) {
+  const totalQuantity = batchList.reduce((sum,batch)=>(sum + batch.quantity),0)
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-[100px]">Batch Number</TableHead>
+          <TableHead>Quantity</TableHead>
+          <TableHead>M/E</TableHead>
+          <TableHead>Action</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {batchList.map((batch) => (
+          <TableRow key={batch.batchNumber}>
+            <TableCell className="font-medium">{batch.batchNumber}</TableCell>
+            <TableCell>{batch.quantity}</TableCell>
+            <TableCell>{new Date(batch.manufacturedDate).toLocaleDateString()} - {new Date(batch.expiryDate).toLocaleDateString()}</TableCell>
+            <TableCell><Trash /></TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+      <TableFooter>
+        <TableRow>
+          <TableCell colSpan={3}>Total Quantity</TableCell>
+          <TableCell className="text-right">{totalQuantity}</TableCell>
+        </TableRow>
+      </TableFooter>
+    </Table>
+  );
+}
