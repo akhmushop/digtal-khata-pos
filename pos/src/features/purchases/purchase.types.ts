@@ -22,14 +22,22 @@ interface PurchaseStoreType {
 export interface PurchaseCart extends ProductType {
   purchaseQty: number;
 }
-export interface PurchasesItems extends ProductType {
-  purchaseId: number;
-  receiveQuantity: number;
-  costPrice: number;
-  productId: number;
-  returnPurchaseQty: number;
-  purchasePrice: number;
+export interface PurchasesItems {
+  productName: string;
+  productUnit: string | null;
   sellingPrice: number;
+  id: number;
+  purchaseId: number;
+  variantId: number;
+  quantity: number;
+  receivedQuantity: number;
+  unitCost: number;
+  discount: number;
+  tax: number;
+  total: number;
+  productId: number;
+  receiveNow: number;
+  trackingType: string;
 }
 export interface PurchasesReturnItems extends ProductType {
   purchaseItemId: number;
