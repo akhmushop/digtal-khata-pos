@@ -7,7 +7,7 @@ import { Sales } from "../pages/Sales/Sales";
 import { Expense } from "../pages/Expense/Expense";
 import { PurchasesOrder } from "../features/purchases/pages/Purchases";
 import { PurchasesList } from "../features/purchases/pages/PurchasesList";
-import { ReceiveItems } from "../pages/PurchasesOrder/ReceiveItems";
+import { ReceiveItems } from "../features/purchases/pages/ReceiveItems";
 import { PurchaseViewItems } from "../pages/PurchasesOrder/PurchasesReturn";
 import AppLayout from "@/layouts/AppLayout";
 import Products from "../features/products/pages/ProductsPage";

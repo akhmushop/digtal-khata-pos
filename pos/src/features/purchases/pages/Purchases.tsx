@@ -8,10 +8,10 @@ import {
   ProductVariantType,
 } from "@/features/products/product.schema.js";
 import { PurchaseCart } from "@/features/products/product.types.js";
-import { ProductCard } from "../components/ProductCard.js";
-import { ShowVariants } from "../components/ShowVariants.js";
-import { PurchaseTable } from "../components/PurchaseTable.js";
+import { PurchaseTable } from "../components/purchases/PurchaseTable.js";
 import { createPurchaseApi } from "../purchase.api.js";
+import { ShowVariants } from "../components/purchases/ShowVariants.js";
+import { ProductCard } from "../components/purchases/ProductCard.js";
 export function PurchasesOrder() {
   const [searchProducts, setSearchProducts] = useState("");
   const [searchSuppliers, setSearchSuppliers] = useState("");
