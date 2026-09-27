@@ -1,5 +1,6 @@
 import { z } from "zod";
 export const receiveItemsFormSchema = z.object({
+  purchaseId:z.number(),
   items: z.array(
     z
       .object({

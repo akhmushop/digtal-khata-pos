@@ -1,14 +1,8 @@
 import { create } from "zustand";
-import axios from "../api/axios.js";
-import type { PurchasesStore } from "../features/purchases/purchase.types.js";
-import { getErrorMessage } from "../utils/getErrorMessage.js";
-import {
-  getPurchasesApi,
-  getPurchasesItemsApi,
-  getPurchasesReturnItemsApi,
-  purchaseReturnApi,
-  updateStockApi,
-} from "../api/purchases.api.js";
+import { PurchasesStore } from "./purchase.types.js";
+import { getPurchasesApi, getPurchasesItemsApi, getPurchasesReturnItemsApi, purchaseReturnApi, updateStockApi } from "@/api/purchases.api.js";
+import { getErrorMessage } from "@/utils/getErrorMessage.js";
+import { createReceivePurchaseApi } from "./purchase.api.js";
 export const usePurchasesStore = create<PurchasesStore>((set) => ({
   purchases: {
     orderedPurchase: [],
@@ -63,4 +57,7 @@ export const usePurchasesStore = create<PurchasesStore>((set) => ({
       throw err;
     }
   },
+  createReceivePurchase: async (data) => {
+    const response = createReceivePurchaseApi(data)
+  }
 }));

@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Sidebar from "../../components/layout/Sidebar.js";
 import { useNavigate, useParams } from "react-router";
-import { usePurchasesStore } from "../../store/usePurchaseStore.js";
-import { useProductStore } from "../../features/products/useProductStore.js";
 import toast, { Toaster } from "react-hot-toast";
 import type {
   ChangedItems,
@@ -10,6 +8,7 @@ import type {
   PurchasesItems,
   SummaryCardProps,
 } from "../../features/purchases/purchase.types.js";
+import { usePurchasesStore } from "@/features/purchases/usePurchaseStore.js";
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,

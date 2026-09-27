@@ -1,4 +1,5 @@
 import { ProductType, ProductVariantType } from "../products/product.schema";
+import { ReceiveItemsFormValues } from "./schemas/receiveItem.schema";
 
 interface PurchaseStoreType {
   id: number;
@@ -81,6 +82,7 @@ export interface PurchasesStore {
     orderId: number,
     changedItems: ChangedItems[],
   ) => Promise<void>;
+  createReceivePurchase: (data: ReceivePurchasePayload) => Promise<void>;
 }
 export interface PurchaseNewProps {
   purchases: PurchaseStoreType[];
@@ -136,3 +138,18 @@ export type CreatePurchaseInput = {
   purchaseDate: string | undefined;
   notes: string;
 };
+export interface ReceivePurchasePayload {
+  purchaseId: number;
+  items: {
+    itemId: number;
+    trackingType: string;
+    receiveNow: number;
+    unitCost: number;
+    sellingPrice: number;
+    batches: { batchNumber: string; quantity: number; manufacturedDate: Date; expiryDate: Date; }[];
+    serialNumbers: string[];
+  }[];
+  payment_amount: number;
+  paymentMethod: string;
+  payment_notes?: string;
+}

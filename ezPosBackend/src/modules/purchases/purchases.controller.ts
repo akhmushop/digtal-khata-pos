@@ -45,8 +45,9 @@ export async function getPurchasesItems(req: Request, res: Response) {
     handleError(res, err);
   }
 }
-export async function createPurchaseUpdate(req: Request, res: Response) {
+export async function createReceivePurchase(req: Request, res: Response) {
   try {
+    console.log(req.body)
     const input = req.body as purchasesUpdateInput;
     const result = await purchasesService.createPurchaseUpdate(input);
     res
