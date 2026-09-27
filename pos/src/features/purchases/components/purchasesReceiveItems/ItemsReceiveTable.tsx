@@ -1,9 +1,11 @@
 import { Input } from "@/components/ui/input";
 import { PurchasesItems } from "../../purchase.types";
-import { DetailsDialog } from "./DetailsDialog";
 import { Controller, UseFormReturn } from "react-hook-form";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { ReceiveItemsFormValues } from "../../schemas/receiveItem.schema";
+import { Minus } from "lucide-react";
+import { SerialsDialog } from "./SerialsDialog";
+import { BatchesDialog } from "./BatchesDialog";
 
 export function ItemsReceiveTable({
   fields,
@@ -56,6 +58,10 @@ export function ItemsReceiveTable({
               const rowTotal =
                 (Number(form.getValues(`items.${index}.receiveNow`)) || 0) *
                 (Number(form.getValues(`items.${index}.unitCost`)) || 0);
+              const serialError =
+                form.formState.errors.items?.[index]?.serialNumbers?.message;
+              const batchError =
+                form.formState.errors.items?.[index]?.batches?.message;
               return (
                 <tr key={field.id}>
                   <th>{originalItem.productName}</th>
@@ -94,6 +100,18 @@ export function ItemsReceiveTable({
                           {fieldState.error && (
                             <FieldError> {fieldState.error.message}</FieldError>
                           )}
+                          {serialError &&
+                            originalItem.trackingType === "serial" && (
+                              <p className="text-sm font-medium text-destructive bg-red-50 border border-red-200 p-2 rounded-md">
+                                {serialError as string}
+                              </p>
+                            )}
+                          {batchError &&
+                            originalItem.trackingType === "batch" && (
+                              <p className="text-sm font-medium text-destructive bg-red-50 border border-red-200 p-2 rounded-md">
+                                {batchError as string}
+                              </p>
+                            )}
                         </Field>
                       )}
                     />
@@ -168,7 +186,21 @@ export function ItemsReceiveTable({
                   </td>
                   <td>{rowTotal.toFixed(2)}</td>
                   <td>
-                    <DetailsDialog item={originalItem} />
+                    {originalItem.trackingType === "batch" ? (
+                      <BatchesDialog
+                        item={originalItem}
+                        form={form}
+                        index={index}
+                      />
+                    ) : originalItem.trackingType === "serial" ? (
+                      <SerialsDialog
+                        item={originalItem}
+                        form={form}
+                        index={index}
+                      />
+                    ) : (
+                      <Minus />
+                    )}
                   </td>
                 </tr>
               );
