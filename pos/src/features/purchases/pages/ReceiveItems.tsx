@@ -6,9 +6,7 @@ import type {
   PaymentDetails,
   PaymentsInfoCard,
   PurchasesItems,
-  SummaryCardProps,
 } from "../purchase.types.js";
-import { DetailsDialog } from "../components/purchasesReceiveItems/DetailsDialog.js";
 import { SummaryCard } from "../components/purchasesReceiveItems/SummaryCard.js";
 import { ItemsReceiveTable } from "../components/purchasesReceiveItems/ItemsReceiveTable.js";
 import { useFieldArray, useForm } from "react-hook-form";
@@ -57,9 +55,12 @@ export const ReceiveItems = () => {
       // Map your DB items into the form array
       items: receivePurchasesItems.map((item) => ({
         itemId: item.id,
+        trackingType: item.trackingType,
         receiveNow: item.quantity - item.receivedQuantity,
         unitCost: Number(item.unitCost),
         sellingPrice: Number(item.sellingPrice),
+        batches: [],
+        serialNumbers: [],
       })),
       payment_amount: 0,
       paymentMethod: "Cash",
@@ -166,9 +167,12 @@ export const ReceiveItems = () => {
     // 2. Map the database items
     const formattedItems = receivePurchasesItems.map((item) => ({
       itemId: item.id,
+      trackingType: item.trackingType,
       receiveNow: item.quantity - item.receivedQuantity,
       unitCost: Number(item.unitCost),
       sellingPrice: Number(item.sellingPrice),
+      batches: [],
+      serialNumbers: [],
     }));
 
     // 3. Use form.reset to REPLACE the state entirely! (No duplicates!)
@@ -252,6 +256,7 @@ export const ReceiveItems = () => {
   async function onSubmit(data: ReceiveItemsFormValues) {
     console.log(data);
   }
+  console.log(form.formState.errors);
   return (
     <div className="col-span-10 px-5">
       <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -304,7 +309,7 @@ export const ReceiveItems = () => {
             <legend className="fieldset-legend">Payment Amount</legend>
             <input
               min={0}
-              max={updatedDue}
+              max={updatedDue || 0}
               name="payment_amount"
               onChange={handlePaymentOnchange}
               type="number"

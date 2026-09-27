@@ -1,11 +1,22 @@
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { BatchSchemaTypeOutput } from "../../schemas/batch.schema";
 import { Trash } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function BatchListTable({
   batchList,
+  handleRemoveBatch,
 }: {
   batchList: BatchSchemaTypeOutput[];
+  handleRemoveBatch: (batchIndex: number) => void;
 }) {
   const totalQuantity = batchList.reduce(
     (sum, batch) => sum + batch.quantity,
@@ -22,7 +33,7 @@ export function BatchListTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {batchList.map((batch) => (
+        {batchList.map((batch, batchIndex) => (
           <TableRow key={batch.batchNumber}>
             <TableCell className="font-medium">{batch.batchNumber}</TableCell>
             <TableCell>{batch.quantity}</TableCell>
@@ -31,7 +42,15 @@ export function BatchListTable({
               {new Date(batch.expiryDate).toLocaleDateString()}
             </TableCell>
             <TableCell>
-              <Trash />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-7 text-red-500 hover:text-red-600"
+                onClick={() => handleRemoveBatch(batchIndex)}
+              >
+                <Trash className="size-4" />
+              </Button>
             </TableCell>
           </TableRow>
         ))}

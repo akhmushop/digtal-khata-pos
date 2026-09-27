@@ -8,15 +8,15 @@ import { Calendar } from "@/components/ui/calendar";
 
 interface BatchDatePickerProps {
   name: FieldPath<BatchSchemaTypeInput>;
-  form: UseFormReturn<BatchSchemaTypeInput>;
+  batchForm: UseFormReturn<BatchSchemaTypeInput>;
   label: string;
 }
-export function BatchDatePicker({ name, form, label }: BatchDatePickerProps) {
+export function BatchDatePicker({ name, batchForm, label }: BatchDatePickerProps) {
   const [open, setOpen] = useState(false);
   return (
     <Controller
       name={name}
-      control={form.control}
+      control={batchForm.control}
       render={({ field, fieldState }) => (
         <Field data-invalid={fieldState.invalid}>
           <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
