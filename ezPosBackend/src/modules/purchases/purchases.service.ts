@@ -141,7 +141,7 @@ export async function getPurchasesItems() {
       .leftJoin(units, eq(units.id, products.unitId))
   ); // leftJoin is safer in case a product has no unit
 }
-export async function createPurchaseUpdate(input: purchasesUpdateInput) {
+export async function createReceivePurchase(input: purchasesUpdateInput) {
   const { paymentDetails, changedItems } = input;
   const changedFields = changedItems.find(
     (item: ChangedItems) => item.changedFields === true,
