@@ -16,6 +16,7 @@ import {
 } from "../schemas/receiveItem.schema.js";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { usePurchasesStore } from "../usePurchaseStore.js";
+import { createEntityPromiseToast } from "@/lib/toast-utils.js";
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
@@ -23,16 +24,21 @@ const formatCurrency = (value: number) => {
   }).format(value);
 };
 const PAYMENT_METHODS = [
-  "Cash",
-  "Debit Card",
-  "Credit Card",
-  "Bank Transfer",
-  "Cheque",
-  "Other",
+  { label: "Cash", value: "cash" },
+  { label: "Bank Transfer", value: "bank_transfer" },
+  { label: "Cheque", value: "cheque" },
+  { label: "Card", value: "card" },
+  { label: "Other", value: "other" },
 ];
+
 export const ReceiveItems = () => {
   const { id } = useParams();
-
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails>({
+    orderId: Number(id),
+    paymentAmount: 0,
+    paymentMethod: "cash",
+    paymentNotes: "",
+  });
   const { purchases, purchasesItems, updateStock, createReceivePurchase } =
     usePurchasesStore();
   const purchaseOrder = purchases.allPurchases?.find(
@@ -65,9 +71,9 @@ export const ReceiveItems = () => {
         batches: [],
         serialNumbers: [],
       })),
-      payment_amount: 0,
-      paymentMethod: "Cash",
-      payment_notes: "",
+      paymentAmount: 0,
+      paymentMethod: paymentDetails.paymentMethod,
+      paymentNotes: "",
     },
   });
   // 2. Initialize Field Array
@@ -183,17 +189,12 @@ export const ReceiveItems = () => {
       purchaseId: Number(id),
       items: formattedItems,
       // Include your other form fields here so they don't get erased
-      payment_amount: 0,
-      paymentMethod: "Cash",
-      payment_notes: "",
+      paymentAmount: 0,
+      paymentMethod: paymentDetails.paymentMethod,
+      paymentNotes: "",
     });
   }, [receivePurchasesItems, form]); // Add 'form' to dependencies
-  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails>({
-    orderId: Number(id),
-    payment_amount: 0,
-    paymentMethod: "Cash",
-    payment_notes: "",
-  });
+
   const handlePaymentOnchange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
@@ -205,13 +206,13 @@ export const ReceiveItems = () => {
       return {
         ...prev,
         [name]:
-          name === "payment_amount"
+          name === "paymentAmount"
             ? Math.min(Number(value), Number(max))
             : value,
       };
     });
   };
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
   // const handleSubmit = () => {
   //   // 1. Loop over ORIGINAL items so we don't miss items deleted from the UI
   //   if (!window.confirm("Do you want to Receive Product")) return;
@@ -259,24 +260,31 @@ export const ReceiveItems = () => {
 
   async function onSubmit(data: ReceiveItemsFormValues) {
     // 2. Manually build the payload to match the interface perfectly
-    const payload: ReceivePurchasePayload = {
-      purchaseId: Number(id),
-      items: data.items.map((item) => ({
-        itemId: item.itemId,
-        trackingType: item.trackingType,
-        receiveNow: Number(item.receiveNow),
-        unitCost: Number(item.unitCost),
-        sellingPrice: Number(item.sellingPrice),
-        batches: item.batches,
-        serialNumbers: item.serialNumbers,
-      })),
-      payment_amount: Number(data.payment_amount),
-      paymentMethod: data.paymentMethod,
-      payment_notes: data.payment_notes || "", // Ensure it's a string, not undefined
-    };
-
+    // const payload: ReceivePurchasePayload = {
+    //   purchaseId: Number(id),
+    //   items: data.items.map((item) => ({
+    //     itemId: item.itemId,
+    //     trackingType: item.trackingType,
+    //     receiveNow: Number(item.receiveNow),
+    //     unitCost: Number(item.unitCost),
+    //     sellingPrice: Number(item.sellingPrice),
+    //     batches: item.batches,
+    //     serialNumbers: item.serialNumbers,
+    //   })),
+    //   paymentAmount: Number(data.paymentAmount),
+    //   paymentMethod: paymentDetails.paymentMethod,
+    //   paymentNotes: data.paymentNotes || "", // Ensure it's a string, not undefined
+    // };
     // 3. Send it!
-    await createReceivePurchase(payload);
+    await createEntityPromiseToast({
+      data,
+      apiCall: createReceivePurchase,
+      entityName: "Receive Purchase",
+      getSuccessMessage: (response) => {
+        return response.data.message;
+      },
+    });
+    setTimeout(() => navigate("/purchases-list"), 1000);
   }
   console.log(form.formState.errors);
   return (
@@ -332,11 +340,11 @@ export const ReceiveItems = () => {
             <input
               min={0}
               max={updatedDue || 0}
-              name="payment_amount"
+              name="paymentAmount"
               onChange={handlePaymentOnchange}
               type="number"
               className="input w-full"
-              value={paymentDetails.payment_amount}
+              value={paymentDetails.paymentAmount}
             />
             <p className="label">Maximum {formatCurrency(updatedDue)}</p>
           </fieldset>
@@ -350,7 +358,9 @@ export const ReceiveItems = () => {
               className="select w-full"
             >
               {PAYMENT_METHODS.map((method) => (
-                <option key={method}>{method}</option>
+                <option key={method.value} value={method.value}>
+                  {method.label}
+                </option>
               ))}
             </select>
           </fieldset>
@@ -362,7 +372,7 @@ export const ReceiveItems = () => {
               Payment Notes (Optional)
             </legend>
             <textarea
-              name="payment_notes"
+              name="paymentNotes"
               onChange={handlePaymentOnchange}
               className="textarea h-24 w-full"
               placeholder="Add any notes about payment"
@@ -378,7 +388,7 @@ export const ReceiveItems = () => {
             </div>
             <div className="flex justify-between w-full">
               <p>Paying Now</p>
-              <p>{paymentDetails.payment_amount}</p>
+              <p>{paymentDetails.paymentAmount}</p>
             </div>
           </div>
           <div className="flex justify-between gap-6 p-2">
@@ -388,9 +398,7 @@ export const ReceiveItems = () => {
             </div>
             <div className="flex justify-between w-full">
               <p>New Balance Due</p>
-              <p>
-                {formatCurrency(updatedDue - paymentDetails.payment_amount)}
-              </p>
+              <p>{formatCurrency(updatedDue - paymentDetails.paymentAmount)}</p>
             </div>
           </div>
         </div>

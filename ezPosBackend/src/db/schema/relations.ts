@@ -27,6 +27,8 @@ import { variantTypes } from "./variantTypes.js";
 import { variantOptions } from "./variantOptions.js";
 import { variantValues } from "./variantValues.js";
 import { inventoryStock } from "./inventoryStock.js";
+import { inventoryMovements } from "./inventoryMovements.js";
+import { purchasePayments } from "./purchasePayments.js";
 
 export const saleRefundsRelations = relations(saleRefunds, ({ one, many }) => ({
   sale: one(sales, {
@@ -267,3 +269,29 @@ export const inventoryStockRelations = relations(inventoryStock, ({ one }) => ({
     references: [locations.id],
   }),
 }));
+export const inventoryMovementsRelations = relations(
+  inventoryMovements,
+  ({ one }) => ({
+    variant: one(productVariants, {
+      fields: [inventoryMovements.variantId],
+      references: [productVariants.id],
+    }),
+    location: one(locations, {
+      fields: [inventoryMovements.locationId],
+      references: [locations.id],
+    }),
+    batch: one(inventoryBatches, {
+      fields: [inventoryMovements.batchId],
+      references: [inventoryBatches.id],
+    }),
+  }),
+);
+export const purchasePaymentsRelations = relations(
+  purchasePayments,
+  ({ one }) => ({
+    purchase: one(purchases, {
+      fields: [purchasePayments.purchaseId],
+      references: [purchases.id],
+    }),
+  }),
+);
