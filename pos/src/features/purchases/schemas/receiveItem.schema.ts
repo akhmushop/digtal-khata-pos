@@ -47,8 +47,8 @@ export const receiveItemsFormSchema = z.object({
       }),
   ),
 
-  payment_amount: z.number().min(0),
+  paymentAmount: z.number().min(0),
   paymentMethod: z.string(),
-  payment_notes: z.string().optional(),
+  paymentNotes: z.string(),
 });
 export type ReceiveItemsFormValues = z.infer<typeof receiveItemsFormSchema>;

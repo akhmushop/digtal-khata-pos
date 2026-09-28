@@ -60,6 +60,19 @@ export interface UpdateStockChangedItems {
 interface UpdateStockResponse {
   message: string;
 }
+export type ReceivePurchaseResponse = {
+  success: boolean;
+  message: string;
+  data: {
+    success: boolean;
+    purchaseId: number;
+    status: "received" | "partially_received";
+    receivedAmount: number;
+    paidAmount: number;
+    dueAmount: number;
+    message: string;
+  };
+};
 export interface PurchasesStore {
   purchases: {
     orderedPurchase: PurchaseStoreType[];
@@ -82,7 +95,7 @@ export interface PurchasesStore {
     orderId: number,
     changedItems: ChangedItems[],
   ) => Promise<void>;
-  createReceivePurchase: (data: ReceivePurchasePayload) => Promise<void>;
+  createReceivePurchase: (data: ReceiveItemsFormValues) => Promise<ReceivePurchaseResponse>;
 }
 export interface PurchaseNewProps {
   purchases: PurchaseStoreType[];
@@ -112,9 +125,9 @@ export interface SummaryCardProps {
 }
 export interface PaymentDetails {
   orderId: number;
-  payment_amount: number;
+  paymentAmount: number;
   paymentMethod: string;
-  payment_notes: string;
+  paymentNotes: string;
 }
 export interface ProductCardProps {
   product: ProductType;
@@ -146,10 +159,15 @@ export interface ReceivePurchasePayload {
     receiveNow: number;
     unitCost: number;
     sellingPrice: number;
-    batches: { batchNumber: string; quantity: number; manufacturedDate: Date; expiryDate: Date; }[];
+    batches: {
+      batchNumber: string;
+      quantity: number;
+      manufacturedDate: Date;
+      expiryDate: Date;
+    }[];
     serialNumbers: string[];
   }[];
-  payment_amount: number;
+  paymentAmount: number;
   paymentMethod: string;
-  payment_notes?: string;
+  paymentNotes?: string;
 }

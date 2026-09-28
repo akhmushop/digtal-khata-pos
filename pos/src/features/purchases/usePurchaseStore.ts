@@ -58,6 +58,7 @@ export const usePurchasesStore = create<PurchasesStore>((set) => ({
     }
   },
   createReceivePurchase: async (data) => {
-    const response = createReceivePurchaseApi(data)
+    const response = await createReceivePurchaseApi(data)
+    return response.data;
   }
 }));
