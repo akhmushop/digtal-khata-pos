@@ -5,10 +5,10 @@ import useProductStore from "@/features/products/useProductStore.js";
 import { ProductType } from "@/features/products/product.schema.js";
 import { PurchaseCart } from "@/features/products/product.types.js";
 import { PurchaseTable } from "../components/purchases/PurchaseTable.js";
-import { ShowVariants } from "../components/purchases/ShowVariants.js";
-import { ProductCard } from "../components/purchases/ProductCard.js";
 import { usePurchasesStore } from "../usePurchaseStore.js";
 import { createEntityPromiseToast } from "@/lib/toast-utils.js";
+import { ShowVariants } from "@/components/common/ShowVariants.js";
+import { ProductCard } from "@/components/common/ProductCard.js";
 export function PurchasesOrder() {
   const [searchProducts, setSearchProducts] = useState("");
   const [searchSuppliers, setSearchSuppliers] = useState("");
@@ -17,7 +17,7 @@ export function PurchasesOrder() {
     new Date().toISOString().split("T")[0],
   );
   const { products } = useProductStore();
-  console.log(products)
+  console.log(products);
   const { createPurchase } = usePurchasesStore();
   const filteredProducts = products.filter((item) =>
     item.name.toLowerCase().includes(searchProducts.toLowerCase() || ""),
@@ -171,14 +171,14 @@ export function PurchasesOrder() {
                   <ShowVariants
                     key={product.id}
                     product={product}
-                    handleAddPurchase={handleAddPurchase}
+                    handleAdd={handleAddPurchase}
                     defaultVariant={defaultVariant}
                   />
                 ) : (
                   <ProductCard
                     key={product.id}
                     product={product}
-                    handleAddPurchase={handleAddPurchase}
+                    handleAdd={handleAddPurchase}
                     defaultVariant={defaultVariant}
                   />
                 );
