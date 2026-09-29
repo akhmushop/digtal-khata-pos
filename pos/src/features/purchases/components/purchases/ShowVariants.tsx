@@ -6,13 +6,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog.js";
-import { ProductCard } from "./ProductCard";
-import { GroupedVariantOption, ShowVariantsProps } from "../purchase.types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { GroupedVariantOption, ShowVariantsProps } from "../../purchase.types";
+import { ProductCard } from "./ProductCard";
 export function ShowVariants({
   product,
   handleAddPurchase,
