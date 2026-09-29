@@ -1,11 +1,9 @@
 import React, { useState } from "react";
 import { Link } from "react-router";
 import { RiHome9Fill } from "react-icons/ri";
-import axios from "../../../api/axios.js";
 import useProductStore from "@/features/products/useProductStore.js";
 import {
   ProductType,
-  ProductVariantType,
 } from "@/features/products/product.schema.js";
 import { PurchaseCart } from "@/features/products/product.types.js";
 import { PurchaseTable } from "../components/purchases/PurchaseTable.js";

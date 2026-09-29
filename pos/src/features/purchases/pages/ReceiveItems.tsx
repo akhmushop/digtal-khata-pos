@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router";
-import toast, { Toaster } from "react-hot-toast";
 import type {
   PaymentDetails,
   PaymentsInfoCard,
-  PurchasesItems,
-  ReceivePurchasePayload,
 } from "../purchase.types.js";
 import { SummaryCard } from "../components/purchasesReceiveItems/SummaryCard.js";
 import { ItemsReceiveTable } from "../components/purchasesReceiveItems/ItemsReceiveTable.js";
@@ -114,12 +111,6 @@ export const ReceiveItems = () => {
       total: dueAmount ?? 0,
     },
   ];
-  const [receiveItems, setReceiveItems] = useState<PurchasesItems[]>([]);
-  // const grandTotal = receiveItems.reduce((total, item) => {
-  //   const quantity = item.receivedQuantity ?? 0;
-  //   const price = item.unitCost ?? 0;
-  //   return total + quantity * price;
-  // }, 0);
   const paymentsInfoCards: PaymentsInfoCard[] = [
     {
       bg: "bg-amber-50",
@@ -140,35 +131,6 @@ export const ReceiveItems = () => {
       total: dueAmount ?? 0,
     },
   ];
-  // const getInputValue = (name: string, value: number, max: number) => {
-  //   const num = Number(value);
-  //   switch (name) {
-  //     case "receiveQuantity":
-  //       return Math.max(0, Math.min(num, Number(max)));
-  //     case "purchasePrice":
-  //     case "sellingPrice":
-  //       return Math.max(0, num);
-  //     default:
-  //       return value;
-  //   }
-  // };
-  // const handleReceiveOnchange = (
-  //   e: React.ChangeEvent<HTMLInputElement>,
-  //   receiveItem: PurchasesItems,
-  // ) => {
-  //   const { name, value, max } = e.target;
-  //   const newValue = getInputValue(name, Number(value), Number(max));
-  //   setReceiveItems((prev) => {
-  //     return prev.map((item) =>
-  //       item.id === receiveItem.id
-  //         ? {
-  //             ...item,
-  //             [name]: newValue,
-  //           }
-  //         : item,
-  //     );
-  //   });
-  // };
   useEffect(() => {
     // 1. If there is no data yet, do nothing
     if (receivePurchasesItems.length === 0) return;
@@ -213,43 +175,6 @@ export const ReceiveItems = () => {
     });
   };
   const navigate = useNavigate();
-  // const handleSubmit = () => {
-  //   // 1. Loop over ORIGINAL items so we don't miss items deleted from the UI
-  //   if (!window.confirm("Do you want to Receive Product")) return;
-  //   const changedItems = receivePurchasesItems.map((original) => {
-  //     // Find the current state of this item (returns undefined if user clicked 'X')
-  //     const current = receiveItems.find((r) => r.id === original.id);
-
-  //     // If deleted, treat receiveQuantity as 0. Otherwise, use current state.
-  //     const currentQty = current ? Number(current.sellingPrice) : 0;
-  //     const currentPurchasePrice = current
-  //       ? Number(current.unitCost)
-  //       : Number(original.unitCost);
-  //     const currentSellingPrice = current
-  //       ? Number(current.sellingPrice)
-  //       : Number(original.sellingPrice);
-  //     const quantityChanged =
-  //       currentQty + Number(original.sellingPrice) !==
-  //       Number(original.quantity);
-  //     return {
-  //       id: original.id,
-  //       productId: original.productId,
-  //       receiveQuantity: currentQty,
-  //       purchasePrice: currentPurchasePrice,
-  //       sellingPrice: currentSellingPrice,
-  //       changedFields: quantityChanged,
-  //     };
-  //   });
-  //   const res = updateStock(paymentDetails, changedItems);
-  //   toast.promise(res, {
-  //     loading: "Loading...",
-  //     success: (data) => {
-  //       setTimeout(() => navigate("/purchases-list"), 1000);
-  //       return data?.message;
-  //     },
-  //     error: (err) => err.response?.data?.error || "Error when fetching",
-  //   });
-  // };
   const receivedItemsTotalCost = receivePurchasesItems.reduce(
     (sum, item) => sum + item.unitCost * item.receivedQuantity,
     0,
@@ -259,23 +184,6 @@ export const ReceiveItems = () => {
     Number(dueAmount) + (Number(grandTotal) - Number(amountToReceive));
 
   async function onSubmit(data: ReceiveItemsFormValues) {
-    // 2. Manually build the payload to match the interface perfectly
-    // const payload: ReceivePurchasePayload = {
-    //   purchaseId: Number(id),
-    //   items: data.items.map((item) => ({
-    //     itemId: item.itemId,
-    //     trackingType: item.trackingType,
-    //     receiveNow: Number(item.receiveNow),
-    //     unitCost: Number(item.unitCost),
-    //     sellingPrice: Number(item.sellingPrice),
-    //     batches: item.batches,
-    //     serialNumbers: item.serialNumbers,
-    //   })),
-    //   paymentAmount: Number(data.paymentAmount),
-    //   paymentMethod: paymentDetails.paymentMethod,
-    //   paymentNotes: data.paymentNotes || "", // Ensure it's a string, not undefined
-    // };
-    // 3. Send it!
     await createEntityPromiseToast({
       data,
       apiCall: createReceivePurchase,
@@ -286,7 +194,6 @@ export const ReceiveItems = () => {
     });
     setTimeout(() => navigate("/purchases-list"), 1000);
   }
-  console.log(form.formState.errors);
   return (
     <div className="col-span-10 px-5">
       <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -406,7 +313,6 @@ export const ReceiveItems = () => {
           <button type="submit" className="btn btn-success flex-1 mr-2">
             Receive Items & Update Stock
           </button>
-          <Toaster />
           <button className="btn btn-soft  flex-none">Cancel</button>
         </div>
       </form>

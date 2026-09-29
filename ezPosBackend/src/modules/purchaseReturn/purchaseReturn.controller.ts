@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import * as purchaseReturnService from "./purchaseReturn.service.js";
 import { handleError } from "../../utils/handleError.js";
-import type { CreatePurchaseReturnInput } from "../../types/purchases-type.js";
+import type { CreatePurchaseReturnInput } from "../purchases/purchase.types.js";
 
 export async function createPurchaseReturn(req: Request, res: Response) {
   try {

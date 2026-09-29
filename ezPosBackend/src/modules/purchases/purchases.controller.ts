@@ -3,7 +3,7 @@ import * as purchasesService from "./purchases.service.js";
 import type {
   createPurchaseInput,
   purchasesUpdateInput,
-} from "../../types/purchases-type.js";
+} from "./purchase.types.js";
 import { handleError } from "../../utils/handleError.js";
 import { createPurchaseSchema } from "./schemas/purchase.schema.js";
 import { receiveItemsFormSchema } from "./schemas/receiveItem.schema.js";
@@ -53,7 +53,6 @@ export async function createReceivePurchase(
 ) {
   try {
     const result = receiveItemsFormSchema.safeParse(req.body);
-    console.log(result)
     if (!result.success) {
       return res.status(400).json({
         message: "Invalid Purchase Data",
