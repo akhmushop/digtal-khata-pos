@@ -2,14 +2,13 @@ import React, { useState } from "react";
 import { Link } from "react-router";
 import { RiHome9Fill } from "react-icons/ri";
 import useProductStore from "@/features/products/useProductStore.js";
-import {
-  ProductType,
-} from "@/features/products/product.schema.js";
+import { ProductType } from "@/features/products/product.schema.js";
 import { PurchaseCart } from "@/features/products/product.types.js";
 import { PurchaseTable } from "../components/purchases/PurchaseTable.js";
-import { createPurchaseApi } from "../purchase.api.js";
 import { ShowVariants } from "../components/purchases/ShowVariants.js";
 import { ProductCard } from "../components/purchases/ProductCard.js";
+import { usePurchasesStore } from "../usePurchaseStore.js";
+import { createEntityPromiseToast } from "@/lib/toast-utils.js";
 export function PurchasesOrder() {
   const [searchProducts, setSearchProducts] = useState("");
   const [searchSuppliers, setSearchSuppliers] = useState("");
@@ -18,6 +17,8 @@ export function PurchasesOrder() {
     new Date().toISOString().split("T")[0],
   );
   const { products } = useProductStore();
+  console.log(products)
+  const { createPurchase } = usePurchasesStore();
   const filteredProducts = products.filter((item) =>
     item.name.toLowerCase().includes(searchProducts.toLowerCase() || ""),
   );
@@ -65,10 +66,11 @@ export function PurchasesOrder() {
     purchaseProduct: ProductType,
   ) => {
     const { value, id } = e.target;
-    const variantId = purchaseProduct.variants[0]?.id;
     if (id === "notes") {
       return setPurchasesCartNotes(value);
     }
+    const variantId = purchaseProduct.variants[0]?.id;
+
     setPurchasesCart((prev) => {
       return prev.map((p) => {
         if (p.variants.some((v) => v.id !== variantId)) return p;
@@ -101,7 +103,7 @@ export function PurchasesOrder() {
     if (!window.confirm("Do you want to create Purchase")) return;
     const supplierId =
       purchaseSource === "supplier" ? showSupplier?.value : null;
-    const payload = {
+    const data = {
       items: purchasesCart.map((item) => ({
         variantId: item.variants[0]?.id,
         quantity: item.purchaseQty,
@@ -111,8 +113,16 @@ export function PurchasesOrder() {
       purchaseDate,
       notes: purchasesCartNotes,
     };
-    createPurchaseApi(payload);
+    await createEntityPromiseToast({
+      data,
+      apiCall: createPurchase,
+      entityName: "Create Purchase",
+      getSuccessMessage: (response) => {
+        return `Order Number: ${response.data.purchaseOrderNumber} ${response.message} `;
+      },
+    });
     setPurchasesCart([]);
+    setPurchasesCartNotes("");
     setShowSupplier(null);
     setShowSupplierSearch(true);
   };
@@ -305,6 +315,7 @@ export function PurchasesOrder() {
                   onChange={(e) => {
                     handleOnchange(e, {} as ProductType);
                   }}
+                  value={purchasesCartNotes}
                   className="textarea h-24 w-full"
                   placeholder="Add nots for this purchase order..."
                 ></textarea>
