@@ -1,11 +1,11 @@
+import { AddCustomer } from "@/pages/Customer/Customer";
+import { useCustomerStore } from "@/store/useCustomerStore";
 import React, { useState, useRef, useEffect } from "react";
 import {
   RiCloseLargeFill,
   RiArrowDropDownFill,
   RiUserAddFill,
 } from "react-icons/ri";
-import { useCustomerStore } from "../../store/useCustomerStore.js";
-import { AddCustomer } from "../../pages/Customer/Customer.js";
 export function CartHeader() {
   const {
     customerInfo,

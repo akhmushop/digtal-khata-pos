@@ -1,11 +1,12 @@
+import { ProductType } from "@/features/products/product.schema";
+import { ProductsTypes } from "@/features/products/products.types";
 import type React from "react";
-import type { ProductsTypes } from "./products.types.js";
-export interface CartType extends ProductsTypes {
-  soldQuantity: number;
+export interface CartType extends ProductType {
+  quantity: number;
 }
 export interface CartStore {
   cart: CartType[];
-  addToCart: (cartProduct: ProductsTypes) => void;
+  addToCart: (product: ProductType) => void;
   removeCartItem: (id: number) => void;
   addCartQuantity: (id: number) => void;
   removeCartQuantity: (id: number) => void;
