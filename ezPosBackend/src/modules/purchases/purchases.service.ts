@@ -110,7 +110,7 @@ export async function createPurchase(data: CreatePurchaseInput) {
     await tx.insert(purchaseItems).values(itemsToInsert);
 
     // 6. Return the new purchase so the frontend can use it
-    return newPurchase;
+    return { purchaseOrderNumber: newPurchase.purchaseOrderNumber };
   });
 }
 export async function getPurchasesSummary() {

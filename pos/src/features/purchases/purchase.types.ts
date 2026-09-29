@@ -73,6 +73,13 @@ export type ReceivePurchaseResponse = {
     message: string;
   };
 };
+export type CreatePurchaseResponse = {
+  success: boolean;
+  message: string;
+  data: {
+    purchaseOrderNumber: string;
+  };
+};
 export interface PurchasesStore {
   purchases: {
     orderedPurchase: PurchaseStoreType[];
@@ -95,7 +102,12 @@ export interface PurchasesStore {
     orderId: number,
     changedItems: ChangedItems[],
   ) => Promise<void>;
-  createReceivePurchase: (data: ReceiveItemsFormValues) => Promise<ReceivePurchaseResponse>;
+  createReceivePurchase: (
+    data: ReceiveItemsFormValues,
+  ) => Promise<ReceivePurchaseResponse>;
+  createPurchase: (
+    data: CreatePurchaseInput,
+  ) => Promise<CreatePurchaseResponse>;
 }
 export interface PurchaseNewProps {
   purchases: PurchaseStoreType[];
