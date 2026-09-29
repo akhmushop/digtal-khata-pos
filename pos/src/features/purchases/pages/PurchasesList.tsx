@@ -1,5 +1,4 @@
-import React from "react";
-import Sidebar from "../../../components/layout/Sidebar.js";
+
 import { Link } from "react-router";
 import type { PurchaseNewProps } from "../purchase.types.js";
 import { usePurchasesStore } from "../usePurchaseStore.js";
