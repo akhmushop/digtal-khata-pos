@@ -10,18 +10,33 @@ import { serialNumbers } from "../../../db/schema/serialNumbers.js";
 import { NotFoundError } from "../../../utils/handleError.js";
 import { purchases } from "../../../db/schema/purchases.js";
 import { purchasePayments } from "../../../db/schema/purchasePayments.js";
+import { productVariants } from "../../../db/schema/productVariants.js";
 
 export async function updatePurchaseItems(
   tx: DbTransaction,
   purchaseItemId: number,
   newReceivedQuantity: number,
+  unitCost: number,
 ) {
   await tx
     .update(purchaseItems)
     .set({
       receivedQuantity: newReceivedQuantity,
+      unitCost,
     })
     .where(eq(purchaseItems.id, purchaseItemId));
+}
+export async function updateProductVariants(
+  tx: DbTransaction,
+  sellingPrice: number,
+  variantId: number,
+) {
+  await tx
+    .update(productVariants)
+    .set({
+      sellingPrice,
+    })
+    .where(eq(productVariants.id, variantId));
 }
 export async function insertInventoryStockOnConflictDoUpdate(
   tx: DbTransaction,

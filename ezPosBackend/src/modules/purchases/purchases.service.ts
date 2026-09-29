@@ -35,6 +35,7 @@ import {
   insertInventoryStockOnConflictDoUpdate,
   insertPurchasePayments,
   insertSerialNumbers,
+  updateProductVariants,
   updatePurchase,
   updatePurchaseItems,
 } from "./receive/receive.service.js";
@@ -213,7 +214,8 @@ export async function createReceivePurchase(data: ReceiveItemsFormValues) {
       const newReceivedQuantity =
         purchaseItem.receivedQuantity + receiveItem.receiveNow;
 
-      await updatePurchaseItems(tx, purchaseItem.id, newReceivedQuantity);
+      await updatePurchaseItems(tx, purchaseItem.id, newReceivedQuantity,receiveItem.unitCost);
+      await updateProductVariants(tx,receiveItem.sellingPrice,purchaseItem.variantId)
 
       await insertInventoryStockOnConflictDoUpdate(
         tx,
