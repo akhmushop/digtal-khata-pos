@@ -27,6 +27,13 @@ export const purchaseItems = pgTable("purchase_items", {
     scale: 3,
     mode: "number",
   }).notNull(),
+  cancelledQuantity: numeric("cancelled_quantity   ", {
+    precision: 12,
+    scale: 3,
+    mode: "number",
+  })
+    .notNull()
+    .default(0),
   unitCost: numeric("unit_cost", {
     precision: 12,
     scale: 2,

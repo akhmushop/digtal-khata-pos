@@ -2,14 +2,42 @@ import { error } from "node:console";
 import { db } from "../../db/schema/index.js";
 import { purchaseItems } from "../../db/schema/purchaseItems.js";
 import { purchases } from "../../db/schema/purchases.js";
-import type { purchasesUpdateInput } from "../../types/purchases-type.js";
-import { eq, inArray } from "drizzle-orm";
+import type { purchasesUpdateInput } from "./purchase.types.js";
+import { and, eq, getTableColumns, inArray, sql } from "drizzle-orm";
 import { products } from "../../db/schema/products.js";
 import type { ChangedItems } from "../../types/changedItems-types.js";
 import { NotFoundError } from "../../utils/handleError.js";
 import type { CreatePurchaseInput } from "./schemas/purchase.schema.js";
 import { suppliers } from "../../db/schema/suppliers.js";
 import { productVariants } from "../../db/schema/productVariants.js";
+import { units } from "../../db/schema/units.js";
+import type { ReceiveItemsFormValues } from "./schemas/receiveItem.schema.js";
+import { inventoryStock } from "../../db/schema/inventoryStock.js";
+import { inventoryMovements } from "../../db/schema/inventoryMovements.js";
+import { inventoryBatches } from "../../db/schema/inventoryBatches.js";
+import { serialNumbers } from "../../db/schema/serialNumbers.js";
+import { purchasePayments } from "../../db/schema/purchasePayments.js";
+import {
+  basicRequestValidation,
+  batchValidation,
+  purchaseItemsValidation,
+  purchaseValidation,
+  receiveItemsValidation,
+  serialNumberValidation,
+} from "./receive/receive.validation.js";
+import {
+  calculatePayments,
+  calculatePaymentStatus,
+  calculatePurchaseStatus,
+  getAllPurchaseItems,
+  insertInventoryBatches,
+  insertInventoryMovements,
+  insertInventoryStockOnConflictDoUpdate,
+  insertPurchasePayments,
+  insertSerialNumbers,
+  updatePurchase,
+  updatePurchaseItems,
+} from "./receive/receive.service.js";
 
 export async function createPurchase(data: CreatePurchaseInput) {
   return db.transaction(async (tx) => {
@@ -92,7 +120,11 @@ export async function getPurchasesSummary() {
     partiallyPaidPurchase,
     completedPurchase,
   ] = await Promise.all([
-    db.select().from(purchases).where(eq(purchases.status, "ordered")),
+    db
+      .select({ ...getTableColumns(purchases), supplierName: suppliers.name })
+      .from(purchases)
+      .leftJoin(suppliers, eq(purchases.supplierId, suppliers.id))
+      .where(eq(purchases.status, "ordered")),
     db.select().from(purchases),
     db
       .select()
@@ -111,145 +143,174 @@ export async function getPurchasesSummary() {
   };
 }
 export async function getPurchasesItems() {
-  return db
-    .select({
-      purchaseItems,
-      productName: products.productName,
-      productUnit: products.productUnit,
-      price: products.price,
-      cost: products.cost,
-    })
-    .from(purchaseItems)
-    .innerJoin(products, eq(purchaseItems.productId, products.id));
-}
-export async function createPurchaseUpdate(input: purchasesUpdateInput) {
-  const { paymentDetails, changedItems } = input;
-  const changedFields = changedItems.find(
-    (item: ChangedItems) => item.changedFields === true,
-  );
-  const { orderId, payment_amount, payment_method, payment_notes } =
-    paymentDetails;
-  if (!orderId || payment_amount === undefined) {
-    throw new NotFoundError("Missing orderId or payment_amount");
-  }
-  return db.transaction(async (tx) => {
-    const purchaseRows = await tx
+  return (
+    db
       .select({
-        paidAmount: purchases.paidAmount,
-        dueAmount: purchases.dueAmount,
-        finalTotal: purchases.finalTotal,
-      })
-      .from(purchases)
-      .where(eq(purchases.id, orderId))
-      .for("update");
-    if (purchaseRows.length === 0) {
-      throw new NotFoundError("Purchase order not found");
-    }
+        // 1. Spread the table to get all its columns
+        ...getTableColumns(purchaseItems),
 
-    const grandTotal = changedItems.reduce(
-      (total: number, item: ChangedItems) => {
-        const quantity = item.receiveQuantity ?? 0;
-        const price = item.purchasePrice ?? 0;
-        return total + quantity * price;
-      },
-      0,
-    );
-    const currentPaid = Number(purchaseRows[0]?.paidAmount) || 0;
-    const currentDue = Number(purchaseRows[0]?.dueAmount) || 0;
-    const payment = payment_amount || 0;
-    const purchaseItemsResult = await tx
-      .select({
-        costPrice: purchaseItems.costPrice,
-        receiveQuantity: purchaseItems.receiveQuantity,
+        // 2. Select specific related columns
+        productName: products.name,
+        productUnit: units.name,
+        sellingPrice: productVariants.sellingPrice,
+        productId: products.id,
+        trackingType: products.trackingType,
       })
       .from(purchaseItems)
-      .where(eq(purchaseItems.purchaseId, orderId));
-    const receivedItemsTotalCost = purchaseItemsResult.reduce(
-      (sum, item) =>
-        sum + Number(item.costPrice) * Number(item.receiveQuantity),
-      0,
-    );
-    const amountToReceive =
-      Number(purchaseRows[0]?.finalTotal) - Number(receivedItemsTotalCost);
-    const updatedDue =
-      Number(currentDue) +
-      (Number(grandTotal) - Number(amountToReceive)) -
-      Number(payment);
-    const updatedPaidAmount = currentPaid + payment;
-    const newStatus = !changedFields ? "received" : "partially_received";
-    await tx
-      .update(purchases)
-      .set({
-        status: newStatus,
-        paidAmount: updatedPaidAmount,
-        dueAmount: updatedDue,
-        note: payment_notes,
-        paymentStatus:
-          updatedPaidAmount <= 0
-            ? "unpaid"
-            : updatedPaidAmount < Number(purchaseRows[0]?.finalTotal)
-              ? "partial_paid"
-              : "paid",
-      })
-      .where(eq(purchases.id, orderId));
-    for (let item of changedItems) {
-      const { id, product_id, receiveQuantity, purchasePrice, sellingPrice } =
-        item;
-      const productRows = await tx
-        .select({
-          price: products.price,
-          cost: products.cost,
-          quantity: products.quantity,
-        })
-        .from(products)
-        .where(eq(products.id, product_id))
-        .for("update");
-      if (productRows.length === 0) {
-        throw new Error(`Product with id ${product_id} not found`);
-      }
-      const updatedQuantity =
-        receiveQuantity != null
-          ? Number(receiveQuantity) + productRows[0]!.quantity
-          : productRows[0]?.quantity;
-      const updatedCost =
-        purchasePrice != null ? Number(purchasePrice) : productRows[0]?.cost;
-      const updatedPrice =
-        sellingPrice != null ? Number(sellingPrice) : productRows[0]?.price;
-      const alreadyReceiveQuantity = await tx
-        .select()
-        .from(purchaseItems)
-        .where(eq(purchaseItems.id, id))
-        .for("update");
-      if (alreadyReceiveQuantity.length === 0) {
-        throw new Error(`Product with id ${id} not found`);
-      }
-      const itemsReceived =
-        Number(alreadyReceiveQuantity[0]?.receiveQuantity) ===
-        Number(alreadyReceiveQuantity[0]?.quantity);
-      const updatedAlreadyReceiveQuantity =
-        receiveQuantity != null
-          ? Number(receiveQuantity) +
-            Number(alreadyReceiveQuantity[0]?.receiveQuantity)
-          : alreadyReceiveQuantity[0]?.receiveQuantity;
+      // 3. Join Variant (Purchase Items link to Variants, not directly to Products!)
+      .innerJoin(
+        productVariants,
+        eq(purchaseItems.variantId, productVariants.id),
+      )
+      // 4. Join Product (Variants link to Products)
+      .innerJoin(products, eq(productVariants.productId, products.id))
+      // 5. Join Unit (Products link to Units)
+      .leftJoin(units, eq(units.id, products.unitId))
+  ); // leftJoin is safer in case a product has no unit
+}
 
-      if (!itemsReceived) {
-        await tx
-          .update(purchaseItems)
-          .set({
-            costPrice: updatedCost,
-            receiveQuantity: updatedAlreadyReceiveQuantity,
-          })
-          .where(eq(purchaseItems.id, id));
-        await tx
-          .update(products)
-          .set({
-            quantity: updatedQuantity,
-            cost: updatedCost,
-            price: updatedPrice,
-          })
-          .where(eq(products.id, product_id));
+export async function createReceivePurchase(data: ReceiveItemsFormValues) {
+  const { purchaseId, items, paymentAmount, paymentMethod, paymentNotes } =
+    data;
+
+  return db.transaction(async (tx) => {
+    const itemIds = basicRequestValidation(items);
+    const purchase = await purchaseValidation(tx, purchaseId);
+
+    const existingItems = await purchaseItemsValidation(
+      tx,
+      purchaseId,
+      itemIds,
+    );
+
+    const receiveItemMap = new Map(items.map((item) => [item.itemId, item]));
+
+    for (const purchaseItem of existingItems) {
+      const receiveItem = receiveItemMap.get(purchaseItem.id);
+      if (!receiveItem) {
+        throw new NotFoundError(
+          `Missing receiving information for purchase item ${purchaseItem.id}.`,
+        );
+      }
+      await receiveItemsValidation(purchaseItem, receiveItem);
+
+      if (receiveItem.trackingType === "batch") {
+        batchValidation(purchaseItem, receiveItem);
+      }
+
+      if (receiveItem.trackingType === "serial") {
+        serialNumberValidation(purchaseItem, receiveItem);
       }
     }
-    return { orderId, newStatus, updatedDue, updatedPaidAmount };
+
+    for (const purchaseItem of existingItems) {
+      const receiveItem = receiveItemMap.get(purchaseItem.id)!;
+
+      if (receiveItem.receiveNow <= 0) {
+        continue;
+      }
+
+      const newReceivedQuantity =
+        purchaseItem.receivedQuantity + receiveItem.receiveNow;
+
+      await updatePurchaseItems(tx, purchaseItem.id, newReceivedQuantity);
+
+      await insertInventoryStockOnConflictDoUpdate(
+        tx,
+        purchaseItem.variantId,
+        receiveItem.receiveNow,
+      );
+
+      await insertInventoryMovements(
+        tx,
+        purchaseItem.variantId,
+        purchaseId,
+        receiveItem.receiveNow,
+      );
+
+      if (receiveItem.trackingType === "batch") {
+        await insertInventoryBatches(
+          tx,
+          receiveItem,
+          purchaseItem.variantId,
+          purchaseItem.id,
+        );
+      }
+
+      if (receiveItem.trackingType === "serial") {
+        await insertSerialNumbers(
+          tx,
+          receiveItem,
+          purchaseItem.variantId,
+          purchaseItem.id,
+        );
+      }
+    }
+
+    const allPurchaseItems = await getAllPurchaseItems(tx, purchaseId);
+
+    const newStatus = calculatePurchaseStatus(allPurchaseItems);
+
+    const {
+      updatedPaidAmount,
+      receivedAmount,
+      updatedDueAmount,
+      newPaymentAmount,
+    } = calculatePayments(
+      allPurchaseItems,
+      purchase.paidAmount,
+      paymentAmount,
+      purchase.totalAmount,
+    );
+
+    const paymentStatus = calculatePaymentStatus(
+      updatedPaidAmount,
+      purchase.totalAmount,
+      receivedAmount,
+    );
+
+    // =========================================================
+    // 13. UPDATE PURCHASE
+    // =========================================================
+
+    await updatePurchase(
+      tx,
+      newStatus,
+      updatedPaidAmount,
+      updatedDueAmount,
+      paymentStatus,
+      purchaseId,
+    );
+
+    // =========================================================
+    // 14. PAYMENT RECORD
+    // =========================================================
+
+    if (newPaymentAmount > 0) {
+      await insertPurchasePayments(
+        tx,
+        purchaseId,
+        paymentMethod,
+        newPaymentAmount,
+        paymentNotes,
+      );
+    }
+
+    // =========================================================
+    // 15. RETURN
+    // =========================================================
+
+    return {
+      success: true,
+      purchaseId,
+      status: newStatus,
+      receivedAmount,
+      paidAmount: updatedPaidAmount,
+      dueAmount: updatedDueAmount,
+      message:
+        newStatus === "received"
+          ? "Purchase completely received."
+          : "Purchase partially received.",
+    };
   });
 }

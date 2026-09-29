@@ -1,6 +1,6 @@
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Card } from "@/components/ui/card";
-import { ProductCardProps } from "../purchase.types";
+import { ProductCardProps } from "../../purchase.types";
 
 export function ProductCard({ product, handleAddPurchase, defaultVariant }:ProductCardProps) {
   const outOfStock = defaultVariant.quantity <= 0;
