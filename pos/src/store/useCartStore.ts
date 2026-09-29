@@ -81,19 +81,37 @@ import type { CartStore } from "../types/cart.types.js";
 
 export const useCartStore = create<CartStore>((set) => ({
   cart: [],
-  addToCart: (cartProduct) =>
+  addToCart: (product) =>
     set((state) => {
-      const exists = state.cart.find((p) => p.id === cartProduct.id);
+      const variant = product.variants[0];
+      if (!variant) {
+        return state;
+      }
+
+      const exists = state.cart.find((p) =>
+        p.variants.some((v) => v.id === variant.id),
+      );
+
       if (exists) {
         return {
-          cart: state.cart.map((p) =>
-            p.id === cartProduct.id
-              ? { ...p, soldQuantity: (p.soldQuantity || 1) + 1 }
-              : p,
+          cart: state.cart.map((item) =>
+            item.variants.some((v) => v.id === variant.id)
+              ? { ...item, quantity: item.quantity + 1 }
+              : item,
           ),
         };
       }
-      return { cart: [...state.cart, { ...cartProduct, soldQuantity: 1 }] };
+      return {
+        cart: [
+          //
+          ...state.cart,
+          {
+            ...product,
+            variants: [variant],
+            quantity: 1,
+          },
+        ],
+      };
     }),
   removeCartItem: (id) =>
     set((state) => ({

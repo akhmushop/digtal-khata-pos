@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { Link } from "react-router";
 import { RiHome9Fill } from "react-icons/ri";
 interface SetSearchProps {
-  setSearch: React.Dispatch<React.SetStateAction<string>>;
+  setSearchProducts: React.Dispatch<React.SetStateAction<string>>;
 }
-export function ProductHeader({ setSearch }: SetSearchProps) {
+export function ProductHeader({ setSearchProducts }: SetSearchProps) {
   return (
     <>
       <div className="flex text-black-200  rounded-md mx-5 mt-2  bg-zuccini-400  h-17 sticky top-1">
@@ -14,7 +14,7 @@ export function ProductHeader({ setSearch }: SetSearchProps) {
           </Link>
           <input
             onChange={(e) => {
-              setSearch(e.target.value);
+              setSearchProducts(e.target.value);
             }}
             className="flex-1 border  h-10 pl-2 rounded-md  "
             type="text"

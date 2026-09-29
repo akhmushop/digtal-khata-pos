@@ -4,14 +4,6 @@ import { FiMinusCircle } from "react-icons/fi";
 import { HiDotsVertical } from "react-icons/hi";
 import { ClickToShowMore } from "./CartMoreMenu.js";
 import { ClickEmptyToResetCart } from "./CartEmptyBtn.js";
-import { useCartStore } from "../../store/useCartStore.js";
-import { useSoldStore } from "../../store/useSalesStore.js";
-import axios from "../../api/axios.js";
-import { useCustomerStore } from "../../store/useCustomerStore.js";
-import type {
-  CustomerDue,
-  ShowCustomerInfoProps,
-} from "../../types/customers.types.js";
 import type {
   AddChargeModalProps,
   CartHoldBtnProps,
@@ -24,8 +16,13 @@ import type {
   PaymentModalProps,
   PeerInputProps,
   PopupModalProps,
-} from "../../types/cart.types.js";
+} from "../../../../types/cart.types.js";
 import { useProductStore } from "@/features/products/usedashboardProductStore.js";
+import { useCartStore } from "@/store/useCartStore.js";
+import { CustomerDue } from "@/types/customers.types.js";
+import axios from "../../../../api/axios.js";
+import { useCustomerStore } from "@/store/useCustomerStore.js";
+import { useSoldStore } from "@/store/useSalesStore.js";
 
 export default function CartItems() {
   const {

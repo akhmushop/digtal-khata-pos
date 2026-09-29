@@ -1,5 +1,5 @@
 import { createBrowserRouter, RouterProvider } from "react-router";
-import Pos from "../pages/POS/POS";
+import Pos from "../features/pos/PosPage";
 import { AddCustomerModal } from "../pages/Customer/Customer";
 import ProductStockForm from "../features/products/pages/AddProductPage";
 import DashboardComponent from "../pages/Dashboard/Dashboard";

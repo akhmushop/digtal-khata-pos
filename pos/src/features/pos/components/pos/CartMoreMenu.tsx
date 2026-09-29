@@ -1,5 +1,5 @@
+import { ClickToShowMoreProps } from "@/types/cart.types";
 import React from "react";
-import type { ClickToShowMoreProps } from "../../types/cart.types.js";
 
 export function ClickToShowMore({
   showMore,
