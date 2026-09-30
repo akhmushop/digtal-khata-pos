@@ -8,7 +8,7 @@ export interface CustomerStore {
   customers: InputValue[];
   customerInfo: InputValue;
   customerInputValue: InputValue;
-  showCustomerInfo: InputValue;
+  showCustomerInfo: InputValue ;
   loading: boolean;
   error: string | null;
   handleOnchange: (
@@ -18,7 +18,7 @@ export interface CustomerStore {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
     setChecked: (value: boolean) => void,
   ) => void;
-  setShowCustomerInfo: (customer: InputValue) => void;
+  setShowCustomerInfo: (customer: InputValue | null) => void;
   resetCustomerInfo: () => void;
   resetShowCustomerInfo: () => void;
   handleAddCustomer: () => void;

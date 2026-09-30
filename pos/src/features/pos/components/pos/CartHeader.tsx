@@ -1,12 +1,36 @@
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { AddCustomer } from "@/pages/Customer/Customer";
 import { useCustomerStore } from "@/store/useCustomerStore";
 import React, { useState, useRef, useEffect } from "react";
+import { Controller, FieldValues, UseFormReturn } from "react-hook-form";
 import {
   RiCloseLargeFill,
   RiArrowDropDownFill,
   RiUserAddFill,
 } from "react-icons/ri";
-export function CartHeader() {
+
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
+import { UserPlus } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+export function CartHeader({
+  form,
+}: {
+  form: UseFormReturn<FieldValues, any, FieldValues>;
+}) {
   const {
     customerInfo,
     handleOnchange,
@@ -16,42 +40,27 @@ export function CartHeader() {
   } = useCustomerStore();
   const [isOpenCustomerModal, setIsOpenCustomerModal] = useState(false);
   const [checked, setChecked] = useState(true);
+
   return (
     <>
-      <div className="px-5 gap-4 grid grid-cols-12  items-center bg-zuccini-400   h-17 rounded-md mx-2 mt-2 sticky top-1">
-        <div className="relative  col-span-3">
-          <input
-            id="date"
-            className="h-10 pl-2 rounded-md border peer w-full "
-            type="date"
-            defaultValue={new Date().toISOString().split("T")[0]}
-          />
-          <label
-            htmlFor="date"
-            className="absolute -top-3 left-3 bg-zuccini-400 peer-focus:text-blue-500 text-sm"
-          >
-            Date
-          </label>
-        </div>
-        <DropdownModal
-          setChecked={setChecked}
-          setIsOpenCustomerModal={setIsOpenCustomerModal}
-        />
-        <div className="flex gap-1 col-span-3 items-center">
-          <input
-            type="checkbox"
-            onChange={(e) => {
-              setChecked(e.target.checked);
-              if (!checked) {
-                resetShowCustomerInfo();
-              }
-            }}
-            checked={checked}
-            className="checkbox checkbox-neutral checkbox-sm"
-          />
-          <p>Walk-in Customer</p>
-        </div>
-      </div>
+      <Card className=" mx-2 mt-2 sticky top-1">
+        <CardContent className="gap-4 grid grid-cols-12">
+          <div className="col-span-3">
+            <SaleDatePicker form={form} />
+          </div>
+          <div className="col-span-9 flex gap-4">
+            <CustomerINputAndSearch form={form} />
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setIsOpenCustomerModal(true);
+              }}
+            >
+              <UserPlus />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
       {isOpenCustomerModal && (
         <AddCustomer
           handleOnchange={handleOnchange}
@@ -64,137 +73,118 @@ export function CartHeader() {
     </>
   );
 }
-type DropdownModalProps = {
-  setChecked: React.Dispatch<React.SetStateAction<boolean>>;
-  setIsOpenCustomerModal: React.Dispatch<React.SetStateAction<boolean>>;
-};
-function DropdownModal({
-  setChecked,
-  setIsOpenCustomerModal,
-}: DropdownModalProps) {
-  const {
-    customers,
-    customerInputValue,
-    handleInputChange,
-    setShowCustomerInfo,
-    resetShowCustomerInfo,
-  } = useCustomerStore();
-  const filteredCustomers = customers.filter((customer) =>
-    customer.name.toLowerCase().includes(customerInputValue.name.toLowerCase()),
-  );
+export function CustomerINputAndSearch({
+  form,
+}: {
+  form: UseFormReturn<FieldValues, any, FieldValues>;
+}) {
+  const { customers, setShowCustomerInfo } = useCustomerStore();
 
-  const [showCustomer, setShowCustomer] = useState(false);
+  const customersValue = customers.map((customer) => ({
+    label: customer.name,
+    value: customer.id,
+  }));
 
-  const [hovered, setHovered] = useState(false);
-  const inputRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const clickOutside = (event: MouseEvent) => {
-      if (
-        inputRef.current &&
-        !inputRef.current.contains(event.target as Node)
-      ) {
-        setShowCustomer(false);
-      }
-    };
-    document.addEventListener("mousedown", clickOutside);
-    return () => {
-      document.removeEventListener("mousedown", clickOutside);
-    };
-  }, []);
   return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className="relative w-full col-span-6"
-      ref={inputRef}
-    >
-      <div className="relative">
-        <input
-          placeholder=""
-          value={customerInputValue.name}
-          onChange={(e) => {
-            handleInputChange(e, setChecked);
-          }}
-          onClick={() => {
-            setShowCustomer(!showCustomer);
-          }}
-          className="h-10 pl-2 rounded-md border peer w-full  "
-          type="text"
-          id="customer"
-        />
-        <label
-          htmlFor="customer"
-          className={`absolute left-3 mt-1  text-lg transition-all pointer-events-none ${
-            customerInputValue.name
-              ? "-top-4 text-sm text-blue-500 bg-zuccini-400"
-              : "peer-focus:-top-4 peer-placeholder-shown:text-gray-700 peer-focus:text-blue-500 peer-focus:text-sm bg-zuccini-400 "
-          }
-                  `}
-        >
-          Customer
-        </label>
-        <div className="flex absolute items-center top-1.5 right-2 ">
-          {/* close icon */}
-          <div
-            onClick={() => {
-              resetShowCustomerInfo();
-              setChecked(true);
-            }}
-            className={` cursor-pointer p-1 transition-all duration-300 hover:bg-amber-50 rounded-2xl ${
-              hovered ? "" : "hidden"
-            } `}
-          >
-            <RiCloseLargeFill />
-          </div>
-          {/* dropdown arrow */}
-          <div
-            onClick={() => {
-              !showCustomer ? setShowCustomer(true) : setShowCustomer(false);
-            }}
-            className={` cursor-pointer text-2xl transition-all duration-300 hover:bg-amber-50 rounded-2xl ${
-              showCustomer ? "rotate-180" : "rotate-0"
-            } `}
-          >
-            <RiArrowDropDownFill />
-          </div>
+    <Controller
+      name="customerId"
+      control={form.control}
+      render={({ field }) => {
+        const selectedCustomer =
+          customersValue.find((customer) => customer.value === field.value) ??
+          null;
 
-          {/* add icon */}
-          <div className="">
-            <button
-              onClick={() => {
-                setIsOpenCustomerModal(true);
-              }}
-              className="text-2xl   cursor-pointer"
+        return (
+          <Combobox
+            items={customersValue}
+            value={selectedCustomer}
+            onValueChange={(customer) => {
+              if (!customer) {
+                field.onChange(null);
+                setShowCustomerInfo(null);
+                return;
+              }
+
+              field.onChange(customer.value);
+
+              const originalCustomer = customers.find(
+                (c) => c.id === customer.value,
+              );
+
+              setShowCustomerInfo(originalCustomer ?? null);
+            }}
+            itemToStringValue={(customer) => customer.label}
+          >
+            <ComboboxInput
+              className="w-full"
+              placeholder="Select a customer"
+              showClear
+            />
+
+            <ComboboxContent>
+              <ComboboxEmpty>No customer found.</ComboboxEmpty>
+
+              <ComboboxList>
+                {(customer) => (
+                  <ComboboxItem key={customer.value} value={customer}>
+                    {customer.label}
+                  </ComboboxItem>
+                )}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
+        );
+      }}
+    />
+  );
+}
+export function SaleDatePicker({
+  form,
+}: {
+  form: UseFormReturn<FieldValues, any, FieldValues>;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Controller
+      name="saleDate"
+      control={form.control}
+      render={({ field, fieldState }) => (
+        <Field data-invalid={fieldState.invalid}>
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger
+              render={
+                <Button
+                  variant="outline"
+                  id={field.name}
+                  className="justify-start font-normal"
+                >
+                  {field.value
+                    ? new Date(field.value).toLocaleDateString()
+                    : "Select date"}
+                </Button>
+              }
+            />
+            <PopoverContent
+              className="w-auto overflow-hidden p-0"
+              align="start"
             >
-              <RiUserAddFill />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div
-        className={` absolute max-h-40 overflow-y-scroll no-scrollbar w-full  right-0  ${
-          !showCustomer && "hidden"
-        }   `}
-      >
-        <div className=" w-full">
-          {filteredCustomers.map((customer, index) => {
-            return (
-              <h1
-                onClick={() => {
-                  setShowCustomerInfo(customer);
-                  setChecked(false);
-                  setShowCustomer(false);
+              <Calendar
+                mode="single"
+                selected={field.value ? new Date(field.value) : undefined}
+                defaultMonth={field.value ? new Date(field.value) : new Date()}
+                captionLayout="dropdown"
+                onSelect={(date) => {
+                  field.onChange(date);
+                  setOpen(false);
                 }}
-                key={index}
-                className="border-b p-1 pl-4  hover:bg-gray-100 cursor-pointer bg-gray-200 rounded-md border border-gray-400 my-0.5"
-              >
-                {customer.name}
-              </h1>
-            );
-          })}
-        </div>
-      </div>
-    </div>
+              />
+            </PopoverContent>
+          </Popover>
+          {fieldState.error && (
+            <FieldError>{fieldState.error.message}</FieldError>
+          )}
+        </Field>
+      )}
+    />
   );
 }
