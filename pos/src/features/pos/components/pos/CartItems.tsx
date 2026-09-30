@@ -19,7 +19,7 @@ import type {
 } from "../../../../types/cart.types.js";
 import { useProductStore } from "@/features/products/usedashboardProductStore.js";
 import { useCartStore } from "@/store/useCartStore.js";
-import { CustomerDue } from "@/types/customers.types.js";
+import { CustomerDue, ShowCustomerInfoProps } from "@/types/customers.types.js";
 import axios from "../../../../api/axios.js";
 import { useCustomerStore } from "@/store/useCustomerStore.js";
 import { useSoldStore } from "@/store/useSalesStore.js";
@@ -67,11 +67,7 @@ export default function CartItems() {
         const newQuantity = Number(customQuantity);
         if (!isNaN(newQuantity) && newQuantity > 0) {
           addCustomCartQuantity(items.id, newQuantity); // Send the difference to update
-          addCustomProductQuantityToCart(
-            items.id,
-            newQuantity,
-            items.soldQuantity,
-          );
+          addCustomProductQuantityToCart(items.id, newQuantity, items.quantity);
         }
         setCustomQuantity(null);
         setEditQuantityId(null);
@@ -90,7 +86,8 @@ export default function CartItems() {
   ]);
   // ClickOutSideToSaveCustomQuantity
   const { showCustomerInfo } = useCustomerStore();
-  const { name, phone, address, id } = showCustomerInfo;
+
+  const { name, phone, address, id } = showCustomerInfo || {};
   const customerDue = dueByCustomers.find((c) => c.customerId === id);
   return (
     <div className="h-[calc(100vh-4.25rem)]">
@@ -113,33 +110,40 @@ export default function CartItems() {
         )}
 
         {/* cartitem */}
-        {cart.map((items) => {
+        {cart.map((item) => {
+          const variant = item.variants[0];
+          if (!variant) {
+            return;
+          }
           return (
             <div
-              key={items.id}
+              key={item.id}
               className="h-20 m-2 bg-zuccini-300 rounded-xl flex items-center select-none"
             >
               <div className="flex items-center w-full justify-between">
                 <img
                   className="h-20 w-20  rounded-xl "
-                  src={items.image}
+                  src={
+                    item.imageUrl ??
+                    "https://www.startech.com.bd/image/cache/catalog/ceiling-fan/qulik/windora/windora-01-500x500.webp"
+                  }
                   alt=""
                 />
                 <div className="flex-1 pl-5">
-                  <h1>{items.productName}</h1>
+                  <h1>{item.name}</h1>
                   <p>
-                    {Number(items.price).toFixed(2)} ×{" "}
-                    {Number(items.soldQuantity)} ={" "}
-                    {(Number(items.price) * Number(items.soldQuantity)).toFixed(
-                      2,
-                    )}
+                    {Number(variant.sellingPrice).toFixed(2)} ×{" "}
+                    {Number(item.quantity)} ={" "}
+                    {(
+                      Number(variant.sellingPrice) * Number(item.quantity)
+                    ).toFixed(2)}
                   </p>
                 </div>
                 <div className="flex text-2xl gap-x-4 items-center pr-5  ">
                   <div
                     onClick={() => {
-                      addProductQuantityToCart(items.id);
-                      removeCartQuantity(items.id);
+                      addProductQuantityToCart(item.id);
+                      removeCartQuantity(item.id);
                     }}
                     className="cursor-pointer"
                   >
@@ -147,29 +151,29 @@ export default function CartItems() {
                   </div>
                   <span
                     onClick={() => {
-                      setEditQuantityId(items.id);
+                      setEditQuantityId(item.id);
                     }}
                     className=""
                   >
-                    {editQuantityId === items.id ? (
+                    {editQuantityId === item.id ? (
                       <input
                         type="number"
                         className="h-7 w-11 border"
                         ref={editQuantityRef}
-                        defaultValue={items.soldQuantity}
+                        defaultValue={item.quantity}
                         autoFocus
                         onChange={(e) => {
                           setCustomQuantity(Number(e.target.value));
                         }}
                       />
                     ) : (
-                      items.soldQuantity
+                      item.quantity
                     )}
                   </span>
                   <div
                     onClick={() => {
-                      removeProductQuantityToCart(items.id);
-                      addCartQuantity(items.id);
+                      removeProductQuantityToCart(item.id);
+                      addCartQuantity(item.id);
                     }}
                     className="cursor-pointer"
                   >
@@ -179,10 +183,10 @@ export default function CartItems() {
                     className="cursor-pointer"
                     onClick={() => {
                       restoreSingleProductQuantityToCart(
-                        items.id,
-                        items.soldQuantity,
+                        item.id,
+                        item.quantity,
                       );
-                      removeCartItem(items.id);
+                      removeCartItem(item.id);
                     }}
                   >
                     <MdDeleteOutline />
@@ -218,7 +222,11 @@ function CartCalculation({ showCustomerInfo }: ShowCustomerInfoProps) {
     }
   });
   const subTotal = Number(
-    cart.reduce((total, item) => total + item.price * item.soldQuantity, 0),
+    cart.reduce(
+      (total, item) =>
+        total + (item.variants[0]?.sellingPrice ?? 0) * item.quantity,
+      0,
+    ),
   );
   const vat = Number(subTotal * (5 / 100));
   const [holdConfirm, setHoldConfirm] = useState(false);
@@ -318,6 +326,7 @@ function CartCalculation({ showCustomerInfo }: ShowCustomerInfoProps) {
         cashForm.amountReceived > 0 &&
         cashForm.amountReceived > cashForm.finalTotal
       ) {
+        console.log(cart, updatedPayment);
         addToSoldProduct(cart, updatedCash);
         resetCart();
         handelClose();
@@ -326,6 +335,7 @@ function CartCalculation({ showCustomerInfo }: ShowCustomerInfoProps) {
         alert("add money");
       }
     } else if (click === "payments") {
+      console.log(cart, updatedPayment);
       addToSoldProduct(cart, updatedPayment);
       resetCart();
       handelClose();
@@ -744,7 +754,8 @@ function CashModal({
           onChange={handleCashChange}
         />
         <button
-          onClick={() => handlePay(handelClose, "cash")}
+          type="submit"
+          // onClick={() => handlePay(handelClose, "cash")}
           className="w-full  py-5 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition"
         >
           PAY
@@ -788,7 +799,7 @@ function CartTextModal({
   const cart = useCartStore((state) => state.cart);
   const totalItemsCount = cart.reduce((total) => total + 1, 0);
   const totalQuantityCount = cart.reduce(
-    (total, item) => total + (item.soldQuantity || 0),
+    (total, item) => total + (item.quantity || 0),
     0,
   );
 

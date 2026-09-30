@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { Link } from "react-router";
 import { RiHome9Fill } from "react-icons/ri";
-interface SetSearchProps {
+export function ProductHeader({
+  setSearchProducts,
+}: {
   setSearchProducts: React.Dispatch<React.SetStateAction<string>>;
-}
-export function ProductHeader({ setSearchProducts }: SetSearchProps) {
+}) {
   return (
     <>
       <div className="flex text-black-200  rounded-md mx-5 mt-2  bg-zuccini-400  h-17 sticky top-1">

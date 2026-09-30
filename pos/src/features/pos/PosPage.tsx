@@ -4,9 +4,13 @@ import { ProductHeader } from "@/features/pos/components/pos/ProductHeader.js";
 import { ProductList } from "@/features/pos/components/pos/ProductList.js";
 import { CartHeader } from "@/features/pos/components/pos/CartHeader.js";
 import CartItems from "@/features/pos/components/pos/CartItems.js";
+import { useForm } from "react-hook-form";
 function Pos({}) {
   const [searchProducts, setSearchProducts] = useState("");
-
+const form = useForm()
+async function onSubmit(data) {
+  console.log(data)
+}
   return (
     <div className="flex h-screen overflow-hidden">
       <div className="w-5/8">
@@ -14,10 +18,10 @@ function Pos({}) {
         <ProductList searchProducts={searchProducts} />
       </div>
 
-      <div className="w-3/8">
-        <CartHeader />
+      <form onSubmit={form.handleSubmit(onSubmit)} className="w-3/8">
+        <CartHeader form={form} />
         <CartItems />
-      </div>
+      </form>
     </div>
   );
 }
