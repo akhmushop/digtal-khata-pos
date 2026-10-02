@@ -49,7 +49,7 @@ export function CartHeader({
             <SaleDatePicker form={form} />
           </div>
           <div className="col-span-9 flex gap-4">
-            <CustomerINputAndSearch form={form} />
+            <CustomerInputAndSearch form={form} />
             <Button
               variant="secondary"
               onClick={() => {
@@ -73,7 +73,7 @@ export function CartHeader({
     </>
   );
 }
-export function CustomerINputAndSearch({
+export function CustomerInputAndSearch({
   form,
 }: {
   form: UseFormReturn<FieldValues, any, FieldValues>;

@@ -1,3 +1,5 @@
+import { FieldValues, UseFormReturn } from "react-hook-form";
+
 export type InputValue = {
   id: number;
   name: string;
@@ -8,7 +10,7 @@ export interface CustomerStore {
   customers: InputValue[];
   customerInfo: InputValue;
   customerInputValue: InputValue;
-  showCustomerInfo: InputValue ;
+  showCustomerInfo: InputValue;
   loading: boolean;
   error: string | null;
   handleOnchange: (
@@ -47,4 +49,5 @@ export interface CustomerDue {
 }
 export interface ShowCustomerInfoProps {
   showCustomerInfo: InputValue;
+  form: UseFormReturn<FieldValues, any, FieldValues>;
 }
