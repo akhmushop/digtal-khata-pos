@@ -18,9 +18,9 @@ async function onSubmit(data) {
         <ProductList searchProducts={searchProducts} />
       </div>
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="w-3/8">
+      <form id="cart-form" onSubmit={form.handleSubmit(onSubmit)} className="w-3/8">
         <CartHeader form={form} />
-        <CartItems />
+        <CartItems form={form} />
       </form>
     </div>
   );

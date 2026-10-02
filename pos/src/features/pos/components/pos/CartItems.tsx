@@ -23,8 +23,15 @@ import { CustomerDue, ShowCustomerInfoProps } from "@/types/customers.types.js";
 import axios from "../../../../api/axios.js";
 import { useCustomerStore } from "@/store/useCustomerStore.js";
 import { useSoldStore } from "@/store/useSalesStore.js";
+import { Button } from "@/components/ui/button.js";
+import { PaymentModal } from "./PaymentModal.js";
+import { FieldValues, UseFormReturn } from "react-hook-form";
 
-export default function CartItems() {
+export default function CartItems({
+  form,
+}: {
+  form: UseFormReturn<FieldValues, any, FieldValues>;
+}) {
   const {
     addProductQuantityToCart,
     removeProductQuantityToCart,
@@ -199,14 +206,14 @@ export default function CartItems() {
         {/* cartitem */}
 
         {/* cartCalculation */}
-        <CartCalculation showCustomerInfo={showCustomerInfo} />
+        <CartCalculation form={form} showCustomerInfo={showCustomerInfo} />
         {/* cartCalculation */}
       </div>
     </div>
   );
 }
 
-function CartCalculation({ showCustomerInfo }: ShowCustomerInfoProps) {
+function CartCalculation({ showCustomerInfo, form }: ShowCustomerInfoProps) {
   const cart = useCartStore((state) => state.cart);
   const [isOpen, setIsOpen] = useState(false);
   const [emptyCartCon, setEmptyCartCon] = useState(false);
@@ -420,7 +427,7 @@ function CartCalculation({ showCustomerInfo }: ShowCustomerInfoProps) {
             setShowHoldItems={() => setShowHoldItems(true)}
           />
         </div>
-        {isPaymentModalOpen && (
+        {/* {isPaymentModalOpen && (
           <PaymentModal
             initialCashFrom={initialCashFrom}
             handlePay={handlePay}
@@ -433,7 +440,7 @@ function CartCalculation({ showCustomerInfo }: ShowCustomerInfoProps) {
             setIsPaymentModalOpen={setIsPaymentModalOpen}
             setIsOpen={setIsOpen}
           />
-        )}
+        )} */}
 
         {/* morebutton */}
         <button
@@ -442,7 +449,7 @@ function CartCalculation({ showCustomerInfo }: ShowCustomerInfoProps) {
         >
           PAYMENTS
         </button>
-        {isCashModalOpen && (
+        {/* {isCashModalOpen && (
           <CashModal
             handlePay={handlePay}
             handleCashChange={handleCashChange}
@@ -453,13 +460,10 @@ function CartCalculation({ showCustomerInfo }: ShowCustomerInfoProps) {
             setIsCashModalOpen={setIsCashModalOpen}
             initialCashFrom={initialCashFrom}
           />
-        )}
-        <button
-          onClick={handleCashTk}
-          className="bg-red-400 p-2 w-full col-span-6 rounded hover:bg-red-500 transition-all duration-300 cursor-pointer"
-        >
-          CASH TK: {(subTotal + vat).toFixed(2)}
-        </button>
+        )} */}
+        <div className=" col-span-6 ">
+          <PaymentModal form={form} subTotal={subTotal} vat={vat} />
+        </div>
       </div>
     </div>
   );
@@ -599,97 +603,97 @@ function PeerInput({ id, peerName, value, onChange }: PeerInputProps) {
     </div>
   );
 }
-function PaymentModal({
-  handleCashChange,
-  cashForm,
-  setCashForm,
-  isOpen,
-  setIsPaymentModalOpen,
-  setIsOpen,
-  paymentMethod,
-  setPaymentMethod,
-  handlePay,
-  initialCashFrom,
-}: PaymentModalProps) {
-  const handelClose = () => {
-    setTimeout(() => setIsPaymentModalOpen(false), 300);
-    setIsOpen(false);
-    setCashForm(initialCashFrom);
-  };
-  const methods = ["Cash", "Mobile", "Card"];
-  return (
-    <PopupModal isOpen={isOpen} handelClose={handelClose} className="w-150 p-6">
-      <div className="flex justify-between mb-5">
-        <h1 className="text-xl font-semibold">Add Payments </h1>
-        <h1
-          onClick={handelClose}
-          className="cursor-pointer text-gray-500 hover:text-gray-700 text-lg"
-        >
-          Close
-        </h1>
-      </div>
-      <div className="space-y-5">
-        <div className="grid grid-cols-2 gap-5">
-          <PeerInput
-            id="paidAmount"
-            peerName="Paid Amount"
-            value={cashForm.paidAmount}
-            onChange={handleCashChange}
-          />
-          <PeerInput
-            id="finalTotal"
-            peerName="Final Total"
-            value={cashForm.finalTotal}
-            onChange={handleCashChange}
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-5">
-          <PeerInput
-            id="discount"
-            peerName="Discount"
-            value={cashForm.discount}
-            onChange={handleCashChange}
-          />
-          <PeerInput
-            id="dueAmount"
-            peerName="Due Amount"
-            value={cashForm.dueAmount}
-            onChange={handleCashChange}
-          />
-        </div>
-        <div className="grid grid-cols-3 gap-3">
-          {methods.map((method) => (
-            <button
-              key={method}
-              onClick={() => setPaymentMethod(method)}
-              className={`py-2 border rounded transition hover:cursor-pointer
-            ${
-              paymentMethod === method
-                ? "bg-blue-500 text-white border-blue-500"
-                : "border-gray-300 hover:bg-gray-50 active:bg-gray-100"
-            }
-          `}
-            >
-              {method}
-            </button>
-          ))}
-        </div>
-        <PeerInput
-          id="note"
-          peerName="Note"
-          value={cashForm.note}
-          onChange={handleCashChange}
-        />
-        <button
-          onClick={() => handlePay(handelClose, "payments")}
-          className="w-full  py-5 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition"
-        >
-          PAY
-        </button>
-      </div>
-    </PopupModal>
-  );
-}
+// function PaymentModal({
+//   handleCashChange,
+//   cashForm,
+//   setCashForm,
+//   isOpen,
+//   setIsPaymentModalOpen,
+//   setIsOpen,
+//   paymentMethod,
+//   setPaymentMethod,
+//   handlePay,
+//   initialCashFrom,
+// }: PaymentModalProps) {
+//   const handelClose = () => {
+//     setTimeout(() => setIsPaymentModalOpen(false), 300);
+//     setIsOpen(false);
+//     setCashForm(initialCashFrom);
+//   };
+//   const methods = ["Cash", "Mobile", "Card"];
+//   return (
+//     <PopupModal isOpen={isOpen} handelClose={handelClose} className="w-150 p-6">
+//       <div className="flex justify-between mb-5">
+//         <h1 className="text-xl font-semibold">Add Payments </h1>
+//         <h1
+//           onClick={handelClose}
+//           className="cursor-pointer text-gray-500 hover:text-gray-700 text-lg"
+//         >
+//           Close
+//         </h1>
+//       </div>
+//       <div className="space-y-5">
+//         <div className="grid grid-cols-2 gap-5">
+//           <PeerInput
+//             id="paidAmount"
+//             peerName="Paid Amount"
+//             value={cashForm.paidAmount}
+//             onChange={handleCashChange}
+//           />
+//           <PeerInput
+//             id="finalTotal"
+//             peerName="Final Total"
+//             value={cashForm.finalTotal}
+//             onChange={handleCashChange}
+//           />
+//         </div>
+//         <div className="grid grid-cols-2 gap-5">
+//           <PeerInput
+//             id="discount"
+//             peerName="Discount"
+//             value={cashForm.discount}
+//             onChange={handleCashChange}
+//           />
+//           <PeerInput
+//             id="dueAmount"
+//             peerName="Due Amount"
+//             value={cashForm.dueAmount}
+//             onChange={handleCashChange}
+//           />
+//         </div>
+//         <div className="grid grid-cols-3 gap-3">
+//           {methods.map((method) => (
+//             <button
+//               key={method}
+//               onClick={() => setPaymentMethod(method)}
+//               className={`py-2 border rounded transition hover:cursor-pointer
+//             ${
+//               paymentMethod === method
+//                 ? "bg-blue-500 text-white border-blue-500"
+//                 : "border-gray-300 hover:bg-gray-50 active:bg-gray-100"
+//             }
+//           `}
+//             >
+//               {method}
+//             </button>
+//           ))}
+//         </div>
+//         <PeerInput
+//           id="note"
+//           peerName="Note"
+//           value={cashForm.note}
+//           onChange={handleCashChange}
+//         />
+//         <button
+//           onClick={() => handlePay(handelClose, "payments")}
+//           className="w-full  py-5 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition"
+//         >
+//           PAY
+//         </button>
+//       </div>
+//     </PopupModal>
+//   );
+// }
 
 function CashModal({
   handleCashChange,
@@ -754,7 +758,6 @@ function CashModal({
           onChange={handleCashChange}
         />
         <button
-          type="submit"
           // onClick={() => handlePay(handelClose, "cash")}
           className="w-full  py-5 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition"
         >
