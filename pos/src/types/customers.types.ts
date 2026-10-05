@@ -1,3 +1,4 @@
+import { CartSchemaType } from "@/features/pos/schemas/cart.schema";
 import { FieldValues, UseFormReturn } from "react-hook-form";
 
 export type InputValue = {
@@ -49,5 +50,5 @@ export interface CustomerDue {
 }
 export interface ShowCustomerInfoProps {
   showCustomerInfo: InputValue;
-  form: UseFormReturn<FieldValues, any, FieldValues>;
+  form: UseFormReturn<CartSchemaType>;
 }
