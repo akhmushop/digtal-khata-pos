@@ -5,12 +5,21 @@ import { ProductList } from "@/features/pos/components/pos/ProductList.js";
 import { CartHeader } from "@/features/pos/components/pos/CartHeader.js";
 import CartItems from "@/features/pos/components/pos/CartItems.js";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { cartSchema, CartSchemaType } from "./schemas/cart.schema.js";
 function Pos({}) {
   const [searchProducts, setSearchProducts] = useState("");
-const form = useForm()
-async function onSubmit(data) {
-  console.log(data)
-}
+  const form = useForm<CartSchemaType>({
+    resolver: zodResolver(cartSchema),
+    defaultValues: {
+      saleDate: new Date(),
+      customerId: null,
+      payments: [],
+    },
+  });
+  async function onSubmit(data: CartSchemaType) {
+    console.log(data);
+  }
   return (
     <div className="flex h-screen overflow-hidden">
       <div className="w-5/8">
@@ -18,7 +27,11 @@ async function onSubmit(data) {
         <ProductList searchProducts={searchProducts} />
       </div>
 
-      <form id="cart-form" onSubmit={form.handleSubmit(onSubmit)} className="w-3/8">
+      <form
+        id="cart-form"
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="w-3/8"
+      >
         <CartHeader form={form} />
         <CartItems form={form} />
       </form>

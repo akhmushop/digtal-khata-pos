@@ -26,10 +26,11 @@ import {
 } from "@/components/ui/combobox";
 import { UserPlus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { CartSchemaType } from "../../schemas/cart.schema";
 export function CartHeader({
   form,
 }: {
-  form: UseFormReturn<FieldValues, any, FieldValues>;
+  form: UseFormReturn<CartSchemaType>;
 }) {
   const {
     customerInfo,
@@ -76,7 +77,7 @@ export function CartHeader({
 export function CustomerInputAndSearch({
   form,
 }: {
-  form: UseFormReturn<FieldValues, any, FieldValues>;
+  form: UseFormReturn<CartSchemaType>;
 }) {
   const { customers, setShowCustomerInfo } = useCustomerStore();
 
@@ -141,7 +142,7 @@ export function CustomerInputAndSearch({
 export function SaleDatePicker({
   form,
 }: {
-  form: UseFormReturn<FieldValues, any, FieldValues>;
+  form: UseFormReturn<CartSchemaType>;
 }) {
   const [open, setOpen] = useState(false);
   return (

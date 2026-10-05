@@ -26,11 +26,12 @@ import { useSoldStore } from "@/store/useSalesStore.js";
 import { Button } from "@/components/ui/button.js";
 import { PaymentModal } from "./PaymentModal.js";
 import { FieldValues, UseFormReturn } from "react-hook-form";
+import { CartSchemaType } from "../../schemas/cart.schema.js";
 
 export default function CartItems({
   form,
 }: {
-  form: UseFormReturn<FieldValues, any, FieldValues>;
+  form: UseFormReturn<CartSchemaType>;
 }) {
   const {
     addProductQuantityToCart,
