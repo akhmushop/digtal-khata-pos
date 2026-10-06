@@ -14,6 +14,7 @@ export interface CartStore {
   removeCartQuantity: (id: number) => void;
   addCustomCartQuantity: (id: number, customCartQuantity: number) => void;
   resetCart: () => void;
+  addHoldItemsToCart:(holdItems:CartType[])=>void
 }
 export interface CashForm {
   discount: number;
@@ -91,10 +92,6 @@ export interface PopupModalProps {
 export interface CartTextModalProps {
   subTotal: number;
   vat: number;
-  setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  isAddChargeModalOpen: boolean;
-  setIsChargeModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  isOpen: boolean;
   form: UseFormReturn<CartSchemaType>;
 }
 export interface AddChargeModalProps {
