@@ -1,7 +1,9 @@
 import axios from "../api/axios.js";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { CartStore } from "../types/cart.types.js";
+import type { CartStore, CartType } from "../types/cart.types.js";
+import { HoldCartItems } from "@/types/cart.types";
+
 // export const useCartStore = create(
 //   persist(
 //     (set) => ({
@@ -149,4 +151,53 @@ export const useCartStore = create<CartStore>((set) => ({
     set((state) => ({
       cart: [],
     })),
+  addHoldItemsToCart: (holdItems) => {
+    set(() => {
+      return {
+        cart: holdItems,
+      };
+    });
+  },
 }));
+
+interface HoldCartStore {
+  holdCartItems: HoldCartItems[];
+  addHoldCart: (cart: CartType[]) => void;
+  removeHoldCart: (id: number) => void;
+  clearHoldCarts: () => void;
+}
+
+export const useHoldCartStore = create<HoldCartStore>()(
+  persist(
+    (set) => ({
+      holdCartItems: [],
+
+      // 1. Add a new held cart
+      addHoldCart: (cartItems) =>
+        set((state) => {
+          const nextNumber = state.holdCartItems.length + 1;
+          const newHeldCart = {
+            id: Date.now(),
+            name: `Hold ${nextNumber}`,
+            time: new Date().toLocaleTimeString(),
+            items: cartItems,
+          };
+          return { holdCartItems: [...state.holdCartItems, newHeldCart] };
+        }),
+
+      // 2. Remove a cart by ID (Perfectly safe filtering)
+      removeHoldCart: (id) =>
+        set((state) => ({
+          holdCartItems: state.holdCartItems.filter(
+            (c) => String(c.id) !== String(id),
+          ),
+        })),
+
+      // 3. Clear all held carts
+      clearHoldCarts: () => set({ holdCartItems: [] }),
+    }),
+    {
+      name: "hold-cart-storage", // This is the localStorage key!
+    },
+  ),
+);

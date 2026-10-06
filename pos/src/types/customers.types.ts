@@ -49,6 +49,5 @@ export interface CustomerDue {
   total_paid: number;
 }
 export interface ShowCustomerInfoProps {
-  showCustomerInfo: InputValue;
   form: UseFormReturn<CartSchemaType>;
 }
