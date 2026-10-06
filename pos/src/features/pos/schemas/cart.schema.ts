@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-export const PAYMENT_ROW_METHODS = ["cash", "bangla_qr", "card", "due"] as const;
+export const PAYMENT_ROW_METHODS = [
+  "cash",
+  "bangla_qr",
+  "card",
+  "due",
+] as const;
 
 export const paymentSchema = z.object({
   method: z.enum(PAYMENT_ROW_METHODS),
@@ -14,6 +19,13 @@ export const cartSchema = z
     saleDate: z.date({ message: "Sale date is required" }),
     customerId: z.number().nullable(),
     payments: z.array(paymentSchema).min(1, "Select a payment method"),
+    discount: z
+      .object({
+        type: z.enum(["percentage", "fixed"]),
+        value: z.number().min(0),
+      })
+      .nullable(),
+    vatPercent: z.number().nullable(),
   })
   .superRefine((data, ctx) => {
     data.payments.forEach((p, i) => {

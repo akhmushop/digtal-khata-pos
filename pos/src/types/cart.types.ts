@@ -1,6 +1,8 @@
+import { CartSchemaType } from "@/features/pos/schemas/cart.schema";
 import { ProductType } from "@/features/products/product.schema";
 import { ProductsTypes } from "@/features/products/products.types";
 import type React from "react";
+import { UseFormReturn } from "react-hook-form";
 export interface CartType extends ProductType {
   quantity: number;
 }
@@ -93,6 +95,7 @@ export interface CartTextModalProps {
   isAddChargeModalOpen: boolean;
   setIsChargeModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isOpen: boolean;
+  form: UseFormReturn<CartSchemaType>;
 }
 export interface AddChargeModalProps {
   isOpen: boolean;

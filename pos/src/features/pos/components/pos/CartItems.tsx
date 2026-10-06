@@ -25,8 +25,9 @@ import { useCustomerStore } from "@/store/useCustomerStore.js";
 import { useSoldStore } from "@/store/useSalesStore.js";
 import { Button } from "@/components/ui/button.js";
 import { PaymentModal } from "./PaymentModal.js";
-import { FieldValues, UseFormReturn } from "react-hook-form";
+import { FieldValues, UseFormReturn, useWatch } from "react-hook-form";
 import { CartSchemaType } from "../../schemas/cart.schema.js";
+import { DiscountModal } from "./DiscountModal.js";
 
 export default function CartItems({
   form,
@@ -236,7 +237,9 @@ function CartCalculation({ showCustomerInfo, form }: ShowCustomerInfoProps) {
       0,
     ),
   );
-  const vat = Number(subTotal * (5 / 100));
+  const vatPercent =
+    useWatch({ control: form.control, name: "vatPercent" }) ?? 0;
+  const vat = Number(subTotal * (vatPercent / 100));
   const [holdConfirm, setHoldConfirm] = useState(false);
 
   useEffect(() => {
@@ -271,48 +274,48 @@ function CartCalculation({ showCustomerInfo, form }: ShowCustomerInfoProps) {
   const [cashForm, setCashForm] = useState<CashForm>(initialCashFrom);
   const [paymentMethod, setPaymentMethod] = useState("Cash");
 
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [isCashModalOpen, setIsCashModalOpen] = useState(false);
-  const handleCashTk = () => {
-    const total = subTotal + vat;
-    setCashForm((prev) => ({
-      ...prev,
-      subtotal: subTotal,
-      vat: vat,
-      finalTotal: total,
-    }));
-    setIsCashModalOpen(true);
-    setTimeout(() => setIsOpen(true), 30);
-  };
-  const handlePayment = () => {
-    const total = subTotal + vat;
-    setCashForm((prev) => ({
-      ...prev,
-      subtotal: subTotal,
-      vat: vat,
-      finalTotal: total,
-      dueAmount: total,
-    }));
-    setIsOpen(false);
-    setIsPaymentModalOpen(true);
-    setTimeout(() => setIsOpen(true), 10);
-  };
-  const handleCashChange = (id: string, value: number | string) => {
-    setCashForm((prev) => {
-      const updated = { ...prev, [id]: value };
-      // payable AFTER discount
-      const baseTotal = Number(prev.subtotal) + Number(prev.vat);
-      updated.finalTotal = baseTotal - Number(updated.discount);
-      // change = amountReceived - payable
-      const calculateDueAmount = updated.finalTotal - updated.paidAmount;
-      updated.dueAmount = calculateDueAmount;
-      const calculatedChange =
-        Number(updated.amountReceived) - Number(updated.finalTotal);
-      updated.change = calculatedChange < 0 ? 0 : calculatedChange;
+  // const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  // const [isCashModalOpen, setIsCashModalOpen] = useState(false);
+  // const handleCashTk = () => {
+  //   const total = subTotal + vat;
+  //   setCashForm((prev) => ({
+  //     ...prev,
+  //     subtotal: subTotal,
+  //     vat: vat,
+  //     finalTotal: total,
+  //   }));
+  //   setIsCashModalOpen(true);
+  //   setTimeout(() => setIsOpen(true), 30);
+  // };
+  // const handlePayment = () => {
+  //   const total = subTotal + vat;
+  //   setCashForm((prev) => ({
+  //     ...prev,
+  //     subtotal: subTotal,
+  //     vat: vat,
+  //     finalTotal: total,
+  //     dueAmount: total,
+  //   }));
+  //   setIsOpen(false);
+  //   setIsPaymentModalOpen(true);
+  //   setTimeout(() => setIsOpen(true), 10);
+  // };
+  // const handleCashChange = (id: string, value: number | string) => {
+  //   setCashForm((prev) => {
+  //     const updated = { ...prev, [id]: value };
+  //     // payable AFTER discount
+  //     const baseTotal = Number(prev.subtotal) + Number(prev.vat);
+  //     updated.finalTotal = baseTotal - Number(updated.discount);
+  //     // change = amountReceived - payable
+  //     const calculateDueAmount = updated.finalTotal - updated.paidAmount;
+  //     updated.dueAmount = calculateDueAmount;
+  //     const calculatedChange =
+  //       Number(updated.amountReceived) - Number(updated.finalTotal);
+  //     updated.change = calculatedChange < 0 ? 0 : calculatedChange;
 
-      return updated;
-    });
-  };
+  //     return updated;
+  //   });
+  // };
   const addToSoldProduct = useSoldStore((state) => state.addToSoldProduct);
   const resetCart = useCartStore((state) => state.resetCart);
 
@@ -359,6 +362,7 @@ function CartCalculation({ showCustomerInfo, form }: ShowCustomerInfoProps) {
         isAddChargeModalOpen={isAddChargeModalOpen}
         setIsChargeModalOpen={setIsChargeModalOpen}
         isOpen={isOpen}
+        form={form}
       />
       <div className="grid grid-cols-6 py-2 gap-1 ">
         {/* emptybutton */}
@@ -369,28 +373,26 @@ function CartCalculation({ showCustomerInfo, form }: ShowCustomerInfoProps) {
             setEmptyCartCon={() => setEmptyCartCon(false)}
           />
         )}
-        <button
+        <Button
           onClick={() => {
             setIsOpen(false);
             setEmptyCartCon(true);
             setTimeout(() => setIsOpen(true), 10);
           }}
-          className="bg-red-400 p-2 w-full col-span-1 rounded hover:bg-red-500 transition-all duration-300 cursor-pointer"
+          className="w-full col-span-1 "
         >
           EMPTY
-        </button>
+        </Button>
         <div ref={closeMore} className="relative col-span-2">
-          <div
+          <Button
             onClick={() => {
               !showMore ? setShowMore(true) : setShowMore(false);
             }}
-            className=" flex items-center justify-center cursor-pointer bg-red-400 p-2 rounded hover:bg-red-500 transition-all duration-300"
+            className="w-full text-center"
           >
-            <div className="flex-1 text-center">MORE</div>
-            <div className="">
-              <HiDotsVertical />
-            </div>
-          </div>
+            MORE
+            <HiDotsVertical />
+          </Button>
           {showHoldItems && (
             <CartHoldShowBtn
               isOpen={isOpen}
@@ -444,12 +446,9 @@ function CartCalculation({ showCustomerInfo, form }: ShowCustomerInfoProps) {
         )} */}
 
         {/* morebutton */}
-        <button
-          onClick={handlePayment}
-          className="bg-red-400 p-2 w-full col-span-3 rounded hover:bg-red-500 transition-all duration-300 cursor-pointer "
-        >
-          PAYMENTS
-        </button>
+        <div className="col-span-3">
+          <DiscountModal form={form} subTotal={subTotal} />
+        </div>
         {/* {isCashModalOpen && (
           <CashModal
             handlePay={handlePay}
@@ -559,51 +558,51 @@ function CartHoldShowBtn({
     </PopupModal>
   );
 }
-function PeerInput({ id, peerName, value, onChange }: PeerInputProps) {
-  const handelChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const rawValue = e.target.value;
+// function PeerInput({ id, peerName, value, onChange }: PeerInputProps) {
+//   const handelChange = (
+//     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+//   ) => {
+//     const rawValue = e.target.value;
 
-    // NOTE field does not need number filtering
+//     // NOTE field does not need number filtering
 
-    if (id === "note") {
-      onChange(id, rawValue);
-      return;
-    }
+//     if (id === "note") {
+//       onChange(id, rawValue);
+//       return;
+//     }
 
-    // Number only
-    const onlyNumber = rawValue.replace(/\D/g, "");
-    const finalValue = onlyNumber === "" ? "0" : onlyNumber;
-    onChange(id, Number(finalValue));
-  };
-  return (
-    <div className="relative">
-      <input
-        disabled={id === "finalTotal" || id === "dueAmount"}
-        onFocus={(e) => {
-          e.target.select();
-        }}
-        onChange={handelChange}
-        value={value}
-        placeholder=" "
-        id={id}
-        className="peer  border border-gray-400 rounded focus:outline-none focus:border-blue-400 px-3 py-3 w-full"
-        type="text"
-      />
-      <label
-        htmlFor={id}
-        className={`${
-          id === "note"
-            ? "absolute top-3 left-3 peer-focus:-top-3.5 peer-not-placeholder-shown:-top-3.5  peer-placeholder-shown:top-3 pointer-events-none text-gray-500 bg-white peer-focus:text-blue-400 transition-all duration-100"
-            : "absolute -top-3.5 bg-white left-3 peer-focus:text-blue-400 transition-all duration-100 text-gray-500"
-        } `}
-      >
-        {peerName}
-      </label>
-    </div>
-  );
-}
+//     // Number only
+//     const onlyNumber = rawValue.replace(/\D/g, "");
+//     const finalValue = onlyNumber === "" ? "0" : onlyNumber;
+//     onChange(id, Number(finalValue));
+//   };
+//   return (
+//     <div className="relative">
+//       <input
+//         disabled={id === "finalTotal" || id === "dueAmount"}
+//         onFocus={(e) => {
+//           e.target.select();
+//         }}
+//         onChange={handelChange}
+//         value={value}
+//         placeholder=" "
+//         id={id}
+//         className="peer  border border-gray-400 rounded focus:outline-none focus:border-blue-400 px-3 py-3 w-full"
+//         type="text"
+//       />
+//       <label
+//         htmlFor={id}
+//         className={`${
+//           id === "note"
+//             ? "absolute top-3 left-3 peer-focus:-top-3.5 peer-not-placeholder-shown:-top-3.5  peer-placeholder-shown:top-3 pointer-events-none text-gray-500 bg-white peer-focus:text-blue-400 transition-all duration-100"
+//             : "absolute -top-3.5 bg-white left-3 peer-focus:text-blue-400 transition-all duration-100 text-gray-500"
+//         } `}
+//       >
+//         {peerName}
+//       </label>
+//     </div>
+//   );
+// }
 // function PaymentModal({
 //   handleCashChange,
 //   cashForm,
@@ -696,78 +695,78 @@ function PeerInput({ id, peerName, value, onChange }: PeerInputProps) {
 //   );
 // }
 
-function CashModal({
-  handleCashChange,
-  isOpen,
-  setIsOpen,
-  setIsCashModalOpen,
-  cashForm,
-  setCashForm,
-  initialCashFrom,
-  handlePay,
-}: CashModalProps) {
-  const handelClose = () => {
-    setTimeout(() => setIsCashModalOpen(false), 300);
-    setIsOpen(false);
-    setCashForm(initialCashFrom);
-  };
-  return (
-    <PopupModal isOpen={isOpen} handelClose={handelClose} className="w-150 p-6">
-      <div className="flex justify-between mb-5">
-        <h1 className="text-xl font-semibold">Cash Checkout</h1>
-        <h1
-          onClick={handelClose}
-          className="cursor-pointer text-gray-500 hover:text-gray-700 text-lg"
-        >
-          Close
-        </h1>
-      </div>
-      <div className="space-y-5">
-        <div className="grid grid-cols-2 gap-5">
-          <PeerInput
-            id="amountReceived"
-            peerName="Amount Received"
-            value={cashForm.amountReceived}
-            onChange={handleCashChange}
-          />
-          <PeerInput
-            id="change"
-            peerName="Change"
-            value={cashForm.change.toFixed(2)}
-            onChange={handleCashChange}
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-5">
-          <PeerInput
-            id="discount"
-            peerName="Discount"
-            value={cashForm.discount}
-            onChange={handleCashChange}
-          />
-          <PeerInput
-            id="finalTotal"
-            peerName="Final Total"
-            value={cashForm.finalTotal.toFixed(2)}
-            onChange={handleCashChange}
-          />
-        </div>
+// function CashModal({
+//   handleCashChange,
+//   isOpen,
+//   setIsOpen,
+//   setIsCashModalOpen,
+//   cashForm,
+//   setCashForm,
+//   initialCashFrom,
+//   handlePay,
+// }: CashModalProps) {
+//   const handelClose = () => {
+//     setTimeout(() => setIsCashModalOpen(false), 300);
+//     setIsOpen(false);
+//     setCashForm(initialCashFrom);
+//   };
+//   return (
+//     <PopupModal isOpen={isOpen} handelClose={handelClose} className="w-150 p-6">
+//       <div className="flex justify-between mb-5">
+//         <h1 className="text-xl font-semibold">Cash Checkout</h1>
+//         <h1
+//           onClick={handelClose}
+//           className="cursor-pointer text-gray-500 hover:text-gray-700 text-lg"
+//         >
+//           Close
+//         </h1>
+//       </div>
+//       <div className="space-y-5">
+//         <div className="grid grid-cols-2 gap-5">
+//           <PeerInput
+//             id="amountReceived"
+//             peerName="Amount Received"
+//             value={cashForm.amountReceived}
+//             onChange={handleCashChange}
+//           />
+//           <PeerInput
+//             id="change"
+//             peerName="Change"
+//             value={cashForm.change.toFixed(2)}
+//             onChange={handleCashChange}
+//           />
+//         </div>
+//         <div className="grid grid-cols-2 gap-5">
+//           <PeerInput
+//             id="discount"
+//             peerName="Discount"
+//             value={cashForm.discount}
+//             onChange={handleCashChange}
+//           />
+//           <PeerInput
+//             id="finalTotal"
+//             peerName="Final Total"
+//             value={cashForm.finalTotal.toFixed(2)}
+//             onChange={handleCashChange}
+//           />
+//         </div>
 
-        <PeerInput
-          id="note"
-          peerName="Note"
-          value={cashForm.note}
-          onChange={handleCashChange}
-        />
-        <button
-          // onClick={() => handlePay(handelClose, "cash")}
-          className="w-full  py-5 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition"
-        >
-          PAY
-        </button>
-      </div>
-    </PopupModal>
-  );
-}
+//         <PeerInput
+//           id="note"
+//           peerName="Note"
+//           value={cashForm.note}
+//           onChange={handleCashChange}
+//         />
+//         <button
+//           // onClick={() => handlePay(handelClose, "cash")}
+//           className="w-full  py-5 border border-gray-300 rounded hover:bg-gray-50 active:bg-gray-100 transition"
+//         >
+//           PAY
+//         </button>
+//       </div>
+//     </PopupModal>
+//   );
+// }
 export function PopupModal({
   isOpen,
   handelClose,
@@ -799,6 +798,7 @@ function CartTextModal({
   isAddChargeModalOpen,
   setIsChargeModalOpen,
   isOpen,
+  form,
 }: CartTextModalProps) {
   const cart = useCartStore((state) => state.cart);
   const totalItemsCount = cart.reduce((total) => total + 1, 0);
@@ -807,153 +807,144 @@ function CartTextModal({
     0,
   );
 
-  const handelClose = () => {
-    setTimeout(() => setIsChargeModalOpen(false), 300);
-    setIsOpen(false);
-  };
+  // const handelClose = () => {
+  //   setTimeout(() => setIsChargeModalOpen(false), 300);
+  //   setIsOpen(false);
+  // };
+  const discount = useWatch({ control: form.control, name: "discount" });
+  const vatPercent =
+    useWatch({ control: form.control, name: "vatPercent" }) ?? 0;
+  const discountValue = Number(discount?.value ?? 0);
+  const rawDiscount = (subTotal * discountValue) / 100;
+  const totalDiscount = Math.round((rawDiscount + Number.EPSILON) * 100) / 100;
+
   return (
     <>
       <div className="flex justify-between py-2 border-b">
-        <h4>Total Items: {totalItemsCount}</h4>
-        <h4>Qty: {totalQuantityCount}</h4>
+        <span>Total Items: {totalItemsCount}</span>
+        <span>Qty: {totalQuantityCount}</span>
       </div>
       <div className="flex justify-between py-2 border-b">
-        <h4>Subtotal</h4>
-        <h4>TK: {subTotal.toFixed(2)}</h4>
+        <span>Subtotal</span>
+        <span>TK: {subTotal.toFixed(2)}</span>
       </div>
-      <div>
-        <h3 className="py-2  w-full flex item">Charges & Taxes</h3>
-      </div>
-      <div className="flex justify-between py-2 ">
-        <h4>VAT: 5%</h4>
-        <h4>TK: {vat.toFixed(2)}</h4>
-      </div>
-      <div>
-        {isAddChargeModalOpen && (
-          <AddChargeModal
-            isOpen={isOpen}
-            setIsOpen={setIsOpen}
-            setIsChargeModalOpen={setIsChargeModalOpen}
-          />
-        )}
-        <button
-          onClick={() => {
-            setIsChargeModalOpen(true);
-            setTimeout(() => setIsOpen(true), 30);
-          }}
-          className="flex justify-center py-2 bg-red-400 p-2 w-full col-span-1 rounded hover:bg-red-500 transition-all duration-300 cursor-pointer"
-        >
-          ADD CHARGE
-        </button>
-      </div>
+      {discount && (
+        <div className="flex justify-between py-2 ">
+          <span>Discount</span>
+          <span>TK: {totalDiscount.toFixed(2)}</span>
+        </div>
+      )}
+      {Number(vatPercent) > 0 && (
+        <div className="flex justify-between py-2 ">
+          <span>VAT: {vatPercent}%</span>
+          <span>TK: {vat.toFixed(2)}</span>
+        </div>
+      )}
       <div className="flex justify-between py-2 border-b">
-        <h4>Total Charges</h4>
-        <h4>TK: {vat.toFixed(2)}</h4>
-      </div>
-      <div className="flex justify-between py-2 border-b">
-        <h1>FINAL TOTAL</h1>
-        <h1>TK: {(subTotal + vat).toFixed(2)}</h1>
+        <span>FINAL TOTAL</span>
+        <span>TK: {(subTotal + vat).toFixed(2)}</span>
       </div>
     </>
   );
 }
-function AddChargeModal({
-  isOpen,
-  setIsOpen,
-  setIsChargeModalOpen,
-}: AddChargeModalProps) {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const handleOption = () => {
-    setIsDropdownOpen((prev) => !prev);
-  };
-  const addChargeHtml = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    const clickOutside = (event: MouseEvent) => {
-      if (
-        addChargeHtml.current &&
-        !addChargeHtml.current.contains(event.target as Node)
-      ) {
-        setIsDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", clickOutside);
-    return () => {
-      document.removeEventListener("mousedown", clickOutside);
-    };
-  }, []);
-  const [chargeName, setChargeName] = useState("Servicing Charge");
-  const [inputValue, setInputValue] = useState("Servicing Charge");
-  const handelClose = () => {
-    setTimeout(() => setIsChargeModalOpen(false), 300);
-    setIsOpen(false);
-  };
-  return (
-    <PopupModal
-      isOpen={isOpen}
-      className={"h-40 w-65"}
-      handelClose={handelClose}
-    >
-      <div className="flex flex-col items-center h-full justify-around">
-        <h1 className="text-xl">Add Charge/Tax</h1>
-        <div ref={addChargeHtml} className="relative">
-          <input
-            onClick={handleOption}
-            value={chargeName}
-            readOnly
-            placeholder=" "
-            id="addCharge"
-            type="text"
-            className="peer border cursor-pointer   border-gray-400 rounded outline-none px-5 py-2"
-          />
-          <label
-            htmlFor="addCharge"
-            className="absolute left-5 top-2 text-gray-400 pointer-events-none bg-white peer-focus:-top-3.5 peer-focus:text-blue-500 transition-all duration-200  peer-not-placeholder-shown:-top-3.5 peer-not-placeholder-shown:text-blue-500"
-          >
-            Add Charge
-          </label>
-          {isDropdownOpen && (
-            <div className="absolute w-full  bg-white rounded mt-0.5 ">
-              <div className="flex flex-col gap-1">
-                <div
-                  onClick={() => {
-                    setChargeName("Servicing Charge");
-                    setInputValue("Servicing Charge");
-                    setIsDropdownOpen(false);
-                  }}
-                  className="bg-gray-300 rounded cursor-pointer w-full flex justify-center "
-                >
-                  Servicing Charge
-                </div>
-                <div
-                  onClick={() => {
-                    setChargeName("Delivery Charge");
-                    setInputValue("Delivery Charge");
-                    setIsDropdownOpen(false);
-                  }}
-                  className="bg-red-300 rounded cursor-pointer w-full flex justify-center "
-                >
-                  Delivery Charge
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+// function AddChargeModal({
+//   isOpen,
+//   setIsOpen,
+//   setIsChargeModalOpen,
+// }: AddChargeModalProps) {
+//   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+//   const handleOption = () => {
+//     setIsDropdownOpen((prev) => !prev);
+//   };
+//   const addChargeHtml = useRef<HTMLInputElement>(null);
+//   useEffect(() => {
+//     const clickOutside = (event: MouseEvent) => {
+//       if (
+//         addChargeHtml.current &&
+//         !addChargeHtml.current.contains(event.target as Node)
+//       ) {
+//         setIsDropdownOpen(false);
+//       }
+//     };
+//     document.addEventListener("mousedown", clickOutside);
+//     return () => {
+//       document.removeEventListener("mousedown", clickOutside);
+//     };
+//   }, []);
+//   const [chargeName, setChargeName] = useState("Servicing Charge");
+//   const [inputValue, setInputValue] = useState("Servicing Charge");
+//   const handelClose = () => {
+//     setTimeout(() => setIsChargeModalOpen(false), 300);
+//     setIsOpen(false);
+//   };
+//   return (
+//     <PopupModal
+//       isOpen={isOpen}
+//       className={"h-40 w-65"}
+//       handelClose={handelClose}
+//     >
+//       <div className="flex flex-col items-center h-full justify-around">
+//         <h1 className="text-xl">Add Charge/Tax</h1>
+//         <div ref={addChargeHtml} className="relative">
+//           <input
+//             onClick={handleOption}
+//             value={chargeName}
+//             readOnly
+//             placeholder=" "
+//             id="addCharge"
+//             type="text"
+//             className="peer border cursor-pointer   border-gray-400 rounded outline-none px-5 py-2"
+//           />
+//           <label
+//             htmlFor="addCharge"
+//             className="absolute left-5 top-2 text-gray-400 pointer-events-none bg-white peer-focus:-top-3.5 peer-focus:text-blue-500 transition-all duration-200  peer-not-placeholder-shown:-top-3.5 peer-not-placeholder-shown:text-blue-500"
+//           >
+//             Add Charge
+//           </label>
+//           {isDropdownOpen && (
+//             <div className="absolute w-full  bg-white rounded mt-0.5 ">
+//               <div className="flex flex-col gap-1">
+//                 <div
+//                   onClick={() => {
+//                     setChargeName("Servicing Charge");
+//                     setInputValue("Servicing Charge");
+//                     setIsDropdownOpen(false);
+//                   }}
+//                   className="bg-gray-300 rounded cursor-pointer w-full flex justify-center "
+//                 >
+//                   Servicing Charge
+//                 </div>
+//                 <div
+//                   onClick={() => {
+//                     setChargeName("Delivery Charge");
+//                     setInputValue("Delivery Charge");
+//                     setIsDropdownOpen(false);
+//                   }}
+//                   className="bg-red-300 rounded cursor-pointer w-full flex justify-center "
+//                 >
+//                   Delivery Charge
+//                 </div>
+//               </div>
+//             </div>
+//           )}
+//         </div>
 
-        <div className="flex gap-3 justify-end w-full mr-10">
-          <button
-            onClick={handelClose}
-            className="border border-gray-400 rounded p-1 hover:bg-red-400 transition-all duration-200 cursor-pointer hover:text-white"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handelClose}
-            className="border border-gray-400 rounded p-1 hover:bg-red-400 transition-all duration-200 cursor-pointer hover:text-white"
-          >
-            Add
-          </button>
-        </div>
-      </div>
-    </PopupModal>
-  );
-}
+//         <div className="flex gap-3 justify-end w-full mr-10">
+//           <button
+//             onClick={handelClose}
+//             className="border border-gray-400 rounded p-1 hover:bg-red-400 transition-all duration-200 cursor-pointer hover:text-white"
+//           >
+//             Cancel
+//           </button>
+//           <button
+//             type="button"
+//             onClick={handelClose}
+//             className="border border-gray-400 rounded p-1 hover:bg-red-400 transition-all duration-200 cursor-pointer hover:text-white"
+//           >
+//             Add
+//           </button>
+//         </div>
+//       </div>
+//     </PopupModal>
+//   );
+// }

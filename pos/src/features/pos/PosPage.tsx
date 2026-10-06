@@ -7,19 +7,25 @@ import CartItems from "@/features/pos/components/pos/CartItems.js";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { cartSchema, CartSchemaType } from "./schemas/cart.schema.js";
+import { useCartStore } from "@/store/useCartStore.js";
 function Pos({}) {
   const [searchProducts, setSearchProducts] = useState("");
+    const {
+      cart
+    } = useCartStore();
   const form = useForm<CartSchemaType>({
     resolver: zodResolver(cartSchema),
     defaultValues: {
       saleDate: new Date(),
       customerId: null,
       payments: [],
+      discount:{}
     },
   });
   async function onSubmit(data: CartSchemaType) {
-    console.log(data);
+    console.log({...data,cart});
   }
+  console.log(form.formState.errors)
   return (
     <div className="flex h-screen overflow-hidden">
       <div className="w-5/8">

@@ -20,7 +20,8 @@ import { CartSchemaType, PaymentSchemaType } from "../../schemas/cart.schema";
 const QR_NUMBER = "01870707900"; // move to settings/config later
 
 // ---------- helpers ----------
-const money = (n: any) => Math.round((Number(n) || 0) * 100) / 100;
+const money = (n: number | undefined) =>
+  Math.round((Number(n) || 0) * 100) / 100;
 
 type PaymentMode = PaymentSchemaType["method"] | "split";
 
@@ -53,7 +54,11 @@ function getMode(payments: PaymentSchemaType[] = []) {
   return payments.length > 1 ? "split" : payments[0]?.method;
 }
 
-function isPaymentValid(payments: any[], finalTotal: number, customerId: any) {
+function isPaymentValid(
+  payments: PaymentSchemaType[],
+  finalTotal: number,
+  customerId: number | null,
+) {
   const mode = getMode(payments);
   const p0 = payments?.[0];
 
@@ -81,7 +86,7 @@ function isPaymentValid(payments: any[], finalTotal: number, customerId: any) {
 }
 
 // number input -> undefined when empty
-const toNum = (e: any) =>
+const toNum = (e: React.ChangeEvent<HTMLInputElement, HTMLInputElement>) =>
   e.target.value === "" ? undefined : Number(e.target.value);
 
 // ---------- main modal ----------
@@ -533,7 +538,7 @@ function Due({
 }) {
   const customerId = useWatch({ control: form.control, name: "customerId" });
   const { customers } = useCustomerStore();
-  const customer = customers.find((c: any) => c.id === customerId);
+  const customer = customers.find((c) => c.id === customerId);
 
   return (
     <Card>
