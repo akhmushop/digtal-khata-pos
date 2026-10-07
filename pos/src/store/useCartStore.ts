@@ -117,7 +117,7 @@ export const useCartStore = create<CartStore>((set) => ({
     }),
   removeCartItem: (id) =>
     set((state) => ({
-      cart: state.cart.filter((p) => p.id !== id),
+      cart: state.cart.filter((p) => p.variants.some((v) => v.id !== id)),
     })),
   addCartQuantity: (id) =>
     set((state) => ({
@@ -125,7 +125,7 @@ export const useCartStore = create<CartStore>((set) => ({
         if (p.id === id) {
           return {
             ...p,
-            soldQuantity: p.soldQuantity + 1,
+            quantity: p.quantity + 1,
           };
         }
         return p;
@@ -135,16 +135,14 @@ export const useCartStore = create<CartStore>((set) => ({
     set((state) => {
       return {
         cart: state.cart
-          .map((p) =>
-            p.id === id ? { ...p, soldQuantity: p.soldQuantity - 1 } : p,
-          )
-          .filter((p) => p.soldQuantity > 0),
+          .map((p) => (p.id === id ? { ...p, quantity: p.quantity - 1 } : p))
+          .filter((p) => p.quantity > 0),
       };
     }),
   addCustomCartQuantity: (id, customCartQuantity) =>
     set((state) => ({
       cart: state.cart.map((p) =>
-        p.id === id ? { ...p, soldQuantity: customCartQuantity } : p,
+        p.id === id ? { ...p, quantity: customCartQuantity } : p,
       ),
     })),
   resetCart: () =>
@@ -155,6 +153,20 @@ export const useCartStore = create<CartStore>((set) => ({
     set(() => {
       return {
         cart: holdItems,
+      };
+    });
+  },
+  addDiscount: (variantId, discountValue, discountType) => {
+    set((state) => {
+      return {
+        cart: state.cart.map((item) =>
+          item.variants.some((v) => v.id === variantId)
+            ? {
+                ...item,
+                discount: { value: discountValue, type: discountType },
+              }
+            : item,
+        ),
       };
     });
   },
