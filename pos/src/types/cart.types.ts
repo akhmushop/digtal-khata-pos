@@ -5,7 +5,12 @@ import type React from "react";
 import { UseFormReturn } from "react-hook-form";
 export interface CartType extends ProductType {
   quantity: number;
+  discount?: {
+    type: "fixed" | "percentage";
+    value: number;
+  } | null;
 }
+export type DiscountType = "percentage" | "fixed";
 export interface CartStore {
   cart: CartType[];
   addToCart: (product: ProductType) => void;
@@ -14,7 +19,12 @@ export interface CartStore {
   removeCartQuantity: (id: number) => void;
   addCustomCartQuantity: (id: number, customCartQuantity: number) => void;
   resetCart: () => void;
-  addHoldItemsToCart:(holdItems:CartType[])=>void
+  addHoldItemsToCart: (holdItems: CartType[]) => void;
+  addDiscount: (
+    variantId: number,
+    discountValue: number,
+    discountType: DiscountType,
+  ) => void;
 }
 export interface CashForm {
   discount: number;
