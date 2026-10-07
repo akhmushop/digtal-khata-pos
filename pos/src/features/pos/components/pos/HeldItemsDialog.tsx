@@ -10,7 +10,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useCartStore, useHoldCartStore } from "@/store/useCartStore";
-import { HoldCartItems } from "@/types/cart.types";
 
 export function HeldItemsDialog({
   open,
@@ -45,9 +44,9 @@ export function HeldItemsDialog({
                 key={cart.id}
               >
                 <CardContent>
-                  <h2 className="font-bold">{cart.name}</h2>
-                  <p className="text-sm text-gray-700">{cart.time}</p>
-                  <p className="text-sm">{cart.items.length} items</p>
+                  <span className="font-bold">{cart.name}</span>
+                  <span className="text-sm text-gray-700">{cart.time}</span>
+                  <span className="text-sm">{cart.items.length} items</span>
                 </CardContent>
               </Card>
             ))

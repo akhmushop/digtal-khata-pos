@@ -44,7 +44,7 @@ export function CartHeader({
 
   return (
     <>
-      <Card className=" mx-2 mt-2 sticky top-1">
+      <Card>
         <CardContent className="gap-4 grid grid-cols-12">
           <div className="col-span-3">
             <SaleDatePicker form={form} />

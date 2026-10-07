@@ -16,6 +16,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useCustomerStore } from "@/store/useCustomerStore";
 import { Controller, UseFormReturn, useWatch } from "react-hook-form";
 import { CartSchemaType, PaymentSchemaType } from "../../schemas/cart.schema";
+import { useCartStore } from "@/store/useCartStore";
 
 const QR_NUMBER = "01870707900"; // move to settings/config later
 
@@ -99,6 +100,7 @@ export function PaymentModal({
   vat: number;
   form: UseFormReturn<CartSchemaType>;
 }) {
+  const cart = useCartStore((state) => state.cart);
   const finalTotal = money(subTotal + vat);
 
   const payments = useWatch({ control: form.control, name: "payments" });
@@ -116,7 +118,9 @@ export function PaymentModal({
     >
       <DialogTrigger
         render={
-          <Button className="w-full">PAY - {finalTotal.toFixed(2)}</Button>
+          <Button disabled={cart.length === 0} className="w-full h-17">
+            PAY - {finalTotal.toFixed(2)}
+          </Button>
         }
       />
       <DialogContent className="sm:max-w-xl w-full">

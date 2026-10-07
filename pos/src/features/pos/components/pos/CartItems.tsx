@@ -1,12 +1,8 @@
-import React, { Children, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MdOutlineAddCircleOutline, MdDeleteOutline } from "react-icons/md";
 import { FiMinusCircle } from "react-icons/fi";
 import { ClearCartDialog } from "./ClearCartDialog.js";
-import type {
-  CartTextModalProps,
-  HoldCartItems,
-  PopupModalProps,
-} from "../../../../types/cart.types.js";
+import type { CartTextModalProps } from "../../../../types/cart.types.js";
 import { useProductStore } from "@/features/products/usedashboardProductStore.js";
 import { useCartStore } from "@/store/useCartStore.js";
 import { CustomerDue, ShowCustomerInfoProps } from "@/types/customers.types.js";
@@ -16,13 +12,10 @@ import { PaymentModal } from "./PaymentModal.js";
 import { UseFormReturn, useWatch } from "react-hook-form";
 import { CartSchemaType } from "../../schemas/cart.schema.js";
 import { DiscountModal } from "./DiscountModal.js";
-import { HoldDropdownMenu } from "./holdDropdownMenu.js";
+import { Card, CardContent } from "@/components/ui/card.js";
+import { HoldDropdownMenu } from "./HoldDropdownMenu.js";
 
-export default function CartItems({
-  form,
-}: {
-  form: UseFormReturn<CartSchemaType>;
-}) {
+export default function CartItems() {
   const {
     addProductQuantityToCart,
     removeProductQuantityToCart,
@@ -88,123 +81,119 @@ export default function CartItems({
   const { name, phone, address, id } = showCustomerInfo || {};
   const customerDue = dueByCustomers.find((c) => c.customerId === id);
   return (
-    <div className="h-[calc(100vh-4.25rem)]">
-      <div className="h-full overflow-scroll  no-scrollbar bg-zuccini-50">
-        {/* show customer info */}
-        {(name || phone) && (
-          <div className="grid grid-cols-2 my-2 px-5">
-            <h1 className="col-span-1 ">name: {name}</h1>
-            <h1 className="col-span-1">phone: {phone}</h1>
-            <h1 className="col-span-2">address: {address}</h1>
+    <>
+      {(name || phone) && (
+        <Card className="my-2">
+          <CardContent className="grid grid-cols-2">
+            <span className="col-span-1 ">Name: {name}</span>
+            <span className="col-span-1">Phone: {phone}</span>
+            <span className="col-span-2">Address: {address}</span>
             {customerDue ? (
-              <h1 className="col-span-2">
+              <span className="col-span-2">
                 Total Amount: {customerDue.totalAmount} , Total Paid:{" "}
                 {customerDue.total_paid} , Total Due: {customerDue.total_due}
-              </h1>
+              </span>
             ) : (
-              <h1 className="col-span-2">No Due</h1>
+              <span className="col-span-2">No Due</span>
             )}
-          </div>
-        )}
+          </CardContent>
+        </Card>
+      )}
 
-        {/* cartitem */}
+      {/* cartitem */}
+
+      <div className="flex flex-col gap-3">
         {cart.map((item) => {
           const variant = item.variants[0];
           if (!variant) {
             return;
           }
           return (
-            <div
-              key={item.id}
-              className="h-20 m-2 bg-zuccini-300 rounded-xl flex items-center select-none"
-            >
-              <div className="flex items-center w-full justify-between">
-                <img
-                  className="h-20 w-20  rounded-xl "
-                  src={
-                    item.imageUrl ??
-                    "https://www.startech.com.bd/image/cache/catalog/ceiling-fan/qulik/windora/windora-01-500x500.webp"
-                  }
-                  alt=""
-                />
-                <div className="flex-1 pl-5">
-                  <h1>{item.name}</h1>
-                  <p>
-                    {Number(variant.sellingPrice).toFixed(2)} ×{" "}
-                    {Number(item.quantity)} ={" "}
-                    {(
-                      Number(variant.sellingPrice) * Number(item.quantity)
-                    ).toFixed(2)}
-                  </p>
+            <Card key={item.id}>
+              <CardContent>
+                <div className="flex items-center">
+                  <img
+                    className="h-20 w-20  rounded-xl "
+                    src={
+                      item.imageUrl ??
+                      "https://www.startech.com.bd/image/cache/catalog/ceiling-fan/qulik/windora/windora-01-500x500.webp"
+                    }
+                    alt=""
+                  />
+                  <div className="flex flex-col flex-1 pl-5">
+                    <span>{item.name}</span>
+                    <span>
+                      {Number(variant.sellingPrice).toFixed(2)} ×{" "}
+                      {Number(item.quantity)} ={" "}
+                      {(
+                        Number(variant.sellingPrice) * Number(item.quantity)
+                      ).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex text-2xl gap-x-4 items-center pr-5  ">
+                    <div
+                      onClick={() => {
+                        addProductQuantityToCart(item.id);
+                        removeCartQuantity(item.id);
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <FiMinusCircle />
+                    </div>
+                    <span
+                      onClick={() => {
+                        setEditQuantityId(item.id);
+                      }}
+                      className=""
+                    >
+                      {editQuantityId === item.id ? (
+                        <input
+                          type="number"
+                          className="h-7 w-11 border"
+                          ref={editQuantityRef}
+                          defaultValue={item.quantity}
+                          autoFocus
+                          onChange={(e) => {
+                            setCustomQuantity(Number(e.target.value));
+                          }}
+                        />
+                      ) : (
+                        item.quantity
+                      )}
+                    </span>
+                    <div
+                      onClick={() => {
+                        removeProductQuantityToCart(item.id);
+                        addCartQuantity(item.id);
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <MdOutlineAddCircleOutline />
+                    </div>
+                    <div
+                      className="cursor-pointer"
+                      onClick={() => {
+                        restoreSingleProductQuantityToCart(
+                          item.id,
+                          item.quantity,
+                        );
+                        removeCartItem(item.id);
+                      }}
+                    >
+                      <MdDeleteOutline />
+                    </div>
+                  </div>
                 </div>
-                <div className="flex text-2xl gap-x-4 items-center pr-5  ">
-                  <div
-                    onClick={() => {
-                      addProductQuantityToCart(item.id);
-                      removeCartQuantity(item.id);
-                    }}
-                    className="cursor-pointer"
-                  >
-                    <FiMinusCircle />
-                  </div>
-                  <span
-                    onClick={() => {
-                      setEditQuantityId(item.id);
-                    }}
-                    className=""
-                  >
-                    {editQuantityId === item.id ? (
-                      <input
-                        type="number"
-                        className="h-7 w-11 border"
-                        ref={editQuantityRef}
-                        defaultValue={item.quantity}
-                        autoFocus
-                        onChange={(e) => {
-                          setCustomQuantity(Number(e.target.value));
-                        }}
-                      />
-                    ) : (
-                      item.quantity
-                    )}
-                  </span>
-                  <div
-                    onClick={() => {
-                      removeProductQuantityToCart(item.id);
-                      addCartQuantity(item.id);
-                    }}
-                    className="cursor-pointer"
-                  >
-                    <MdOutlineAddCircleOutline />
-                  </div>
-                  <div
-                    className="cursor-pointer"
-                    onClick={() => {
-                      restoreSingleProductQuantityToCart(
-                        item.id,
-                        item.quantity,
-                      );
-                      removeCartItem(item.id);
-                    }}
-                  >
-                    <MdDeleteOutline />
-                  </div>
-                </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           );
         })}
-        {/* cartitem */}
-
-        {/* cartCalculation */}
-        <CartCalculation form={form} />
-        {/* cartCalculation */}
       </div>
-    </div>
+    </>
   );
 }
 
-function CartCalculation({ form }: ShowCustomerInfoProps) {
+export function CartCalculation({ form }: ShowCustomerInfoProps) {
   const cart = useCartStore((state) => state.cart);
   const subTotal = Number(
     cart.reduce(
