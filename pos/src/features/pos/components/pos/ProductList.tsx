@@ -12,12 +12,12 @@ export function ProductList({ searchProducts }: { searchProducts: string }) {
 
   return (
     <div className="h-[calc(100vh-4.25rem)]">
-      <div className=" h-full overflow-scroll  no-scrollbar bg-zuccini-50">
+      <div className=" h-full overflow-scroll  no-scrollbar ">
         {/* product_show */}
         <div className="col-span-5">
           {/* products list  */}
           <div className="h-[calc(100vh-4.25rem)]">
-            <div className=" h-full overflow-scroll  no-scrollbar bg-zuccini-50">
+            <div className=" h-full overflow-scroll  no-scrollbar ">
               <div className=" grid grid-cols-3  gap-1 p-5">
                 {filteredProducts.map((product) => {
                   const defaultVariant = product.variants.find(
