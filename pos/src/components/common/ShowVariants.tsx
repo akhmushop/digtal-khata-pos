@@ -21,11 +21,13 @@ export interface ShowVariantsProps {
   product: ProductType;
   handleAdd: (product: ProductType) => void;
   defaultVariant: ProductVariantType;
+  type: "purchase" | "sale";
 }
 export function ShowVariants({
   product,
   handleAdd,
   defaultVariant,
+  type,
 }: ShowVariantsProps) {
   const [selectedVariant, setSelectedVariant] = useState<
     Record<string, string>
@@ -104,6 +106,7 @@ export function ShowVariants({
     <Dialog>
       <DialogTrigger>
         <ProductCard
+          type={type}
           product={product}
           handleAdd={handleAdd}
           defaultVariant={defaultVariant}
@@ -151,8 +154,12 @@ export function ShowVariants({
                       <ToggleGroupItem
                         key={id}
                         value={optionName}
-                        disabled={!available}
-                        className={!available ? "opacity-50 line-through" : ""}
+                        disabled={type === "sale" ? !available : available}
+                        className={
+                          type === "sale" && !available
+                            ? "opacity-50 line-through"
+                            : ""
+                        }
                       >
                         {optionName}
                       </ToggleGroupItem>

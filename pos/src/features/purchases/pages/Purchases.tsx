@@ -169,6 +169,7 @@ export function PurchasesOrder() {
                 }
                 return product.hasVariants ? (
                   <ShowVariants
+                    type="purchase"
                     key={product.id}
                     product={product}
                     handleAdd={handleAddPurchase}
@@ -176,6 +177,7 @@ export function PurchasesOrder() {
                   />
                 ) : (
                   <ProductCard
+                    type="purchase"
                     key={product.id}
                     product={product}
                     handleAdd={handleAddPurchase}

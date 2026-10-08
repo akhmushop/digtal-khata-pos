@@ -1,21 +1,31 @@
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Card } from "@/components/ui/card";
-import { ProductType, ProductVariantType } from "@/features/products/product.schema";
+import {
+  ProductType,
+  ProductVariantType,
+} from "@/features/products/product.schema";
 export interface ProductCardProps {
   product: ProductType;
   handleAdd: (product: ProductType) => void;
   defaultVariant: ProductVariantType;
+  type: "purchase" | "sale";
 }
-export function ProductCard({ product, handleAdd, defaultVariant }:ProductCardProps) {
+export function ProductCard({
+  product,
+  handleAdd,
+  defaultVariant,
+  type,
+}: ProductCardProps) {
   const outOfStock = defaultVariant.quantity <= 0;
 
   return (
     <Card
       onClick={() => {
         if (product.hasVariants) return;
+        if (type === "sale" && outOfStock) return;
         handleAdd(product);
       }}
-      className={`relative select-none p-3 flex flex-col items-center justify-between gap-2 transition-colors`}
+      className={`relative h-full select-none p-3 flex flex-col items-center justify-between gap-2 transition-colors`}
     >
       {outOfStock && (
         <div className="absolute inset-0 z-10 bg-black/50 rounded-xl flex items-center justify-center text-white text-lg font-medium">

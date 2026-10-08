@@ -28,6 +28,7 @@ export function ProductList({ searchProducts }: { searchProducts: string }) {
                   }
                   return product.hasVariants ? (
                     <ShowVariants
+                    type="sale"
                       key={product.id}
                       product={product}
                       handleAdd={addToCart}
@@ -35,6 +36,7 @@ export function ProductList({ searchProducts }: { searchProducts: string }) {
                     />
                   ) : (
                     <ProductCard
+                      type="sale"
                       key={product.id}
                       product={product}
                       handleAdd={addToCart}
