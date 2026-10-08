@@ -1,14 +1,21 @@
 import { Button } from "@/components/ui/button";
 import {
-  Dialog, DialogClose, DialogContent, DialogDescription,
-  DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useWatch, type UseFormReturn } from "react-hook-form";
 import type { CartSchemaType } from "../../schemas/cart.schema";
+import { useCartStore } from "@/store/useCartStore";
 
 const money = (n: number) => Math.round(n * 100) / 100;
 
@@ -37,7 +44,8 @@ export function DiscountModal({
   form: UseFormReturn<CartSchemaType>;
 }) {
   const discount = useWatch({ control: form.control, name: "discount" });
-  const vatPercent = useWatch({ control: form.control, name: "vatPercent" }) ?? 0;
+  const vatPercent =
+    useWatch({ control: form.control, name: "vatPercent" }) ?? 0;
 
   // only the text being typed; the real value lives in the form
   const [percentInput, setPercentInput] = useState("");
@@ -51,7 +59,10 @@ export function DiscountModal({
 
   const applyPercent = (value: number) => {
     if (!Number.isFinite(value) || value < 0 || value > 100) return;
-    form.setValue("discount", value === 0 ? null : { type: "percentage", value });
+    form.setValue(
+      "discount",
+      value === 0 ? null : { type: "percentage", value },
+    );
     setPercentInput(value === 0 ? "" : String(value));
     setFlatInput("");
   };
@@ -79,7 +90,18 @@ export function DiscountModal({
     setFlatInput("");
     setVatInput("");
   };
+  const cartLength = useCartStore((state) => state.cart.length);
 
+  useEffect(() => {
+    if (cartLength === 0) {
+      form.setValue("discount", null);
+      form.setValue("vatPercent", 0);
+
+      setPercentInput("");
+      setFlatInput("");
+      setVatInput("");
+    }
+  }, [cartLength, form]);
   return (
     <Dialog>
       <DialogTrigger render={<Button className="w-full">Discount</Button>} />
@@ -87,7 +109,8 @@ export function DiscountModal({
         <DialogHeader>
           <DialogTitle>Discounts & VAT</DialogTitle>
           <DialogDescription>
-            Subtotal: ৳{subTotal.toFixed(2)} · Current total: ৳{currentTotal.toFixed(2)}
+            Subtotal: ৳{subTotal.toFixed(2)} · Current total: ৳
+            {currentTotal.toFixed(2)}
           </DialogDescription>
         </DialogHeader>
 
@@ -105,16 +128,28 @@ export function DiscountModal({
                 onChange={(e) => setPercentInput(e.target.value)}
                 placeholder="0"
               />
-              <Button type="button" onClick={() => applyPercent(Number(percentInput))}>
+              <Button
+                type="button"
+                onClick={() => applyPercent(Number(percentInput))}
+              >
                 Apply %
               </Button>
             </div>
             <div className="flex gap-1">
-              <Button type="button" variant="outline" onClick={() => applyPercent(0)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => applyPercent(0)}
+              >
                 No Discount
               </Button>
               {PERCENT_PRESETS.map((p) => (
-                <Button key={p} type="button" variant="outline" onClick={() => applyPercent(p)}>
+                <Button
+                  key={p}
+                  type="button"
+                  variant="outline"
+                  onClick={() => applyPercent(p)}
+                >
                   {p}%
                 </Button>
               ))}
@@ -138,13 +173,21 @@ export function DiscountModal({
                 onChange={(e) => setFlatInput(e.target.value)}
                 placeholder="0.00"
               />
-              <Button type="button" onClick={() => applyFlat(Number(flatInput))}>
+              <Button
+                type="button"
+                onClick={() => applyFlat(Number(flatInput))}
+              >
                 Apply ৳
               </Button>
             </div>
             <div className="flex gap-1">
               {FLAT_PRESETS.map((v) => (
-                <Button key={v} type="button" variant="outline" onClick={() => applyFlat(v)}>
+                <Button
+                  key={v}
+                  type="button"
+                  variant="outline"
+                  onClick={() => applyFlat(v)}
+                >
                   ৳{v}
                 </Button>
               ))}
@@ -174,17 +217,28 @@ export function DiscountModal({
               </Button>
             </div>
             <div className="flex gap-1">
-              <Button type="button" variant="outline" onClick={() => applyVat(0)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => applyVat(0)}
+              >
                 No VAT
               </Button>
               {VAT_PRESETS.map((v) => (
-                <Button key={v} type="button" variant="outline" onClick={() => applyVat(v)}>
+                <Button
+                  key={v}
+                  type="button"
+                  variant="outline"
+                  onClick={() => applyVat(v)}
+                >
                   {v}%
                 </Button>
               ))}
             </div>
             <FieldDescription>
-              {vatPercent > 0 ? `VAT: ${vatPercent}% (৳${vatAmount.toFixed(2)})` : "No VAT"}
+              {vatPercent > 0
+                ? `VAT: ${vatPercent}% (৳${vatAmount.toFixed(2)})`
+                : "No VAT"}
             </FieldDescription>
           </Field>
         </FieldGroup>
@@ -193,7 +247,13 @@ export function DiscountModal({
           Clear all Discounts & VAT
         </Button>
         <DialogFooter>
-          <DialogClose render={<Button type="button" variant="outline">Done (esc)</Button>} />
+          <DialogClose
+            render={
+              <Button type="button" variant="outline">
+                Done (esc)
+              </Button>
+            }
+          />
         </DialogFooter>
       </DialogContent>
     </Dialog>
