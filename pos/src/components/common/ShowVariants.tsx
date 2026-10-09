@@ -1,5 +1,6 @@
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -17,6 +18,7 @@ import {
   ProductType,
   ProductVariantType,
 } from "@/features/products/product.schema";
+import { toast } from "../ui/toast";
 export interface ShowVariantsProps {
   product: ProductType;
   handleAdd: (product: ProductType) => void;
@@ -170,14 +172,18 @@ export function ShowVariants({
             ))}
           </CardContent>
           <CardFooter className="justify-end gap-2">
-            <Button variant="outline">Cancel</Button>
+            <DialogClose render={<Button variant="outline">Done</Button>} />
             <Button
+              disabled={findVariant ? false : true}
               onClick={() => {
                 if (findVariant === undefined) return;
                 const { variants, ...updatedProduct } = product;
                 handleAdd({
                   ...updatedProduct,
                   variants: findVariant ? [findVariant] : [],
+                });
+                toast.add({
+                  description: `${variantFullName} added to cart!`,
                 });
               }}
             >

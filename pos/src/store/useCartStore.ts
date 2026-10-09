@@ -122,7 +122,7 @@ export const useCartStore = create<CartStore>((set) => ({
   addCartQuantity: (id) =>
     set((state) => ({
       cart: state.cart.map((p) => {
-        if (p.id === id) {
+        if (p.variants.some((v) => v.id === id)) {
           return {
             ...p,
             quantity: p.quantity + 1,
@@ -135,14 +135,20 @@ export const useCartStore = create<CartStore>((set) => ({
     set((state) => {
       return {
         cart: state.cart
-          .map((p) => (p.id === id ? { ...p, quantity: p.quantity - 1 } : p))
+          .map((p) =>
+            p.variants.some((v) => v.id === id)
+              ? { ...p, quantity: p.quantity - 1 }
+              : p,
+          )
           .filter((p) => p.quantity > 0),
       };
     }),
   addCustomCartQuantity: (id, customCartQuantity) =>
     set((state) => ({
       cart: state.cart.map((p) =>
-        p.id === id ? { ...p, quantity: customCartQuantity } : p,
+        p.variants.some((v) => v.id === id)
+          ? { ...p, quantity: customCartQuantity }
+          : p,
       ),
     })),
   resetCart: () =>

@@ -28,7 +28,7 @@ export function ProductList({ searchProducts }: { searchProducts: string }) {
                   }
                   return product.hasVariants ? (
                     <ShowVariants
-                    type="sale"
+                      type="sale"
                       key={product.id}
                       product={product}
                       handleAdd={addToCart}
