@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { useSoldStore } from "../../store/useSalesStore.js";
+import { useSalesStore } from "../../features/pos/stores/useSalesStore.js";
 import { create } from "zustand";
 import { AllSoldProduct, SalesStoreType } from "../../types/sales.types.js";
 import { useProductStore } from "@/features/products/usedashboardProductStore.js";
 
 export const Sales = () => {
-  const soldProducts = useSoldStore((state) => state.soldProducts);
+  const sales = useSalesStore((state) => state.sales);
   // const { restoreReturnProduct } = useProductStore();
   const [isOpen, setIsOpen] = useState(false);
   const [showProductDetailsModal, setShowProductDetailsModal] = useState(false);
@@ -14,8 +14,8 @@ export const Sales = () => {
     null,
   );
   const [showSoldProductModal, setShowSoldProductModal] = useState(false);
-  const returnProducts = useSoldStore((state) => state.returnProducts);
-  const returnSingleItems = useSoldStore((state) => state.returnSingleItems);
+  const returnProducts = useSalesStore((state) => state.returnProducts);
+  const returnSingleItems = useSalesStore((state) => state.returnSingleItems);
   const [identifyArray, setIdentifyArray] = useState<number | null>(null);
   const handelClose = () => {
     setTimeout(() => setShowProductDetailsModal(false), 300);
@@ -44,7 +44,7 @@ export const Sales = () => {
     setShowProductDetailsModal(true);
     setTimeout(() => setIsOpen(true), 30);
   };
-  const grouped = soldProducts.reduce<Record<number, SalesStoreType[]>>(
+  const grouped = sales.reduce<Record<number, SalesStoreType[]>>(
     (acc, item) => {
       const key = item.saleId;
       if (!acc[key]) {

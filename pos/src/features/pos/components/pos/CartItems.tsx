@@ -3,9 +3,9 @@ import { MdOutlineAddCircleOutline, MdDeleteOutline } from "react-icons/md";
 import { FiMinusCircle } from "react-icons/fi";
 import { useWatch } from "react-hook-form";
 import { ClearCartDialog } from "./ClearCartDialog.js";
-import type { DiscountType } from "../../../../types/cart.types.js";
+import type { DiscountType } from "../../types/cart.types.js";
 import { useProductStore } from "@/features/products/usedashboardProductStore.js";
-import { useCartStore } from "@/store/useCartStore.js";
+import { useCartStore } from "@/features/pos/stores/useCartStore.js";
 import type {
   CustomerDue,
   ShowCustomerInfoProps,

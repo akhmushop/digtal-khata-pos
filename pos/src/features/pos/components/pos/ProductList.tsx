@@ -1,4 +1,4 @@
-import { useCartStore } from "@/store/useCartStore";
+import { useCartStore } from "@/features/pos/stores/useCartStore";
 import useProductStore from "@/features/products/useProductStore";
 import { ProductCard } from "../../../../components/common/ProductCard";
 import { ShowVariants } from "../../../../components/common/ShowVariants";

@@ -16,7 +16,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useCustomerStore } from "@/store/useCustomerStore";
 import { Controller, UseFormReturn, useWatch } from "react-hook-form";
 import { CartSchemaType, PaymentSchemaType } from "../../schemas/cart.schema";
-import { useCartStore } from "@/store/useCartStore";
+import { useCartStore } from "@/features/pos/stores/useCartStore";
 
 const QR_NUMBER = "01870707900"; // move to settings/config later
 

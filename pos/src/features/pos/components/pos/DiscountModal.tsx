@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { useEffect, useState } from "react";
 import { useWatch, type UseFormReturn } from "react-hook-form";
 import type { CartSchemaType } from "../../schemas/cart.schema";
-import { useCartStore } from "@/store/useCartStore";
+import { useCartStore } from "@/features/pos/stores/useCartStore";
 
 const money = (n: number) => Math.round(n * 100) / 100;
 

@@ -9,7 +9,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useCartStore, useHoldCartStore } from "@/store/useCartStore";
+import {
+  useCartStore,
+  useHoldCartStore,
+} from "@/features/pos/stores/useCartStore";
 
 export function HeldItemsDialog({
   open,
