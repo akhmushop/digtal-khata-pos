@@ -7,7 +7,12 @@ import CartItems, {
 } from "@/features/pos/components/pos/CartItems.js";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { cartSchema, CartSchemaType } from "../schemas/cart.schema.js";
+import {
+  cartSchema,
+  CartSchemaType,
+  CreateSalePayload,
+  createSalePayloadSchema,
+} from "../schemas/cart.schema.js";
 import { useCartStore } from "@/features/pos/stores/useCartStore.js";
 import {
   Card,
@@ -15,9 +20,12 @@ import {
   CardFooter,
   CardHeader,
 } from "@/components/ui/card.js";
+import { toast } from "@/components/ui/toast.js";
+import { useSalesStore } from "../stores/useSalesStore.js";
 function Pos() {
   const { cart } = useCartStore();
   const [searchProducts, setSearchProducts] = useState("");
+  const { createSale } = useSalesStore();
   const form = useForm<CartSchemaType>({
     resolver: zodResolver(cartSchema),
     defaultValues: {
@@ -30,18 +38,49 @@ function Pos() {
   });
 
   async function onSubmit(data: CartSchemaType) {
-    const payload = {
+    // 1. Build the raw payload
+    const rawPayload = {
       ...data,
       items: cart.map((item) => ({
-        variantId: item.variants[0]?.id, // Get 115
-        quantity: item.quantity, // Get how many they put in the cart
-        unitPrice: item.variants[0]?.sellingPrice, // Get 234
+        variantId: item.variants[0]?.id ?? 0, // Fallback if undefined
+        quantity: item.quantity,
+        unitPrice: item.variants[0]?.sellingPrice ?? 0,
       })),
     };
 
-    console.log(payload);
-  }
+    // 2. Validate the payload using Zod!
+    const result = createSalePayloadSchema.safeParse(rawPayload);
 
+    if (!result.success) {
+      // If Zustand cart data is broken, catch it here!
+      console.error("Payload validation failed:", result.error.flatten());
+      toast.add({
+        type: "error",
+        description: "Cart data is invalid. Please refresh and try again.",
+        priority: "high",
+      });
+      return;
+    }
+
+    // 3. Use the clean, validated data
+    const payload: CreateSalePayload = result.data;
+
+    // 4. Send to backend
+    try {
+      await createSale(payload);
+      // console.log("Sending clean payload to DB:", payload);
+      toast.add({
+        type: "success",
+        description: "Sale processed successfully!",
+      });
+    } catch (err) {
+      toast.add({
+        type: "error",
+        description: "Failed to process sale.",
+        priority: "high",
+      });
+    }
+  }
   return (
     <div className="flex h-screen overflow-hidden p-3">
       {/* LEFT SIDE */}
