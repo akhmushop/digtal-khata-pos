@@ -30,7 +30,16 @@ function Pos() {
   });
 
   async function onSubmit(data: CartSchemaType) {
-    console.log({ ...data, cart });
+    const payload = {
+      ...data,
+      items: cart.map((item) => ({
+        variantId: item.variants[0]?.id, // Get 115
+        quantity: item.quantity, // Get how many they put in the cart
+        unitPrice: item.variants[0]?.sellingPrice, // Get 234
+      })),
+    };
+
+    console.log(payload);
   }
 
   return (

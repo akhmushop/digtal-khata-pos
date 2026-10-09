@@ -6,7 +6,10 @@ import { ClearCartDialog } from "./ClearCartDialog.js";
 import type { DiscountType } from "../../../../types/cart.types.js";
 import { useProductStore } from "@/features/products/usedashboardProductStore.js";
 import { useCartStore } from "@/store/useCartStore.js";
-import type { CustomerDue, ShowCustomerInfoProps } from "@/types/customers.types.js";
+import type {
+  CustomerDue,
+  ShowCustomerInfoProps,
+} from "@/types/customers.types.js";
 import axios from "../../../../api/axios.js";
 import { useCustomerStore } from "@/store/useCustomerStore.js";
 import { PaymentModal } from "./PaymentModal.js";
@@ -28,7 +31,8 @@ const tk = (n: number) => `৳${n.toFixed(2)}`;
 function useCartTotals(form: ShowCustomerInfoProps["form"]) {
   const cart = useCartStore((state) => state.cart);
   const discount = useWatch({ control: form.control, name: "discount" });
-  const vatPercent = useWatch({ control: form.control, name: "vatPercent" }) ?? 0;
+  const vatPercent =
+    useWatch({ control: form.control, name: "vatPercent" }) ?? 0;
 
   return useMemo(
     () => getCartTotals(cart, discount, Number(vatPercent)),
@@ -94,8 +98,12 @@ export default function CartItems() {
 
 // ---------- one cart row ----------
 function CartItemRow({ item }: { item: CartItem }) {
-  const addProductQuantityToCart = useProductStore((s) => s.addProductQuantityToCart);
-  const removeProductQuantityToCart = useProductStore((s) => s.removeProductQuantityToCart);
+  const addProductQuantityToCart = useProductStore(
+    (s) => s.addProductQuantityToCart,
+  );
+  const removeProductQuantityToCart = useProductStore(
+    (s) => s.removeProductQuantityToCart,
+  );
   const restoreSingleProductQuantityToCart = useProductStore(
     (s) => s.restoreSingleProductQuantityToCart,
   );
@@ -126,7 +134,9 @@ function CartItemRow({ item }: { item: CartItem }) {
             <span className="truncate font-medium">{item.name}</span>
             <span className="text-sm text-muted-foreground">
               {unitPrice.toFixed(2)} × {quantity} ={" "}
-              <span className="font-semibold text-foreground">{line.base.toFixed(2)}</span>
+              <span className="font-semibold text-foreground">
+                {line.base.toFixed(2)}
+              </span>
             </span>
 
             <CartItemDiscount
@@ -146,7 +156,7 @@ function CartItemRow({ item }: { item: CartItem }) {
               disabled={quantity <= 1}
               onClick={() => {
                 addProductQuantityToCart(item.id);
-                removeCartQuantity(item.id);
+                removeCartQuantity(variant.id);
               }}
               className="cursor-pointer rounded-full transition hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
             >
@@ -154,7 +164,7 @@ function CartItemRow({ item }: { item: CartItem }) {
             </button>
 
             <CartQuantityInput
-              itemId={item.id}
+              itemId={variant.id}
               quantity={quantity}
               addCustomCartQuantity={addCustomCartQuantity}
             />
@@ -164,7 +174,7 @@ function CartItemRow({ item }: { item: CartItem }) {
               aria-label="Increase quantity"
               onClick={() => {
                 removeProductQuantityToCart(item.id);
-                addCartQuantity(item.id);
+                addCartQuantity(variant.id);
               }}
               className="cursor-pointer rounded-full transition hover:text-primary"
             >
@@ -209,17 +219,28 @@ export function CartCalculation({ form }: ShowCustomerInfoProps) {
         </div>
         <div className="col-span-6">
           {/* payment gets the amount after discount, plus VAT */}
-          <PaymentModal form={form} subTotal={totals.afterDiscount} vat={totals.vat} />
+          <PaymentModal
+            form={form}
+            subTotal={totals.afterDiscount}
+            vat={totals.vat}
+          />
         </div>
       </div>
     </div>
   );
 }
 
-function CartTextModal({ totals }: { totals: ReturnType<typeof getCartTotals> }) {
+function CartTextModal({
+  totals,
+}: {
+  totals: ReturnType<typeof getCartTotals>;
+}) {
   const cart = useCartStore((state) => state.cart);
   const totalItemsCount = cart.length;
-  const totalQuantityCount = cart.reduce((total, item) => total + (Number(item.quantity) || 0), 0);
+  const totalQuantityCount = cart.reduce(
+    (total, item) => total + (Number(item.quantity) || 0),
+    0,
+  );
 
   return (
     <>
@@ -276,7 +297,9 @@ export function CartItemDiscount({
   addDiscount,
 }: CartItemDiscountProps) {
   const [value, setValue] = useState(discount ? String(discount.value) : "");
-  const [type, setType] = useState<DiscountType>(discount?.type ?? "percentage");
+  const [type, setType] = useState<DiscountType>(
+    discount?.type ?? "percentage",
+  );
 
   // keep the input in sync with the store (clear cart, hold/restore, clamped values)
   useEffect(() => {
@@ -329,7 +352,9 @@ export function CartItemDiscount({
         aria-label="Fixed amount discount"
       />
       {hasDiscount && (
-        <span className="text-sm font-medium text-green-600">= {tk(lineTotal)}</span>
+        <span className="text-sm font-medium text-green-600">
+          = {tk(lineTotal)}
+        </span>
       )}
     </div>
   );
@@ -366,7 +391,8 @@ export function CartQuantityInput({
     // Show what the store really holds (it may clamp to available stock).
     // Zustand updates synchronously, so this reads the new value.
     const stored =
-      useCartStore.getState().cart.find((i) => i.id === itemId)?.quantity ?? quantity;
+      useCartStore.getState().cart.find((i) => i.id === itemId)?.quantity ??
+      quantity;
     setInputValue(String(stored));
   };
 
