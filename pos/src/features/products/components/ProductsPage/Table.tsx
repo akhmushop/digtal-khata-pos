@@ -36,9 +36,12 @@ import {
   Minus,
 } from "lucide-react";
 import { Resizing, SortConfig } from "@/types/table.types";
-import { useSoldStore } from "@/store/useSalesStore";
+import { useSalesStore } from "@/features/pos/stores/useSalesStore";
 import { ProductsTypes } from "../../products.types";
-import { useEditProductStore, useProductStore } from "../../usedashboardProductStore";
+import {
+  useEditProductStore,
+  useProductStore,
+} from "../../usedashboardProductStore";
 
 const AdvancedPOSTable = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -57,7 +60,7 @@ const AdvancedPOSTable = () => {
   const [currentProduct, setCurrentProduct] = useState<ProductsTypes | null>(
     null,
   );
-  const soldProducts = useSoldStore((state) => state.soldProducts);
+  const sales = useSalesStore((state) => state.sales);
   const setEditingProduct = useEditProductStore(
     (state) => state.setEditingProduct,
   );
@@ -218,11 +221,11 @@ const AdvancedPOSTable = () => {
     }
   };
 
-  const totalValue = soldProducts.reduce(
+  const totalValue = sales.reduce(
     (sum, p) => sum + p.price * p.soldQuantity,
     0,
   );
-  const totalProfit = soldProducts.reduce(
+  const totalProfit = sales.reduce(
     (sum, p) => sum + (p.price - p.cost) * p.soldQuantity,
     0,
   );
@@ -298,11 +301,11 @@ const AdvancedPOSTable = () => {
   // };
   // total sold
 
-  const totalSoldItems = soldProducts.reduce(
+  const totalSoldItems = sales.reduce(
     (sum, item) => sum + item.soldQuantity,
     0,
   );
-  const totalRevenueByMonth = soldProducts.reduce<Record<string, number>>(
+  const totalRevenueByMonth = sales.reduce<Record<string, number>>(
     (acc, item) => {
       const date = new Date(item.createdAt);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
@@ -342,7 +345,7 @@ const AdvancedPOSTable = () => {
     (sum, p) => sum + (Number(p.quantity) || 0),
     0,
   );
-  const saleDateRange = soldProducts.reduce<{
+  const saleDateRange = sales.reduce<{
     min: Date | null;
     max: Date | null;
   }>(

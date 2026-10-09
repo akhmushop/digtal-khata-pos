@@ -7,8 +7,8 @@ import CartItems, {
 } from "@/features/pos/components/pos/CartItems.js";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { cartSchema, CartSchemaType } from "./schemas/cart.schema.js";
-import { useCartStore } from "@/store/useCartStore.js";
+import { cartSchema, CartSchemaType } from "../schemas/cart.schema.js";
+import { useCartStore } from "@/features/pos/stores/useCartStore.js";
 import {
   Card,
   CardContent,

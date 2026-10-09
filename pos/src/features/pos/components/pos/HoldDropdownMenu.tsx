@@ -1,4 +1,4 @@
-import { HoldCartItems } from "@/types/cart.types";
+import { HoldCartItems } from "@/features/pos/types/cart.types";
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,7 +8,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useCartStore, useHoldCartStore } from "@/store/useCartStore";
+import {
+  useCartStore,
+  useHoldCartStore,
+} from "@/features/pos/stores/useCartStore";
 import { HeldItemsDialog } from "./HeldItemsDialog";
 
 export function HoldDropdownMenu() {
@@ -18,7 +21,7 @@ export function HoldDropdownMenu() {
   }
   const resetCart = useCartStore((state) => state.resetCart);
   const cart = useCartStore((state) => state.cart);
-  const {addHoldCart} = useHoldCartStore()
+  const { addHoldCart } = useHoldCartStore();
   return (
     <>
       <DropdownMenu>
@@ -42,10 +45,7 @@ export function HoldDropdownMenu() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <HeldItemsDialog
-        open={open}
-        handleOpenChange={handleOpenChange}
-      />
+      <HeldItemsDialog open={open} handleOpenChange={handleOpenChange} />
     </>
   );
 }

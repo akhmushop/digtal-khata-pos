@@ -5,7 +5,7 @@ import {
   DialogContent,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useCartStore } from "@/store/useCartStore";
+import { useCartStore } from "@/features/pos/stores/useCartStore";
 import { useState } from "react";
 export function ClearCartDialog() {
   const [open, setOpen] = useState(false);

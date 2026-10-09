@@ -1,4 +1,4 @@
-import type { CartType, CashForm } from "./cart.types.js";
+import type { CartType, CashForm } from "../features/pos/types/cart.types.js";
 export interface SalesStoreType {
   id: number;
   saleItemsId: number;
@@ -12,11 +12,11 @@ export interface SalesStoreType {
   soldPrice: number;
 }
 export interface SalesStore {
-  soldProducts: SalesStoreType[];
+  sales: SalesStoreType[];
   loading: boolean;
   error: null | string;
-  getSoldProducts: () => void;
-  addToSoldProduct: (cart: CartType[], cashForm: CashForm) => void;
+  getSales: () => void;
+  createSale: (cart: CartType[], cashForm: CashForm) => void;
   returnSingleItems: (item: SalesStoreType) => void;
   returnProducts: (id: number) => void;
 }

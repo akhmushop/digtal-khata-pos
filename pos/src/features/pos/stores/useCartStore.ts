@@ -1,8 +1,8 @@
-import axios from "../api/axios.js";
+import axios from "../../../api/axios.js";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { CartStore, CartType } from "../types/cart.types.js";
-import { HoldCartItems } from "@/types/cart.types";
+import { HoldCartItems } from "@/features/pos/types/cart.types.js";
 
 // export const useCartStore = create(
 //   persist(
