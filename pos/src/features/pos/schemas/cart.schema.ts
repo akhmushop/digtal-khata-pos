@@ -55,3 +55,29 @@ export const cartSchema = z
 
 export type CartSchemaType = z.infer<typeof cartSchema>;
 export type PaymentSchemaType = z.infer<typeof paymentSchema>;
+// 1. Define what a single cart item should look like when sent to the DB
+const cartItemPayloadSchema = z.object({
+  variantId: z.number().int().positive("Variant ID is required"),
+  quantity: z.number().int().positive("Quantity must be at least 1"),
+  unitPrice: z.number().nonnegative("Unit price cannot be negative"),
+});
+
+// 2. Define the full Payload schema
+export const createSalePayloadSchema = z.object({
+  saleDate: z.date(),
+  customerId: z.number().nullable(),
+  payments: z.array(paymentSchema).min(1, "Select a payment method"),
+  discount: z
+    .object({
+      type: z.enum(["percentage", "fixed"]),
+      value: z.number().min(0),
+    })
+    .nullable(),
+  vatPercent: z.number().nullable(),
+  
+  // ✅ Add the items array here!
+  items: z.array(cartItemPayloadSchema).min(1, "Cart cannot be empty"),
+});
+
+// 3. Export the TypeScript type for your payload
+export type CreateSalePayload = z.infer<typeof createSalePayloadSchema>;

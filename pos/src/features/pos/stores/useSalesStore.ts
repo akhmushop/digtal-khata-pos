@@ -7,7 +7,7 @@ import {
   createSaleApi,
   createSingleReturnApi,
   getSalesApi,
-} from "../../../api/sales.api.js";
+} from "../sales.api.js";
 import { SalesStore } from "../types/sales.types.js";
 // export const useSalesStore = create(
 //   persist(
@@ -70,8 +70,9 @@ export const useSalesStore = create<SalesStore>((set) => ({
       set({ error: getErrorMessage(err), loading: false });
     }
   },
-  createSale: async (cart, cashForm) => {
-    await createSaleApi(cart, cashForm);
+  createSale: async (data) => {
+    const response = await createSaleApi(data);
+    return response.data;
   },
   returnSingleItems: async (item) => {
     await createSingleReturnApi(item);
