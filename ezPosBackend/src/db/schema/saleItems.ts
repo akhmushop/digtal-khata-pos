@@ -1,38 +1,35 @@
-import {
-  pgTable,
-  foreignKey,
-  serial,
-  integer,
-  text,
-  varchar,
-  numeric,
-} from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, numeric } from "drizzle-orm/pg-core";
 import { sales } from "./sales.js";
-import { products } from "./products.js";
+import { productVariants } from "./productVariants.js";
 
+export const saleItems = pgTable("sale_items", {
+  id: serial("id").primaryKey().notNull(),
 
-export const saleItems = pgTable(
-  "sale_items",
-  {
-    id: serial().primaryKey().notNull(),
-    saleId: integer("sale_id"),
-    productId: integer("product_id"),
-    soldQuantity: integer("sold_quantity"),
-    soldPrice: numeric("sold_price",{mode:'number'}),
-    status: varchar({ length: 20 }).default("completed"),
-    productNameAtSale: text("product_name_at_sale"),
-    costAtSale: numeric("cost_at_sale", { precision: 10, scale: 2,mode:'number' }),
-  },
-  (table) => [
-    foreignKey({
-      columns: [table.saleId],
-      foreignColumns: [sales.id],
-      name: "sale_items_sale_id_fkey",
-    }),
-    foreignKey({
-      columns: [table.productId],
-      foreignColumns: [products.id],
-      name: "sale_items_product_id_fkey",
-    }),
-  ],
-);
+  saleId: integer("sale_id")
+    .notNull()
+    .references(() => sales.id, { onDelete: "cascade" }),
+
+  variantId: integer("variant_id")
+    .notNull()
+    .references(() => productVariants.id, { onDelete: "restrict" }),
+  quantity: integer("quantity").notNull(),
+  sellingPrice: numeric("selling_price", {
+    precision: 12,
+    scale: 2,
+    mode: "number",
+  }).notNull(),
+  discount: numeric("discount", { precision: 12, scale: 2, mode: "number" })
+    .default(0)
+    .notNull(),
+  // productNameAtSale: text("product_name_at_sale").notNull(),
+  costAtSale: numeric("cost_at_sale", {
+    precision: 12,
+    scale: 2,
+    mode: "number",
+  }).notNull(),
+  lineTotal: numeric("line_total", {
+    precision: 12,
+    scale: 2,
+    mode: "number",
+  }).notNull(),
+});

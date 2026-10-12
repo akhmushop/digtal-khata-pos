@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import { db } from "../../db/schema/index.js";
 import { products } from "../../db/schema/products.js";
 import { saleItems } from "../../db/schema/saleItems.js";
@@ -24,7 +24,21 @@ import {
   getTopItemsByGross,
   getTopSellingProducts,
 } from "./dashboardMatrix.service.js";
-
+import type { CreateSalePayload } from "./schemas/sales.schema.js";
+import { customers } from "../../db/schema/customers.js";
+import {
+  customerValidation,
+  validatePayments,
+  validateStock,
+  validateVariants,
+  type Items,
+} from "./sales.validation.js";
+import { roundMoney } from "../../utils/roundMoney.js";
+import { getCartTotals, getLinePricing } from "./utils/cartPricing.js";
+import { inventoryStock } from "../../db/schema/inventoryStock.js";
+import { inventoryMovements } from "../../db/schema/inventoryMovements.js";
+import type { DbTransaction } from "../purchases/purchase.types.js";
+import { inventoryBatches } from "../../db/schema/inventoryBatches.js";
 export async function getSalesData() {
   return await db
     .select({
@@ -46,46 +60,259 @@ export async function getSalesData() {
       and(eq(saleItems.status, "completed"), eq(sales.status, "completed")),
     );
 }
-const getPaymentStatus = (paid: number, due: number) => {
-  if (due <= 0) return "paid";
-  if (paid > 0 && due > 0) return "partial";
-  if (paid === 0) return "unpaid";
-};
-export async function createSale(input: saleDataInput) {
-  const { cart, cashForm } = input;
-  const { final_total, paid_amount, payment_method, customer_id } = cashForm;
-  const due_amount = final_total - paid_amount;
+export async function calculateSubtotals(
+  existingVariants: {
+    id: number;
+    sellingPrice: number;
+  }[],
+  items: Items[],
+) {
+  const variantMap = new Map(existingVariants.map((v) => [v.id, v]));
 
-  const paymentStatus = getPaymentStatus(paid_amount, due_amount);
-  const [insertSale] = await db
-    .insert(sales)
-    .values({ ...cashForm, paymentStatus: paymentStatus })
-    .returning({ id: sales.id });
-  if (!insertSale) throw new NotFoundError("Sale creation failed");
-  const saleId = insertSale.id;
-  if (paid_amount > 0) {
-    await db.insert(salePayments).values({
-      customerId: customer_id,
-      saleId,
-      paidAmount: paid_amount,
-      paymentMethod: payment_method,
-    });
+  const subTotal = items.reduce((sum, item) => {
+    const variant = variantMap.get(item.variantId);
+    if (!variant) {
+      throw new Error(`Variant ${item.variantId} not found`);
+    }
+    return sum + item.quantity * Number(variant.sellingPrice);
+  }, 0);
+  return roundMoney(subTotal);
+}
+
+export async function consumeStockFifo(
+  tx: DbTransaction,
+  variantId: number,
+  quantity: number,
+) {
+  // 1. Oldest batches first. .for("update") locks the rows, so two sales
+  //    at the same moment can't take the same stock.
+  const batches = await tx
+    .select()
+    .from(inventoryBatches)
+    .where(
+      and(
+        eq(inventoryBatches.variantId, variantId),
+        gt(inventoryBatches.quantityRemaining, 0),
+      ),
+    )
+    .orderBy(asc(inventoryBatches.id))
+    .for("update");
+
+  let remaining = quantity;
+  let totalCost = 0;
+
+  // 2. Take from each batch until the quantity is covered
+  for (const batch of batches) {
+    if (remaining === 0) break;
+
+    const take = Math.min(batch.quantityRemaining, remaining);
+
+    await tx
+      .update(inventoryBatches)
+      .set({ quantityRemaining: batch.quantityRemaining - take })
+      .where(eq(inventoryBatches.id, batch.id));
+
+    totalCost += take * batch.purchasePrice;
+    remaining -= take;
   }
-  for (let item of cart) {
-    await db.insert(saleItems).values({
-      saleId,
-      productId: item.id,
-      soldQuantity: item.sold_quantity,
-      soldPrice: item.final_price,
-      productNameAtSale: item.product_name,
-      costAtSale: item.cost,
-    });
-    await db
-      .update(products)
-      .set({ quantity: sql`${products.quantity} - ${item.sold_quantity}` })
-      .where(eq(products.id, item.id));
+
+  // 3. Not enough stock: throwing rolls back the whole sale transaction
+  if (remaining > 0) {
+    throw new Error(
+      `Insufficient stock for variant ${variantId}: short by ${remaining}`,
+    );
   }
-  return saleId;
+
+  return {
+    totalCost: roundMoney(totalCost),
+    costAtSale: roundMoney(totalCost / quantity), // average cost per unit
+  };
+}
+function getPaymentStatus(paid: number, due: number) {
+  if (due <= 0) return "paid";
+  if (paid > 0) return "partial";
+  return "unpaid";
+}
+
+export async function createSale(data: CreateSalePayload) {
+  const { customerId, items, discount, vatPercent, payments, saleDate } = data;
+
+  return db.transaction(async (tx) => {
+    // 1. Validate customer.
+    await customerValidation(tx, customerId);
+
+    // 2. Validate variants and lock their rows.
+    const { variantIds, existingVariants } = await validateVariants(tx, items);
+
+    // 3. Lock inventory rows and validate stock.
+    await validateStock(tx, variantIds, items);
+
+    // 4. Use authoritative database selling prices.
+    const priceMap = new Map(
+      existingVariants.map((variant) => [
+        variant.id,
+        Number(variant.sellingPrice),
+      ]),
+    );
+
+    const trustedItems = items.map((item) => {
+      const unitPrice = priceMap.get(item.variantId);
+
+      if (
+        unitPrice === undefined ||
+        !Number.isFinite(unitPrice) ||
+        unitPrice < 0
+      ) {
+        throw new NotFoundError(
+          `Valid selling price not found for variant ${item.variantId}.`,
+        );
+      }
+
+      return { ...item, unitPrice };
+    });
+
+    // 5. Calculate every total from the same trusted items.
+    const totals = getCartTotals(
+      trustedItems,
+      discount,
+      Number(vatPercent ?? 0),
+    );
+
+    const totalDiscount = roundMoney(
+      totals.itemDiscount + totals.cartDiscountAmount,
+    );
+
+    // 6. Validate payment amounts against the final total.
+    const { change, dueAmount, paidAmount } = validatePayments(
+      payments,
+      totals.finalTotal,
+      customerId,
+    );
+
+    const paymentStatus = getPaymentStatus(paidAmount, dueAmount);
+
+    // 7. Insert the sale header.
+    const [newSale] = await tx
+      .insert(sales)
+      .values({
+        saleDate,
+        customerId,
+        subtotal: totals.itemsBase,
+        discount: totalDiscount,
+        vat: totals.vat,
+        finalTotal: totals.finalTotal,
+        dueAmount,
+        paymentStatus,
+        status: "completed",
+      })
+      .returning({
+        id: sales.id,
+        invoiceNumber: sales.invoiceNumber,
+        subtotal: sales.subtotal,
+        discount: sales.discount,
+        vat: sales.vat,
+        finalTotal: sales.finalTotal,
+        dueAmount: sales.dueAmount,
+        paymentStatus: sales.paymentStatus,
+      });
+
+    if (!newSale) {
+      throw new Error("Failed to create sale.");
+    }
+
+    const saleId = newSale.id;
+
+    // 8. Insert sale items with price and cost snapshots.
+    for (const item of trustedItems) {
+      const line = getLinePricing(item.unitPrice, item.quantity, item.discount);
+
+      const { costAtSale } = await consumeStockFifo(
+        tx,
+        item.variantId,
+        item.quantity,
+      );
+
+      if (!Number.isFinite(costAtSale) || costAtSale < 0) {
+        throw new Error(
+          `Invalid inventory cost for variant ${item.variantId}.`,
+        );
+      }
+
+      await tx.insert(saleItems).values({
+        saleId,
+        variantId: item.variantId,
+        quantity: item.quantity,
+        sellingPrice: item.unitPrice,
+        costAtSale,
+        lineTotal: line.total,
+        discount: line.discountAmount,
+      });
+    }
+
+    // 9. Insert actual received payments.
+    const receivedPayments = payments.filter(
+      (payment) => payment.method !== "due" && (payment.amount ?? 0) > 0,
+    );
+
+    if (receivedPayments.length > 0) {
+      await tx.insert(salePayments).values(
+        receivedPayments.map((payment) => {
+          if (payment.amount === undefined) {
+            throw new NotFoundError("payment amount not found");
+          }
+          return {
+            saleId,
+            customerId,
+            amount: payment.amount,
+            paymentMethod: payment.method,
+            reference:
+              payment.method === "cash"
+                ? null
+                : payment.reference?.trim() || null,
+            tendered:
+              payment.method === "cash" ? (payment.tendered ?? null) : null,
+          };
+        }),
+      );
+    }
+
+    // 10. Decrement stock and create movement records.
+    for (const item of trustedItems) {
+      const updatedRows = await tx
+        .update(inventoryStock)
+        .set({
+          quantity: sql`${inventoryStock.quantity} - ${item.quantity}`,
+        })
+        .where(eq(inventoryStock.variantId, item.variantId))
+        .returning({
+          variantId: inventoryStock.variantId,
+        });
+
+      if (updatedRows.length !== 1) {
+        throw new Error(
+          `Failed to update stock for variant ${item.variantId}.`,
+        );
+      }
+
+      // Adjust this insert if your movement schema requires
+      // additional columns, such as referenceId or createdBy.
+      await tx.insert(inventoryMovements).values({
+        variantId: item.variantId,
+        movementType: "sale",
+        quantity: item.quantity,
+        referenceType: "sale",
+        referenceId: saleId,
+      });
+    }
+
+    // 11. Return receipt data; transaction commits on success.
+    return {
+      sale: newSale,
+      change,
+      paidAmount,
+      dueAmount,
+    };
+  });
 }
 export async function createSingleRefund(id: number) {
   await db

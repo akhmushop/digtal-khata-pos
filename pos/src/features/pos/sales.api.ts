@@ -8,7 +8,6 @@ export async function getSalesApi() {
   return data;
 }
 export async function createSaleApi(data: CreateSalePayload) {
-  console.log(data)
   return await axios.post("/sales", data);
 }
 export async function createSingleReturnApi(item: SalesStoreType) {
