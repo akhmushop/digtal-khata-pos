@@ -146,9 +146,9 @@ export const saleItemsRelations = relations(saleItems, ({ one }) => ({
     fields: [saleItems.saleId],
     references: [sales.id],
   }),
-  product: one(products, {
-    fields: [saleItems.productId],
-    references: [products.id],
+  variant: one(productVariants, {
+    fields: [saleItems.variantId],
+    references: [productVariants.id],
   }),
 }));
 

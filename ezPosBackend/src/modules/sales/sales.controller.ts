@@ -1,7 +1,8 @@
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import * as salesService from "./sales.service.js";
 import { handleError } from "../../utils/handleError.js";
 import type { saleDataInput } from "../../types/sales-types.js";
+import { createSalePayloadSchema } from "./schemas/sales.schema.js";
 
 export async function getSalesData(req: Request, res: Response) {
   try {
@@ -11,13 +12,25 @@ export async function getSalesData(req: Request, res: Response) {
     handleError(res, err);
   }
 }
-export async function createSale(req: Request, res: Response) {
+export async function createSale(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   try {
-    const input = req.body as saleDataInput;
-    const saleId = await salesService.createSale(input);
-    res.status(201).json({ message: "Sale created successfully", saleId });
-  } catch (err) {
-    handleError(res, err);
+    const result = createSalePayloadSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({
+        message: "Invalid sale data",
+        errors: result.error.flatten(),
+      });
+    }
+    const sale = await salesService.createSale(result.data);
+    return res
+      .status(201)
+      .json({ message: "Sale created successfully", data: sale });
+  } catch (err: unknown) {
+    next(err);
   }
 }
 export async function createSingleRefund(req: Request, res: Response) {

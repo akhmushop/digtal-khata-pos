@@ -183,12 +183,12 @@ export function calculatePaymentStatus(
   totalAmount: number,
   receivedAmount: number,
 ) {
-  let paymentStatus: "unpaid" | "partial_paid" | "paid";
+  let paymentStatus: "unpaid" | "partial" | "paid";
 
   if (updatedPaidAmount <= 0) {
     paymentStatus = "unpaid";
   } else if (updatedPaidAmount < Number(totalAmount ?? receivedAmount)) {
-    paymentStatus = "partial_paid";
+    paymentStatus = "partial";
   } else {
     paymentStatus = "paid";
   }
@@ -199,7 +199,7 @@ export async function updatePurchase(
   newStatus: "received" | "partially_received",
   updatedPaidAmount: number,
   updatedDueAmount: number,
-  paymentStatus: "paid" | "unpaid" | "partial_paid",
+  paymentStatus: "paid" | "unpaid" | "partial",
   purchaseId: number,
 ) {
   await tx

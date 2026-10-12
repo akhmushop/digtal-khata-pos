@@ -130,11 +130,11 @@ export async function getPurchasesSummary() {
     db
       .select()
       .from(purchases)
-      .where(inArray(purchases.paymentStatus, ["partial_paid", "unpaid"])),
+      .where(inArray(purchases.paymentStatus, ["partial", "unpaid"])),
     db
       .select()
       .from(purchases)
-      .where(inArray(purchases.paymentStatus, ["paid", "received"])),
+      .where(inArray(purchases.paymentStatus, ["paid"])),
   ]);
   return {
     orderedPurchase,

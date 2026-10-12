@@ -297,7 +297,7 @@ export function getInvoiceDues() {
     FROM PURCHASES
     WHERE created_at >= DATE_TRUNC('MONTH', CURRENT_DATE - INTERVAL '1 MONTH')
         AND created_at < DATE_TRUNC('MONTH', CURRENT_DATE) + INTERVAL '1 MONTH'
-        AND PAYMENT_STATUS IN ('unpaid', 'partial_paid')
+        AND PAYMENT_STATUS IN ('unpaid', 'partial')
 )
 SELECT CURRENT_INVOICE_DUE - CURRENT_PAID AS CURRENT_DUE,
     CASE

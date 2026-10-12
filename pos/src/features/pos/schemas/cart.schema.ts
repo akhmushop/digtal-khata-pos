@@ -60,6 +60,12 @@ const cartItemPayloadSchema = z.object({
   variantId: z.number().int().positive("Variant ID is required"),
   quantity: z.number().int().positive("Quantity must be at least 1"),
   unitPrice: z.number().nonnegative("Unit price cannot be negative"),
+  discount: z
+    .object({
+      type: z.enum(["percentage", "fixed"]),
+      value: z.number().min(0),
+    })
+    .nullable(),
 });
 
 // 2. Define the full Payload schema
@@ -74,7 +80,7 @@ export const createSalePayloadSchema = z.object({
     })
     .nullable(),
   vatPercent: z.number().nullable(),
-  
+
   // ✅ Add the items array here!
   items: z.array(cartItemPayloadSchema).min(1, "Cart cannot be empty"),
 });

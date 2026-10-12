@@ -10,31 +10,47 @@ import {
   numeric,
   unique,
   date,
+  pgSequence,
+  pgEnum,
 } from "drizzle-orm/pg-core";
 import { customers } from "./customers.js";
-export const sales = pgTable(
-  "sales",
-  {
-    id: serial().primaryKey().notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-    status: varchar({ length: 30 }).default("completed"),
-    invoiceNumber: varchar("invoice_number", { length: 50 }),
-    saleDate: date("sale_date").default(sql`CURRENT_DATE`),
-    subtotal: numeric({ precision: 10, scale: 2 }),
-    discount: numeric({ precision: 10, scale: 2 }).default("0"),
-    vat: numeric({ precision: 10, scale: 2 }).default("0"),
-    finalTotal: numeric("final_total", { precision: 10, scale: 2 }),
-    paymentStatus: varchar("payment_status", { length: 20 }).default("paid"),
-    dueAmount: numeric("due_amount", { precision: 10, scale: 2 }).default("0"),
-    note: text(),
-    customerId: integer("customer_id"),
-  },
-  (table) => [
-    foreignKey({
-      columns: [table.customerId],
-      foreignColumns: [customers.id],
-      name: "sales_customer_id_fkey",
-    }),
-    unique("sales_invoice_number_key").on(table.invoiceNumber),
-  ],
-);
+export const paymentStatusEnum = pgEnum("payment_status", [
+  "paid",
+  "partial",
+  "unpaid",
+]);
+export const saleStatusEnum = pgEnum("sale_status", [
+  "completed",
+  "held",
+  "cancelled",
+  "refunded",
+]);
+export const saleInvoiceNumberSeq = pgSequence("sale_invoice_number_seq", {
+  startWith: 1,
+  increment: 1,
+});
+export const sales = pgTable("sales", {
+  id: serial().primaryKey().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  status: saleStatusEnum("status").default("completed").notNull(),
+  invoiceNumber: varchar("invoice_number", { length: 50 })
+    .notNull()
+    .unique()
+    .default(
+      sql`'INV-' || to_char(CURRENT_DATE, 'YYYY') || '-' ||
+        lpad(nextval('sale_invoice_number_seq')::text, 6, '0')`,
+    ),
+  saleDate: timestamp("purchase_date").defaultNow().notNull(),
+  subtotal: numeric({ precision: 10, scale: 2, mode: "number" }),
+  discount: numeric({ precision: 10, scale: 2, mode: "number" }).default(0),
+  vat: numeric({ precision: 10, scale: 2, mode: "number" }).default(0),
+  finalTotal: numeric("final_total", { precision: 10, scale: 2,mode:"number" }),
+  paymentStatus: paymentStatusEnum("payment_status").default("paid").notNull(),
+  dueAmount: numeric("due_amount", {
+    precision: 10,
+    scale: 2,
+    mode: "number",
+  }).default(0),
+  note: text(),
+  customerId: integer("customer_id").references(() => customers.id),
+});

@@ -24,7 +24,7 @@ export async function getCustomerDueSummary() {
     db
       .select({
         saleId: salePayments.saleId,
-        totalPaid: sql<number>`SUM(${salePayments.paidAmount})`.as(
+        totalPaid: sql<number>`SUM(${salePayments.amount})`.as(
           "total_paid",
         ),
       })
