@@ -9,6 +9,7 @@ export interface CartType extends ProductType {
     type: "fixed" | "percentage";
     value: number;
   } | null;
+  serialNumbers?: string[];
 }
 export type DiscountType = "percentage" | "fixed";
 export interface CartStore {
@@ -24,6 +25,11 @@ export interface CartStore {
     variantId: number,
     discountValue: number,
     discountType: DiscountType,
+  ) => void;
+  addSerialItem: (
+    product: ProductType,
+    variantId: number | undefined,
+    serials: string[],
   ) => void;
 }
 export interface CashForm {

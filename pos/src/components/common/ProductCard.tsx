@@ -1,28 +1,48 @@
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Card } from "@/components/ui/card";
+import { SerialPickerDialog } from "@/features/pos/components/pos/SerialPickerDialog";
+import { useCartStore } from "@/features/pos/stores/useCartStore";
 import {
   ProductType,
   ProductVariantType,
 } from "@/features/products/product.schema";
+import { toast } from "../ui/toast";
 export interface ProductCardProps {
   product: ProductType;
   handleAdd: (product: ProductType) => void;
   defaultVariant: ProductVariantType;
   type: "purchase" | "sale";
+  onSerialClick?: (prod: ProductType) => void;
 }
 export function ProductCard({
   product,
   handleAdd,
   defaultVariant,
   type,
+  onSerialClick,
 }: ProductCardProps) {
   const outOfStock = defaultVariant.quantity <= 0;
-
+  const isSerial = product.trackingType === "serial";
+  const defaultVariantId = defaultVariant.id;
+  const cartSerials =
+    useCartStore(
+      (state) =>
+        state.cart.find((p) =>
+          p.variants.some((v) => v.id === defaultVariantId),
+        )?.serialNumbers,
+    ) ?? [];
   return (
     <Card
       onClick={() => {
         if (product.hasVariants) return;
         if (type === "sale" && outOfStock) return;
+        if (type === "sale" && isSerial) {
+          if(!onSerialClick){
+            return
+          }
+          onSerialClick(product);
+          return;
+        }
         handleAdd(product);
       }}
       className={`relative h-full select-none p-3 flex flex-col items-center justify-between gap-2 transition-colors`}

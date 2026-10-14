@@ -63,3 +63,20 @@ export async function getDashboardSummary(req: Request, res: Response) {
     handleError(res, err);
   }
 }
+export async function getAvailableSerials(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const variantId = Number(req.params.variantId);
+    if (isNaN(variantId)) {
+      return res.status(400).json({ message: "Invalid Variant ID" });
+    }
+    const availableSerials = await salesService.getAvailableSerials(variantId);
+
+    res.status(200).json(availableSerials);
+  } catch (err: unknown) {
+    next(err);
+  }
+}

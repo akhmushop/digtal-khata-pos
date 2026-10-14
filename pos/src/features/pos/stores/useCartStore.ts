@@ -176,6 +176,45 @@ export const useCartStore = create<CartStore>((set) => ({
       };
     });
   },
+  addSerialItem: (product, variantId, serials) =>
+    set((state) => {
+      const variant = product.variants.find((v) => v.id === variantId);
+      if (!variant) {
+        return state; // Safety check
+      }
+
+      // 3. Check if this specific variant is already in the cart
+      const exists = state.cart.find((item) =>
+        item.variants.some((v) => v.id === variantId),
+      );
+
+      if (exists) {
+        return {
+          cart: state.cart.map((item) =>
+            item.variants.some((v) => v.id === variantId)
+              ? {
+                  ...item,
+                  serialNumbers: serials,
+                  quantity: serials.length, // Quantity always matches serials count
+                }
+              : item,
+          ),
+        };
+      }
+
+      // 4. If it doesn't exist, add it as a new cart line
+      return {
+        cart: [
+          ...state.cart,
+          {
+            ...product,
+            variants: [variant], // Only keep the selected variant
+            quantity: serials.length,
+            serialNumbers: serials, // Attach serials here
+          },
+        ],
+      };
+    }),
 }));
 
 interface HoldCartStore {

@@ -79,32 +79,54 @@ export async function insertInventoryBatches(
   variantId: number,
   purchaseItemId: number,
 ) {
-  const batches = receiveItem.batches ?? [];
+  let rows;
 
-  const batchesToInsert = batches.map((batch) => ({
-    variantId,
-    purchaseItemId,
+  if (receiveItem.trackingType === "batch") {
+    rows = (receiveItem.batches ?? []).map((batch) => ({
+      variantId,
+      purchaseItemId,
+      batchNumber: batch.batchNumber,
+      purchasePrice: receiveItem.unitCost,
+      quantityReceived: batch.quantity,
+      quantityRemaining: batch.quantity,
+      manufacturedDate: batch.manufacturedDate,
+      expiryDate: batch.expiryDate,
+    }));
+  } else {
+    // serial or no tracking: one automatic batch for this receive
+    const quantity =
+      receiveItem.trackingType === "serial"
+        ? (receiveItem.serialNumbers ?? []).length
+        : receiveItem.receiveNow;
 
-    batchNumber: batch.batchNumber,
+    rows =
+      quantity > 0
+        ? [
+            {
+              variantId,
+              purchaseItemId,
+              batchNumber: `AUTO-${purchaseItemId}-${Date.now()}`, // batchNumber is notNull
+              purchasePrice: receiveItem.unitCost,
+              quantityReceived: quantity,
+              quantityRemaining: quantity,
+            },
+          ]
+        : [];
+  }
 
-    purchasePrice: receiveItem.unitCost,
+  if (rows.length === 0) return [];
 
-    quantityReceived: batch.quantity,
-    quantityRemaining: batch.quantity,
-
-    manufacturedDate: batch.manufacturedDate,
-
-    expiryDate: batch.expiryDate,
-  }));
-
-  await tx.insert(inventoryBatches).values(batchesToInsert);
+  return tx
+    .insert(inventoryBatches)
+    .values(rows)
+    .returning({ id: inventoryBatches.id });
 }
-
 export async function insertSerialNumbers(
   tx: DbTransaction,
   receiveItem: Items,
   variantId: number,
   purchaseItemId: number,
+  batchId: number,
 ) {
   const serials = receiveItem.serialNumbers ?? [];
 
@@ -112,6 +134,7 @@ export async function insertSerialNumbers(
     variantId,
     purchaseItemId,
     serialNumber,
+    batchId
   }));
 
   await tx.insert(serialNumbers).values(serialNumbersToInsert);

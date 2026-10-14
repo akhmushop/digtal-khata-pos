@@ -19,6 +19,8 @@ import {
   ProductVariantType,
 } from "@/features/products/product.schema";
 import { toast } from "../ui/toast";
+import { SerialPickerDialog } from "@/features/pos/components/pos/SerialPickerDialog";
+import { useCartStore } from "@/features/pos/stores/useCartStore";
 export interface ShowVariantsProps {
   product: ProductType;
   handleAdd: (product: ProductType) => void;
@@ -31,6 +33,7 @@ export function ShowVariants({
   defaultVariant,
   type,
 }: ShowVariantsProps) {
+  const [isSerialOpen, setIsSerialOpen] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<
     Record<string, string>
   >({});
@@ -104,94 +107,141 @@ export function ShowVariants({
   const variantFullName = findVariant
     ? `${product.name} (${findVariant.options?.map((opt) => opt.value).join(", ")})`
     : "Select Variant";
+  const handleAddVariant = () => {
+    if (findVariant === undefined) return;
+    const { variants, ...updatedProduct } = product;
+    handleAdd({
+      ...updatedProduct,
+      variants: findVariant ? [findVariant] : [],
+    });
+    toast.add({
+      description: `${variantFullName} added to cart!`,
+    });
+  };
+  const isSerial = product.trackingType === "serial";
+  const addSerialItem = useCartStore((s) => s.addSerialItem);
+  const cart = useCartStore((s) => s.cart);
+  console.log(cart);
+  const cartSerials =
+    useCartStore(
+      (state) =>
+        state.cart.find((p) => p.variants.some((v) => v.id === findVariant?.id))
+          ?.serialNumbers,
+    ) ?? [];
+
   return (
-    <Dialog>
-      <DialogTrigger>
-        <ProductCard
-          type={type}
-          product={product}
-          handleAdd={handleAdd}
-          defaultVariant={defaultVariant}
-        />
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            Product has variations. Please select a variation.
-          </DialogTitle>
-        </DialogHeader>
-        <Card>
-          <CardContent>
-            <AspectRatio ratio={16 / 9} className="w-full max-w-sm rounded-lg">
-              <img
-                className="h-full w-full object-contain rounded-md"
-                src={
-                  product.imageUrl ??
-                  "https://www.startech.com.bd/image/cache/catalog/ceiling-fan/qulik/windora/windora-01-500x500.webp"
-                }
-                alt={product.name}
-              />
-            </AspectRatio>
-            <span className="text-xl"> {variantFullName}</span>
-            {variantsGroup.map((variant) => (
-              <div key={variant.typeName} className="flex flex-col gap-3">
-                <span className="text-lg">{variant.typeName}</span>
-                <ToggleGroup
-                  value={(() => {
-                    const selectedValue = selectedVariant[variant.typeName];
-                    return selectedValue ? [selectedValue] : [];
-                  })()}
-                  onValueChange={(value) => {
-                    handleValueChange(value, variant);
+    <>
+      <Dialog>
+        <DialogTrigger>
+          <ProductCard
+            type={type}
+            product={product}
+            handleAdd={handleAdd}
+            defaultVariant={defaultVariant}
+          />
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Product has variations. Please select a variation.
+            </DialogTitle>
+          </DialogHeader>
+          <Card>
+            <CardContent>
+              <AspectRatio
+                ratio={16 / 9}
+                className="w-full max-w-sm rounded-lg"
+              >
+                <img
+                  className="h-full w-full object-contain rounded-md"
+                  src={
+                    product.imageUrl ??
+                    "https://www.startech.com.bd/image/cache/catalog/ceiling-fan/qulik/windora/windora-01-500x500.webp"
+                  }
+                  alt={product.name}
+                />
+              </AspectRatio>
+              <span className="text-xl"> {variantFullName}</span>
+              {variantsGroup.map((variant) => (
+                <div key={variant.typeName} className="flex flex-col gap-3">
+                  <span className="text-lg">{variant.typeName}</span>
+                  <ToggleGroup
+                    value={(() => {
+                      const selectedValue = selectedVariant[variant.typeName];
+                      return selectedValue ? [selectedValue] : [];
+                    })()}
+                    onValueChange={(value) => {
+                      handleValueChange(value, variant);
+                    }}
+                    variant="outline"
+                  >
+                    {variant.optionsName.map((optionName, key) => {
+                      const available = isOptionAvailable(
+                        variant.typeName,
+                        optionName,
+                      );
+                      const id = `${key}-${variant.typeName}`;
+                      return (
+                        <ToggleGroupItem
+                          key={id}
+                          value={optionName}
+                          disabled={type === "sale" && !available}
+                          className={
+                            type === "sale" && !available
+                              ? "opacity-50 line-through"
+                              : ""
+                          }
+                        >
+                          {optionName}
+                        </ToggleGroupItem>
+                      );
+                    })}
+                  </ToggleGroup>
+                </div>
+              ))}
+            </CardContent>
+            <CardFooter className="justify-end gap-2">
+              <DialogClose render={<Button variant="outline">Done</Button>} />
+              {type === "sale" && isSerial ? (
+                <>
+                  <Button
+                    onClick={(e) => {
+                      e.currentTarget.blur();
+                      setIsSerialOpen(true);
+                    }}
+                    disabled={!findVariant}
+                  >
+                    Select Serials
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  disabled={findVariant ? false : true}
+                  onClick={() => {
+                    handleAddVariant();
                   }}
-                  variant="outline"
                 >
-                  {variant.optionsName.map((optionName, key) => {
-                    const available = isOptionAvailable(
-                      variant.typeName,
-                      optionName,
-                    );
-                    const id = `${key}-${variant.typeName}`;
-                    return (
-                      <ToggleGroupItem
-                        key={id}
-                        value={optionName}
-                        disabled={type === "sale" ? !available : available}
-                        className={
-                          type === "sale" && !available
-                            ? "opacity-50 line-through"
-                            : ""
-                        }
-                      >
-                        {optionName}
-                      </ToggleGroupItem>
-                    );
-                  })}
-                </ToggleGroup>
-              </div>
-            ))}
-          </CardContent>
-          <CardFooter className="justify-end gap-2">
-            <DialogClose render={<Button variant="outline">Done</Button>} />
-            <Button
-              disabled={findVariant ? false : true}
-              onClick={() => {
-                if (findVariant === undefined) return;
-                const { variants, ...updatedProduct } = product;
-                handleAdd({
-                  ...updatedProduct,
-                  variants: findVariant ? [findVariant] : [],
-                });
-                toast.add({
-                  description: `${variantFullName} added to cart!`,
-                });
-              }}
-            >
-              Add Variant
-            </Button>
-          </CardFooter>
-        </Card>
-      </DialogContent>
-    </Dialog>
+                  Add Variant
+                </Button>
+              )}
+            </CardFooter>
+          </Card>
+        </DialogContent>
+      </Dialog>
+      {type === "sale" && isSerial && (
+        <SerialPickerDialog
+          serialDialogOpen={isSerialOpen}
+          setSerialDialogOpen={setIsSerialOpen}
+          variantId={findVariant?.id}
+          selected={cartSerials}
+          onConfirm={(serials) => {
+            addSerialItem(product, findVariant?.id, serials);
+            toast.add({
+              description: `${variantFullName} added to cart!`,
+            });
+          }}
+        />
+      )}
+    </>
   );
 }

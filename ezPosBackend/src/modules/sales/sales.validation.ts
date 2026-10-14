@@ -7,6 +7,7 @@ import type { DbTransaction } from "../../config/db.js";
 import { inventoryStock } from "../../db/schema/inventoryStock.js";
 import { productVariants } from "../../db/schema/productVariants.js";
 import { roundMoney } from "../../utils/roundMoney.js";
+import { products } from "../../db/schema/products.js";
 
 export async function customerValidation(
   tx: DbTransaction,
@@ -45,8 +46,10 @@ export async function validateVariants(tx: DbTransaction, items: Items[]) {
     .select({
       id: productVariants.id,
       sellingPrice: productVariants.sellingPrice,
+      trackingType: products.trackingType,
     })
     .from(productVariants)
+    .innerJoin(products, eq(productVariants.productId, products.id))
     .where(inArray(productVariants.id, variantIds))
     .for("update");
   if (existingVariants.length !== variantIds.length) {
