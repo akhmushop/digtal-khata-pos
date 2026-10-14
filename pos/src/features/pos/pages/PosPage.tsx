@@ -47,12 +47,14 @@ function Pos() {
         quantity: item.quantity,
         unitPrice: item.variants[0]?.sellingPrice ?? 0,
         discount: item.discount ?? null,
+        serialNumbers:
+          item.trackingType === "serial" ? item.serialNumbers : undefined,
       })),
     };
 
     // 2. Validate the payload using Zod!
     const result = createSalePayloadSchema.safeParse(rawPayload);
-console.log(result.data)
+    console.log(result.data);
     if (!result.success) {
       // If Zustand cart data is broken, catch it here!
       console.error("Payload validation failed:", result.error.flatten());

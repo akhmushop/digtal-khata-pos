@@ -39,6 +39,7 @@ import { inventoryStock } from "../../db/schema/inventoryStock.js";
 import { inventoryMovements } from "../../db/schema/inventoryMovements.js";
 import type { DbTransaction } from "../purchases/purchase.types.js";
 import { inventoryBatches } from "../../db/schema/inventoryBatches.js";
+import { serialNumbers } from "../../db/schema/serialNumbers.js";
 export async function getSalesData() {
   return await db
     .select({
@@ -128,6 +129,85 @@ export async function consumeStockFifo(
     costAtSale: roundMoney(totalCost / quantity), // average cost per unit
   };
 }
+export async function consumeSerials(
+  tx: DbTransaction,
+  variantId: number,
+  serials: string[],
+) {
+  if (serials.length === 0)
+    throw new Error("Select at least one serial number");
+  if (new Set(serials).size !== serials.length)
+    throw new Error("Duplicate serial number");
+
+  // 1. Find and lock the serials (must be in stock, and for this variant)
+  const rows = await tx
+    .select()
+    .from(serialNumbers)
+    .where(
+      and(
+        eq(serialNumbers.variantId, variantId),
+        inArray(serialNumbers.serialNumber, serials),
+        eq(serialNumbers.status, "in_stock"),
+      ),
+    )
+    .for("update");
+
+  if (rows.length !== serials.length) {
+    throw new Error("One or more serial numbers are not available");
+  }
+  if (rows.some((r) => r.batchId == null)) {
+    throw new Error("A serial number has no batch. Backfill it first.");
+  }
+
+  // 2. Count how many units come from each batch
+  const perBatch = new Map<number, number>();
+  for (const r of rows) {
+    perBatch.set(r.batchId!, (perBatch.get(r.batchId!) ?? 0) + 1);
+  }
+
+  // 3. Lock those batches, reduce stock, add up the cost
+  const batches = await tx
+    .select()
+    .from(inventoryBatches)
+    .where(inArray(inventoryBatches.id, [...perBatch.keys()]))
+    .for("update");
+
+  let totalCost = 0;
+  const used: { batchId: number; quantity: number; unitCost: number }[] = [];
+
+  for (const batch of batches) {
+    const take = perBatch.get(batch.id)!;
+    if (batch.quantityRemaining < take) {
+      throw new Error(`Batch ${batch.id} has less stock than expected`);
+    }
+
+    await tx
+      .update(inventoryBatches)
+      .set({ quantityRemaining: batch.quantityRemaining - take })
+      .where(eq(inventoryBatches.id, batch.id));
+
+    totalCost += take * batch.purchasePrice;
+    used.push({
+      batchId: batch.id,
+      quantity: take,
+      unitCost: batch.purchasePrice,
+    });
+  }
+
+  // 4. Mark as sold now. saleItemId is linked after the sale_items insert.
+  const serialIds = rows.map((r) => r.id);
+  await tx
+    .update(serialNumbers)
+    .set({ status: "sold", soldAt: new Date() })
+    .where(inArray(serialNumbers.id, serialIds));
+
+  return {
+    totalCost: roundMoney(totalCost),
+    costAtSale: roundMoney(totalCost / serials.length),
+    used,
+    serialIds,
+  };
+}
 function getPaymentStatus(paid: number, due: number) {
   if (due <= 0) return "paid";
   if (paid > 0) return "partial";
@@ -147,29 +227,21 @@ export async function createSale(data: CreateSalePayload) {
     // 3. Lock inventory rows and validate stock.
     await validateStock(tx, variantIds, items);
 
-    // 4. Use authoritative database selling prices.
-    const priceMap = new Map(
-      existingVariants.map((variant) => [
-        variant.id,
-        Number(variant.sellingPrice),
-      ]),
-    );
+    // 2. Trusted prices and tracking types come from the database
+    const variantMap = new Map(existingVariants.map((v) => [v.id, v]));
 
-    const trustedItems = items.map((item) => {
-      const unitPrice = priceMap.get(item.variantId);
-
-      if (
-        unitPrice === undefined ||
-        !Number.isFinite(unitPrice) ||
-        unitPrice < 0
-      ) {
-        throw new NotFoundError(
-          `Valid selling price not found for variant ${item.variantId}.`,
-        );
-      }
-
-      return { ...item, unitPrice };
-    });
+    const trustedItems = items
+      .map((item) => {
+        const variant = variantMap.get(item.variantId);
+        const unitPrice = Number(variant?.sellingPrice);
+        if (!variant || !Number.isFinite(unitPrice) || unitPrice < 0) {
+          throw new NotFoundError(
+            `Valid selling price not found for variant ${item.variantId}.`,
+          );
+        }
+        return { ...item, unitPrice, trackingType: variant.trackingType };
+      })
+      .sort((a, b) => a.variantId - b.variantId); // same lock order for every cashier
 
     // 5. Calculate every total from the same trusted items.
     const totals = getCartTotals(
@@ -226,26 +298,61 @@ export async function createSale(data: CreateSalePayload) {
     for (const item of trustedItems) {
       const line = getLinePricing(item.unitPrice, item.quantity, item.discount);
 
-      const { costAtSale } = await consumeStockFifo(
-        tx,
-        item.variantId,
-        item.quantity,
-      );
+      let cost: { totalCost: number; costAtSale: number; serialIds?: number[] };
 
-      if (!Number.isFinite(costAtSale) || costAtSale < 0) {
+      if (item.trackingType === "serial") {
+        // read from the DB, never from the request
+        const serials = item.serialNumbers ?? [];
+        if (serials.length !== item.quantity) {
+          throw new Error(
+            `Select exactly ${item.quantity} serial number(s) for variant ${item.variantId}.`,
+          );
+        }
+        cost = await consumeSerials(tx, item.variantId, serials);
+      } else {
+        cost = await consumeStockFifo(tx, item.variantId, item.quantity);
+      }
+
+      if (!Number.isFinite(cost.costAtSale) || cost.costAtSale < 0) {
         throw new Error(
           `Invalid inventory cost for variant ${item.variantId}.`,
         );
       }
 
-      await tx.insert(saleItems).values({
-        saleId,
+      const [saleItem] = await tx
+        .insert(saleItems)
+        .values({
+          saleId,
+          variantId: item.variantId,
+          quantity: item.quantity,
+          sellingPrice: item.unitPrice,
+          costAtSale: cost.costAtSale,
+          lineTotal: line.total,
+          discount: line.discountAmount,
+        })
+        .returning({ id: saleItems.id });
+      if (!saleItem) throw new Error("Failed to create sale item.");
+      const updatedRows = await tx
+        .update(inventoryStock)
+        .set({
+          quantity: sql`${inventoryStock.quantity} - ${item.quantity}`,
+        })
+        .where(eq(inventoryStock.variantId, item.variantId))
+        .returning({
+          variantId: inventoryStock.variantId,
+        });
+
+      if (updatedRows.length !== 1) {
+        throw new Error(
+          `Failed to update stock for variant ${item.variantId}.`,
+        );
+      }
+      await tx.insert(inventoryMovements).values({
         variantId: item.variantId,
+        movementType: "sale",
         quantity: item.quantity,
-        sellingPrice: item.unitPrice,
-        costAtSale,
-        lineTotal: line.total,
-        discount: line.discountAmount,
+        referenceType: "sale",
+        referenceId: saleId,
       });
     }
 
@@ -275,36 +382,6 @@ export async function createSale(data: CreateSalePayload) {
         }),
       );
     }
-
-    // 10. Decrement stock and create movement records.
-    for (const item of trustedItems) {
-      const updatedRows = await tx
-        .update(inventoryStock)
-        .set({
-          quantity: sql`${inventoryStock.quantity} - ${item.quantity}`,
-        })
-        .where(eq(inventoryStock.variantId, item.variantId))
-        .returning({
-          variantId: inventoryStock.variantId,
-        });
-
-      if (updatedRows.length !== 1) {
-        throw new Error(
-          `Failed to update stock for variant ${item.variantId}.`,
-        );
-      }
-
-      // Adjust this insert if your movement schema requires
-      // additional columns, such as referenceId or createdBy.
-      await tx.insert(inventoryMovements).values({
-        variantId: item.variantId,
-        movementType: "sale",
-        quantity: item.quantity,
-        referenceType: "sale",
-        referenceId: saleId,
-      });
-    }
-
     // 11. Return receipt data; transaction commits on success.
     return {
       sale: newSale,
@@ -445,4 +522,18 @@ export async function getDashboardSummary() {
     lowStockSummary,
     topSellingProducts,
   };
+}
+// GET /variants/:variantId/serials
+export async function getAvailableSerials(variantId: number) {
+  const rows = await db
+    .select({ serialNumber: serialNumbers.serialNumber })
+    .from(serialNumbers)
+    .where(
+      and(
+        eq(serialNumbers.variantId, variantId),
+        eq(serialNumbers.status, "in_stock"),
+      ),
+    )
+    .orderBy(asc(serialNumbers.id));
+  return rows.map((r) => r.serialNumber);
 }

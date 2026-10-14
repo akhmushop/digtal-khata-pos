@@ -66,6 +66,7 @@ const cartItemPayloadSchema = z.object({
       value: z.number().min(0),
     })
     .nullable(),
+  serialNumbers: z.array(z.string().trim().min(1)).optional(),
 });
 
 // 2. Define the full Payload schema
