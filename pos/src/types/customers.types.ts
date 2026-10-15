@@ -50,4 +50,6 @@ export interface CustomerDue {
 }
 export interface ShowCustomerInfoProps {
   form: UseFormReturn<CartSchemaType>;
+  isPaymentDialogOpen: boolean;
+  setIsPaymentDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }

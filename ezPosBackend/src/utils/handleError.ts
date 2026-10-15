@@ -1,9 +1,31 @@
 import type { Response } from "express";
 import { error } from "node:console";
+//1. for missing items (HTTP 404)
 export class NotFoundError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "NotFoundError";
+  }
+}
+//2. for missing data or bad logic (HTTP 400)
+export class BadRequestError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "BadRequestError";
+  }
+}
+//3. For permissions (HTTP 403)
+export class ForbiddenError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ForbiddenError";
+  }
+}
+//4. for database conflicts, like duplicate emails or barcode (HTTP 409)
+export class ConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ConflictsError";
   }
 }
 export function handleError(res: Response, err: unknown) {

@@ -22,8 +22,9 @@ import {
 } from "@/components/ui/card.js";
 import { toast } from "@/components/ui/toast.js";
 import { useSalesStore } from "../stores/useSalesStore.js";
+import { createEntityPromiseToast } from "@/lib/toast-utils.js";
 function Pos() {
-  const { cart } = useCartStore();
+  const { cart, resetCart } = useCartStore();
   const [searchProducts, setSearchProducts] = useState("");
   const { createSale } = useSalesStore();
   const form = useForm<CartSchemaType>({
@@ -36,9 +37,8 @@ function Pos() {
       vatPercent: null,
     },
   });
-
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   async function onSubmit(data: CartSchemaType) {
-    console.log(cart);
     // 1. Build the raw payload
     const rawPayload = {
       ...data,
@@ -54,7 +54,6 @@ function Pos() {
 
     // 2. Validate the payload using Zod!
     const result = createSalePayloadSchema.safeParse(rawPayload);
-    console.log(result.data);
     if (!result.success) {
       // If Zustand cart data is broken, catch it here!
       console.error("Payload validation failed:", result.error.flatten());
@@ -70,20 +69,17 @@ function Pos() {
     const payload: CreateSalePayload = result.data;
 
     // 4. Send to backend
-    try {
-      await createSale(payload);
-      // console.log("Sending clean payload to DB:", payload);
-      toast.add({
-        type: "success",
-        description: "Sale processed successfully!",
-      });
-    } catch (err) {
-      toast.add({
-        type: "error",
-        description: "Failed to process sale.",
-        priority: "high",
-      });
-    }
+    await createEntityPromiseToast({
+      data: payload,
+      apiCall: createSale,
+      entityName: "Create Sale",
+      getSuccessMessage: (response) => {
+        return `${response.data.sale.invoiceNumber} ${response.message} `;
+      },
+    });
+    setIsPaymentDialogOpen(false);
+    resetCart();
+    form.reset();
   }
   return (
     <div className="flex h-screen overflow-hidden p-3">
@@ -116,7 +112,11 @@ function Pos() {
 
             {/* 4. Calculation (Pinned to bottom) */}
             <div className="shrink-0 border-t p-4 bg-background">
-              <CartCalculation form={form} />
+              <CartCalculation
+                isPaymentDialogOpen={isPaymentDialogOpen}
+                setIsPaymentDialogOpen={setIsPaymentDialogOpen}
+                form={form}
+              />
             </div>
           </CardContent>
         </Card>
