@@ -67,7 +67,6 @@ export function SerialPickerDialog({
   const visible = available.filter((s) =>
     s.toLowerCase().includes(search.toLowerCase()),
   );
-  console.log(picked);
   return (
     <Dialog open={serialDialogOpen} onOpenChange={setSerialDialogOpen}>
       <DialogContent className="sm:max-w-md z-100">

@@ -200,7 +200,11 @@ function CartItemRow({ item }: { item: CartItem }) {
 }
 
 // ---------- totals + action buttons ----------
-export function CartCalculation({ form }: ShowCustomerInfoProps) {
+export function CartCalculation({
+  form,
+  isPaymentDialogOpen,
+  setIsPaymentDialogOpen,
+}: ShowCustomerInfoProps) {
   const totals = useCartTotals(form);
 
   return (
@@ -220,6 +224,8 @@ export function CartCalculation({ form }: ShowCustomerInfoProps) {
         <div className="col-span-6">
           {/* payment gets the amount after discount, plus VAT */}
           <PaymentModal
+            isPaymentDialogOpen={isPaymentDialogOpen}
+            setIsPaymentDialogOpen={setIsPaymentDialogOpen}
             form={form}
             subTotal={totals.afterDiscount}
             vat={totals.vat}

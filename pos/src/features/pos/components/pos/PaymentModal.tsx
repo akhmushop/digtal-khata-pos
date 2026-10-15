@@ -17,6 +17,7 @@ import { useCustomerStore } from "@/store/useCustomerStore";
 import { Controller, UseFormReturn, useWatch } from "react-hook-form";
 import { CartSchemaType, PaymentSchemaType } from "../../schemas/cart.schema";
 import { useCartStore } from "@/features/pos/stores/useCartStore";
+import { useState } from "react";
 
 const QR_NUMBER = "01870707900"; // move to settings/config later
 
@@ -95,10 +96,14 @@ export function PaymentModal({
   subTotal,
   vat,
   form,
+  isPaymentDialogOpen,
+  setIsPaymentDialogOpen,
 }: {
   subTotal: number;
   vat: number;
   form: UseFormReturn<CartSchemaType>;
+  isPaymentDialogOpen: boolean;
+  setIsPaymentDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const cart = useCartStore((state) => state.cart);
   const finalTotal = money(subTotal + vat);
@@ -108,10 +113,12 @@ export function PaymentModal({
 
   const mode = getMode(payments);
   const valid = isPaymentValid(payments ?? [], finalTotal, customerId);
-
+  const isSubmitting = form.formState.isSubmitting;
   return (
     <Dialog
+      open={isPaymentDialogOpen}
       onOpenChange={(open: boolean) => {
+        setIsPaymentDialogOpen(open);
         // Always start fresh with the CURRENT total when the modal opens
         if (open) form.setValue("payments", buildPayments("cash", finalTotal));
       }}
@@ -170,7 +177,11 @@ export function PaymentModal({
 
         <DialogFooter>
           <DialogClose render={<Button variant="outline">Cancel</Button>} />
-          <Button form="cart-form" type="submit" disabled={!valid}>
+          <Button
+            form="cart-form"
+            type="submit"
+            disabled={!valid || isSubmitting}
+          >
             Confirm Payment
           </Button>
         </DialogFooter>

@@ -1,4 +1,3 @@
-
 import { CreateSalePayload } from "../schemas/cart.schema.js";
 export interface SalesStoreType {
   id: number;
@@ -12,12 +11,31 @@ export interface SalesStoreType {
   createdAt: string;
   soldPrice: number;
 }
+export type CreatePurchaseResponse = {
+  success: boolean;
+  message: string;
+  data: {
+    sale: {
+      id: number;
+      invoiceNumber: string;
+      subtotal: number | null;
+      discount: number | null;
+      vat: number | null;
+      finalTotal: number | null;
+      dueAmount: number | null;
+      paymentStatus: "paid" | "partial" | "unpaid";
+    };
+    change: number;
+    paidAmount: number;
+    dueAmount: number;
+  };
+};
 export interface SalesStore {
   sales: SalesStoreType[];
   loading: boolean;
   error: null | string;
   getSales: () => void;
-  createSale: (data:CreateSalePayload) => void;
+  createSale: (data: CreateSalePayload) => Promise<CreatePurchaseResponse>;
   returnSingleItems: (item: SalesStoreType) => void;
   returnProducts: (id: number) => void;
 }

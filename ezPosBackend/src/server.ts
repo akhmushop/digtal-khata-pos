@@ -13,7 +13,12 @@ import purchasesReturnRouter from "./modules/purchaseReturn/purchaseReturn.route
 import addProductRouter from "./modules/addProduct/product.routes.js";
 import contactRouter from "./modules/contact/contact.routes.js";
 import cors from "cors";
-import { NotFoundError } from "./utils/handleError.js";
+import {
+  BadRequestError,
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+} from "./utils/handleError.js";
 import { success } from "zod";
 const app = express();
 // middleware
@@ -30,16 +35,31 @@ app.use("/", contactRouter);
 // routes
 app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
   console.error(err);
-  if (err instanceof NotFoundError) {
-    return res.status(404).json({
-      success: false,
-      message: err.message,
-    });
+
+  if (err instanceof BadRequestError) {
+    return res.status(400).json({ success: false, message: err.message });
   }
-  return res.status(500).json({
-    success: false,
-    message: "Internal server error",
-  });
+
+  if (err instanceof NotFoundError) {
+    return res.status(404).json({ success: false, message: err.message });
+  }
+
+  if (err instanceof ConflictError) {
+    return res.status(409).json({ success: false, message: err.message });
+  }
+
+  if (err instanceof ForbiddenError) {
+    return res.status(403).json({ success: false, message: err.message });
+  }
+
+  // Fallback for standard Errors or unknown issues
+  if (err instanceof Error) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+
+  return res
+    .status(500)
+    .json({ success: false, message: "An unknown server error occurred." });
 });
 const PORT = 3000;
 

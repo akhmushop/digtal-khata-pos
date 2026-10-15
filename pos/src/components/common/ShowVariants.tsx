@@ -121,7 +121,6 @@ export function ShowVariants({
   const isSerial = product.trackingType === "serial";
   const addSerialItem = useCartStore((s) => s.addSerialItem);
   const cart = useCartStore((s) => s.cart);
-  console.log(cart);
   const cartSerials =
     useCartStore(
       (state) =>
