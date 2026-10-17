@@ -1,3 +1,6 @@
+import type { ExtractTablesWithRelations } from "drizzle-orm";
+import type { NodePgQueryResultHKT } from "drizzle-orm/node-postgres";
+import type { PgTransaction } from "drizzle-orm/pg-core";
 import { Pool } from "pg";
 export const pool = new Pool({
   user: "postgres",
@@ -6,3 +9,8 @@ export const pool = new Pool({
   port: 5432,
   database: "ezPos",
 });
+export type DbTransaction = PgTransaction<
+  NodePgQueryResultHKT,
+  Record<string, never>,
+  ExtractTablesWithRelations<Record<string, never>>
+>;

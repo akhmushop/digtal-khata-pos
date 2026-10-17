@@ -1,16 +1,36 @@
+import { CartSchemaType } from "@/features/pos/schemas/cart.schema";
+import { ProductType } from "@/features/products/product.schema";
+import { ProductsTypes } from "@/features/products/products.types";
 import type React from "react";
-import type { ProductsTypes } from "./products.types.js";
-export interface CartType extends ProductsTypes {
-  soldQuantity: number;
+import { UseFormReturn } from "react-hook-form";
+export interface CartType extends ProductType {
+  quantity: number;
+  discount?: {
+    type: "fixed" | "percentage";
+    value: number;
+  } | null;
+  serialNumbers?: string[];
 }
+export type DiscountType = "percentage" | "fixed";
 export interface CartStore {
   cart: CartType[];
-  addToCart: (cartProduct: ProductsTypes) => void;
+  addToCart: (product: ProductType) => void;
   removeCartItem: (id: number) => void;
   addCartQuantity: (id: number) => void;
   removeCartQuantity: (id: number) => void;
   addCustomCartQuantity: (id: number, customCartQuantity: number) => void;
   resetCart: () => void;
+  addHoldItemsToCart: (holdItems: CartType[]) => void;
+  addDiscount: (
+    variantId: number,
+    discountValue: number,
+    discountType: DiscountType,
+  ) => void;
+  addSerialItem: (
+    product: ProductType,
+    variantId: number | undefined,
+    serials: string[],
+  ) => void;
 }
 export interface CashForm {
   discount: number;
@@ -88,10 +108,7 @@ export interface PopupModalProps {
 export interface CartTextModalProps {
   subTotal: number;
   vat: number;
-  setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  isAddChargeModalOpen: boolean;
-  setIsChargeModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  isOpen: boolean;
+  form: UseFormReturn<CartSchemaType>;
 }
 export interface AddChargeModalProps {
   isOpen: boolean;

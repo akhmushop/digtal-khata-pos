@@ -143,7 +143,7 @@ export function AddCustomer({
               >
                 Cancel
               </button>
-              <button
+              <button type="button"
                 onClick={() => {
                   handleAddCustomer();
                   handleClose();
