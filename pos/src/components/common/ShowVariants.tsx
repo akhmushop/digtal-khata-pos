@@ -112,6 +112,7 @@ export function ShowVariants({
     const { variants, ...updatedProduct } = product;
     handleAdd({
       ...updatedProduct,
+      name: variantFullName,
       variants: findVariant ? [findVariant] : [],
     });
     toast.add({
@@ -161,6 +162,9 @@ export function ShowVariants({
                 />
               </AspectRatio>
               <span className="text-xl"> {variantFullName}</span>
+              <span className="text-xl">
+                Price: {findVariant?.sellingPrice ?? "0"} TK
+              </span>
               {variantsGroup.map((variant) => (
                 <div key={variant.typeName} className="flex flex-col gap-3">
                   <span className="text-lg">{variant.typeName}</span>
@@ -234,7 +238,11 @@ export function ShowVariants({
           variantId={findVariant?.id}
           selected={cartSerials}
           onConfirm={(serials) => {
-            addSerialItem(product, findVariant?.id, serials);
+            addSerialItem(
+              { ...product, name: variantFullName },
+              findVariant?.id,
+              serials,
+            );
             toast.add({
               description: `${variantFullName} added to cart!`,
             });

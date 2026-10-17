@@ -21,24 +21,22 @@ export function ProductCard({
   type,
   onSerialClick,
 }: ProductCardProps) {
-  const outOfStock = defaultVariant.quantity <= 0;
+  const totalQuantity = product.variants.reduce(
+    (total, variant) => total + variant.quantity,
+    0,
+  );
+  const outOfStock = totalQuantity <= 0;
   const isSerial = product.trackingType === "serial";
-  const defaultVariantId = defaultVariant.id;
-  const cartSerials =
-    useCartStore(
-      (state) =>
-        state.cart.find((p) =>
-          p.variants.some((v) => v.id === defaultVariantId),
-        )?.serialNumbers,
-    ) ?? [];
+  const sellingPriceList = product.variants.map((v) => v.sellingPrice);
+
   return (
     <Card
       onClick={() => {
         if (product.hasVariants) return;
         if (type === "sale" && outOfStock) return;
         if (type === "sale" && isSerial) {
-          if(!onSerialClick){
-            return
+          if (!onSerialClick) {
+            return;
           }
           onSerialClick(product);
           return;
@@ -70,11 +68,12 @@ export function ProductCard({
         <p className="text-xs">{product.categoryId}</p>
 
         <p className="text-base font-semibold">
-          TK: {defaultVariant.sellingPrice}
+          TK:{" "}
+          {product.hasVariants
+            ? `${Math.min(...sellingPriceList)} - ${Math.max(...sellingPriceList)}`
+            : product.variants[0]?.sellingPrice}
         </p>
-        <p className="text-xs text-muted-foreground">
-          Stock: {defaultVariant.quantity}
-        </p>
+        <p className="text-xs text-muted-foreground">Stock: {totalQuantity}</p>
       </div>
     </Card>
   );

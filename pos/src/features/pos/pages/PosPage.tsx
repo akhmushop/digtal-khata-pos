@@ -23,9 +23,11 @@ import {
 import { toast } from "@/components/ui/toast.js";
 import { useSalesStore } from "../stores/useSalesStore.js";
 import { createEntityPromiseToast } from "@/lib/toast-utils.js";
+import { useCustomerStore } from "@/store/useCustomerStore.js";
 function Pos() {
   const { cart, resetCart } = useCartStore();
   const [searchProducts, setSearchProducts] = useState("");
+  const { setShowCustomerInfo } = useCustomerStore();
   const { createSale } = useSalesStore();
   const form = useForm<CartSchemaType>({
     resolver: zodResolver(cartSchema),
@@ -77,8 +79,9 @@ function Pos() {
         return `${response.data.sale.invoiceNumber} ${response.message} `;
       },
     });
-    setIsPaymentDialogOpen(false);
     resetCart();
+    setIsPaymentDialogOpen(false);
+    setShowCustomerInfo(null);
     form.reset();
   }
   return (
