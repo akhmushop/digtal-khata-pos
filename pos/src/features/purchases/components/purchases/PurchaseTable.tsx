@@ -36,14 +36,13 @@ export function PurchaseTable({
           if (!variant) {
             return;
           }
-          const variantName = `${pur.name} (${variant.options?.map((opt) => opt.value).join(", ")})`;
           const unitName = productSelectOptions.units.find(
             (u) => u.value === pur.unitId,
           );
           return (
             <tr key={variant.id}>
               <th>{i + 1}</th>
-              <td>{pur.hasVariants ? variantName : pur.name}</td>
+              <td>{pur.name}</td>
               <td>{pur.productType}</td>
               <td>{unitName?.label}</td>
               {/* ordered qty */}

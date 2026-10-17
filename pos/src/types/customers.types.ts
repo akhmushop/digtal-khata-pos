@@ -1,3 +1,6 @@
+import { CartSchemaType } from "@/features/pos/schemas/cart.schema";
+import { FieldValues, UseFormReturn } from "react-hook-form";
+
 export type InputValue = {
   id: number;
   name: string;
@@ -18,7 +21,7 @@ export interface CustomerStore {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
     setChecked: (value: boolean) => void,
   ) => void;
-  setShowCustomerInfo: (customer: InputValue) => void;
+  setShowCustomerInfo: (customer: InputValue | null) => void;
   resetCustomerInfo: () => void;
   resetShowCustomerInfo: () => void;
   handleAddCustomer: () => void;
@@ -46,5 +49,7 @@ export interface CustomerDue {
   total_paid: number;
 }
 export interface ShowCustomerInfoProps {
-  showCustomerInfo: InputValue;
+  form: UseFormReturn<CartSchemaType>;
+  isPaymentDialogOpen: boolean;
+  setIsPaymentDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }

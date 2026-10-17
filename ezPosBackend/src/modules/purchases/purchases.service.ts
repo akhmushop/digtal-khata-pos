@@ -130,11 +130,11 @@ export async function getPurchasesSummary() {
     db
       .select()
       .from(purchases)
-      .where(inArray(purchases.paymentStatus, ["partial_paid", "unpaid"])),
+      .where(inArray(purchases.paymentStatus, ["partial", "unpaid"])),
     db
       .select()
       .from(purchases)
-      .where(inArray(purchases.paymentStatus, ["paid", "received"])),
+      .where(inArray(purchases.paymentStatus, ["paid"])),
   ]);
   return {
     orderedPurchase,
@@ -214,8 +214,17 @@ export async function createReceivePurchase(data: ReceiveItemsFormValues) {
       const newReceivedQuantity =
         purchaseItem.receivedQuantity + receiveItem.receiveNow;
 
-      await updatePurchaseItems(tx, purchaseItem.id, newReceivedQuantity,receiveItem.unitCost);
-      await updateProductVariants(tx,receiveItem.sellingPrice,purchaseItem.variantId)
+      await updatePurchaseItems(
+        tx,
+        purchaseItem.id,
+        newReceivedQuantity,
+        receiveItem.unitCost,
+      );
+      await updateProductVariants(
+        tx,
+        receiveItem.sellingPrice,
+        purchaseItem.variantId,
+      );
 
       await insertInventoryStockOnConflictDoUpdate(
         tx,
@@ -230,21 +239,28 @@ export async function createReceivePurchase(data: ReceiveItemsFormValues) {
         receiveItem.receiveNow,
       );
 
-      if (receiveItem.trackingType === "batch") {
-        await insertInventoryBatches(
-          tx,
-          receiveItem,
-          purchaseItem.variantId,
-          purchaseItem.id,
-        );
-      }
+      const insertedBatches = await insertInventoryBatches(
+        tx,
+        receiveItem,
+        purchaseItem.variantId,
+        purchaseItem.id,
+      );
 
       if (receiveItem.trackingType === "serial") {
+        const firstBatch = insertedBatches[0];
+
+        if (!firstBatch) {
+          throw new Error(
+            `No inventory batch was created for purchase item ${purchaseItem.id}.`,
+          );
+        }
+
         await insertSerialNumbers(
           tx,
           receiveItem,
           purchaseItem.variantId,
           purchaseItem.id,
+          firstBatch.id,
         );
       }
     }

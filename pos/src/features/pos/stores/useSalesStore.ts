@@ -1,22 +1,22 @@
-import axios from "../api/axios.js";
+import axios from "../../../api/axios.js";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { SalesStore } from "../types/sales.types.js";
-import { getErrorMessage } from "../utils/getErrorMessage.js";
+import { getErrorMessage } from "../../../utils/getErrorMessage.js";
 import {
   createFullReturnApi,
-  createSalesApi,
+  createSaleApi,
   createSingleReturnApi,
-  getSalesProductsApi,
-} from "../api/sales.api.js";
-// export const useSoldStore = create(
+  getSalesApi,
+} from "../sales.api.js";
+import { SalesStore } from "../types/sales.types.js";
+// export const useSalesStore = create(
 //   persist(
 //     (set) => ({
-//       soldProducts: [],
+//        sales: [],
 //       addToSellProduct: (cartItems) =>
 //         set((state) => ({
-//           soldProducts: [
-//             ...state.soldProducts,
+//            sales: [
+//             ...state. sales,
 //             {
 //               id: Date.now(),
 //               items: cartItems.map((item) => ({
@@ -29,13 +29,13 @@ import {
 //         })),
 //       returnProducts: (soldId) =>
 //         set((state) => ({
-//           soldProducts: state.soldProducts.filter(
+//            sales: state. sales.filter(
 //             (product) => product.id !== soldId,
 //           ),
 //         })),
 //       returnSingleItems: (itemId, identifyArray) =>
 //         set((state) => ({
-//           soldProducts: state.soldProducts.map((product) => {
+//            sales: state. sales.map((product) => {
 //             if (product.id === identifyArray) {
 //               return {
 //                 ...product,
@@ -47,36 +47,37 @@ import {
 //         })),
 //       removeProduct: () =>
 //         set((state) => ({
-//           soldProducts: state.soldProducts.filter(
+//            sales: state. sales.filter(
 //             (product) => product.items.length !== 0,
 //           ),
 //         })),
 //     }),
 //     {
-//       name: "soldProducts-storage",
+//       name: " sales-storage",
 //     },
 //   ),
 // );
-export const useSoldStore = create<SalesStore>((set) => ({
-  soldProducts: [],
+export const useSalesStore = create<SalesStore>((set) => ({
+  sales: [],
   loading: false,
   error: null,
-  getSoldProducts: async () => {
+  getSales: async () => {
     set({ loading: true });
     try {
-      const data = await getSalesProductsApi();
-      set({ soldProducts: data, loading: false });
+      const data = await getSalesApi();
+      set({ sales: data, loading: false });
     } catch (err: unknown) {
       set({ error: getErrorMessage(err), loading: false });
     }
   },
-  addToSoldProduct: async (cart, cashForm) => {
-    await createSalesApi(cart, cashForm);
+  createSale: async (data) => {
+    const response = await createSaleApi(data);
+    return response.data;
   },
   returnSingleItems: async (item) => {
     await createSingleReturnApi(item);
     set((state) => ({
-      soldProducts: state.soldProducts.filter((product) =>
+      sales: state.sales.filter((product) =>
         product.saleId === item.saleId ? product.id !== item.id : product,
       ),
     }));
@@ -85,7 +86,7 @@ export const useSoldStore = create<SalesStore>((set) => ({
     try {
       await createFullReturnApi(id);
       set((state) => ({
-        soldProducts: state.soldProducts.filter((p) => p.saleId !== id),
+        sales: state.sales.filter((p) => p.saleId !== id),
       }));
     } catch (err) {
       console.error(err);
