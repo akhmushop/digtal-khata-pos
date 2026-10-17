@@ -19,6 +19,10 @@ import { Card, CardContent } from "@/components/ui/card.js";
 import { Input } from "@/components/ui/input.js";
 import { Switch } from "@/components/ui/switch.js";
 import { getCartTotals, getLinePricing } from "../../cartPricing.js";
+import { SerialPickerDialog } from "./SerialPickerDialog.js";
+import { toast } from "@/components/ui/toast.js";
+import { Button } from "@/components/ui/button.js";
+import { ShoppingCart } from "lucide-react";
 
 const FALLBACK_IMAGE =
   "https://www.startech.com.bd/image/cache/catalog/ceiling-fan/qulik/windora/windora-01-500x500.webp";
@@ -72,7 +76,7 @@ function CartCustomerInfo() {
         <span className="col-span-2">Address: {address}</span>
         <span className="col-span-2">
           {customerDue
-            ? `Total Amount: ${customerDue.totalAmount}, Total Paid: ${customerDue.total_paid}, Total Due: ${customerDue.total_due}`
+            ? `Total Amount: ${customerDue.totalAmount ?? 0}, Total Paid: ${customerDue.total_paid ?? 0}, Total Due: ${customerDue.total_due ?? 0}`
             : "No Due"}
         </span>
       </CardContent>
@@ -87,11 +91,19 @@ export default function CartItems() {
   return (
     <>
       <CartCustomerInfo />
-      <div className="flex flex-col gap-3">
-        {cart.map((item) => (
-          <CartItemRow key={item.variants[0]?.id ?? item.id} item={item} />
-        ))}
-      </div>
+      {cart.length === 0 ? (
+        <div className="h-full flex flex-col items-center justify-center">
+          <ShoppingCart className="size-20" />
+          <span>Cart is empty</span>
+          <span>Scan a barcode or click products to start a sale.</span>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {cart.map((item) => (
+            <CartItemRow key={item.variants[0]?.id ?? item.id} item={item} />
+          ))}
+        </div>
+      )}
     </>
   );
 }
@@ -112,14 +124,22 @@ function CartItemRow({ item }: { item: CartItem }) {
   const removeCartItem = useCartStore((s) => s.removeCartItem);
   const addCustomCartQuantity = useCartStore((s) => s.addCustomCartQuantity);
   const addDiscount = useCartStore((s) => s.addDiscount);
+  const { addSerialItem } = useCartStore();
 
   const variant = item.variants[0];
   if (!variant) return null;
+  const cartSerials =
+    useCartStore(
+      (state) =>
+        state.cart.find((p) => p.variants.some((v) => v.id === variant.id))
+          ?.serialNumbers,
+    ) ?? [];
 
   const quantity = Number(item.quantity);
   const unitPrice = Number(variant.sellingPrice);
   const line = getLinePricing(unitPrice, quantity, item.discount);
-
+  const isSerial = item.trackingType === "serial";
+  const [isSerialOpen, setIsSerialOpen] = useState(false);
   return (
     <Card>
       <CardContent>
@@ -149,50 +169,92 @@ function CartItemRow({ item }: { item: CartItem }) {
             />
           </div>
 
-          <div className="flex items-center gap-x-3 text-2xl">
-            <button
-              type="button"
-              aria-label="Decrease quantity"
-              disabled={quantity <= 1}
-              onClick={() => {
-                addProductQuantityToCart(item.id);
-                removeCartQuantity(variant.id);
-              }}
-              className="cursor-pointer rounded-full transition hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <FiMinusCircle />
-            </button>
+          {isSerial ? (
+            <>
+              <SerialPickerDialog
+                serialDialogOpen={isSerialOpen}
+                setSerialDialogOpen={setIsSerialOpen}
+                variantId={variant.id}
+                selected={cartSerials}
+                onConfirm={(serials) => {
+                  addSerialItem(
+                    { ...item, name: item.name },
+                    variant.id,
+                    serials,
+                  );
+                  toast.add({
+                    description: `${item.name} added to cart!`,
+                  });
+                }}
+              />
+              <div className="flex items-center gap-x-3 text-2xl">
+                <Button
+                  onClick={() => {
+                    setIsSerialOpen(true);
+                  }}
+                >
+                  {" "}
+                  Serials ({item.serialNumbers?.length ?? 0})
+                </Button>
+                <button
+                  type="button"
+                  aria-label="Remove item"
+                  onClick={() => {
+                    restoreSingleProductQuantityToCart(item.id, item.quantity);
+                    removeCartItem(variant.id);
+                  }}
+                  className="cursor-pointer rounded-full text-red-500 transition hover:text-red-600"
+                >
+                  <MdDeleteOutline />
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center gap-x-3 text-2xl">
+              <button
+                type="button"
+                aria-label="Decrease quantity"
+                disabled={quantity <= 1}
+                onClick={() => {
+                  addProductQuantityToCart(item.id);
+                  removeCartQuantity(variant.id);
+                }}
+                className="cursor-pointer rounded-full transition hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <FiMinusCircle />
+              </button>
 
-            <CartQuantityInput
-              itemId={variant.id}
-              quantity={quantity}
-              addCustomCartQuantity={addCustomCartQuantity}
-            />
+              <CartQuantityInput
+                itemId={variant.id}
+                quantity={quantity}
+                addCustomCartQuantity={addCustomCartQuantity}
+              />
 
-            <button
-              type="button"
-              aria-label="Increase quantity"
-              onClick={() => {
-                removeProductQuantityToCart(item.id);
-                addCartQuantity(variant.id);
-              }}
-              className="cursor-pointer rounded-full transition hover:text-primary"
-            >
-              <MdOutlineAddCircleOutline />
-            </button>
+              <button
+                type="button"
+                aria-label="Increase quantity"
+                onClick={() => {
+                  removeProductQuantityToCart(item.id);
+                  addCartQuantity(variant.id);
+                }}
+                className="cursor-pointer rounded-full transition hover:text-primary"
+              >
+                <MdOutlineAddCircleOutline />
+              </button>
 
-            <button
-              type="button"
-              aria-label="Remove item"
-              onClick={() => {
-                restoreSingleProductQuantityToCart(item.id, item.quantity);
-                removeCartItem(variant.id);
-              }}
-              className="cursor-pointer rounded-full text-red-500 transition hover:text-red-600"
-            >
-              <MdDeleteOutline />
-            </button>
-          </div>
+              <button
+                type="button"
+                aria-label="Remove item"
+                onClick={() => {
+                  restoreSingleProductQuantityToCart(item.id, item.quantity);
+                  removeCartItem(variant.id);
+                }}
+                className="cursor-pointer rounded-full text-red-500 transition hover:text-red-600"
+              >
+                <MdDeleteOutline />
+              </button>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

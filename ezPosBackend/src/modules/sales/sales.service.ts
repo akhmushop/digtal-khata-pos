@@ -383,6 +383,7 @@ export async function createSale(data: CreateSalePayload) {
       );
     }
     // 11. Return receipt data; transaction commits on success.
+    console.log(dueAmount)
     return {
       sale: newSale,
       change,

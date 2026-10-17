@@ -1,6 +1,10 @@
 import { eq, inArray, type ExtractTablesWithRelations } from "drizzle-orm";
 import { customers } from "../../db/schema/customers.js";
-import { NotFoundError } from "../../utils/handleError.js";
+import {
+  BadRequestError,
+  ConflictError,
+  NotFoundError,
+} from "../../utils/handleError.js";
 import type { PgTransaction } from "drizzle-orm/pg-core";
 import type { NodePgQueryResultHKT } from "drizzle-orm/node-postgres";
 import type { DbTransaction } from "../../config/db.js";
@@ -118,20 +122,23 @@ export function validatePayments(
   const methods = payments.map((p) => p.method);
 
   if (new Set(methods).size !== methods.length) {
-    throw new NotFoundError("Duplicate payment methods are not allowed.");
+    throw new ConflictError("Duplicate payment methods are not allowed.");
   }
-
+  console.log(payments);
   for (const payment of payments) {
-    if (!Number.isFinite(payment.amount) || payment.amount < 0) {
-      throw new NotFoundError("Invalid payment amount.");
+    if (payment.method === "due") {
+      continue;
+    }
+    if (!Number.isFinite(payment.amount) || (payment.amount ?? 0) < 0) {
+      throw new BadRequestError("Invalid payment amount.");
     }
 
     if (
       (payment.method === "card" || payment.method === "bangla_qr") &&
-      payment.amount > 0 &&
+      (payment.amount ?? 0) > 0 &&
       (payment.reference ?? "").trim().length < 6
     ) {
-      throw new NotFoundError(
+      throw new BadRequestError(
         "Card and QR payments require a transaction reference of at least 6 characters.",
       );
     }
@@ -139,13 +146,13 @@ export function validatePayments(
 
   const paidPoisha = payments.reduce(
     (sum, payment) =>
-      sum + (payment.method === "due" ? 0 : toPoisha(payment.amount)),
+      sum + (payment.method === "due" ? 0 : toPoisha(payment.amount ?? 0)),
     0,
   );
 
   const duePoisha = payments.reduce(
     (sum, payment) =>
-      sum + (payment.method === "due" ? toPoisha(payment.amount) : 0),
+      sum + (payment.method === "due" ? toPoisha(payment.amount ?? 0) : 0),
     0,
   );
 
@@ -163,7 +170,7 @@ export function validatePayments(
 
   if (
     cash?.tendered !== undefined &&
-    toPoisha(cash.tendered) < toPoisha(cash.amount)
+    toPoisha(cash.tendered) < toPoisha(cash.amount ?? 0)
   ) {
     throw new NotFoundError(
       "Cash tendered is less than the cash payment amount.",
@@ -171,7 +178,9 @@ export function validatePayments(
   }
 
   const change =
-    cash?.tendered === undefined ? 0 : roundMoney(cash.tendered - cash.amount);
+    cash?.tendered === undefined
+      ? 0
+      : roundMoney(cash.tendered - (cash.amount ?? 0));
 
   return {
     change: Math.max(0, change),
