@@ -126,6 +126,7 @@ export const productSchema = z
   });
 export const variantDbSchema = variantSchema.safeExtend({
   id: z.number(),
+  purchaseCost: z.number().nullable(),
 });
 export const productDbSchema = productSchema.safeExtend({
   id: z.number(),

@@ -7,13 +7,13 @@ import { variantTypes } from "../../db/schema/variantTypes.js";
 import { variantOptions } from "../../db/schema/variantOptions.js";
 import { variantValues } from "../../db/schema/variantValues.js";
 import { inventoryStock } from "../../db/schema/inventoryStock.js";
+import { inventoryBatches } from "../../db/schema/inventoryBatches.js";
 
 export async function getAllProducts() {
-  return (
-    db
-      .select({
-        ...getTableColumns(products),
-        variants: sql`
+  return db
+    .select({
+      ...getTableColumns(products),
+      variants: sql`
         COALESCE(json_agg(
           jsonb_build_object(
             'id', ${productVariants.id},
@@ -25,6 +25,19 @@ export async function getAllProducts() {
             'isDefault', ${productVariants.isDefault},
             'status', ${productVariants.status},
             'quantity', ${inventoryStock.quantity},
+            'purchaseCost', (
+                            SELECT
+                              SUM(
+                                ${inventoryBatches.purchasePrice} *
+                                ${inventoryBatches.quantityRemaining}
+                              ) / NULLIF(
+                                SUM(${inventoryBatches.quantityRemaining}),
+                                0
+                              )
+                            FROM ${inventoryBatches}
+                            WHERE ${inventoryBatches.variantId} = ${productVariants.id}
+                              AND ${inventoryBatches.quantityRemaining} > 0
+                          ),
             'options', (
               SELECT json_agg(
                 json_build_object(
@@ -41,15 +54,11 @@ export async function getAllProducts() {
           )
         ), '[]'::json) -- Returns [] instead of null if no variants exist
       `.as("variants"),
-      })
-      .from(products)
-      .leftJoin(productVariants, eq(productVariants.productId, products.id))
-      .leftJoin(
-        inventoryStock,
-        eq(inventoryStock.variantId, productVariants.id),
-      )
-      .groupBy(products.id)
-  );
+    })
+    .from(products)
+    .leftJoin(productVariants, eq(productVariants.productId, products.id))
+    .leftJoin(inventoryStock, eq(inventoryStock.variantId, productVariants.id))
+    .groupBy(products.id);
 }
 export async function createProduct(product: ProductsTypes) {
   const [created] = await db.insert(products).values(product).returning();
