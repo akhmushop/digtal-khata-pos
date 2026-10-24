@@ -1,11 +1,25 @@
-import AppLayout from "@/layouts/AppLayout.js";
-import Sidebar from "../../../components/layout/Sidebar.js";
+import { useEffect, useMemo, useState } from "react";
 import AdvancedPOSTable from "../components/ProductsPage/Table.js";
-function Products() {
+import { DataTable } from "../components/ProductsPage/Table/data-table.js";
+import { columns } from "../components/ProductsPage/Table/columns.js";
+import useProductStore from "../useProductStore.js";
+import { ProductType } from "../product.schema.js";
+import { calculateProductStats } from "../utils/calculateProductStats.js";
+
+export function Products() {
+  const { products } = useProductStore();
+  const stats = useMemo(() => calculateProductStats(products), [products]);
   return (
-      <div className="flex flex-col w-full">
-        <AdvancedPOSTable />
+    <div>
+      <AdvancedPOSTable stats={stats} />
+      <div className="container mx-auto py-10">
+        <DataTable
+          columns={columns}
+          data={products}
+          getRowCanExpand={(row) => row.original.hasVariants}
+        />
       </div>
+    </div>
   );
 }
 
