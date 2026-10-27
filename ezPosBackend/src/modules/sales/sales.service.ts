@@ -1,11 +1,16 @@
 import { and, asc, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import { db } from "../../db/schema/index.js";
 import { products } from "../../db/schema/products.js";
+import { categories } from "../../db/schema/categories.js";
 import { saleItems } from "../../db/schema/saleItems.js";
 import { sales } from "../../db/schema/sales.js";
+import { productVariants } from "../../db/schema/productVariants.js";
 import type { saleDataInput } from "../../types/sales-types.js";
 import { salePayments } from "../../db/schema/salePayments.js";
-import { ConflictError, NotFoundError } from "../../utils/handleError.js";
+import {
+  ConflictError,
+  NotFoundError,
+} from "../../utils/handleError.js";
 import { saleRefunds } from "../../db/schema/saleRefunds.js";
 import { saleRefundItems } from "../../db/schema/saleRefundItems.js";
 import {
@@ -25,6 +30,7 @@ import {
   getTopSellingProducts,
 } from "./dashboardMatrix.service.js";
 import type { CreateSalePayload } from "./schemas/sales.schema.js";
+import type { SaleRefundRequest } from "./schemas/sales.schema.js";
 import { customers } from "../../db/schema/customers.js";
 import {
   customerValidation,
@@ -41,25 +47,78 @@ import type { DbTransaction } from "../purchases/purchase.types.js";
 import { inventoryBatches } from "../../db/schema/inventoryBatches.js";
 import { serialNumbers } from "../../db/schema/serialNumbers.js";
 export async function getSalesData() {
-  return await db
+  const rows = await db
     .select({
       saleId: sales.id,
+      invoiceNumber: sales.invoiceNumber,
+      saleTotal: sales.finalTotal,
+      paymentStatus: sales.paymentStatus,
+      saleStatus: sales.status,
+      customerName: customers.name,
       saleItemsId: saleItems.id,
       id: products.id,
-      productName: products.productName,
-      category: products.category,
-      cost: products.cost,
-      price: products.price,
-      soldQuantity: saleItems.soldQuantity,
-      soldPrice: saleItems.soldPrice,
+      variantId: productVariants.id,
+      productName: products.name,
+      category: categories.name,
+      cost: saleItems.costAtSale,
+      price: productVariants.sellingPrice,
+      soldQuantity: saleItems.quantity,
+      soldPrice: saleItems.sellingPrice,
+      lineTotal: saleItems.lineTotal,
       createdAt: sales.createdAt,
     })
     .from(saleItems)
     .innerJoin(sales, eq(saleItems.saleId, sales.id))
-    .innerJoin(products, eq(saleItems.productId, products.id))
+    .innerJoin(productVariants, eq(saleItems.variantId, productVariants.id))
+    .innerJoin(products, eq(productVariants.productId, products.id))
+    .leftJoin(categories, eq(products.categoryId, categories.id))
+    .leftJoin(customers, eq(sales.customerId, customers.id))
+    .where(inArray(sales.status, ["completed", "refunded"]));
+
+  if (rows.length === 0) return [];
+
+  const returnedRows = await db
+    .select({
+      saleItemId: saleRefundItems.saleItemId,
+      quantity: saleRefundItems.quantity,
+      reason: saleRefunds.reason,
+      disposition: saleRefunds.status,
+    })
+    .from(saleRefundItems)
+    .innerJoin(saleRefunds, eq(saleRefundItems.refundId, saleRefunds.id))
     .where(
-      and(eq(saleItems.status, "completed"), eq(sales.status, "completed")),
+      inArray(
+        saleRefundItems.saleItemId,
+        rows.map((row) => row.saleItemsId),
+      ),
     );
+
+  const returnsByItem = new Map<
+    number,
+    { quantity: number; reasons: string[]; dispositions: string[] }
+  >();
+  for (const returned of returnedRows) {
+    if (returned.saleItemId === null) continue;
+    const current = returnsByItem.get(returned.saleItemId) ?? {
+      quantity: 0,
+      reasons: [],
+      dispositions: [],
+    };
+    current.quantity += returned.quantity ?? 0;
+    if (returned.reason) current.reasons.push(returned.reason);
+    if (returned.disposition) current.dispositions.push(returned.disposition);
+    returnsByItem.set(returned.saleItemId, current);
+  }
+
+  return rows.map((row) => {
+    const returned = returnsByItem.get(row.saleItemsId);
+    return {
+      ...row,
+      returnedQuantity: returned?.quantity ?? 0,
+      returnReason: returned?.reasons.join(", ") ?? null,
+      returnDisposition: returned?.dispositions.at(-1) ?? null,
+    };
+  });
 }
 export async function calculateSubtotals(
   existingVariants: {
@@ -392,88 +451,230 @@ export async function createSale(data: CreateSalePayload) {
     };
   });
 }
-export async function createSingleRefund(id: number) {
-  await db
-    .update(saleItems)
-    .set({ status: "refunded" })
-    .where(eq(saleItems.id, id));
-  const [saleItem] = await db
-    .select()
-    .from(saleItems)
-    .where(eq(saleItems.id, id));
-  if (!saleItem) {
-    throw new NotFoundError("Sale item not found");
-  }
-  const refundTotal =
-    Number(saleItem.soldPrice) * Number(saleItem.soldQuantity);
-  const [saleRefund] = await db
-    .insert(saleRefunds)
-    .values({
-      saleId: saleItem.saleId,
-      refundTotal,
-    })
-    .returning({ id: saleRefunds.id });
-  if (!saleRefund) {
-    throw new NotFoundError("Sale refund not found");
-  }
-  await db.insert(saleRefundItems).values({
-    refundId: saleRefund.id,
-    saleItemId: saleItem.id,
-    productId: saleItem.productId,
-    quantity: saleItem.soldQuantity,
-    refundPrice: saleItem.soldPrice,
-    refundTotal,
-  });
-  await db.update(products).set({
-    quantity: sql`${products.quantity} + ${saleItem.soldQuantity}`,
-  });
-  return { message: "Refund created successfully", refundId: saleRefund.id };
-}
-export async function createMultipleRefunds(id: number) {
-  const items = await db
-    .select()
-    .from(saleItems)
-    .where(and(eq(saleItems.saleId, id), eq(saleItems.status, "completed")));
-  if (!items) {
-    throw new NotFoundError("Sale Items not found");
-  }
+async function applySaleRefund(
+  tx: DbTransaction,
+  saleId: number,
+  items: (typeof saleItems.$inferSelect)[],
+  options: SaleRefundRequest,
+) {
+  const reason = options.notes
+    ? `${options.reason}: ${options.notes}`
+    : options.reason;
   const refundTotal = items.reduce(
-    (total, item) => total + Number(item.soldPrice) * Number(item.soldQuantity),
+    (total, item) => total + Number(item.lineTotal),
     0,
   );
-  const [saleRefundsId] = await db
+  const [refund] = await tx
     .insert(saleRefunds)
     .values({
-      saleId: id,
+      saleId,
+      reason,
+      status: options.disposition,
       refundTotal,
     })
     .returning({ id: saleRefunds.id });
-  if (!saleRefundsId) {
-    throw new NotFoundError("Sale Refunds not found");
-  }
-  for (let item of items) {
-    await db.insert(saleRefundItems).values({
-      refundId: saleRefundsId.id,
+  if (!refund) throw new NotFoundError("Could not create refund record");
+
+  for (const item of items) {
+    const [variant] = await tx
+      .select({
+        productId: productVariants.productId,
+        trackingType: products.trackingType,
+      })
+      .from(productVariants)
+      .innerJoin(products, eq(productVariants.productId, products.id))
+      .where(eq(productVariants.id, item.variantId))
+      .limit(1);
+    if (!variant) {
+      throw new NotFoundError(`Variant ${item.variantId} not found`);
+    }
+
+    await tx.insert(saleRefundItems).values({
+      refundId: refund.id,
       saleItemId: item.id,
-      productId: item.productId,
-      quantity: item.soldQuantity,
-      refundPrice: item.soldPrice,
-      refundTotal: sql`${item.soldPrice} * ${item.soldQuantity}`,
+      productId: variant.productId,
+      quantity: item.quantity,
+      refundPrice: item.sellingPrice,
+      refundTotal: item.lineTotal,
     });
-    await db
-      .update(products)
-      .set({ quantity: sql`${products.quantity}+${item.soldQuantity}` })
-      .where(eq(products.id, Number(item.productId)));
-    await db
-      .update(saleItems)
-      .set({ status: "refunded" })
-      .where(eq(saleItems.saleId, Number(item.saleId)));
+
+    const serialStatus =
+      options.disposition === "restock"
+        ? "in_stock"
+        : options.disposition === "damaged"
+          ? "damaged"
+          : "returned";
+    await tx
+      .update(serialNumbers)
+      .set({ status: serialStatus })
+      .where(eq(serialNumbers.saleItemId, item.id));
+
+    if (options.disposition !== "restock") continue;
+
+    const [stock] = await tx
+      .select()
+      .from(inventoryStock)
+      .where(eq(inventoryStock.variantId, item.variantId))
+      .for("update");
+    if (!stock) {
+      throw new NotFoundError(
+        `No inventory record exists for variant ${item.variantId}`,
+      );
+    }
+
+    await tx
+      .update(inventoryStock)
+      .set({
+        quantity: sql`coalesce(${inventoryStock.quantity}, 0) + ${item.quantity}`,
+      })
+      .where(eq(inventoryStock.id, stock.id));
+
+    const [returnBatch] = await tx
+      .insert(inventoryBatches)
+      .values({
+        variantId: item.variantId,
+        locationId: stock.locationId,
+        batchNumber: `RETURN-${refund.id}-${item.id}`,
+        purchasePrice: item.costAtSale,
+        quantityReceived: item.quantity,
+        quantityRemaining: item.quantity,
+      })
+      .returning({ id: inventoryBatches.id });
+    if (variant.trackingType === "serial" && returnBatch) {
+      await tx
+        .update(serialNumbers)
+        .set({ batchId: returnBatch.id })
+        .where(eq(serialNumbers.saleItemId, item.id));
+    }
+
+    await tx.insert(inventoryMovements).values({
+      variantId: item.variantId,
+      locationId: stock.locationId,
+      batchId: returnBatch?.id ?? null,
+      movementType: "return",
+      quantity: item.quantity,
+      referenceType: "sale_refund",
+      referenceId: refund.id,
+    });
   }
-  await db.update(sales).set({ status: "refunded" }).where(eq(sales.id, id));
-  return {
-    message: "Refunds created successfully",
-    refundId: saleRefundsId.id,
-  };
+
+  const allSaleItems = await tx
+    .select({ id: saleItems.id })
+    .from(saleItems)
+    .where(eq(saleItems.saleId, saleId))
+    .for("update");
+  const refundedSaleItems = await tx
+    .select({ saleItemId: saleRefundItems.saleItemId })
+    .from(saleRefundItems)
+    .innerJoin(saleRefunds, eq(saleRefundItems.refundId, saleRefunds.id))
+    .where(eq(saleRefunds.saleId, saleId));
+  const refundedIds = new Set(
+    refundedSaleItems.flatMap((row) =>
+      row.saleItemId === null ? [] : [row.saleItemId],
+    ),
+  );
+  if (
+    allSaleItems.length > 0 &&
+    allSaleItems.every((saleItem) => refundedIds.has(saleItem.id))
+  ) {
+    await tx
+      .update(sales)
+      .set({ status: "refunded" })
+      .where(eq(sales.id, saleId));
+  }
+
+  return refund.id;
+}
+
+export async function createSingleRefund(
+  id: number,
+  options: SaleRefundRequest,
+) {
+  return db.transaction(async (tx) => {
+    const [saleItem] = await tx
+      .select()
+      .from(saleItems)
+      .where(eq(saleItems.id, id))
+      .limit(1);
+    if (!saleItem) throw new NotFoundError("Sale item not found");
+
+    const [sale] = await tx
+      .select({ id: sales.id, status: sales.status })
+      .from(sales)
+      .where(eq(sales.id, saleItem.saleId))
+      .for("update");
+    if (!sale) throw new NotFoundError("Sale not found");
+    if (sale.status !== "completed") {
+      throw new ConflictError("Only completed sales can be returned");
+    }
+    const [alreadyRefunded] = await tx
+      .select({ id: saleRefundItems.id })
+      .from(saleRefundItems)
+      .where(eq(saleRefundItems.saleItemId, saleItem.id))
+      .limit(1);
+    if (alreadyRefunded) {
+      throw new ConflictError("This sale item has already been returned");
+    }
+
+    const refundId = await applySaleRefund(
+      tx,
+      saleItem.saleId,
+      [saleItem],
+      options,
+    );
+    return { message: "Refund created successfully", refundId };
+  });
+}
+
+export async function createMultipleRefunds(
+  id: number,
+  options: SaleRefundRequest,
+) {
+  return db.transaction(async (tx) => {
+    const [sale] = await tx
+      .select({ id: sales.id, status: sales.status })
+      .from(sales)
+      .where(eq(sales.id, id))
+      .for("update");
+    if (!sale) throw new NotFoundError("Sale not found");
+    if (sale.status !== "completed") {
+      throw new ConflictError("Only completed sales can be returned");
+    }
+
+    const items = await tx
+      .select()
+      .from(saleItems)
+      .where(eq(saleItems.saleId, id))
+      .for("update");
+    if (items.length === 0) throw new NotFoundError("Sale items not found");
+
+    const alreadyRefunded = await tx
+      .select({ saleItemId: saleRefundItems.saleItemId })
+      .from(saleRefundItems)
+      .where(
+        inArray(
+          saleRefundItems.saleItemId,
+          items.map((item) => item.id),
+        ),
+      );
+    const refundedIds = new Set(
+      alreadyRefunded.flatMap((row) =>
+        row.saleItemId === null ? [] : [row.saleItemId],
+      ),
+    );
+    const refundableItems = items.filter((item) => !refundedIds.has(item.id));
+    if (refundableItems.length === 0) {
+      throw new ConflictError("All items in this sale have already been returned");
+    }
+
+    const refundId = await applySaleRefund(
+      tx,
+      id,
+      refundableItems,
+      options,
+    );
+    return { message: "Refund created successfully", refundId };
+  });
 }
 export async function getDashboardSummary() {
   const [
