@@ -3,7 +3,7 @@ import Pos from "../features/pos/pages/PosPage";
 import { AddCustomerModal } from "../pages/Customer/Customer";
 import ProductStockForm from "../features/products/pages/AddProductPage";
 import DashboardComponent from "../pages/Dashboard/Dashboard";
-import { Sales } from "../pages/Sales/Sales";
+import { Sales } from "../features/pos/pages/Sales";
 import { Expense } from "../pages/Expense/Expense";
 import { PurchasesOrder } from "../features/purchases/pages/Purchases";
 import { PurchasesList } from "../features/purchases/pages/PurchasesList";
@@ -16,6 +16,7 @@ import { Brands } from "@/features/products/pages/Brands";
 import { Units } from "@/features/products/pages/Units";
 import { Suppliers } from "@/features/Contacts/pages/Suppliers";
 import { VariantManager } from "@/features/products/pages/Variants";
+import { StockAdjustment } from "@/features/products/pages/StockAdjustment";
 
 const router = createBrowserRouter([
   {
@@ -28,6 +29,10 @@ const router = createBrowserRouter([
       {
         path: "/product",
         element: <Products />,
+      },
+      {
+        path: "/product/stock-adjustment",
+        element: <StockAdjustment />,
       },
       {
         path: "/categories",
@@ -85,6 +90,10 @@ const router = createBrowserRouter([
   },
   {
     path: "/product/addproduct",
+    element: <ProductStockForm />,
+  },
+  {
+    path: "/product/:id/edit",
     element: <ProductStockForm />,
   },
 ]);

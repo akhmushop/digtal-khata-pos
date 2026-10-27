@@ -13,6 +13,8 @@ export function ProductInfoInput({
   form,
   variantIndex,
   remove,
+  canRemoveVariant = true,
+  canEditImages = true,
 }: ProductInfoInputProps) {
   const {
     fields,
@@ -107,7 +109,7 @@ export function ProductInfoInput({
       {source === "opening" && trackingType === "batch" && (
         <ExpiryDatePicker form={form} index={variantIndex} />
       )}
-      {hasVariants && (
+      {hasVariants && canEditImages && (
         <InputFile
           urlName={`variants.${variantIndex}.imageUrl`}
           fileName={`variants.${variantIndex}.imageFile`}
@@ -192,7 +194,7 @@ export function ProductInfoInput({
           </Button>
         </div>
       )}
-      {hasVariants && (
+      {hasVariants && canRemoveVariant && (
         <div className="space-y-2 col-span-1 md:col-span-2 lg:col-span-3 flex justify-end gap-5">
           <Button
             onClick={() => {

@@ -5,6 +5,7 @@ import {
 } from "@/features/products/product.schema";
 import {
   FieldPath,
+  FieldArrayWithId,
   UseFieldArrayAppend,
   UseFieldArrayRemove,
   UseFieldArrayReplace,
@@ -46,6 +47,19 @@ export type ApiResponse<T> = {
   message: string;
   data: T;
 };
+export type StockAdjustmentInput = {
+  newQuantity: number;
+  reason: "count_correction" | "damaged" | "expired" | "lost" | "found";
+  batchNumber?: string;
+  unitCost?: number;
+  serialNumbers?: string[];
+};
+export type StockAdjustmentResult = {
+  variantId: number;
+  previousQuantity: number;
+  quantity: number;
+  change: number;
+};
 export interface ProductStoreType {
   products: ProductType[];
   productSelectOptions: {
@@ -70,9 +84,14 @@ export interface ProductStoreType {
   loading: boolean;
   error: string | null;
   getProducts: () => void;
+  adjustVariantStock: (
+    variantId: number,
+    data: StockAdjustmentInput,
+  ) => Promise<StockAdjustmentResult>;
   getProductSelectOptions: () => void;
   getProductVariantOptions: () => void;
   createProduct: (data: ProductTypeOutput) => Promise<CreateProductResponse>;
+  updateProduct: (id: number, data: ProductTypeOutput) => Promise<void>;
   createCategory: (
     data: AddCategorySchemaType,
   ) => Promise<CreateEntityResponse>;
@@ -115,12 +134,16 @@ export interface ProductInfoInputProps {
   form: UseFormReturn<ProductTypeInput>;
   variantIndex: number;
   remove?: UseFieldArrayRemove;
+  canRemoveVariant?: boolean;
+  canEditImages?: boolean;
 }
 export interface AccordionCardProps {
   form: UseFormReturn<ProductTypeInput>;
   append: UseFieldArrayAppend<ProductTypeInput, "variants">;
   replace: UseFieldArrayReplace<ProductTypeInput, "variants">;
   remove: UseFieldArrayRemove;
+  fields: FieldArrayWithId<ProductTypeInput, "variants">[];
+  isEditing?: boolean;
 }
 export interface VariantRowProps {
   form: UseFormReturn<ProductTypeInput>;
@@ -129,6 +152,8 @@ export interface VariantRowProps {
   replace: UseFieldArrayReplace<ProductTypeInput, "variants">;
   comboboxVariantTypeName: string[];
   allVariants: GeneratedVariant[];
+  fields: FieldArrayWithId<ProductTypeInput, "variants">[];
+  isEditing?: boolean;
 }
 export interface InputFileProps {
   urlName: FieldPath<ProductTypeInput>;
@@ -172,6 +197,7 @@ export type VariantTableRowProps = {
   setExpanded: React.Dispatch<React.SetStateAction<string | null>>;
   onAddVariant: (variant: GeneratedVariant) => void;
   onRemoveVariant: (variantIndex: number) => void;
+  isEditing?: boolean;
 };
 export interface PurchaseCart extends ProductType {
   purchaseQty: number;

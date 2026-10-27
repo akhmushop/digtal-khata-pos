@@ -12,8 +12,8 @@ export default function AppLayout() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <main>
-          <SidebarTrigger />
+        <main className="relative">
+          <SidebarTrigger className="absolute" />
           <Outlet />
         </main>
         <SidebarRail />

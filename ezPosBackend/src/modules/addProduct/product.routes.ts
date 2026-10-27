@@ -10,6 +10,8 @@ router.get(
   productController.getProductVariantOptions,
 );
 router.post("/api/product", productController.createProduct);
+router.get("/api/product/:id", productController.getProductForEdit);
+router.put("/api/product/:id", productController.updateProduct);
 router.post("/api/product/category", productController.createCategory);
 router.post("/api/product/brand", productController.createBrand);
 router.post("/api/product/unit", productController.createUnit);

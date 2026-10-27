@@ -8,8 +8,12 @@ import { Spinner } from "@/components/ui/spinner";
 
 export function SaveAndUpdateActionsCard({
   form,
+  isEditing,
+  onCancel,
 }: {
   form: UseFormReturn<ProductTypeInput>;
+  isEditing: boolean;
+  onCancel: () => void;
 }) {
   const isSubmitting = form.formState.isSubmitting
   const rootErrors = form.formState.errors.variants?.root?.message;
@@ -17,20 +21,22 @@ export function SaveAndUpdateActionsCard({
   return (
     <Card>
       <CardContent className="flex flex-col sm:flex-row gap-3">
-        <Button variant="outline" type="button">
+        <Button variant="outline" type="button" onClick={onCancel}>
           Cancel
         </Button>
-        <Button disabled={isSubmitting} type="submit" className="flex-1">
-          {false ? (
-            "Update Product"
-          ) : isSubmitting ? (
+        <Button
+          disabled={isSubmitting || !form.formState.isDirty}
+          type="submit"
+          className="flex-1"
+        >
+          {isSubmitting ? (
             <>
-              <Spinner /> Creating
+              <Spinner /> {isEditing ? "Updating" : "Creating"}
             </>
           ) : (
             <>
               <Save />
-              Create Product
+              {isEditing ? "Update Product" : "Create Product"}
             </>
           )}
         </Button>
