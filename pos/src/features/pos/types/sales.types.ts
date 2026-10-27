@@ -1,4 +1,4 @@
-import { CreateSalePayload } from "../schemas/cart.schema.js";
+import type { CreateSalePayload } from "../schemas/cart.schema.js";
 export interface SalesStoreType {
   id: number;
   saleItemsId: number;
@@ -7,11 +7,30 @@ export interface SalesStoreType {
   soldQuantity: number;
   cost: number;
   price: number;
-  category: string;
-  createdAt: string;
+  category: string | null;
+  createdAt: string | null;
   soldPrice: number;
+  lineTotal: number;
+  invoiceNumber: string;
+  saleTotal: number | null;
+  paymentStatus: "paid" | "partial" | "unpaid";
+  saleStatus: "completed" | "held" | "cancelled" | "refunded";
+  customerName: string | null;
+  returnedQuantity: number;
+  returnReason: string | null;
+  returnDisposition: "restock" | "inspection" | "damaged" | null;
 }
-export type CreatePurchaseResponse = {
+export interface SaleRefundRequest {
+  reason:
+    | "customer_request"
+    | "wrong_item"
+    | "damaged"
+    | "quality_issue"
+    | "other";
+  notes?: string;
+  disposition: "restock" | "inspection" | "damaged";
+}
+export type CreateSaleResponse = {
   success: boolean;
   message: string;
   data: {
@@ -34,14 +53,22 @@ export interface SalesStore {
   sales: SalesStoreType[];
   loading: boolean;
   error: null | string;
-  getSales: () => void;
-  createSale: (data: CreateSalePayload) => Promise<CreatePurchaseResponse>;
-  returnSingleItems: (item: SalesStoreType) => void;
-  returnProducts: (id: number) => void;
+  getSales: () => Promise<void>;
+  createSale: (data: CreateSalePayload) => Promise<CreateSaleResponse>;
+  returnSingleItems: (
+    item: SalesStoreType,
+    options: SaleRefundRequest,
+  ) => Promise<void>;
+  returnProducts: (id: number, options: SaleRefundRequest) => Promise<void>;
 }
 export interface AllSoldProduct {
   id: number;
+  invoiceNumber: string;
   items: SalesStoreType[];
-  createdAt: string;
+  createdAt: string | null;
+  totalQuantity: number;
+  totalAmount: number;
+  paymentStatus: "paid" | "partial" | "unpaid";
+  saleStatus: "completed" | "held" | "cancelled" | "refunded";
+  customerName: string | null;
 }
-export interface DetailsProduct {}

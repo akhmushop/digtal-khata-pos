@@ -4,6 +4,7 @@ import { handleError } from "../../utils/handleError.js";
 import type { saleDataInput } from "../../types/sales-types.js";
 import {
   createSalePayloadSchema,
+  saleRefundRequestSchema,
   updateAvailableSerialSchema,
 } from "./schemas/sales.schema.js";
 
@@ -38,9 +39,20 @@ export async function createSale(
 }
 export async function createSingleRefund(req: Request, res: Response) {
   try {
-    const { id } = req.params;
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ message: "Invalid sale item ID" });
+    }
+    const result = saleRefundRequestSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({
+        message: "Invalid refund options",
+        errors: result.error.flatten(),
+      });
+    }
     const { message, refundId } = await salesService.createSingleRefund(
-      Number(id),
+      id,
+      result.data,
     );
     res.status(200).json({ message, refundId });
   } catch (err) {
@@ -49,9 +61,20 @@ export async function createSingleRefund(req: Request, res: Response) {
 }
 export async function createMultipleRefunds(req: Request, res: Response) {
   try {
-    const { id } = req.params;
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ message: "Invalid sale ID" });
+    }
+    const result = saleRefundRequestSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({
+        message: "Invalid refund options",
+        errors: result.error.flatten(),
+      });
+    }
     const { message, refundId } = await salesService.createMultipleRefunds(
-      Number(id),
+      id,
+      result.data,
     );
     res.status(200).json({ message, refundId });
   } catch (err) {

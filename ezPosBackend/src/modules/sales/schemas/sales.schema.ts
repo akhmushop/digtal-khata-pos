@@ -49,5 +49,18 @@ export const updateAvailableSerialSchema = z.object({
   serialNumber: z.string().trim().min(1).max(100),
 });
 
+export const saleRefundRequestSchema = z.object({
+  reason: z.enum([
+    "customer_request",
+    "wrong_item",
+    "damaged",
+    "quality_issue",
+    "other",
+  ]),
+  notes: z.string().trim().max(500).optional(),
+  disposition: z.enum(["restock", "inspection", "damaged"]),
+});
+
 // 3. Export the TypeScript type for your payload
 export type CreateSalePayload = z.infer<typeof createSalePayloadSchema>;
+export type SaleRefundRequest = z.infer<typeof saleRefundRequestSchema>;
