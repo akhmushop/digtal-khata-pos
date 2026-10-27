@@ -16,6 +16,7 @@ import {
   getProductsApi,
   getProductSelectOptionsApi,
   getProductVariantOptionsApi,
+  adjustVariantStockApi,
 } from "./product.api";
 
 const useProductStore = create<ProductStoreType>((set) => ({
@@ -30,13 +31,27 @@ const useProductStore = create<ProductStoreType>((set) => ({
   loading: false,
   error: null,
   getProducts: async () => {
-    set({ loading: true });
+    set({ loading: true, error: null });
     try {
       const productsData = await getProductsApi();
-      set({ products: productsData, loading: false });
+      set({ products: productsData, loading: false, error: null });
     } catch (err: unknown) {
       set({ error: getErrorMessage(err), loading: false });
     }
+  },
+  adjustVariantStock: async (variantId, data) => {
+    const result = await adjustVariantStockApi(variantId, data);
+    set((state) => ({
+      products: state.products.map((product) => ({
+        ...product,
+        variants: product.variants.map((variant) =>
+          variant.id === variantId
+            ? { ...variant, quantity: result.quantity }
+            : variant,
+        ),
+      })),
+    }));
+    return result;
   },
   getProductSelectOptions: async () => {
     set({ loading: true });

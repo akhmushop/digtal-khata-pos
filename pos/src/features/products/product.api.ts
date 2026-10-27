@@ -2,6 +2,10 @@ import axios from "../../api/axios.js";
 import { AddCategorySchemaType } from "./addCategory.schema.js";
 import { BrandSchemaType } from "./brand.schema.js";
 import { ProductTypeInput, ProductTypeOutput } from "./product.schema.js";
+import {
+  StockAdjustmentInput,
+  StockAdjustmentResult,
+} from "./product.types.js";
 import { UnitSchemaType } from "./schemas/unit.schema.js";
 import {
   VariantOptionSchemaType,
@@ -28,6 +32,15 @@ export async function getProductForEditApi(id: number) {
 }
 export async function updateProductApi(id: number, data: ProductTypeOutput) {
   return axios.put(`/product/${id}`, data);
+}
+export async function adjustVariantStockApi(
+  variantId: number,
+  data: StockAdjustmentInput,
+) {
+  const { data: response } = await axios.post<{
+    data: StockAdjustmentResult;
+  }>(`/products/variants/${variantId}/adjust-stock`, data);
+  return response.data;
 }
 export async function createCategoryApi(data: AddCategorySchemaType) {
   return axios.post("/product/category", data);

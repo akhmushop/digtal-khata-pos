@@ -16,6 +16,7 @@ import { Brands } from "@/features/products/pages/Brands";
 import { Units } from "@/features/products/pages/Units";
 import { Suppliers } from "@/features/Contacts/pages/Suppliers";
 import { VariantManager } from "@/features/products/pages/Variants";
+import { StockAdjustment } from "@/features/products/pages/StockAdjustment";
 
 const router = createBrowserRouter([
   {
@@ -28,6 +29,10 @@ const router = createBrowserRouter([
       {
         path: "/product",
         element: <Products />,
+      },
+      {
+        path: "/product/stock-adjustment",
+        element: <StockAdjustment />,
       },
       {
         path: "/categories",
