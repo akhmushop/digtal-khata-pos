@@ -44,5 +44,10 @@ export const createSalePayloadSchema = z.object({
   items: z.array(cartItemPayloadSchema).min(1, "Cart cannot be empty"),
 });
 
+export const updateAvailableSerialSchema = z.object({
+  currentSerial: z.string().trim().min(1).max(100),
+  serialNumber: z.string().trim().min(1).max(100),
+});
+
 // 3. Export the TypeScript type for your payload
 export type CreateSalePayload = z.infer<typeof createSalePayloadSchema>;

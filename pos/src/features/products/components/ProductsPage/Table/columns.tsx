@@ -80,12 +80,13 @@ export const columns = columnHelper.columns([
       // load fresh data every time the dialog opens
       useEffect(() => {
         if (product.hasVariants && product.trackingType !== "serial") return;
+        if (variantId === undefined) return;
         setError("");
         axios
           .get(`variants/${variantId}/serials`)
           .then((res) => setAvailable(res.data))
           .catch(() => setError("Could not load serial numbers"));
-      }, []);
+      }, [product.hasVariants, product.trackingType, variantId]);
       const totalQuantity = product.variants.reduce(
         (total, variant) => total + variant.quantity,
         0,
@@ -95,10 +96,15 @@ export const columns = columnHelper.columns([
           <span>{product.status}</span>
           <span>
             {totalQuantity} Units
-            {!product.hasVariants && product.trackingType === "serial" ? (
+            {!product.hasVariants &&
+            product.trackingType === "serial" &&
+            variantId !== undefined ? (
               <>
                 {" & "}
-                <ViewSerialsDialog available={available} />
+                <ViewSerialsDialog
+                  available={available}
+                  variantId={variantId}
+                />
                 {" Serials"}
               </>
             ) : (
