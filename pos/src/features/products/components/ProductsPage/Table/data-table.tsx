@@ -26,18 +26,15 @@ import axios from "../../../../../api/axios";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Check, Pencil, X } from "lucide-react";
+import { isAxiosError } from "axios";
 
 interface DataTableProps {
   columns: ColumnDef<DataTableFeatures, ProductType>[];
@@ -193,6 +190,7 @@ export function ProductVariantRow({
 
   // load fresh data every time the dialog opens
   useEffect(() => {
+    if (variant.id === undefined) return;
     setError("");
     axios
       .get(`variants/${variant.id}/serials`)
@@ -210,7 +208,11 @@ export function ProductVariantRow({
       <TableCell className="text-center">{variant.quantity}</TableCell>
       <TableCell>
         {available.length > 0 ? (
-          <ViewSerialsDialog available={available} />
+          variant.id !== undefined ? (
+            <ViewSerialsDialog available={available} variantId={variant.id} />
+          ) : (
+            "-"
+          )
         ) : (
           "-"
         )}
@@ -218,33 +220,143 @@ export function ProductVariantRow({
     </TableRow>
   );
 }
-export function ViewSerialsDialog({ available }: { available: string[] }) {
+export function ViewSerialsDialog({
+  available,
+  variantId,
+}: {
+  available: string[];
+  variantId: number;
+}) {
+  const [serials, setSerials] = useState(available);
+  const [editingSerial, setEditingSerial] = useState<string | null>(null);
+  const [serialDraft, setSerialDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    setSerials(available);
+  }, [available]);
+
+  const startEditing = (serial: string) => {
+    setEditingSerial(serial);
+    setSerialDraft(serial);
+    setError("");
+  };
+
+  const cancelEditing = () => {
+    setEditingSerial(null);
+    setSerialDraft("");
+    setError("");
+  };
+
+  const saveSerial = async () => {
+    if (editingSerial === null || !serialDraft.trim()) {
+      setError("Serial number is required");
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+    try {
+      const { data } = await axios.patch<{ serialNumber: string }>(
+        `variants/${variantId}/serials`,
+        {
+          currentSerial: editingSerial,
+          serialNumber: serialDraft.trim(),
+        },
+      );
+      const updatedSerial = data.serialNumber;
+      setSerials((current) =>
+        current.map((serial) =>
+          serial === editingSerial ? updatedSerial : serial,
+        ),
+      );
+      cancelEditing();
+    } catch (err) {
+      const responseMessage = isAxiosError<{ message?: string }>(err)
+        ? err.response?.data.message
+        : undefined;
+      setError(
+        responseMessage ??
+          "Could not update serial number. It may already be in use.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <Dialog>
       <DialogTrigger>
-        <span className="cursor-pointer">{`${available.length} view`}</span>
+        <span className="cursor-pointer">{`${serials.length} view`}</span>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Serials List</DialogTitle>
           <ol className="max-h-[300px] overflow-y-auto space-y-1">
-            {available.map((serial, i) => (
+            {serials.map((serial, i) => (
               <li
                 key={serial}
-                className="flex justify-between items-center p-2 rounded hover:bg-muted"
+                className="flex justify-between items-center gap-2 p-2 rounded hover:bg-muted"
               >
-                <span className="font-mono text-sm">
-                  <span className="text-muted-foreground mr-2">
-                    {(i + 1).toString().padStart(2, "0")}
-                  </span>
-                  {serial}
-                </span>
-                <Badge variant="outline" className="text-xs">
-                  Available
-                </Badge>
+                {editingSerial === serial ? (
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                    <span className="text-muted-foreground text-sm">
+                      {(i + 1).toString().padStart(2, "0")}
+                    </span>
+                    <Input
+                      aria-label="Serial number"
+                      value={serialDraft}
+                      onChange={(event) => setSerialDraft(event.target.value)}
+                      className="font-mono"
+                      autoFocus
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Save serial number"
+                      disabled={saving || !serialDraft.trim()}
+                      onClick={saveSerial}
+                    >
+                      <Check />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Cancel editing serial number"
+                      disabled={saving}
+                      onClick={cancelEditing}
+                    >
+                      <X />
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <span className="font-mono text-sm">
+                      <span className="text-muted-foreground mr-2">
+                        {(i + 1).toString().padStart(2, "0")}
+                      </span>
+                      {serial}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">
+                        Available
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={`Edit serial ${serial}`}
+                        onClick={() => startEditing(serial)}
+                      >
+                        <Pencil />
+                      </Button>
+                    </div>
+                  </>
+                )}
               </li>
             ))}
           </ol>
+          {error && <p className="text-sm text-destructive">{error}</p>}
         </DialogHeader>
       </DialogContent>
     </Dialog>

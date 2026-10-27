@@ -5,7 +5,7 @@ import { saleItems } from "../../db/schema/saleItems.js";
 import { sales } from "../../db/schema/sales.js";
 import type { saleDataInput } from "../../types/sales-types.js";
 import { salePayments } from "../../db/schema/salePayments.js";
-import { NotFoundError } from "../../utils/handleError.js";
+import { ConflictError, NotFoundError } from "../../utils/handleError.js";
 import { saleRefunds } from "../../db/schema/saleRefunds.js";
 import { saleRefundItems } from "../../db/schema/saleRefundItems.js";
 import {
@@ -383,7 +383,7 @@ export async function createSale(data: CreateSalePayload) {
       );
     }
     // 11. Return receipt data; transaction commits on success.
-    console.log(dueAmount)
+    console.log(dueAmount);
     return {
       sale: newSale,
       change,
@@ -537,4 +537,32 @@ export async function getAvailableSerials(variantId: number) {
     )
     .orderBy(asc(serialNumbers.id));
   return rows.map((r) => r.serialNumber);
+}
+
+export async function updateAvailableSerial(
+  variantId: number,
+  currentSerial: string,
+  serialNumber: string,
+) {
+  try {
+    const [updated] = await db
+      .update(serialNumbers)
+      .set({ serialNumber })
+      .where(
+        and(
+          eq(serialNumbers.variantId, variantId),
+          eq(serialNumbers.serialNumber, currentSerial),
+          eq(serialNumbers.status, "in_stock"),
+        ),
+      )
+      .returning({ serialNumber: serialNumbers.serialNumber });
+
+    if (!updated) {
+      throw new NotFoundError("Available serial number not found");
+    }
+
+    return updated.serialNumber;
+  } catch (err: unknown) {
+    throw new ConflictError("Serial number is already in use");
+  }
 }

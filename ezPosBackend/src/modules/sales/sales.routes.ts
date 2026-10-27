@@ -13,5 +13,9 @@ router.post(
   salesController.createMultipleRefunds,
 );
 router.get("/api/dashboard_summary", salesController.getDashboardSummary);
-router.get("/api/variants/:variantId/serials" ,salesController.getAvailableSerials)
+router.get("/api/variants/:variantId/serials", salesController.getAvailableSerials);
+router.patch(
+  "/api/variants/:variantId/serials",
+  salesController.updateAvailableSerial,
+);
 export default router;
