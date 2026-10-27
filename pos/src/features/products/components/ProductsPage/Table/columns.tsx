@@ -18,6 +18,7 @@ import { ProductType } from "@/features/products/product.schema";
 import { useEffect, useState } from "react";
 import axios from "../../../../../api/axios";
 import { ViewSerialsDialog } from "./data-table";
+import { Link } from "react-router";
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
 // Use `accessor` for data columns and `display` for columns without one.
@@ -158,7 +159,11 @@ export const columns = columnHelper.columns([
             <DropdownMenuContent align="end">
               <DropdownMenuGroup>
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem>Edit</DropdownMenuItem>
+
+                <Link to={`/product/${row.original.id}/edit`}>
+                  <DropdownMenuItem>Edit</DropdownMenuItem>
+                </Link>
+
                 <DropdownMenuItem>Duplicate</DropdownMenuItem>
                 <DropdownMenuItem>Delete</DropdownMenuItem>
               </DropdownMenuGroup>

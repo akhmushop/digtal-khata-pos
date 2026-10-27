@@ -12,6 +12,7 @@ import {
   createUnitApi,
   createVariantOptionApi,
   createVariantTypeApi,
+  updateProductApi,
   getProductsApi,
   getProductSelectOptionsApi,
   getProductVariantOptionsApi,
@@ -56,9 +57,50 @@ const useProductStore = create<ProductStoreType>((set) => ({
     }
   },
   createProduct: async (data) => {
-    console.log(data);
     const response = await createProductApi(data);
     return response.data;
+  },
+  updateProduct: async (id, data) => {
+    await updateProductApi(id, data);
+    set((state) => ({
+      products: state.products.map((product) => {
+        if (product.id !== id) {
+          return product;
+        }
+
+        return {
+          ...product,
+          name: data.name,
+          categoryId: data.categoryId,
+          brandId: data.brandId,
+          unitId: data.unitId,
+          description: data.description,
+          productType: data.productType,
+          hasVariants: data.hasVariants,
+          trackingType: data.trackingType,
+          status: data.status,
+          variants: product.variants.map((variant) => {
+            const updatedVariant = data.variants.find(
+              (item) => item.id === variant.id,
+            );
+            if (!updatedVariant) {
+              return variant;
+            }
+
+            return {
+              ...variant,
+              sku: updatedVariant.sku,
+              barcode: updatedVariant.barcode,
+              sellingPrice: updatedVariant.sellingPrice,
+              alertQuantity: updatedVariant.alertQuantity,
+              isDefault: updatedVariant.isDefault,
+              status: updatedVariant.status,
+              options: updatedVariant.options,
+            };
+          }),
+        };
+      }),
+    }));
   },
   createCategory: async (data) => {
     const response = await createCategoryApi(data);
