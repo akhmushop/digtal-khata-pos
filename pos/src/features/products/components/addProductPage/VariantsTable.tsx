@@ -22,6 +22,8 @@ export function VariantsTable({
   remove,
   replace,
   allVariants,
+  fields,
+  isEditing = false,
 }: VariantRowProps) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const variants = form.watch("variants") || [];
@@ -116,29 +118,31 @@ export function VariantsTable({
               <TableHead className="w-[35%]">Sku</TableHead>
               <TableHead className="w-[35%]">Selling Price</TableHead>
               <TableHead className="w-[10%]">
-                <Button
-                  size="icon"
-                  variant={
-                    isAllAdded
-                      ? "default"
-                      : isSomethingAdded
-                        ? "secondary"
-                        : "ghost"
-                  }
-                  onClick={() => {
-                    if (isAllAdded) {
-                      replace([]);
-                    } else {
-                      handleAddAllVariants();
+                {!isEditing && (
+                  <Button
+                    size="icon"
+                    variant={
+                      isAllAdded
+                        ? "default"
+                        : isSomethingAdded
+                          ? "secondary"
+                          : "ghost"
                     }
-                  }}
-                >
-                  {isAllAdded || isSomethingAdded ? (
-                    <SquareCheck className="text-blue-60" />
-                  ) : (
-                    <Square />
-                  )}
-                </Button>
+                    onClick={() => {
+                      if (isAllAdded) {
+                        replace([]);
+                      } else {
+                        handleAddAllVariants();
+                      }
+                    }}
+                  >
+                    {isAllAdded || isSomethingAdded ? (
+                      <SquareCheck className="text-blue-60" />
+                    ) : (
+                      <Square />
+                    )}
+                  </Button>
+                )}
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -155,6 +159,7 @@ export function VariantsTable({
                 setExpanded={setExpanded}
                 onAddVariant={handleAddVariant}
                 onRemoveVariant={handleSquareCheck}
+                isEditing={isEditing}
               />
             ))}
           </TableBody>

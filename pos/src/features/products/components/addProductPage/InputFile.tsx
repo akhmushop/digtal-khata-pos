@@ -11,9 +11,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { InputFileProps } from "../../product.types";
-import { AddProductFormInput } from "../../product.schema";
+import { ProductTypeInput } from "../../product.schema";
 export function InputFile({ urlName, fileName, form, label }: InputFileProps) {
-  const handleAddHttp = (field: ControllerRenderProps<AddProductFormInput>) => {
+  const handleAddHttp = (field: ControllerRenderProps<ProductTypeInput>) => {
     const value = typeof field.value === "string" ? field.value.trim() : "";
     if (!value) {
       field.onChange(null);

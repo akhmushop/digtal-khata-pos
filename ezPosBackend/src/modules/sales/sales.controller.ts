@@ -2,7 +2,11 @@ import type { NextFunction, Request, Response } from "express";
 import * as salesService from "./sales.service.js";
 import { handleError } from "../../utils/handleError.js";
 import type { saleDataInput } from "../../types/sales-types.js";
-import { createSalePayloadSchema } from "./schemas/sales.schema.js";
+import {
+  createSalePayloadSchema,
+  saleRefundRequestSchema,
+  updateAvailableSerialSchema,
+} from "./schemas/sales.schema.js";
 
 export async function getSalesData(req: Request, res: Response) {
   try {
@@ -35,9 +39,20 @@ export async function createSale(
 }
 export async function createSingleRefund(req: Request, res: Response) {
   try {
-    const { id } = req.params;
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ message: "Invalid sale item ID" });
+    }
+    const result = saleRefundRequestSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({
+        message: "Invalid refund options",
+        errors: result.error.flatten(),
+      });
+    }
     const { message, refundId } = await salesService.createSingleRefund(
-      Number(id),
+      id,
+      result.data,
     );
     res.status(200).json({ message, refundId });
   } catch (err) {
@@ -46,9 +61,20 @@ export async function createSingleRefund(req: Request, res: Response) {
 }
 export async function createMultipleRefunds(req: Request, res: Response) {
   try {
-    const { id } = req.params;
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ message: "Invalid sale ID" });
+    }
+    const result = saleRefundRequestSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({
+        message: "Invalid refund options",
+        errors: result.error.flatten(),
+      });
+    }
     const { message, refundId } = await salesService.createMultipleRefunds(
-      Number(id),
+      id,
+      result.data,
     );
     res.status(200).json({ message, refundId });
   } catch (err) {
@@ -76,6 +102,36 @@ export async function getAvailableSerials(
     const availableSerials = await salesService.getAvailableSerials(variantId);
 
     res.status(200).json(availableSerials);
+  } catch (err: unknown) {
+    next(err);
+  }
+}
+
+export async function updateAvailableSerial(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const variantId = Number(req.params.variantId);
+    if (!Number.isInteger(variantId) || variantId <= 0) {
+      return res.status(400).json({ message: "Invalid Variant ID" });
+    }
+
+    const result = updateAvailableSerialSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({
+        message: "Invalid serial number data",
+        errors: result.error.flatten(),
+      });
+    }
+
+    const serialNumber = await salesService.updateAvailableSerial(
+      variantId,
+      result.data.currentSerial,
+      result.data.serialNumber,
+    );
+    return res.status(200).json({ serialNumber });
   } catch (err: unknown) {
     next(err);
   }

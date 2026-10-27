@@ -1,6 +1,24 @@
 import type { Request, Response } from "express";
 import * as productsService from "./products.service.js";
-import { handleError } from "../../utils/handleError.js";
+import {
+  BadRequestError,
+  handleError,
+} from "../../utils/handleError.js";
+import { z } from "zod";
+
+const stockAdjustmentSchema = z.object({
+  newQuantity: z.number().int().min(0),
+  reason: z.enum([
+    "count_correction",
+    "damaged",
+    "expired",
+    "lost",
+    "found",
+  ]),
+  batchNumber: z.string().trim().min(1).max(100).optional(),
+  unitCost: z.number().finite().min(0).optional(),
+  serialNumbers: z.array(z.string().trim().min(1).max(100)).optional(),
+});
 export async function getProducts(req: Request, res: Response) {
   try {
     res.json(await productsService.getAllProducts());
@@ -81,6 +99,30 @@ export async function updateStock(req: Request, res: Response) {
     const { newStock, status } = req.body;
     await productsService.updateStock(id, newStock, status);
     res.status(200).json({ message: "Stock updated" });
+  } catch (err) {
+    handleError(res, err);
+  }
+}
+export async function adjustVariantStock(req: Request, res: Response) {
+  try {
+    const variantId = Number(req.params.variantId);
+    if (!Number.isInteger(variantId) || variantId < 1) {
+      throw new BadRequestError("Invalid product variant ID.");
+    }
+    const parsed = stockAdjustmentSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new BadRequestError(
+        parsed.error.issues.map((issue) => issue.message).join(" "),
+      );
+    }
+    const result = await productsService.adjustVariantStock(
+      variantId,
+      parsed.data,
+    );
+    res.status(200).json({
+      message: "Stock adjusted",
+      data: result,
+    });
   } catch (err) {
     handleError(res, err);
   }

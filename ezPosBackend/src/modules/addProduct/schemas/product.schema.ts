@@ -3,6 +3,7 @@ const serialNumberSchema = z.object({
   serial: z.string().min(1, { message: "Serial number is required" }),
 });
 const variantSchema = z.object({
+  id: z.number().int().optional(),
   options: z
     .array(
       z.object({

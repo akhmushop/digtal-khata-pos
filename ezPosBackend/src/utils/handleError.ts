@@ -30,6 +30,12 @@ export class ConflictError extends Error {
 }
 export function handleError(res: Response, err: unknown) {
   console.error(err);
+  if (err instanceof BadRequestError) {
+    return res.status(400).json({ success: false, message: err.message });
+  }
+  if (err instanceof ConflictError) {
+    return res.status(409).json({ success: false, message: err.message });
+  }
   if (err instanceof NotFoundError) {
     return res.status(404).json({ error: err.message });
   }

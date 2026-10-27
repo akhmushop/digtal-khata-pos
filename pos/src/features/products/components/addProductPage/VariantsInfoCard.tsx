@@ -24,16 +24,27 @@ export function VariantsInfoCard({
   append,
   replace,
   remove,
+  fields,
+  isEditing = false,
 }: AccordionCardProps) {
   const [comboboxVariantTypeName, setComboboxVariantTypeName] = useState<
     string[]
   >([]);
   const { productVariantOptions } = useProductStore();
+  const hasVariants = form.watch("hasVariants");
+  const variants = form.watch("variants") || [];
   const filtered = productVariantOptions.filter((option) =>
     comboboxVariantTypeName.includes(option.typeName),
   );
-  const allVariants = generateVariants(filtered);
+  const allVariants = isEditing
+    ? variants.flatMap((variant) =>
+        variant.options?.length ? [{ options: variant.options }] : [],
+      )
+    : generateVariants(filtered);
   const handleHasVariantsChange = (value: boolean) => {
+    if (isEditing) {
+      return;
+    }
     form.setValue("hasVariants", value);
 
     if (value) {
@@ -44,8 +55,6 @@ export function VariantsInfoCard({
       replace([emptyVariant]);
     }
   };
-  const hasVariants = form.watch("hasVariants");
-  const variants = form.watch("variants") || [];
   return (
     <Card className="w-full">
       <CardHeader>
@@ -65,6 +74,7 @@ export function VariantsInfoCard({
               <Switch
                 id="has-variants"
                 checked={field.value}
+                disabled={isEditing}
                 onCheckedChange={handleHasVariantsChange}
               />
             )}
@@ -75,32 +85,40 @@ export function VariantsInfoCard({
       <CardContent>
         {hasVariants ? (
           <div className="flex flex-col gap-5">
-            <MultipleVariantSelector
-              setComboboxVariantTypeName={setComboboxVariantTypeName}
-              replace={replace}
-            />
+            {!isEditing && (
+              <MultipleVariantSelector
+                setComboboxVariantTypeName={setComboboxVariantTypeName}
+                replace={replace}
+              />
+            )}
             {allVariants.length !== 0 && (
               <div className="flex justify-between">
                 <div className="flex gap-5">
                   <p>
-                    Generated Variants
+                    {isEditing ? "Existing Variants" : "Generated Variants"}
                     <Badge variant="outline"> {allVariants.length} </Badge>
                   </p>
                   <p>
-                    Variant Added
+                    {isEditing ? "Variants" : "Variant Added"}
                     <Badge variant="outline"> {variants.length} </Badge>
                   </p>
                 </div>
-                <p>Click Square Icon to Add Variant</p>
+                <p>
+                  {isEditing
+                    ? "Edit the default variant and variant pricing."
+                    : "Click square icon to add a variant."}
+                </p>
               </div>
             )}
             <VariantsTable
+              fields={fields}
               form={form}
               append={append}
               remove={remove}
               replace={replace}
               comboboxVariantTypeName={comboboxVariantTypeName}
               allVariants={allVariants}
+              isEditing={isEditing}
             />
           </div>
         ) : (
@@ -109,7 +127,11 @@ export function VariantsInfoCard({
               <CardTitle>Pricing & Inventory</CardTitle>
             </CardHeader>
             <CardContent>
-              <ProductInfoInput form={form} variantIndex={0} />
+              <ProductInfoInput
+                form={form}
+                variantIndex={0}
+                canRemoveVariant={!isEditing}
+              />
             </CardContent>
           </Card>
         )}

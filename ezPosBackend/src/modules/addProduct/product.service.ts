@@ -1,4 +1,10 @@
-import { eq, sql, type ExtractTablesWithRelations } from "drizzle-orm";
+import {
+  and,
+  eq,
+  inArray,
+  sql,
+  type ExtractTablesWithRelations,
+} from "drizzle-orm";
 import { brands } from "../../db/schema/brands.js";
 import { categories } from "../../db/schema/categories.js";
 import { db } from "../../db/schema/index.js";
@@ -7,7 +13,10 @@ import { units } from "../../db/schema/units.js";
 import { variantOptions } from "../../db/schema/variantOptions.js";
 import { variantTypes } from "../../db/schema/variantTypes.js";
 import type { ProductType, VariantType } from "./schemas/product.schema.js";
-import { NotFoundError } from "../../utils/handleError.js";
+import {
+  BadRequestError,
+  NotFoundError,
+} from "../../utils/handleError.js";
 import { error } from "node:console";
 import { products } from "../../db/schema/products.js";
 import { productVariants } from "../../db/schema/productVariants.js";
@@ -436,6 +445,185 @@ export async function createProduct(data: ProductType) {
     console.error(err);
     throw err;
   }
+}
+export async function getProductForEdit(id: number) {
+  const [product] = await db.select().from(products).where(eq(products.id, id));
+  if (!product) {
+    throw new NotFoundError("Product not found");
+  }
+
+  const variants = await db
+    .select({
+      id: productVariants.id,
+      sku: productVariants.sku,
+      barcode: productVariants.barcode,
+      sellingPrice: productVariants.sellingPrice,
+      alertQuantity: productVariants.alertQuantity,
+      isDefault: productVariants.isDefault,
+      status: productVariants.status,
+    })
+    .from(productVariants)
+    .where(eq(productVariants.productId, id));
+
+  const optionRows =
+    variants.length === 0
+      ? []
+      : await db
+          .select({
+            variantId: variantValues.variantId,
+            typeId: variantTypes.id,
+            typeName: variantTypes.name,
+            optionId: variantOptions.id,
+            value: variantOptions.value,
+          })
+          .from(variantValues)
+          .innerJoin(
+            variantOptions,
+            eq(variantOptions.id, variantValues.optionId),
+          )
+          .innerJoin(
+            variantTypes,
+            eq(variantTypes.id, variantOptions.variantTypeId),
+          )
+          .where(
+            inArray(
+              variantValues.variantId,
+              variants.map((variant) => variant.id),
+            ),
+          );
+  const optionsByVariant = new Map<number, typeof optionRows>();
+  for (const option of optionRows) {
+    const options = optionsByVariant.get(option.variantId) ?? [];
+    options.push(option);
+    optionsByVariant.set(option.variantId, options);
+  }
+
+  return {
+    name: product.name,
+    categoryId: product.categoryId,
+    brandId: product.brandId,
+    unitId: product.unitId,
+    description: product.description ?? "",
+    productType: product.productType ?? "physical",
+    hasVariants: product.hasVariants ?? false,
+    trackingType: product.trackingType ?? "none",
+    supplierId: null,
+    status: product.status ?? "active",
+    imageUrl: null,
+    imageFile: null,
+    source: "purchase",
+    variants: variants.map((variant) => ({
+      ...variant,
+      options: (optionsByVariant.get(variant.id) ?? []).map(
+        ({ typeId, typeName, optionId, value }) => ({
+          typeId,
+          typeName,
+          optionId,
+          value,
+        }),
+      ),
+      barcode: variant.barcode ?? "",
+      alertQuantity: variant.alertQuantity ?? 0,
+      status: variant.status ?? "active",
+      imageUrl: null,
+      imageFile: null,
+      batchNumber: "",
+      purchasePrice: 0,
+      quantity: 0,
+      expiryDate: null,
+      serialNumbers: [],
+    })),
+  };
+}
+export async function updateProduct(id: number, data: ProductType) {
+  return db.transaction(async (tx) => {
+    const [existingProduct] = await tx
+      .select({ id: products.id })
+      .from(products)
+      .where(eq(products.id, id));
+    if (!existingProduct) {
+      throw new NotFoundError("Product not found");
+    }
+
+    await validateProductReferences(tx, data);
+    validateProductRules(data);
+    await validateVariantRulesAndRef(tx, data);
+
+    const existingVariants = await tx
+      .select({ id: productVariants.id })
+      .from(productVariants)
+      .where(eq(productVariants.productId, id));
+    const existingVariantIds = new Set(
+      existingVariants.map((variant) => variant.id),
+    );
+    const submittedVariantIds = data.variants.map((variant) => variant.id);
+    if (
+      submittedVariantIds.length !== existingVariants.length ||
+      submittedVariantIds.some((variantId) => variantId === undefined) ||
+      new Set(submittedVariantIds).size !== existingVariants.length ||
+      submittedVariantIds.some(
+        (variantId) =>
+          variantId === undefined || !existingVariantIds.has(variantId),
+      )
+    ) {
+      throw new BadRequestError(
+        "Existing variants cannot be added or removed while editing. Stock and variant history are preserved.",
+      );
+    }
+
+    await tx
+      .update(products)
+      .set({
+        name: data.name,
+        categoryId: data.categoryId,
+        brandId: data.brandId,
+        unitId: data.unitId,
+        description: data.description,
+        productType: data.productType,
+        hasVariants: data.hasVariants,
+        trackingType: data.trackingType,
+        status: data.status,
+      })
+      .where(eq(products.id, id));
+
+    for (const variant of data.variants) {
+      const variantId = variant.id;
+      if (variantId === undefined) {
+        throw new BadRequestError("Variant ID is required while editing.");
+      }
+
+      await tx
+        .update(productVariants)
+        .set({
+          sku: variant.sku.trim() || (await generateSku(tx)),
+          barcode: variant.barcode?.trim() || null,
+          sellingPrice: variant.sellingPrice,
+          alertQuantity: variant.alertQuantity,
+          isDefault: variant.isDefault,
+          status: variant.status,
+        })
+        .where(
+          and(
+            eq(productVariants.id, variantId),
+            eq(productVariants.productId, id),
+          ),
+        );
+
+      await tx
+        .delete(variantValues)
+        .where(eq(variantValues.variantId, variantId));
+      if (data.hasVariants && variant.options?.length) {
+        await tx.insert(variantValues).values(
+          variant.options.map((option) => ({
+            variantId,
+            optionId: option.optionId,
+          })),
+        );
+      }
+    }
+
+    return { productId: id };
+  });
 }
 export async function createCategory(data: AddCategorySchemaType) {
   const [category] = await db

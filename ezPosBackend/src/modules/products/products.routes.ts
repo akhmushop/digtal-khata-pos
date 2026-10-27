@@ -14,6 +14,10 @@ router.put(
 router.put("/api/products/custom/:id", productsController.customQuantity);
 router.put("/api/products/update_stock/:id", productsController.updateStock);
 router.post(
+  "/api/products/variants/:variantId/adjust-stock",
+  productsController.adjustVariantStock,
+);
+router.post(
   "/api/products/duplicate-product/:id",
   productsController.duplicateProduct,
 );

@@ -12,9 +12,11 @@ import {
   createUnitApi,
   createVariantOptionApi,
   createVariantTypeApi,
+  updateProductApi,
   getProductsApi,
   getProductSelectOptionsApi,
   getProductVariantOptionsApi,
+  adjustVariantStockApi,
 } from "./product.api";
 
 const useProductStore = create<ProductStoreType>((set) => ({
@@ -29,13 +31,27 @@ const useProductStore = create<ProductStoreType>((set) => ({
   loading: false,
   error: null,
   getProducts: async () => {
-    set({ loading: true });
+    set({ loading: true, error: null });
     try {
       const productsData = await getProductsApi();
-      set({ products: productsData, loading: false });
+      set({ products: productsData, loading: false, error: null });
     } catch (err: unknown) {
       set({ error: getErrorMessage(err), loading: false });
     }
+  },
+  adjustVariantStock: async (variantId, data) => {
+    const result = await adjustVariantStockApi(variantId, data);
+    set((state) => ({
+      products: state.products.map((product) => ({
+        ...product,
+        variants: product.variants.map((variant) =>
+          variant.id === variantId
+            ? { ...variant, quantity: result.quantity }
+            : variant,
+        ),
+      })),
+    }));
+    return result;
   },
   getProductSelectOptions: async () => {
     set({ loading: true });
@@ -56,9 +72,50 @@ const useProductStore = create<ProductStoreType>((set) => ({
     }
   },
   createProduct: async (data) => {
-    console.log(data);
     const response = await createProductApi(data);
     return response.data;
+  },
+  updateProduct: async (id, data) => {
+    await updateProductApi(id, data);
+    set((state) => ({
+      products: state.products.map((product) => {
+        if (product.id !== id) {
+          return product;
+        }
+
+        return {
+          ...product,
+          name: data.name,
+          categoryId: data.categoryId,
+          brandId: data.brandId,
+          unitId: data.unitId,
+          description: data.description,
+          productType: data.productType,
+          hasVariants: data.hasVariants,
+          trackingType: data.trackingType,
+          status: data.status,
+          variants: product.variants.map((variant) => {
+            const updatedVariant = data.variants.find(
+              (item) => item.id === variant.id,
+            );
+            if (!updatedVariant) {
+              return variant;
+            }
+
+            return {
+              ...variant,
+              sku: updatedVariant.sku,
+              barcode: updatedVariant.barcode,
+              sellingPrice: updatedVariant.sellingPrice,
+              alertQuantity: updatedVariant.alertQuantity,
+              isDefault: updatedVariant.isDefault,
+              status: updatedVariant.status,
+              options: updatedVariant.options,
+            };
+          }),
+        };
+      }),
+    }));
   },
   createCategory: async (data) => {
     const response = await createCategoryApi(data);
