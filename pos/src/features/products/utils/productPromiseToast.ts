@@ -18,3 +18,17 @@ export async function createProductPromiseToast(
     error: (error) => error?.response?.data?.message ?? "Could not create product",
   });
 }
+
+export async function updateProductPromiseToast(
+  data: ProductTypeOutput,
+  updateProduct: () => Promise<void>,
+) {
+  return toast.promise(updateProduct(), {
+    loading: "Updating product…",
+    success: `${data.name} updated successfully!`,
+    error: (error) =>
+      error?.response?.data?.message ??
+      error?.response?.data?.error ??
+      "Could not update product",
+  });
+}

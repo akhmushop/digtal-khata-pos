@@ -87,6 +87,10 @@ const router = createBrowserRouter([
     path: "/product/addproduct",
     element: <ProductStockForm />,
   },
+  {
+    path: "/product/:id/edit",
+    element: <ProductStockForm />,
+  },
 ]);
 export default function AppRoutes() {
   return <RouterProvider router={router} />;

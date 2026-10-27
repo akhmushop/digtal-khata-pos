@@ -20,8 +20,10 @@ import useProductStore from "../../useProductStore";
 
 export function RightColumnInfoCard({
   form,
+  isEditing = false,
 }: {
   form: UseFormReturn<ProductTypeInput>;
+  isEditing?: boolean;
 }) {
   const { productSelectOptions } = useProductStore();
   return (
@@ -35,19 +37,23 @@ export function RightColumnInfoCard({
       </CardHeader>
       <CardContent>
         {/* image */}
-        <InputFile
-          urlName={`imageUrl`}
-          fileName={`imageFile`}
-          form={form}
-          label="Default Image"
-        />
+        {!isEditing && (
+          <InputFile
+            urlName="imageUrl"
+            fileName="imageFile"
+            form={form}
+            label="Default Image"
+          />
+        )}
         {/* Tracking Type */}
-        <SelectOptions
-          options={trackingType}
-          label="Tracking Type"
-          form={form}
-          name="trackingType"
-        />
+        {!isEditing && (
+          <SelectOptions
+            options={trackingType}
+            label="Tracking Type"
+            form={form}
+            name="trackingType"
+          />
+        )}
         {/* status */}
         <SelectOptions
           options={productStatus}
@@ -56,17 +62,21 @@ export function RightColumnInfoCard({
           name="status"
         />
         {/* inventoryOptions */}
-        <InventorySourceSelector
-          form={form}
-          inventoryOptions={inventorySources}
-        />
+        {!isEditing && (
+          <InventorySourceSelector
+            form={form}
+            inventoryOptions={inventorySources}
+          />
+        )}
         {/* Supplier */}
-        <SelectOptions
-          options={productSelectOptions.suppliers}
-          label="Select a supplier"
-          form={form}
-          name="supplierId"
-        />
+        {!isEditing && (
+          <SelectOptions
+            options={productSelectOptions.suppliers}
+            label="Select a supplier"
+            form={form}
+            name="supplierId"
+          />
+        )}
         {/* Brand */}
         <SelectOptions
           options={productSelectOptions.brands}

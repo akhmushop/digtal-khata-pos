@@ -46,6 +46,45 @@ export async function createProduct(
     next(err);
   }
 }
+export async function getProductForEdit(req: Request, res: Response) {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id < 1) {
+    return res.status(400).json({ message: "Invalid product ID" });
+  }
+
+  try {
+    return res.json(await productService.getProductForEdit(id));
+  } catch (err: unknown) {
+    return handleError(res, err);
+  }
+}
+export async function updateProduct(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id < 1) {
+    return res.status(400).json({ message: "Invalid product ID" });
+  }
+
+  try {
+    const result = productSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({
+        message: "Invalid product data",
+        errors: result.error.flatten(),
+      });
+    }
+    const product = await productService.updateProduct(id, result.data);
+    return res.json({
+      message: "Product updated successfully",
+      data: product,
+    });
+  } catch (err: unknown) {
+    return next(err);
+  }
+}
 export async function createCategory(
   req: Request,
   res: Response,

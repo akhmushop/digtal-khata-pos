@@ -21,6 +21,7 @@ export function VariantTableRow({
   setExpanded,
   onAddVariant,
   onRemoveVariant,
+  isEditing = false,
 }: VariantTableRowProps) {
   const variants = form.watch("variants") || [];
   const variantIndex = variants.findIndex((item) =>
@@ -74,28 +75,29 @@ export function VariantTableRow({
 
         <TableCell>
           <div className="flex">
-            {added ? (
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => {
-                  setExpanded(null);
-                  onRemoveVariant(variantIndex);
-                }}
-              >
-                <SquareCheck />
-              </Button>
-            ) : (
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => {
-                  onAddVariant(variant);
-                }}
-              >
-                <Square />
-              </Button>
-            )}
+            {!isEditing &&
+              (added ? (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => {
+                    setExpanded(null);
+                    onRemoveVariant(variantIndex);
+                  }}
+                >
+                  <SquareCheck />
+                </Button>
+              ) : (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => {
+                    onAddVariant(variant);
+                  }}
+                >
+                  <Square />
+                </Button>
+              ))}
             <Tooltip>
               <TooltipTrigger
                 render={
@@ -130,6 +132,8 @@ export function VariantTableRow({
               form={form}
               variantIndex={variantIndex}
               remove={remove}
+              canRemoveVariant={!isEditing}
+              canEditImages={!isEditing}
             />
           </TableCell>
         </TableRow>

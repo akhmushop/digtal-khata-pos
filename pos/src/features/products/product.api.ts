@@ -1,7 +1,7 @@
 import axios from "../../api/axios.js";
 import { AddCategorySchemaType } from "./addCategory.schema.js";
 import { BrandSchemaType } from "./brand.schema.js";
-import { ProductTypeOutput } from "./product.schema.js";
+import { ProductTypeInput, ProductTypeOutput } from "./product.schema.js";
 import { UnitSchemaType } from "./schemas/unit.schema.js";
 import {
   VariantOptionSchemaType,
@@ -21,6 +21,13 @@ export async function getProductVariantOptionsApi() {
 }
 export async function createProductApi(data: ProductTypeOutput) {
   return axios.post("/product", data);
+}
+export async function getProductForEditApi(id: number) {
+  const { data } = await axios.get<ProductTypeInput>(`/product/${id}`);
+  return data;
+}
+export async function updateProductApi(id: number, data: ProductTypeOutput) {
+  return axios.put(`/product/${id}`, data);
 }
 export async function createCategoryApi(data: AddCategorySchemaType) {
   return axios.post("/product/category", data);
