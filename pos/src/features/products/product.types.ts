@@ -47,6 +47,19 @@ export type ApiResponse<T> = {
   message: string;
   data: T;
 };
+export type StockAdjustmentInput = {
+  newQuantity: number;
+  reason: "count_correction" | "damaged" | "expired" | "lost" | "found";
+  batchNumber?: string;
+  unitCost?: number;
+  serialNumbers?: string[];
+};
+export type StockAdjustmentResult = {
+  variantId: number;
+  previousQuantity: number;
+  quantity: number;
+  change: number;
+};
 export interface ProductStoreType {
   products: ProductType[];
   productSelectOptions: {
@@ -71,6 +84,10 @@ export interface ProductStoreType {
   loading: boolean;
   error: string | null;
   getProducts: () => void;
+  adjustVariantStock: (
+    variantId: number,
+    data: StockAdjustmentInput,
+  ) => Promise<StockAdjustmentResult>;
   getProductSelectOptions: () => void;
   getProductVariantOptions: () => void;
   createProduct: (data: ProductTypeOutput) => Promise<CreateProductResponse>;
