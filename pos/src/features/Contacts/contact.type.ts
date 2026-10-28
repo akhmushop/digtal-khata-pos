@@ -1,13 +1,24 @@
-import { SupplierSchemaTypeOutput } from "./schemas/supplier.schema";
-export type CreateSupplerResponse = {
-  success: boolean;
+import type { SupplierSchemaTypeOutput } from "./schemas/supplier.schema";
+export type CreateSupplierResponse = {
   message: string;
   data: {
     supplierId: number;
   };
 };
+export interface Supplier {
+  id: number;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  status: string | null;
+}
 export interface ContactStoreType {
+  suppliers: Supplier[];
+  loading: boolean;
+  error: string | null;
+  getSuppliers: () => Promise<void>;
   createSupplier: (
     data: SupplierSchemaTypeOutput,
-  ) => Promise<CreateSupplerResponse>;
+  ) => Promise<CreateSupplierResponse>;
 }

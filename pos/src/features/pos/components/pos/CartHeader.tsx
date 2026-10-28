@@ -6,7 +6,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { AddCustomer } from "@/pages/Customer/Customer";
+import { AddCustomer } from "@/features/Contacts/pages/Customer";
 import { useCustomerStore } from "@/store/useCustomerStore";
 import React, { useState, useRef, useEffect } from "react";
 import { Controller, FieldValues, UseFormReturn } from "react-hook-form";
@@ -27,11 +27,7 @@ import {
 import { UserPlus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { CartSchemaType } from "../../schemas/cart.schema";
-export function CartHeader({
-  form,
-}: {
-  form: UseFormReturn<CartSchemaType>;
-}) {
+export function CartHeader({ form }: { form: UseFormReturn<CartSchemaType> }) {
   const {
     customerInfo,
     handleOnchange,

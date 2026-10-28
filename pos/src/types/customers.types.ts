@@ -11,7 +11,7 @@ export interface CustomerStore {
   customers: InputValue[];
   customerInfo: InputValue;
   customerInputValue: InputValue;
-  showCustomerInfo: InputValue;
+  showCustomerInfo: InputValue | null;
   loading: boolean;
   error: string | null;
   handleOnchange: (
@@ -24,9 +24,9 @@ export interface CustomerStore {
   setShowCustomerInfo: (customer: InputValue | null) => void;
   resetCustomerInfo: () => void;
   resetShowCustomerInfo: () => void;
-  handleAddCustomer: () => void;
-  getCustomers: () => void;
-  addCustomer: (customerInfo: InputValue) => void;
+  handleAddCustomer: () => Promise<void>;
+  getCustomers: () => Promise<void>;
+  addCustomer: (customerInfo: InputValue) => Promise<InputValue>;
 }
 export type PeerFocusInputProps = {
   placeholder: string;
@@ -45,8 +45,8 @@ export type AddCustomerProps = {
 export interface CustomerDue {
   customerId: number;
   totalAmount: number;
-  total_due: number;
-  total_paid: number;
+  totalDue: number;
+  totalPaid: number;
 }
 export interface ShowCustomerInfoProps {
   form: UseFormReturn<CartSchemaType>;

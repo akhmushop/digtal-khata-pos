@@ -1,6 +1,11 @@
+import { asc } from "drizzle-orm";
 import { db } from "../../db/schema/index.js";
 import { suppliers } from "../../db/schema/suppliers.js";
 import type { SupplierSchemaTypeOutput } from "./schemas/supplier.schema.js";
+
+export async function getSuppliers() {
+  return db.select().from(suppliers).orderBy(asc(suppliers.name));
+}
 
 export async function createSupplier(data: SupplierSchemaTypeOutput) {
   const [supplier] = await db
