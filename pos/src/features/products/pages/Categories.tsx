@@ -1,82 +1,168 @@
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group";
-import { ChevronDown, Search } from "lucide-react";
+import { useMemo, useState } from "react";
 import {
   CategoryTreeNode,
   CategoryTreeTable,
-  demoCategories,
 } from "../components/categories/CategoryTreeTable";
 import { AddCategoryDialog } from "../components/categories/AddCategoryDialog";
+import { EntityListLayout } from "@/components/common/EntityListLayout";
+import { ConfirmDeleteDialog } from "@/components/common/ConfirmDeleteDialog";
+import useProductStore from "../useProductStore";
+
+type CategoryRecord = {
+  value: number;
+  label: string;
+  parentCategoryId: number | null;
+  description: string | null;
+  status: "active" | "inactive";
+  productCount: number;
+};
+
+function buildCategoryTree(categories: CategoryRecord[]): CategoryTreeNode[] {
+  const byId = new Map<number, CategoryTreeNode>();
+  const rootNodes: CategoryTreeNode[] = [];
+
+  for (const category of categories) {
+    byId.set(category.value, {
+      id: category.value,
+      name: category.label,
+      products: category.productCount,
+      status: category.status,
+      children: [],
+    });
+  }
+
+  for (const category of categories) {
+    const node = byId.get(category.value);
+    if (!node) continue;
+    if (category.parentCategoryId === null || !byId.has(category.parentCategoryId)) {
+      rootNodes.push(node);
+      continue;
+    }
+    const parent = byId.get(category.parentCategoryId);
+    if (parent) {
+      parent.children.push(node);
+    } else {
+      rootNodes.push(node);
+    }
+  }
+
+  return rootNodes;
+}
 
 export function Categories() {
+  const { productSelectOptions, deleteCategory } = useProductStore();
+  const [searchValue, setSearchValue] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">(
+    "all",
+  );
+  const [editingCategory, setEditingCategory] = useState<CategoryTreeNode | null>(null);
+  const [categoryToDelete, setCategoryToDelete] =
+    useState<CategoryTreeNode | null>(null);
+
+  const categoryTree = useMemo(
+    () => buildCategoryTree(productSelectOptions.categories),
+    [productSelectOptions.categories],
+  );
+
+  const filteredNodes = useMemo(() => {
+    const query = searchValue.trim().toLowerCase();
+    const filterNode = (node: CategoryTreeNode): CategoryTreeNode | null => {
+      const matchesQuery =
+        query.length === 0 || node.name.toLowerCase().includes(query);
+      const matchesStatus =
+        statusFilter === "all" || node.status === statusFilter;
+      const filteredChildren = (node.children || [])
+        .map(filterNode)
+        .filter(Boolean) as CategoryTreeNode[];
+
+      const isIncluded = matchesQuery && matchesStatus;
+      if (isIncluded) {
+        return { ...node, children: filteredChildren };
+      }
+      if (filteredChildren.length > 0) {
+        return { ...node, children: filteredChildren };
+      }
+      return null;
+    };
+
+    return categoryTree
+      .map(filterNode)
+      .filter(Boolean) as CategoryTreeNode[];
+  }, [categoryTree, searchValue, statusFilter]);
+
   const handleEdit = (category: CategoryTreeNode) => {
-    console.log("Edit", category);
+    setEditingCategory(category);
   };
 
   const handleDelete = (category: CategoryTreeNode) => {
-    console.log("Delete", category);
+    setCategoryToDelete(category);
   };
 
   const handleAddChild = (category: CategoryTreeNode) => {
-    console.log("Add child", category);
+    setEditingCategory({
+      ...category,
+      name: category.name,
+      status: category.status,
+      children: category.children,
+      products: category.products,
+    });
   };
+
   return (
-    <div className="p-5 space-y-5">
-      <Card>
-        <CardHeader>
-          <CardTitle>Categories</CardTitle>
-          <CardDescription>
-            Manage your product categories and hierarchy
-          </CardDescription>
-          <CardAction>
-            <AddCategoryDialog />
-          </CardAction>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <InputGroup className="max-w-xs">
-              <InputGroupInput placeholder="Search..." />
-              <InputGroupAddon>
-                <Search />
-              </InputGroupAddon>
-              <InputGroupAddon align="inline-end">12 results</InputGroupAddon>
-            </InputGroup>
-            <DropdownMenu>
-              <DropdownMenuTrigger render={<Button variant="outline" />}>
-                Status <ChevronDown />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem>Active</DropdownMenuItem>
-                <DropdownMenuItem>Inactive</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </CardContent>
-      </Card>
-      <CategoryTreeTable
-        nodes={demoCategories}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onAddChild={handleAddChild}
+    <>
+      <EntityListLayout
+        title="Categories"
+        description="Manage your product categories and hierarchy."
+        action={<AddCategoryDialog />}
+        searchValue={searchValue}
+        onSearchChange={setSearchValue}
+        resultCount={filteredNodes.length}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+      >
+        <CategoryTreeTable
+          nodes={filteredNodes}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onAddChild={handleAddChild}
+        />
+      </EntityListLayout>
+      {editingCategory && (
+        <AddCategoryDialog
+          existingCategory={{
+            id: editingCategory.id,
+            name: editingCategory.name,
+            description: productSelectOptions.categories.find(
+              (category) => category.value === editingCategory.id,
+            )?.description ?? "",
+            parentCategoryId:
+              productSelectOptions.categories.find(
+                (category) => category.value === editingCategory.id,
+              )?.parentCategoryId ?? null,
+            status: editingCategory.status,
+          }}
+          open={Boolean(editingCategory)}
+          onOpenChange={(nextOpen) => {
+            if (!nextOpen) setEditingCategory(null);
+          }}
+        />
+      )}
+      <ConfirmDeleteDialog
+        open={Boolean(categoryToDelete)}
+        onOpenChange={(open) => !open && setCategoryToDelete(null)}
+        title="Delete category"
+        entityName="Category"
+        description={
+          categoryToDelete
+            ? `Delete “${categoryToDelete.name}”? Categories with products or subcategories must be cleared before they can be deleted.`
+            : "Delete this category?"
+        }
+        onConfirm={async () => {
+          if (!categoryToDelete) return;
+          await deleteCategory(categoryToDelete.id);
+          setCategoryToDelete(null);
+        }}
       />
-    </div>
+    </>
   );
 }

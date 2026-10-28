@@ -17,6 +17,16 @@ import {
   getProductSelectOptionsApi,
   getProductVariantOptionsApi,
   adjustVariantStockApi,
+  deleteBrandApi,
+  deleteCategoryApi,
+  deleteUnitApi,
+  deleteVariantOptionApi,
+  deleteVariantTypeApi,
+  updateBrandApi,
+  updateCategoryApi,
+  updateUnitApi,
+  updateVariantOptionApi,
+  updateVariantTypeApi,
 } from "./product.api";
 
 const useProductStore = create<ProductStoreType>((set) => ({
@@ -130,6 +140,29 @@ const useProductStore = create<ProductStoreType>((set) => ({
     }));
     return response.data;
   },
+  updateCategory: async (id, data) => {
+    const response = await updateCategoryApi(id, data);
+    set((state) => ({
+      productSelectOptions: {
+        ...state.productSelectOptions,
+        categories: state.productSelectOptions.categories.map((category) =>
+          category.value === id ? response.data.data : category,
+        ),
+      },
+    }));
+    return response.data;
+  },
+  deleteCategory: async (id) => {
+    await deleteCategoryApi(id);
+    set((state) => ({
+      productSelectOptions: {
+        ...state.productSelectOptions,
+        categories: state.productSelectOptions.categories.filter(
+          (category) => category.value !== id,
+        ),
+      },
+    }));
+  },
   createBrand: async (data) => {
     const response = await createBrandApi(data);
     set((state) => ({
@@ -140,6 +173,29 @@ const useProductStore = create<ProductStoreType>((set) => ({
     }));
     return response.data;
   },
+  updateBrand: async (id, data) => {
+    const response = await updateBrandApi(id, data);
+    set((state) => ({
+      productSelectOptions: {
+        ...state.productSelectOptions,
+        brands: state.productSelectOptions.brands.map((brand) =>
+          brand.value === id ? response.data.data : brand,
+        ),
+      },
+    }));
+    return response.data;
+  },
+  deleteBrand: async (id) => {
+    await deleteBrandApi(id);
+    set((state) => ({
+      productSelectOptions: {
+        ...state.productSelectOptions,
+        brands: state.productSelectOptions.brands.filter(
+          (brand) => brand.value !== id,
+        ),
+      },
+    }));
+  },
   createUnit: async (data) => {
     const response = await createUnitApi(data);
     set((state) => ({
@@ -149,6 +205,29 @@ const useProductStore = create<ProductStoreType>((set) => ({
       },
     }));
     return response.data;
+  },
+  updateUnit: async (id, data) => {
+    const response = await updateUnitApi(id, data);
+    set((state) => ({
+      productSelectOptions: {
+        ...state.productSelectOptions,
+        units: state.productSelectOptions.units.map((unit) =>
+          unit.value === id ? response.data.data : unit,
+        ),
+      },
+    }));
+    return response.data;
+  },
+  deleteUnit: async (id) => {
+    await deleteUnitApi(id);
+    set((state) => ({
+      productSelectOptions: {
+        ...state.productSelectOptions,
+        units: state.productSelectOptions.units.filter(
+          (unit) => unit.value !== id,
+        ),
+      },
+    }));
   },
   createVariantType: async (data) => {
     const response = await createVariantTypeApi(data);
@@ -162,6 +241,23 @@ const useProductStore = create<ProductStoreType>((set) => ({
       productVariantOptions: [...state.productVariantOptions, typeToAdd],
     }));
     return response.data;
+  },
+  updateVariantType: async (id, data) => {
+    const response = await updateVariantTypeApi(id, data);
+    set((state) => ({
+      productVariantOptions: state.productVariantOptions.map((group) =>
+        group.typeId === id ? { ...group, typeName: data.variantTypeName } : group,
+      ),
+    }));
+    return response.data;
+  },
+  deleteVariantType: async (id) => {
+    await deleteVariantTypeApi(id);
+    set((state) => ({
+      productVariantOptions: state.productVariantOptions.filter(
+        (group) => group.typeId !== id,
+      ),
+    }));
   },
   createVariantOption: async (data) => {
     const response = await createVariantOptionApi(data);
@@ -189,6 +285,27 @@ const useProductStore = create<ProductStoreType>((set) => ({
     }));
 
     return response.data;
+  },
+  updateVariantOption: async (id, value) => {
+    const response = await updateVariantOptionApi(id, value);
+    set((state) => ({
+      productVariantOptions: state.productVariantOptions.map((group) => ({
+        ...group,
+        options: group.options.map((option) =>
+          option.optionId === id ? { ...option, value } : option,
+        ),
+      })),
+    }));
+    return response.data;
+  },
+  deleteVariantOption: async (id) => {
+    await deleteVariantOptionApi(id);
+    set((state) => ({
+      productVariantOptions: state.productVariantOptions.map((group) => ({
+        ...group,
+        options: group.options.filter((option) => option.optionId !== id),
+      })),
+    }));
   },
 }));
 export default useProductStore;
