@@ -1,816 +1,1321 @@
-import React, { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import {
-  ResponsiveContainer,
-  AreaChart,
+  AlertTriangle,
+  ArrowDownRight,
+  ArrowRight,
+  ArrowUpRight,
+  Banknote,
+  CreditCard,
+  Clock3,
+  Download,
+  LoaderCircle,
+  Package,
+  Plus,
+  Receipt,
+  RefreshCw,
+  ShoppingBag,
+  ShoppingCart,
+  TrendingUp,
+  Users,
+  Wallet,
+} from "lucide-react";
+import {
   Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  BarChart,
-  Bar,
-  Cell,
 } from "recharts";
-import {
-  TrendingUp,
-  Package,
-  DollarSign,
-  Users,
-  AlertTriangle,
-  ShoppingCart,
-  TrendingDown,
-  Calendar,
-  Filter,
-  Download,
-  MoreVertical,
-} from "lucide-react";
-import Sidebar from "../../components/layout/Sidebar.js";
+import { Link } from "react-router";
 import axios from "../../api/axios.js";
-import {
-  BigSummaryCardProps,
-  BigSummaryCards,
-  DashBoard,
-  ExpensesSummary,
-  InvoiceDue,
-  LowStockAlertProps,
-  NetProfit,
-  OverallInfoCards,
-  ProductSummary,
-  PurchasesSummary,
-  RecentSalesProps,
-  ReturnSummary,
-  SaleSummary,
-  SummaryCardProps,
-  SummaryCards,
-  TopItemsByGrossProps,
-  TopProfitByCategoryProps,
-  TopSellingProductsProps,
-  TopSoldProductCategory,
+import type {
+  DashboardData,
+  LowStockProduct,
+  PaymentBreakdown,
+  RecentSale,
+  SalesActivity,
+  SalesOverview,
+  StaleStockProduct,
 } from "../../types/dashboard.types.js";
-const DashboardComponent = () => {
-  const initialProductSummary: ProductSummary = {
-    low_stock: 0,
-    stock_out: 0,
-    total_items: 0,
-    total_valuation: 0,
-  };
-  const initialSaleSummary: SaleSummary = {
-    current_net_sales: 0,
-    current_return: 0,
-    return_growth: 0,
-    sales_growth: 0,
-  };
-  const initialNetProfit: NetProfit = {
-    current_net_profit: 0,
-    profit_growth: 0,
-  };
-  const initialInvoiceDue: InvoiceDue = {
-    current_due: 0,
-    invoice_due_growth_pct: 0,
-  };
-  const initialExpensesSummary: ExpensesSummary = {
-    current_expenses: 0,
-    expenses_growth: 0,
-  };
-  const initialPurchasesSummary: PurchasesSummary = {
-    current_purchases: 0,
-    purchases_growth: 0,
-  };
-  const initialReturnSummary: ReturnSummary = {
-    current_returns: 0,
-    return_growth_pct: 0,
-  };
-  const [dashboard, setDashboard] = useState<DashBoard>({
-    salesOverview: [],
-    productsSummary: initialProductSummary,
-    topItemsByGross: [],
-    totalSales: {},
-    topSoldProductsByCategory: [],
-    profitByCategory: [],
-    salesSummary: initialSaleSummary,
-    netProfit: initialNetProfit,
-    invoiceDue: initialInvoiceDue,
-    expensesSummary: initialExpensesSummary,
-    purchasesSummary: initialPurchasesSummary,
-    return_summary: initialReturnSummary,
-    recentSalesSummary: [],
-    lowStockSummary: [],
-    topSellingProducts: [],
-  });
-  const getDashboardSummary = async () => {
-    try {
-      const res = await axios.get("/dashboard_summary");
 
-      setDashboard({
-        salesOverview: res.data.salesOverview || [],
-        productsSummary: res.data.productsSummary?.[0] || {},
-        topItemsByGross: res.data.topItemsByGross || [],
-        totalSales: res.data.totalSales?.[0] || {},
-        topSoldProductsByCategory: res.data.top_sold_products_by_category || [],
-        profitByCategory: res.data.profitByCategory || [],
-        salesSummary: res.data.salesSummary?.[0] || {},
-        netProfit: res.data.netProfit?.[0] || {},
-        invoiceDue: res.data.invoiceDue?.[0] || {},
-        expensesSummary: res.data.expensesSummary?.[0] || 0,
-        purchasesSummary: res.data.purchasesSummary?.[0] || 0,
-        return_summary: res.data.return_summary?.[0] || 0,
-        recentSalesSummary: res.data.recentSalesSummary || [],
-        lowStockSummary: res.data.lowStockSummary || [],
-        topSellingProducts: res.data.topSellingProducts || [],
-      });
-    } catch (error) {
-      console.error("Dashboard error:", error);
-    }
-  };
-  useEffect(() => {
-    getDashboardSummary();
-  }, []);
+type SummaryResponse = Record<string, unknown>;
 
-  const formatCurrency = (value: number): string => {
-    return new Intl.NumberFormat("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
-  };
-  // sold items end
-  // sales overview start
-  const [range, setRange] = useState("3");
-  const filteredData = Object.values(dashboard.salesOverview).slice(
-    -Number(range),
-  );
-  // sales overview end
-  // performance table Start
-  const colors = ["#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#8b5cf6"];
-
-  const topSoldProductByCategory = Object.values(
-    dashboard.topSoldProductsByCategory,
-  ).map((item, index) => {
-    return {
-      category: item.category,
-      quantity: item.sold_items_by_category,
-      color: colors[index % colors.length] || "#ef4444",
-    };
-  });
-  const bigSummaryCards: BigSummaryCards[] = [
-    {
-      title: "Net Profit",
-      total: dashboard.netProfit?.current_net_profit,
-      growth: dashboard.netProfit?.profit_growth,
-      bg: "bg-linear-to-br from-blue-50 to-blue-100 border border-blue-200",
-      icon: Package,
-      iconColor: "text-blue-600",
-      titleColor: "text-blue-700",
-    },
-    {
-      title: "Invoice Due",
-      total: dashboard.invoiceDue?.current_due,
-      growth: dashboard.invoiceDue?.invoice_due_growth_pct ?? 0,
-      bg: "bg-linear-to-br from-amber-50 to-amber-100 border border-amber-200",
-      icon: TrendingUp,
-      iconColor: "text-amber-600",
-      titleColor: "text-amber-700",
-    },
-    {
-      title: "Total Expenses",
-      total: dashboard.expensesSummary?.current_expenses,
-      growth: dashboard.expensesSummary?.expenses_growth,
-      bg: "bg-linear-to-br from-emerald-50 to-emerald-100 border border-emerald-200",
-      icon: ShoppingCart,
-      iconColor: "text-emerald-600",
-      titleColor: "text-emerald-700",
-    },
-    {
-      title: "Total Payment Returns",
-      total: dashboard.salesSummary?.current_return,
-      growth: dashboard.salesSummary?.return_growth,
-      bg: "bg-linear-to-br from-rose-50 to-rose-100 border border-rose-200",
-      icon: TrendingDown,
-      iconColor: "text-rose-600",
-      titleColor: "text-rose-700",
-    },
-  ];
-  const summaryCards: SummaryCards[] = [
-    {
-      bg: "bg-amber-50",
-      circleBg: "bg-amber-500",
-      title: "Total Sales",
-      total: dashboard.salesSummary?.current_net_sales,
-      growth: dashboard.salesSummary?.sales_growth,
-    },
-    {
-      bg: "bg-emerald-50",
-      circleBg: "bg-emerald-500",
-      title: "Total Sales Return",
-      total: dashboard.salesSummary?.current_return,
-      growth: dashboard.salesSummary?.return_growth,
-    },
-    {
-      bg: "bg-blue-50",
-      circleBg: "bg-blue-500",
-      title: "Total Purchase",
-      total: dashboard.purchasesSummary?.current_purchases,
-      growth: dashboard.purchasesSummary?.purchases_growth,
-    },
-    {
-      bg: "bg-rose-50",
-      circleBg: "bg-rose-500",
-      title: "Total Purchase Return",
-      total: dashboard.return_summary?.current_returns,
-      growth: dashboard.return_summary?.return_growth_pct,
-    },
-  ];
-  const overallInfo: OverallInfoCards[] = [
-    {
-      bg: "bg-amber-50",
-      circleBg: "bg-amber-500",
-      title: "SUPPLIERS",
-      total: 5,
-    },
-    {
-      bg: "bg-emerald-50",
-      circleBg: "bg-emerald-500",
-      title: "CUSTOMERS",
-      total: 3,
-    },
-    {
-      bg: "bg-blue-50",
-      circleBg: "bg-blue-500",
-      title: "ORDERS",
-      total: 15,
-    },
-  ];
-  return (
-      <div className=" w-full min-h-screen bg-gray-50 px-5">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600">Welcome to your business dashboard</p>
-          </div>
-        </div>
-
-        {/* sale info */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {summaryCards.map((value, index) => (
-            <SummaryCard
-              key={index}
-              value={value}
-              formatCurrency={formatCurrency}
-            />
-          ))}
-        </div>
-
-        {/* Alert Cards */}
-
-        {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-orange-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Alert Products
-                </p>
-                <p className="text-2xl font-bold text-orange-600 mt-2">
-                  {productsSummery.low_stock}
-                </p>
-              </div>
-              <div className="p-3 bg-orange-50 rounded-lg">
-                <AlertTriangle className="w-6 h-6 text-orange-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-yellow-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Out of Stocks
-                </p>
-                <p className="text-2xl font-bold text-yellow-600 mt-2">
-                  {productsSummery.stock_out}
-                </p>
-              </div>
-              <div className="p-3 bg-yellow-50 rounded-lg">
-                <Package className="w-6 h-6 text-yellow-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-green-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Pending Cheques
-                </p>
-                <p className="text-2xl font-bold text-green-600 mt-2">1</p>
-              </div>
-              <div className="p-3 bg-green-50 rounded-lg">
-                <DollarSign className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-red-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Cheques</p>
-                <p className="text-2xl font-bold text-red-600 mt-2">1</p>
-              </div>
-              <div className="p-3 bg-red-50 rounded-lg">
-                <Users className="w-6 h-6 text-red-600" />
-              </div>
-            </div>
-          </div>
-        </div> */}
-
-        {/* Main Metrics */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-          {bigSummaryCards.map((value, index) => (
-            <BigSummaryCard
-              key={index}
-              value={value}
-              formatCurrency={formatCurrency}
-            />
-          ))}
-        </div>
-
-        <div className="grid grid-cols-3 gap-6">
-          {/* Sales Chart Section */}
-          <div className="bg-white rounded-xl shadow-sm p-6 mb-8 col-span-2">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-              <div>
-                <h2 className="text-lg font-bold text-gray-900">
-                  Sales Overview
-                </h2>
-                <p className="text-sm text-gray-600">
-                  Showing total sales for the last 3 months
-                </p>
-              </div>
-              <div className="flex items-center space-x-4 mt-4 sm:mt-0">
-                <select
-                  value={range}
-                  onChange={(e) => setRange(e.target.value)}
-                  className="bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value={"3"}>Last 3 months</option>
-                  <option value={"6"}>Last 6 months</option>
-                  <option value={"12"}>Last year</option>
-                </select>
-                <button className="p-2 hover:bg-gray-100 rounded-lg">
-                  <Filter className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={filteredData}>
-                <defs>
-                  <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#fbbf24" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#fbbf24" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorCash" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(value) => `$${value / 1000}k`}
-                />
-                <Tooltip
-                  formatter={(value) => [
-                    `$${formatCurrency(typeof value === "number" ? value : 0)}`,
-                    "",
-                  ]}
-                  contentStyle={{
-                    borderRadius: "8px",
-                    border: "none",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                  }}
-                />
-                <Legend />
-                <Area
-                  type="monotone"
-                  dataKey="sales"
-                  stroke="#f59e0b"
-                  fill="url(#colorSales)"
-                  strokeWidth={2}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="cash"
-                  stroke="#10b981"
-                  fill="url(#colorCash)"
-                  strokeWidth={2}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-2 mb-8 col-span-1 flex flex-col justify-evenly">
-            <section className="flex flex-col gap-6">
-              <h2>Overall Information</h2>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
-                {overallInfo.map((value, index) => (
-                  <OverallInfoCard key={index} value={value} />
-                ))}
-              </div>
-            </section>
-            <section className="flex flex-col gap-6">
-              <h2>Customers Overview</h2>
-              <div className="flex gap-6 items-center">
-                <div className="flex flex-col h-20 w-20 text-center border-6 border-amber-400 rounded-full">
-                  <span className="text-3xl font-bold">1</span>
-                  <span className="text-gray-500">total</span>
-                </div>
-                <div className="flex flex-col w-full gap-4">
-                  <div className="flex justify-between w-full">
-                    <div className="flex justify-between w-full items-center">
-                      <div className="flex gap-2">
-                        <span className="font-medium">First Time</span>
-                        <span className="text-gray-600">1.0K</span>
-                      </div>
-                      <span className="text-gray-600">100%</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between w-full items-center">
-                    <div className="flex gap-2">
-                      <span className="font-medium">Returning</span>
-                      <span className="text-gray-600">1.0K</span>
-                    </div>
-                    <span className="text-gray-600">100%</span>
-                  </div>
-                </div>
-              </div>
-            </section>
-          </div>
-        </div>
-
-        {/* Performance Tables */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Top Sold Products */}
-          <TopSoldProductsByCategory
-            topSoldProductByCategory={topSoldProductByCategory}
-          />
-          {/* Top Profit */}
-          <TopProfitByCategory
-            profitByCategory={dashboard.profitByCategory}
-            formatCurrency={formatCurrency}
-          />
-          {/* Top Items */}
-          <TopItemsByGross
-            topItemsByGross={dashboard.topItemsByGross}
-            formatCurrency={formatCurrency}
-          />
-          {/* Top Selling Products */}
-          <TopSellingProducts
-            topSellingProducts={dashboard.topSellingProducts}
-            formatCurrency={formatCurrency}
-          />
-          {/* Low Stock Alert */}
-          <LowStockAlert
-            lowStockSummary={dashboard.lowStockSummary}
-            formatCurrency={formatCurrency}
-          />
-          {/* Recent Sales */}
-          <RecentSales
-            recentSalesSummary={dashboard.recentSalesSummary}
-            formatCurrency={formatCurrency}
-          />
-        </div>
-      </div>
-  );
+const emptyDashboard: DashboardData = {
+  salesOverview: [],
+  productsSummary: {
+    lowStock: 0,
+    stockOut: 0,
+    totalItems: 0,
+    totalValuation: 0,
+  },
+  topItemsByGross: [],
+  topSoldProductsByCategory: [],
+  profitByCategory: [],
+  salesSummary: {
+    currentNetSales: 0,
+    currentReturn: 0,
+    salesGrowth: 0,
+    returnGrowth: 0,
+  },
+  salesActivity: { transactionCount: 0, averageSale: 0 },
+  paymentBreakdown: [],
+  netProfit: { currentNetProfit: 0, profitGrowth: 0 },
+  invoiceDue: { currentDue: 0, growth: null },
+  expensesSummary: { currentExpenses: 0, expensesGrowth: null },
+  purchasesSummary: { currentPurchases: 0, purchasesGrowth: null },
+  returnSummary: { currentReturns: 0, growth: null },
+  recentSales: [],
+  lowStockProducts: [],
+  staleStockProducts: [],
+  topSellingProducts: [],
 };
 
-export default DashboardComponent;
+const currency = new Intl.NumberFormat("en-BD", {
+  style: "currency",
+  currency: "BDT",
+  maximumFractionDigits: 2,
+});
 
-const SummaryCard = ({ value, formatCurrency }: SummaryCardProps) => {
-  return (
-    <div className={`flex items-center p-3 ${value.bg} rounded-lg`}>
-      <div className={`w-3 h-3 ${value.circleBg} rounded-full mr-3`}></div>
-      <div>
-        <p className="text-sm font-medium text-gray-600">{value.title}</p>
-        <p className="font-bold">TK {formatCurrency(value.total)}</p>
-        <p className="text-xs">
-          {value.growth
-            ? `${value.growth > 100 ? "++" : "+"}${value.growth}`
-            : "N/A"}{" "}
-          % from last month
-        </p>
-      </div>
-    </div>
-  );
-};
-const OverallInfoCard = ({ value }: { value: OverallInfoCards }) => {
-  return (
-    <div className={`flex flex-col items-center p-3 ${value.bg} rounded-lg`}>
-      <div className={`w-3 h-3 ${value.circleBg} rounded-full mb-1`}></div>
+const periodOptions = [
+  { value: "today", label: "Today", comparison: "vs yesterday" },
+  { value: "yesterday", label: "Yesterday", comparison: "vs previous day" },
+  { value: "7d", label: "Last 7 days", comparison: "vs previous 7 days" },
+  { value: "30d", label: "Last 30 days", comparison: "vs previous 30 days" },
+  { value: "60d", label: "Last 2 months", comparison: "vs previous 2 months" },
+  { value: "90d", label: "Last 3 months", comparison: "vs previous 3 months" },
+  { value: "365d", label: "Last 12 months", comparison: "vs previous 12 months" },
+] as const;
+type DashboardPeriod = (typeof periodOptions)[number]["value"];
+const staleStockThresholds = [30, 60, 90, 180] as const;
+const staleStockLimits = [10, 20, 30, 50, 100] as const;
 
-      <p className="text-sm font-medium text-gray-600">{value.title}</p>
+function isDashboardPeriod(value: string): value is DashboardPeriod {
+  return periodOptions.some((option) => option.value === value);
+}
 
-      <p className="font-bold">{value.total}</p>
-    </div>
-  );
-};
-const BigSummaryCard = ({ value, formatCurrency }: BigSummaryCardProps) => {
-  const Icon = value.icon;
-  return (
-    <div className={`${value.bg} rounded-xl shadow-sm p-6`}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className={`text-sm font-medium ${value.titleColor}`}>
-            {value.title}
-          </p>
-          <p className="text-3xl font-bold text-gray-900 mt-2">
-            {formatCurrency(value.total)}
-          </p>
-        </div>
-        <Icon className={`w-10 h-10 ${value.iconColor} opacity-70`} />
-      </div>
-      <div className="flex justify-between mt-2">
-        <p className="text-xs">
-          {value.growth
-            ? `${value.growth > 100 ? "++" : "+"}${value.growth}`
-            : "N/A"}{" "}
-          % from last month
-        </p>
-        <button className="hover:cursor-pointer">View All</button>
-      </div>
-    </div>
-  );
-};
+function readValue(record: SummaryResponse, ...keys: string[]): unknown {
+  for (const key of keys) {
+    if (record[key] !== undefined && record[key] !== null) return record[key];
+  }
+  return undefined;
+}
 
-const TopSoldProductsByCategory = ({
-  topSoldProductByCategory,
+function readNumber(record: SummaryResponse, ...keys: string[]): number {
+  const value = Number(readValue(record, ...keys));
+  return Number.isFinite(value) ? value : 0;
+}
+
+function readText(record: SummaryResponse, ...keys: string[]): string {
+  const value = readValue(record, ...keys);
+  return typeof value === "string" ? value : "";
+}
+
+function readPaymentStatus(
+  record: SummaryResponse,
+): RecentSale["paymentStatus"] {
+  const status = readText(record, "paymentStatus", "payment_status");
+  return status === "paid" || status === "partial" || status === "unpaid"
+    ? status
+    : "unpaid";
+}
+
+function readRows(value: unknown): SummaryResponse[] {
+  return Array.isArray(value)
+    ? value.filter(
+        (row): row is SummaryResponse =>
+          typeof row === "object" && row !== null,
+      )
+    : [];
+}
+
+function firstRow(record: SummaryResponse, ...keys: string[]): SummaryResponse {
+  return readRows(readValue(record, ...keys))[0] ?? {};
+}
+
+function normalizeDashboard(response: SummaryResponse): DashboardData {
+  const products = firstRow(response, "productsSummary", "products_summary");
+  const sales = firstRow(response, "salesSummary", "sales_summary");
+  const activity = firstRow(response, "salesActivity", "sales_activity");
+  const profit = firstRow(response, "netProfit", "net_profit");
+  const due = firstRow(response, "invoiceDue", "invoice_due");
+  const expenses = firstRow(response, "expensesSummary", "expenses_summary");
+  const purchases = firstRow(response, "purchasesSummary", "purchases_summary");
+  const returns = firstRow(response, "return_summary", "returnSummary");
+
+  const salesOverview: SalesOverview[] = readRows(
+    readValue(response, "salesOverview", "sales_overview"),
+  ).map((row) => ({
+    month: readText(row, "month"),
+    sales: readNumber(row, "sales"),
+    cash: readNumber(row, "cash"),
+  }));
+  const lowStockProducts: LowStockProduct[] = readRows(
+    readValue(response, "lowStockSummary", "low_stock_summary"),
+  ).map((row) => ({
+    id: readNumber(row, "id"),
+    productName: readText(row, "productName", "product_name"),
+    sku: readText(row, "sku"),
+    status: readText(row, "status"),
+    quantity: readNumber(row, "quantity"),
+  }));
+  const staleStockProducts: StaleStockProduct[] = readRows(
+    readValue(response, "staleStockSummary", "stale_stock_summary"),
+  ).map((row) => ({
+    id: readNumber(row, "id"),
+    productName: readText(row, "productName", "product_name"),
+    sku: readText(row, "sku"),
+    quantity: readNumber(row, "quantity"),
+    lastSoldAt: readText(row, "lastSoldAt", "last_sold_at") || null,
+    daysSinceLastSale:
+      readValue(row, "daysSinceLastSale", "days_since_last_sale") === undefined
+        ? null
+        : readNumber(row, "daysSinceLastSale", "days_since_last_sale"),
+    stockValue: readNumber(row, "stockValue", "stock_value"),
+  }));
+  const recentSales: RecentSale[] = readRows(
+    readValue(response, "recentSalesSummary", "recent_sales_summary"),
+  ).map((row) => ({
+    id: readNumber(row, "id"),
+    invoiceNumber: readText(row, "invoiceNumber", "invoice_number"),
+    createdAt: readText(row, "createdAt", "created_at"),
+    customerName: readText(row, "customerName", "customer_name"),
+    paymentStatus: readPaymentStatus(row),
+    itemCount: readNumber(row, "itemCount", "item_count"),
+    soldPrice: readNumber(row, "soldPrice", "sold_price"),
+  }));
+  const topItemsByGross = readRows(
+    readValue(response, "topItemsByGross", "top_items_by_gross"),
+  ).map((row) => ({
+    productName: readText(row, "productName", "product_name"),
+    currentGross: readNumber(row, "currentMonthGross", "current_month_gross"),
+    trend: readText(row, "trend"),
+  }));
+  const topSoldProductsByCategory = readRows(
+    readValue(
+      response,
+      "top_sold_products_by_category",
+      "topSoldProductsByCategory",
+    ),
+  ).map((row) => ({
+    category: readText(row, "category") || "Uncategorized",
+    soldItems: readNumber(row, "soldItemsByCategory", "sold_items_by_category"),
+  }));
+  const profitByCategory = readRows(
+    readValue(response, "profitByCategory", "profit_by_category"),
+  ).map((row) => ({
+    category: readText(row, "category") || "Uncategorized",
+    profit: readNumber(row, "currentMonthProfit", "current_month_profit"),
+  }));
+  const topSellingProducts = readRows(
+    readValue(response, "topSellingProducts", "top_selling_products"),
+  ).map((row) => ({
+    id: readNumber(row, "id"),
+    productName: readText(row, "productName", "product_name"),
+    unitsSold: readNumber(row, "topSelling", "top_selling"),
+    soldPrice: readNumber(row, "soldPrice", "sold_price"),
+    grossSales: readNumber(row, "grossSales", "gross_sales"),
+  }));
+  const paymentBreakdown: PaymentBreakdown[] = readRows(
+    readValue(response, "paymentBreakdown", "payment_breakdown"),
+  ).map((row) => ({
+    method: readText(row, "method", "payment_method"),
+    amount: readNumber(row, "amount"),
+    paymentCount: readNumber(row, "paymentCount", "payment_count"),
+  }));
+  const salesActivity: SalesActivity = {
+    transactionCount: readNumber(activity, "transactionCount", "transaction_count"),
+    averageSale: readNumber(activity, "averageSale", "average_sale"),
+  };
+
+  return {
+    salesOverview,
+    productsSummary: {
+      lowStock: readNumber(products, "lowStock", "low_stock"),
+      stockOut: readNumber(products, "stockOut", "stock_out"),
+      totalItems: readNumber(products, "totalItems", "total_items"),
+      totalValuation: readNumber(
+        products,
+        "totalValuation",
+        "total_valuation",
+      ),
+    },
+    topItemsByGross,
+    topSoldProductsByCategory,
+    profitByCategory,
+    salesSummary: {
+      currentNetSales: readNumber(sales, "current_net_sales", "currentNetSales"),
+      currentReturn: readNumber(sales, "current_return", "currentReturn"),
+      salesGrowth: readNumber(sales, "sales_growth", "salesGrowth"),
+      returnGrowth: readNumber(sales, "return_growth", "returnGrowth"),
+    },
+    salesActivity,
+    paymentBreakdown,
+    netProfit: {
+      currentNetProfit: readNumber(profit, "current_net_profit", "currentNetProfit"),
+      profitGrowth: readNumber(profit, "profit_growth", "profitGrowth"),
+    },
+    invoiceDue: {
+      currentDue: readNumber(due, "current_due", "currentDue"),
+      growth: readNullableNumber(due, "invoice_due_growth_pct", "invoiceDueGrowthPct"),
+    },
+    expensesSummary: {
+      currentExpenses: readNumber(expenses, "current_expenses", "currentExpenses"),
+      expensesGrowth: readNullableNumber(expenses, "expenses_growth", "expensesGrowth"),
+    },
+    purchasesSummary: {
+      currentPurchases: readNumber(purchases, "current_purchases", "currentPurchases"),
+      purchasesGrowth: readNullableNumber(purchases, "purchases_growth", "purchasesGrowth"),
+    },
+    returnSummary: {
+      currentReturns: readNumber(returns, "current_returns", "currentReturns"),
+      growth: readNullableNumber(returns, "return_growth_pct", "returnGrowthPct"),
+    },
+    recentSales,
+    lowStockProducts,
+    staleStockProducts,
+    topSellingProducts,
+  };
+}
+
+function readNullableNumber(
+  record: SummaryResponse,
+  ...keys: string[]
+): number | null {
+  const value = readValue(record, ...keys);
+  if (value === undefined) return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function formatDate(value: string): string {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "Date unavailable"
+    : new Intl.DateTimeFormat("en-BD", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }).format(date);
+}
+
+function formatTime(value: string): string {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "Time unavailable"
+    : new Intl.DateTimeFormat("en-BD", {
+        hour: "numeric",
+        minute: "2-digit",
+      }).format(date);
+}
+
+function csvCell(value: string | number): string {
+  const safeValue = String(value).replace(/^[=+\-@]/, "'$&");
+  return `"${safeValue.replace(/"/g, '""')}"`;
+}
+
+function MetricCard({
+  title,
+  amount,
+  growth,
+  comparison,
+  growthIsGood = true,
+  detail,
+  icon: Icon,
+  accent,
 }: {
-  topSoldProductByCategory: TopSoldProductCategory[];
-}) => {
+  title: string;
+  amount: number;
+  growth?: number | null;
+  comparison: string;
+  growthIsGood?: boolean;
+  detail: string;
+  icon: typeof Wallet;
+  accent: string;
+}) {
+  const growthUp = growth !== null && growth !== undefined && growth >= 0;
+  const growthGood = growthUp === growthIsGood;
+  const GrowthIcon = growthUp ? ArrowUpRight : ArrowDownRight;
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="font-bold text-gray-900">Top Sold Products</h3>
-        <button className="text-gray-400 hover:text-gray-600">
-          <MoreVertical className="w-5 h-5" />
-        </button>
+    <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-950/[0.02]">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-slate-500">{title}</p>
+          <p className="mt-3 truncate text-2xl font-semibold tracking-tight text-slate-950">
+            {currency.format(amount)}
+          </p>
+        </div>
+        <span className={`rounded-xl p-2.5 ${accent}`}>
+          <Icon aria-hidden="true" className="size-5" />
+        </span>
       </div>
-      <div className="space-y-4">
-        {topSoldProductByCategory.map((item, index) => (
-          <div
-            key={index}
-            className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg"
-          >
-            <div className="flex items-center">
-              <div
-                className="w-3 h-3 rounded-full mr-3"
-                style={{ backgroundColor: item.color }}
-              ></div>
-              <span className="font-medium">{item.category}</span>
-            </div>
-            <span className="font-bold">{item.quantity}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-const TopProfitByCategory = ({
-  profitByCategory,
-  formatCurrency,
-}: TopProfitByCategoryProps) => {
-  return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="font-bold text-gray-900">Top Profit</h3>
-        <button className="text-gray-400 hover:text-gray-600">
-          <MoreVertical className="w-5 h-5" />
-        </button>
-      </div>
-      <div className="space-y-4">
-        {Object.values(profitByCategory).map((item, index) => (
-          <div
-            key={index}
-            className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg"
-          >
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                <DollarSign className="w-4 h-4 text-blue-600" />
-              </div>
-              <div>
-                <p className="font-medium">{item.category}</p>
-                <p
-                  className={`text-xs ${
-                    item.growth_percentage >= 0
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }`}
-                >
-                  {item.growth_percentage
-                    ? `${item.growth_percentage}%`
-                    : "N/A"}
-                </p>
-              </div>
-            </div>
-            <span className="font-bold">
-              TK {formatCurrency(item.current_month_profit)}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-const TopItemsByGross = ({
-  topItemsByGross,
-  formatCurrency,
-}: TopItemsByGrossProps) => {
-  return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="font-bold text-gray-900">Top Items by Gross</h3>
-        <button className="text-gray-400 hover:text-gray-600">
-          <MoreVertical className="w-5 h-5" />
-        </button>
-      </div>
-      <div className="space-y-4">
-        {topItemsByGross?.length > 0 ? (
-          Object.values(topItemsByGross).map((item, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg"
+      <div className="mt-4 flex min-h-5 items-center justify-between gap-2">
+        {growth === null || growth === undefined ? (
+          <span className="text-xs text-slate-500">{detail}</span>
+        ) : (
+          <>
+            <span
+              className={`inline-flex items-center gap-1 text-xs font-medium ${
+                growthGood ? "text-emerald-700" : "text-rose-700"
+              }`}
             >
-              <div className="flex items-center">
-                <div
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 ${
-                    item.trend === "up" ? "bg-green-100" : "bg-red-100"
-                  }`}
-                >
-                  {item.trend === "up" ? (
-                    <TrendingUp className="w-4 h-4 text-green-600" />
-                  ) : (
-                    <TrendingDown className="w-4 h-4 text-red-600" />
-                  )}
+              <GrowthIcon aria-hidden="true" className="size-3.5" />
+              {Math.abs(growth).toLocaleString("en-BD")}% {comparison}
+            </span>
+            <span className="truncate text-xs text-slate-400">{detail}</span>
+          </>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function SectionHeading({
+  title,
+  description,
+  action,
+}: {
+  title: string;
+  description?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <div>
+        <h2 className="font-semibold text-slate-900">{title}</h2>
+        {description ? (
+          <p className="mt-1 text-sm text-slate-500">{description}</p>
+        ) : null}
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function EmptyState({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex min-h-36 items-center justify-center rounded-xl border border-dashed border-slate-200 px-4 text-center text-sm text-slate-500">
+      {children}
+    </div>
+  );
+}
+
+export default function DashboardComponent() {
+  const [dashboard, setDashboard] = useState(emptyDashboard);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [range, setRange] = useState<DashboardPeriod>("today");
+  const [staleDays, setStaleDays] = useState<number>(60);
+  const [staleLimit, setStaleLimit] = useState<number>(10);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const requestId = useRef(0);
+  const selectedPeriod =
+    periodOptions.find((option) => option.value === range) ?? periodOptions[0];
+  const periodLabel = selectedPeriod.label;
+
+  const loadDashboard = useCallback(async (background = false) => {
+    const activeRequestId = ++requestId.current;
+    if (!background) setLoading(true);
+    setError(null);
+    try {
+      const { data } = await axios.get<SummaryResponse>("/dashboard_summary", {
+        params: { period: range, staleDays, staleLimit },
+      });
+      if (typeof data !== "object" || data === null || Array.isArray(data)) {
+        throw new Error("The dashboard response was not in the expected format.");
+      }
+      if (requestId.current !== activeRequestId) return;
+      setDashboard(normalizeDashboard(data));
+      setLastUpdated(new Date());
+    } catch (loadError: unknown) {
+      if (requestId.current !== activeRequestId) return;
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "Unable to load dashboard data.",
+      );
+    } finally {
+      if (requestId.current === activeRequestId) setLoading(false);
+    }
+  }, [range, staleDays, staleLimit]);
+
+  useEffect(() => {
+    void loadDashboard();
+    return () => {
+      requestId.current += 1;
+    };
+  }, [loadDashboard]);
+
+  useEffect(() => {
+    const refreshIfVisible = () => {
+      if (document.visibilityState === "visible") {
+        void loadDashboard(true);
+      }
+    };
+    const timerId = window.setInterval(refreshIfVisible, 60_000);
+    document.addEventListener("visibilitychange", refreshIfVisible);
+    return () => {
+      window.clearInterval(timerId);
+      document.removeEventListener("visibilitychange", refreshIfVisible);
+    };
+  }, [loadDashboard]);
+
+  const chartData = useMemo(() => dashboard.salesOverview, [dashboard.salesOverview]);
+  const hasData = dashboard.salesOverview.length > 0;
+  const lowStockCount =
+    dashboard.productsSummary.lowStock + dashboard.productsSummary.stockOut;
+  const paymentTotal = dashboard.paymentBreakdown.reduce(
+    (total, payment) => total + payment.amount,
+    0,
+  );
+
+  const exportCsv = () => {
+    const rows: (string | number)[][] = [
+      ["Metric", "Value"],
+      [`Net sales (${periodLabel})`, dashboard.salesSummary.currentNetSales],
+      [`Net profit (${periodLabel})`, dashboard.netProfit.currentNetProfit],
+      ["Outstanding invoices", dashboard.invoiceDue.currentDue],
+      [`Expenses (${periodLabel})`, dashboard.expensesSummary.currentExpenses],
+      [`Purchases (${periodLabel})`, dashboard.purchasesSummary.currentPurchases],
+      ["Transactions", dashboard.salesActivity.transactionCount],
+      ["Average sale", dashboard.salesActivity.averageSale],
+      ["Low stock products", dashboard.productsSummary.lowStock],
+      ["Out of stock products", dashboard.productsSummary.stockOut],
+      [`Slow-moving products (${staleDays}+ days)`, dashboard.staleStockProducts.length],
+      ...dashboard.staleStockProducts.map((product) => [
+        `${product.productName} (${product.sku})`,
+        `${product.quantity} units; ${product.daysSinceLastSale === null ? "never sold" : `${product.daysSinceLastSale} days since last sale`}; stock value ${currency.format(product.stockValue)}`,
+      ] as [string, string]),
+      ...dashboard.paymentBreakdown.map((payment) => [
+        `Payment method: ${payment.method}`,
+        payment.amount,
+      ] as [string, number]),
+      [],
+      ["Invoice", "Customer", "Date", "Total (BDT)", "Payment status"],
+      ...dashboard.recentSales.map((sale) => [
+        sale.invoiceNumber,
+        sale.customerName,
+        formatDate(sale.createdAt),
+        sale.soldPrice,
+        sale.paymentStatus,
+      ]),
+    ];
+    const csv = rows.map((row) => row.map(csvCell).join(",")).join("\r\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `business-dashboard-${range}-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50/80 px-4 pb-10 pt-12 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl space-y-7">
+        <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm font-medium text-emerald-700">
+              Business overview
+            </p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
+              Dashboard
+            </h1>
+            <p className="mt-2 text-sm text-slate-500">
+              A clear view of your sales, cash flow, and inventory.
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              Auto-refreshes every minute
+              {lastUpdated
+                ? ` · Updated ${new Intl.DateTimeFormat("en-BD", {
+                    hour: "numeric",
+                    minute: "2-digit",
+                    second: "2-digit",
+                  }).format(lastUpdated)}`
+                : ""}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <label htmlFor="dashboard-period" className="sr-only">
+              Dashboard date range
+            </label>
+            <select
+              id="dashboard-period"
+              value={range}
+              onChange={(event) => {
+                if (isDashboardPeriod(event.target.value)) {
+                  setRange(event.target.value);
+                }
+              }}
+              className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+            >
+              {periodOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => void loadDashboard()}
+              disabled={loading}
+              className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RefreshCw
+                aria-hidden="true"
+                className={`size-4 ${loading ? "animate-spin" : ""}`}
+              />
+              Refresh
+            </button>
+            <button
+              type="button"
+              onClick={exportCsv}
+              disabled={loading}
+              className="inline-flex h-10 items-center gap-2 rounded-lg bg-slate-900 px-3.5 text-sm font-medium text-white shadow-sm transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Download aria-hidden="true" className="size-4" />
+              Export report
+            </button>
+          </div>
+        </header>
+
+        <nav aria-label="Quick actions" className="flex flex-wrap gap-2">
+          <Link
+            to="/"
+            className="inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-700 px-4 text-sm font-semibold text-white transition hover:bg-emerald-800"
+          >
+            <Plus aria-hidden="true" className="size-4" />
+            New sale
+          </Link>
+          <Link
+            to="/product/addproduct"
+            className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+          >
+            <Package aria-hidden="true" className="size-4" />
+            Add product
+          </Link>
+          <Link
+            to="/customer"
+            className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+          >
+            <Users aria-hidden="true" className="size-4" />
+            Customers
+          </Link>
+        </nav>
+
+        {error ? (
+          <div
+            role="alert"
+            className="flex flex-col gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <p className="text-sm text-rose-800">
+              Dashboard data could not be refreshed. {error}
+            </p>
+            <button
+              type="button"
+              onClick={() => void loadDashboard()}
+              className="inline-flex shrink-0 items-center gap-2 text-sm font-semibold text-rose-800 hover:text-rose-950"
+            >
+              Try again <ArrowRight aria-hidden="true" className="size-4" />
+            </button>
+          </div>
+        ) : null}
+
+        <section
+          aria-label={`${periodLabel} financial summary`}
+          className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        >
+          <MetricCard
+            title="Net sales"
+            amount={dashboard.salesSummary.currentNetSales}
+            growth={dashboard.salesSummary.salesGrowth}
+            comparison={selectedPeriod.comparison}
+            detail={periodLabel}
+            icon={ShoppingCart}
+            accent="bg-emerald-50 text-emerald-700"
+          />
+          <MetricCard
+            title="Net profit"
+            amount={dashboard.netProfit.currentNetProfit}
+            growth={dashboard.netProfit.profitGrowth}
+            comparison={selectedPeriod.comparison}
+            detail={periodLabel}
+            icon={TrendingUp}
+            accent="bg-sky-50 text-sky-700"
+          />
+          <MetricCard
+            title="Outstanding invoices"
+            amount={dashboard.invoiceDue.currentDue}
+            growth={dashboard.invoiceDue.growth}
+            growthIsGood={false}
+            comparison="vs previous period"
+            detail="Current balance"
+            icon={Wallet}
+            accent="bg-amber-50 text-amber-700"
+          />
+          <MetricCard
+            title="Expenses"
+            amount={dashboard.expensesSummary.currentExpenses}
+            growth={dashboard.expensesSummary.expensesGrowth}
+            growthIsGood={false}
+            comparison={selectedPeriod.comparison}
+            detail={periodLabel}
+            icon={ShoppingBag}
+            accent="bg-violet-50 text-violet-700"
+          />
+        </section>
+
+        <section className="grid gap-5 lg:grid-cols-2">
+          <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-950/[0.02] sm:p-6">
+            <SectionHeading
+              title="Sales activity"
+              description={`A quick read on sales volume · ${periodLabel.toLowerCase()}.`}
+            />
+            <div className="mt-5 grid grid-cols-2 gap-4">
+              <div className="rounded-xl bg-slate-50 p-4">
+                <div className="flex items-center gap-2 text-sm text-slate-500">
+                  <Receipt aria-hidden="true" className="size-4 text-emerald-700" />
+                  Transactions
                 </div>
-                <span className="font-medium">{item.productName}</span>
+                <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
+                  {dashboard.salesActivity.transactionCount.toLocaleString("en-BD")}
+                </p>
+                <p className="mt-1 text-xs text-slate-400">{periodLabel}</p>
               </div>
-              <span className="font-bold">
-                TK {formatCurrency(item.current_month_gross)}
+              <div className="rounded-xl bg-slate-50 p-4">
+                <div className="flex items-center gap-2 text-sm text-slate-500">
+                  <ShoppingCart aria-hidden="true" className="size-4 text-sky-700" />
+                  Average sale
+                </div>
+                <p className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
+                  {currency.format(dashboard.salesActivity.averageSale)}
+                </p>
+                <p className="mt-1 text-xs text-slate-400">Average invoice total</p>
+              </div>
+            </div>
+          </article>
+
+          <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-950/[0.02] sm:p-6">
+            <SectionHeading
+              title="Payment methods"
+              description={`Payments recorded · ${periodLabel.toLowerCase()}.`}
+            />
+            {dashboard.paymentBreakdown.length ? (
+              <ul className="mt-5 space-y-4">
+                {dashboard.paymentBreakdown.map((payment) => {
+                  const share =
+                    paymentTotal > 0
+                      ? (payment.amount / paymentTotal) * 100
+                      : 0;
+                  const methodName =
+                    payment.method === "bangla_qr"
+                      ? "Mobile / QR"
+                      : payment.method
+                        ? payment.method.charAt(0).toUpperCase() +
+                          payment.method.slice(1)
+                        : "Other";
+                  const MethodIcon =
+                    payment.method === "cash"
+                      ? Banknote
+                      : payment.method === "card"
+                        ? CreditCard
+                        : Wallet;
+                  return (
+                    <li key={payment.method}>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+                          <MethodIcon
+                            aria-hidden="true"
+                            className="size-4 text-slate-400"
+                          />
+                          {methodName}
+                          <span className="text-xs font-normal text-slate-400">
+                            {payment.paymentCount.toLocaleString("en-BD")} payments
+                          </span>
+                        </span>
+                        <span className="text-sm font-semibold text-slate-900">
+                          {currency.format(payment.amount)}
+                        </span>
+                      </div>
+                      <div
+                        role="progressbar"
+                        aria-label={`${methodName} payment share`}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={Math.round(share)}
+                        className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100"
+                      >
+                        <div
+                          className="h-full rounded-full bg-emerald-600 transition-all"
+                          style={{ width: `${share}%` }}
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <div className="mt-5">
+                <EmptyState>No payment records for this period yet.</EmptyState>
+              </div>
+            )}
+          </article>
+        </section>
+
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-950/[0.02]">
+            <p className="text-sm font-medium text-slate-500">Purchases</p>
+            <p className="mt-2 text-xl font-semibold text-slate-950">
+              {currency.format(dashboard.purchasesSummary.currentPurchases)}
+            </p>
+            <p className="mt-1 text-xs text-slate-400">{periodLabel}</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-950/[0.02]">
+            <p className="text-sm font-medium text-slate-500">Sales returns</p>
+            <p className="mt-2 text-xl font-semibold text-slate-950">
+              {currency.format(dashboard.salesSummary.currentReturn)}
+            </p>
+            <p className="mt-1 text-xs text-slate-400">{periodLabel}</p>
+          </div>
+          <Link
+            to="/product"
+            className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-950/[0.02] transition hover:border-amber-300 hover:bg-amber-50/30"
+          >
+            <p className="text-sm font-medium text-slate-500">Stock to review</p>
+            <p className="mt-2 text-xl font-semibold text-slate-950">
+              {loading ? "…" : lowStockCount}
+              <span className="ml-1 text-sm font-normal text-slate-500">
+                products
+              </span>
+            </p>
+            <p className="mt-1 text-xs text-amber-700">
+              {dashboard.productsSummary.stockOut} out of stock ·{" "}
+              {dashboard.productsSummary.lowStock} running low
+            </p>
+          </Link>
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-950/[0.02]">
+            <p className="text-sm font-medium text-slate-500">Inventory value</p>
+            <p className="mt-2 text-xl font-semibold text-slate-950">
+              {currency.format(dashboard.productsSummary.totalValuation)}
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              {dashboard.productsSummary.totalItems.toLocaleString("en-BD")} units in stock
+            </p>
+          </div>
+        </section>
+
+        <section className="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(280px,0.8fr)]">
+          <article className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-950/[0.02] sm:p-6">
+            <SectionHeading
+              title="Sales overview"
+              description={`${periodLabel} · ${selectedPeriod.comparison}.`}
+            />
+            {loading && !hasData ? (
+              <div className="flex h-[280px] items-center justify-center text-sm text-slate-500">
+                <LoaderCircle aria-hidden="true" className="mr-2 size-4 animate-spin" />
+                Loading sales overview…
+              </div>
+            ) : hasData ? (
+              <div className="mt-2 h-[280px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="salesFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#059669" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#059669" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="cashFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.16} />
+                        <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} stroke="#eef2f6" />
+                    <XAxis
+                      dataKey="month"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: "#64748b", fontSize: 12 }}
+                      dy={8}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      width={64}
+                      tick={{ fill: "#94a3b8", fontSize: 11 }}
+                      tickFormatter={(value: number) =>
+                        value >= 1000 ? `${(value / 1000).toFixed(0)}k` : String(value)
+                      }
+                    />
+                    <Tooltip
+                      formatter={(value, name) => [
+                        currency.format(Number(value) || 0),
+                        name === "cash" ? "Fully paid" : "Sales",
+                      ]}
+                      contentStyle={{
+                        border: "1px solid #e2e8f0",
+                        borderRadius: 12,
+                        boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="sales"
+                      name="Sales"
+                      stroke="#059669"
+                      strokeWidth={2.5}
+                      fill="url(#salesFill)"
+                      activeDot={{ r: 5, strokeWidth: 0 }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="cash"
+                      name="Collected"
+                      stroke="#0ea5e9"
+                      strokeWidth={2}
+                      fill="url(#cashFill)"
+                      activeDot={{ r: 4, strokeWidth: 0 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="mt-5">
+                <EmptyState>
+                  No sales history for {periodLabel.toLowerCase()} yet.
+                </EmptyState>
+              </div>
+            )}
+            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-xs text-slate-500">
+              <span className="inline-flex items-center gap-2">
+                <span className="size-2 rounded-full bg-emerald-600" />
+                Total sales
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <span className="size-2 rounded-full bg-sky-500" />
+                Fully collected
               </span>
             </div>
-          ))
-        ) : (
-          <div className="text-sm text-gray-500">
-            No sales data available yet.
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-const TopSellingProducts = ({
-  topSellingProducts,
-  formatCurrency,
-}: TopSellingProductsProps) => {
-  return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="font-bold text-gray-900">Top Selling Products</h3>
-        <button className="text-gray-400 hover:text-gray-600">
-          <MoreVertical className="w-5 h-5" />
-        </button>
-      </div>
-      <div className="space-y-4">
-        {topSellingProducts?.length > 0 ? (
-          Object.values(topSellingProducts).map((item) => {
-            return (
-              <div
-                key={item.id}
-                className="flex items-center justify-between hover:bg-gray-50 rounded-lg"
-              >
-                <div className="flex items-center gap-2">
-                  <img
-                    className={`w-15 h-15 rounded-full`}
-                    src={item.image}
-                    alt=""
-                  />
+          </article>
 
-                  <div className="flex flex-col gap-1 ">
-                    <span className="font-medium">{item.productName}</span>
-                    <span className="font-sm">{item.top_selling} Sales</span>
-                  </div>
-                </div>
-                <span className="font-bold text-right">
-                  TK {formatCurrency(item.soldPrice)}
-                </span>
-              </div>
-            );
-          })
-        ) : (
-          <div className="text-sm text-gray-500">
-            No sales data available yet.
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-const LowStockAlert = ({
-  lowStockSummary,
-  formatCurrency,
-}: LowStockAlertProps) => {
-  return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="font-bold text-gray-900">Low Stock Alert</h3>
-        <button className="text-gray-400 hover:text-gray-600">
-          <MoreVertical className="w-5 h-5" />
-        </button>
-      </div>
-      <div className="space-y-4">
-        {lowStockSummary?.length > 0 ? (
-          Object.values(lowStockSummary).map((item, index) => (
-            <div
-              key={item.id}
-              className="flex items-center justify-between hover:bg-gray-50 rounded-lg"
-            >
-              <div className="flex items-center gap-2">
-                <img
-                  className={`w-15 h-15 rounded-full`}
-                  src={item.image}
-                  alt=""
-                />
-
-                <div className="flex flex-col gap-1">
-                  <span className="font-medium">{item.productName}</span>
-                  <span className="font-sm">{item.sku}</span>
-                </div>
-              </div>
-              <div className="flex flex-col text-right ">
-                <span>status</span>
-                <span className="text-red-500">{item.status}</span>
-                <span>stock: {item.quantity}</span>
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="text-sm text-gray-500">
-            No sales data available yet.
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-const RecentSales = ({
-  recentSalesSummary,
-  formatCurrency,
-}: RecentSalesProps) => {
-  return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="font-bold text-gray-900">Recent Sales</h3>
-        <button className="text-gray-400 hover:text-gray-600">
-          <MoreVertical className="w-5 h-5" />
-        </button>
-      </div>
-      <div className="space-y-4">
-        {recentSalesSummary?.length > 0 ? (
-          Object.values(recentSalesSummary).map((item, index) => {
-            const date = new Date(item.createdAt).toLocaleDateString();
-            const time = new Date(item.createdAt).toLocaleTimeString();
-            return (
-              <div
-                key={item.id}
-                className="flex items-center justify-between hover:bg-gray-50 rounded-lg"
-              >
-                <div className="flex items-center gap-2">
-                  <img
-                    className={`w-15 h-15 rounded-full`}
-                    src={item.image}
-                    alt=""
-                  />
-
-                  <div className="flex flex-col gap-1 ">
-                    <span className="font-medium">
-                      {item.productNameAtSale}
+          <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-950/[0.02] sm:p-6">
+            <SectionHeading
+              title="Inventory attention"
+              description="Products that may need a restock."
+              action={
+                <Link
+                  to="/product"
+                  aria-label="View all products"
+                  className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                >
+                  <ArrowRight aria-hidden="true" className="size-4" />
+                </Link>
+              }
+            />
+            {dashboard.lowStockProducts.length ? (
+              <ul className="mt-5 divide-y divide-slate-100">
+                {dashboard.lowStockProducts.map((product) => (
+                  <li
+                    key={product.id}
+                    className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-slate-800">
+                        {product.productName || "Unnamed product"}
+                      </p>
+                      <p className="mt-1 truncate text-xs text-slate-500">
+                        {product.sku || "No SKU"}
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">
+                      {product.quantity} left
                     </span>
-                    <span className="font-sm">{date + " " + time}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : loading ? (
+              <div className="flex min-h-36 items-center justify-center text-sm text-slate-500">
+                <LoaderCircle aria-hidden="true" className="mr-2 size-4 animate-spin" />
+                Checking inventory…
+              </div>
+            ) : (
+              <div className="mt-5">
+                <EmptyState>
+                  {dashboard.productsSummary.stockOut
+                    ? `${dashboard.productsSummary.stockOut} products are out of stock.`
+                    : "All stocked products are above their alert levels."}
+                </EmptyState>
+              </div>
+            )}
+            {lowStockCount > 0 ? (
+              <Link
+                to="/product"
+                className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-emerald-700 hover:text-emerald-900"
+              >
+                Review inventory <ArrowRight aria-hidden="true" className="size-4" />
+              </Link>
+            ) : null}
+          </article>
+        </section>
+
+        <section className="grid gap-5 lg:grid-cols-2">
+          <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-950/[0.02] sm:p-6">
+            <SectionHeading
+              title="Recent sales"
+              description={`Latest completed transactions · ${periodLabel.toLowerCase()}.`}
+              action={
+                <Link
+                  to="/sales"
+                  className="text-sm font-semibold text-emerald-700 hover:text-emerald-900"
+                >
+                  View sales
+                </Link>
+              }
+            />
+            {dashboard.recentSales.length ? (
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full min-w-[560px] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-xs font-medium uppercase tracking-wide text-slate-400">
+                      <th className="pb-3 pr-4">Invoice</th>
+                      <th className="pb-3 pr-4">Customer</th>
+                      <th className="pb-3 pr-4">Time</th>
+                      <th className="pb-3 pr-4">Payment</th>
+                      <th className="pb-3 text-right">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {dashboard.recentSales.map((sale) => (
+                      <tr key={sale.id}>
+                        <td className="whitespace-nowrap py-3 pr-4 font-medium text-emerald-800">
+                          {sale.invoiceNumber || `#${sale.id}`}
+                        </td>
+                        <td className="max-w-[160px] truncate py-3 pr-4 text-slate-700">
+                          {sale.customerName || "Walk-in customer"}
+                          <span className="ml-1 text-xs text-slate-400">
+                            · {sale.itemCount} items
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap py-3 pr-4 text-slate-500">
+                          <span>{formatTime(sale.createdAt)}</span>
+                          <span className="ml-1 text-xs text-slate-400">
+                            {formatDate(sale.createdAt)}
+                          </span>
+                        </td>
+                        <td className="py-3 pr-4">
+                          <span
+                            className={`rounded-full px-2 py-1 text-xs font-medium capitalize ${
+                              sale.paymentStatus === "paid"
+                                ? "bg-emerald-50 text-emerald-700"
+                                : sale.paymentStatus === "partial"
+                                  ? "bg-amber-50 text-amber-800"
+                                  : "bg-rose-50 text-rose-700"
+                            }`}
+                          >
+                            {sale.paymentStatus}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap py-3 text-right font-semibold text-slate-800">
+                          {currency.format(sale.soldPrice)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="mt-5">
+                <EmptyState>
+                  No completed transactions for {periodLabel.toLowerCase()}.
+                </EmptyState>
+              </div>
+            )}
+          </article>
+
+          <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-950/[0.02] sm:p-6">
+            <SectionHeading
+              title="Top performers"
+              description={`Products leading sales · ${periodLabel.toLowerCase()}.`}
+              action={
+                <Link
+                  to="/product"
+                  className="text-sm font-semibold text-emerald-700 hover:text-emerald-900"
+                >
+                  Products
+                </Link>
+              }
+            />
+            {dashboard.topSellingProducts.length ? (
+              <ul className="mt-4 divide-y divide-slate-100">
+                {dashboard.topSellingProducts.map((product, index) => (
+                  <li
+                    key={`${product.id}-${index}`}
+                    className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-semibold text-slate-500">
+                        {index + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-slate-800">
+                          {product.productName || "Unnamed product"}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {product.unitsSold.toLocaleString("en-BD")} units sold
+                        </p>
+                        <p className="mt-1 text-xs text-slate-400">
+                          Average unit price {currency.format(product.soldPrice)}
+                        </p>
+                        <p className="mt-1 text-xs font-medium text-slate-500">
+                          Gross sales {currency.format(product.grossSales)}
+                        </p>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="mt-5">
+                <EmptyState>Top sellers will appear after your first sales.</EmptyState>
+              </div>
+            )}
+          </article>
+        </section>
+
+        <section className="grid gap-5 lg:grid-cols-3">
+          <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-950/[0.02] sm:p-6">
+            <SectionHeading
+              title="Most sold categories"
+              description={`Units sold · ${periodLabel.toLowerCase()}.`}
+            />
+            {dashboard.topSoldProductsByCategory.length ? (
+              <ul className="mt-4 divide-y divide-slate-100">
+                {dashboard.topSoldProductsByCategory.map((category) => (
+                  <li
+                    key={category.category}
+                    className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                  >
+                    <span className="truncate text-sm font-medium text-slate-700">
+                      {category.category}
+                    </span>
+                    <span className="shrink-0 text-sm font-semibold text-slate-900">
+                      {category.soldItems.toLocaleString("en-BD")} units
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="mt-4">
+                <EmptyState>
+                  No category sales for {periodLabel.toLowerCase()}.
+                </EmptyState>
+              </div>
+            )}
+          </article>
+
+          <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-950/[0.02] sm:p-6">
+            <SectionHeading
+              title="Profit by category"
+              description={`Top categories · ${periodLabel.toLowerCase()}.`}
+            />
+            {dashboard.profitByCategory.length ? (
+              <ul className="mt-4 divide-y divide-slate-100">
+                {dashboard.profitByCategory.map((category) => (
+                  <li
+                    key={category.category}
+                    className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                  >
+                    <span className="truncate text-sm font-medium text-slate-700">
+                      {category.category}
+                    </span>
+                    <span className="shrink-0 text-sm font-semibold text-slate-900">
+                      {currency.format(category.profit)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="mt-4">
+                <EmptyState>No category profit data for this month.</EmptyState>
+              </div>
+            )}
+          </article>
+
+          <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-950/[0.02] sm:p-6">
+            <SectionHeading
+              title="Top items by gross"
+              description={`Highest grossing products · ${periodLabel.toLowerCase()}.`}
+            />
+            {dashboard.topItemsByGross.length ? (
+              <ul className="mt-4 divide-y divide-slate-100">
+                {dashboard.topItemsByGross.map((item) => (
+                  <li
+                    key={item.productName}
+                    className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                  >
+                    <span className="truncate text-sm font-medium text-slate-700">
+                      {item.productName}
+                    </span>
+                    <span className="shrink-0 text-sm font-semibold text-slate-900">
+                      {currency.format(item.currentGross)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="mt-4">
+                <EmptyState>No gross sales data for this month.</EmptyState>
+              </div>
+            )}
+          </article>
+        </section>
+
+        {lowStockCount > 0 ? (
+          <p className="flex items-center gap-2 text-xs text-slate-500">
+            <AlertTriangle aria-hidden="true" className="size-4 text-amber-600" />
+            {lowStockCount} product{lowStockCount === 1 ? "" : "s"} need
+            {lowStockCount === 1 ? "s" : ""} an inventory check.
+          </p>
+        ) : null}
+
+        <section>
+          <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-950/[0.02] sm:p-6">
+            <SectionHeading
+              title="Slow-moving stock"
+              description={`In-stock products with no completed sale in ${staleDays}+ days, including products never sold. Showing up to ${staleLimit}.`}
+              action={
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <label
+                      htmlFor="stale-stock-threshold"
+                      className="text-xs font-medium text-slate-500"
+                    >
+                      No sale for
+                    </label>
+                    <select
+                      id="stale-stock-threshold"
+                      value={staleDays}
+                      onChange={(event) => {
+                        const threshold = Number(event.target.value);
+                        if (
+                          staleStockThresholds.some(
+                            (supportedThreshold) =>
+                              supportedThreshold === threshold,
+                          )
+                        ) {
+                          setStaleDays(threshold);
+                        }
+                      }}
+                      className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-700 outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+                    >
+                      {staleStockThresholds.map((days) => (
+                        <option key={days} value={days}>
+                          {days} days
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label
+                      htmlFor="stale-stock-limit"
+                      className="text-xs font-medium text-slate-500"
+                    >
+                      Show
+                    </label>
+                    <select
+                      id="stale-stock-limit"
+                      value={staleLimit}
+                      onChange={(event) => {
+                        const limit = Number(event.target.value);
+                        if (
+                          staleStockLimits.some(
+                            (supportedLimit) => supportedLimit === limit,
+                          )
+                        ) {
+                          setStaleLimit(limit);
+                        }
+                      }}
+                      className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-700 outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+                    >
+                      {staleStockLimits.map((limit) => (
+                        <option key={limit} value={limit}>
+                          {limit}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
-                <span className="font-bold text-right">
-                  TK {formatCurrency(item.soldPrice)}
-                </span>
+              }
+            />
+            {dashboard.staleStockProducts.length ? (
+              <div className="mt-5 overflow-x-auto">
+                <table className="w-full min-w-[640px] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-xs font-medium uppercase tracking-wide text-slate-400">
+                      <th className="pb-3 pr-4">Product</th>
+                      <th className="pb-3 pr-4">SKU</th>
+                      <th className="pb-3 pr-4 text-right">In stock</th>
+                      <th className="pb-3 pr-4">Last sold</th>
+                      <th className="pb-3 text-right">Stock value</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {dashboard.staleStockProducts.map((product) => (
+                      <tr key={product.id}>
+                        <td className="max-w-[240px] truncate py-3 pr-4 font-medium text-slate-800">
+                          {product.productName || "Unnamed product"}
+                        </td>
+                        <td className="whitespace-nowrap py-3 pr-4 text-slate-500">
+                          {product.sku || "No SKU"}
+                        </td>
+                        <td className="whitespace-nowrap py-3 pr-4 text-right font-medium text-slate-700">
+                          {product.quantity.toLocaleString("en-BD")}
+                        </td>
+                        <td className="whitespace-nowrap py-3 pr-4">
+                          {product.lastSoldAt ? (
+                            <span className="inline-flex items-center gap-2 text-slate-600">
+                              <Clock3
+                                aria-hidden="true"
+                                className="size-3.5 text-amber-600"
+                              />
+                              {product.daysSinceLastSale} days ago
+                              <span className="text-xs text-slate-400">
+                                ({formatDate(product.lastSoldAt)})
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="rounded-full bg-rose-50 px-2 py-1 text-xs font-medium text-rose-700">
+                              Never sold
+                            </span>
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap py-3 text-right font-semibold text-slate-800">
+                          {currency.format(product.stockValue)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            );
-          })
-        ) : (
-          <div className="text-sm text-gray-500">
-            No sales data available yet.
-          </div>
-        )}
+            ) : loading ? (
+              <div className="flex min-h-36 items-center justify-center text-sm text-slate-500">
+                <LoaderCircle
+                  aria-hidden="true"
+                  className="mr-2 size-4 animate-spin"
+                />
+                Checking product sales history…
+              </div>
+            ) : (
+              <div className="mt-5">
+                <EmptyState>
+                  No in-stock products have been inactive for {staleDays} days
+                  or longer.
+                </EmptyState>
+              </div>
+            )}
+          </article>
+        </section>
       </div>
     </div>
   );
-};
+}
