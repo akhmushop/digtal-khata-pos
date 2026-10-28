@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, FieldPath, useForm, UseFormReturn } from "react-hook-form";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import useProductStore from "../../useProductStore";
 import {
   Dialog,
@@ -13,59 +13,74 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Plus, Save } from "lucide-react";
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
-
+import { FieldGroup } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
-
 import { createEntityPromiseToast } from "@/lib/toast-utils";
 import { unitSchema, UnitSchemaType } from "../../schemas/unit.schema";
 import { InputField } from "@/components/common/InputField";
+import type { UnitOption } from "../../product.types";
 
-export function UnitsDialog() {
+export function UnitsDialog({ unit }: { unit?: UnitOption }) {
   const [open, setOpen] = useState(false);
+  const store = useProductStore();
   const form = useForm<UnitSchemaType>({
     resolver: zodResolver(unitSchema),
     defaultValues: {
-      unitName: "",
-      abbreviation: "",
+      unitName: unit?.label ?? "",
+      abbreviation: unit?.abbreviation ?? "",
     },
   });
-  const { createUnit } = useProductStore();
+
+  useEffect(() => {
+    form.reset({
+      unitName: unit?.label ?? "",
+      abbreviation: unit?.abbreviation ?? "",
+    });
+  }, [unit, form]);
+
   function handleOpenChange(nextOpen: boolean) {
     setOpen(nextOpen);
     if (!nextOpen) {
       form.reset();
     }
   }
+
   async function onSubmit(data: UnitSchemaType) {
+    const isEditing = Boolean(unit);
     await createEntityPromiseToast({
       data,
-      apiCall: createUnit,
+      apiCall: isEditing
+        ? (payload) => store.updateUnit(unit!.value, payload)
+        : store.createUnit,
       entityName: "Unit",
       displayName: data.unitName,
     });
     form.reset();
+    setOpen(false);
   }
+
   const isSubmitting = form.formState.isSubmitting;
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <form id="unit-form" onSubmit={form.handleSubmit(onSubmit)}>
+      <form
+        id={unit ? `edit-unit-${unit.value}` : "unit-form"}
+        onSubmit={form.handleSubmit(onSubmit)}
+      >
         <DialogTrigger
           render={
-            <Button variant="outline">
-              <Plus />
-              Add Unit
+            <Button
+              variant={unit ? "ghost" : "outline"}
+              size={unit ? "icon-sm" : "default"}
+            >
+              <Plus className="size-4" />
+              {!unit ? "Add Unit" : null}
             </Button>
           }
         />
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Add Unit</DialogTitle>
+            <DialogTitle>{unit ? "Edit Unit" : "Add Unit"}</DialogTitle>
           </DialogHeader>
           <FieldGroup>
             <InputField
@@ -73,7 +88,7 @@ export function UnitsDialog() {
               form={form}
               fieldLabel="Unit Name"
               placeholder="Type Unit Name"
-            />{" "}
+            />
             <InputField
               name="abbreviation"
               form={form}
@@ -83,16 +98,18 @@ export function UnitsDialog() {
           </FieldGroup>
           <DialogFooter>
             <DialogClose render={<Button variant="outline">Cancel</Button>} />
-
-            <Button disabled={isSubmitting} form="unit-form" type="submit">
+            <Button
+              disabled={isSubmitting}
+              form={unit ? `edit-unit-${unit.value}` : "unit-form"}
+              type="submit"
+            >
               {isSubmitting ? (
                 <>
-                  <Spinner /> Creating
+                  <Spinner /> {unit ? "Saving" : "Creating"}
                 </>
               ) : (
                 <>
-                  <Save />
-                  Create Unit
+                  <Save /> {unit ? "Save Changes" : "Create Unit"}
                 </>
               )}
             </Button>

@@ -45,15 +45,51 @@ export async function adjustVariantStockApi(
 export async function createCategoryApi(data: AddCategorySchemaType) {
   return axios.post("/product/category", data);
 }
+export async function updateCategoryApi(
+  id: number,
+  data: AddCategorySchemaType,
+) {
+  return axios.put(`/product/category/${id}`, data);
+}
+export async function deleteCategoryApi(id: number) {
+  return axios.delete(`/product/category/${id}`);
+}
 export async function createBrandApi(data: BrandSchemaType) {
   return axios.post("/product/brand", data);
+}
+export async function updateBrandApi(id: number, data: BrandSchemaType) {
+  return axios.put(`/product/brand/${id}`, data);
+}
+export async function deleteBrandApi(id: number) {
+  return axios.delete(`/product/brand/${id}`);
 }
 export async function createUnitApi(data: UnitSchemaType) {
   return axios.post("/product/unit", data);
 }
+export async function updateUnitApi(id: number, data: UnitSchemaType) {
+  return axios.put(`/product/unit/${id}`, data);
+}
+export async function deleteUnitApi(id: number) {
+  return axios.delete(`/product/unit/${id}`);
+}
 export async function createVariantTypeApi(data: VariantTypeSchemaType) {
   return axios.post("/product/variant-type", data);
 }
+export async function updateVariantTypeApi(
+  id: number,
+  data: VariantTypeSchemaType,
+) {
+  return axios.put(`/product/variant-type/${id}`, data);
+}
+export async function deleteVariantTypeApi(id: number) {
+  return axios.delete(`/product/variant-type/${id}`);
+}
 export async function createVariantOptionApi(data: VariantOptionSchemaType) {
   return axios.post("/product/variant-option", data);
+}
+export async function updateVariantOptionApi(id: number, value: string) {
+  return axios.put(`/product/variant-option/${id}`, { value });
+}
+export async function deleteVariantOptionApi(id: number) {
+  return axios.delete(`/product/variant-option/${id}`);
 }
