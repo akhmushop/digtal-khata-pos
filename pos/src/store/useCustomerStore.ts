@@ -71,7 +71,7 @@ export const useCustomerStore = create<CustomerStore>((set, get) => ({
     }
   },
   getCustomers: async () => {
-    set({ loading: true });
+    set({ loading: true, error: null });
     try {
       const customersData = await getCustomersApi();
       set({ customers: customersData, loading: false });
@@ -81,24 +81,10 @@ export const useCustomerStore = create<CustomerStore>((set, get) => ({
     }
   },
   addCustomer: async (customerInfo) => {
-    try {
-      set({ loading: true });
-
-      const customer = await createCustomerApi(customerInfo);
-
-      set((state) => ({
-        customers: [...state.customers, customer],
-        loading: false,
-        error: null,
-      }));
-
-      return customer;
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      set({
-        error: errorMessage,
-        loading: false,
-      });
-    }
+    const customer = await createCustomerApi(customerInfo);
+    set((state) => ({
+      customers: [...state.customers, customer],
+    }));
+    return customer;
   },
 }));
