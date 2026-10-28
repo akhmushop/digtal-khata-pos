@@ -24,8 +24,10 @@ export function BatchDatePicker({ name, batchForm, label }: BatchDatePickerProps
             <PopoverTrigger
               render={
                 <Button
+                  type="button"
                   variant="outline"
                   id={field.name}
+                  aria-invalid={fieldState.invalid}
                   className="justify-start font-normal"
                 >
                   {field.value

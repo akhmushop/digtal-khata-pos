@@ -1,93 +1,332 @@
-import { eq, inArray, sql } from "drizzle-orm";
-import { purchaseItems } from "../../db/schema/purchaseItems.js";
-import type { ChangedItems } from "../../types/changedItems-types.js";
+import {
+  and,
+  eq,
+  inArray,
+  sql,
+} from "drizzle-orm";
 import { db } from "../../db/schema/index.js";
-import { purchaseReturns } from "../../db/schema/purchaseReturns.js";
-import { supplierLedger } from "../../db/schema/supplierLedger.js";
-import { purchaseReturnItems } from "../../db/schema/purchaseReturnItems.js";
-import { error } from "node:console";
+import { inventoryBatches } from "../../db/schema/inventoryBatches.js";
+import { inventoryMovements } from "../../db/schema/inventoryMovements.js";
+import { inventoryStock } from "../../db/schema/inventoryStock.js";
 import { products } from "../../db/schema/products.js";
-import type { CreatePurchaseReturnInput } from "../purchases/purchase.types.js";
+import { productVariants } from "../../db/schema/productVariants.js";
+import { purchaseItems } from "../../db/schema/purchaseItems.js";
+import { purchaseReturnItems } from "../../db/schema/purchaseReturnItems.js";
+import { purchaseReturns } from "../../db/schema/purchaseReturns.js";
+import { purchases } from "../../db/schema/purchases.js";
+import { serialNumbers } from "../../db/schema/serialNumbers.js";
+import { supplierLedger } from "../../db/schema/supplierLedger.js";
+import { BadRequestError, NotFoundError } from "../../utils/handleError.js";
+import type { CreatePurchaseReturnInput } from "./purchaseReturn.schema.js";
 
 export async function createPurchaseReturn({
   orderId,
   changedItems,
+  reason,
 }: CreatePurchaseReturnInput) {
-  const itemIds = changedItems.map((item: ChangedItems) => Number(item.id));
-  let total_amount = 0;
+  const purchaseItemIds = changedItems.map((item) => item.purchaseItemId);
+  if (new Set(purchaseItemIds).size !== purchaseItemIds.length) {
+    throw new BadRequestError("Duplicate purchase items are not allowed.");
+  }
 
-  if (itemIds.length > 0) {
-    const purchaseItemsResult = await db
+  return db.transaction(async (tx) => {
+    const [purchase] = await tx
+      .select({
+        id: purchases.id,
+        supplierId: purchases.supplierId,
+        paidAmount: purchases.paidAmount,
+        dueAmount: purchases.dueAmount,
+      })
+      .from(purchases)
+      .where(eq(purchases.id, orderId))
+      .for("update");
+
+    if (!purchase) {
+      throw new NotFoundError("Purchase order not found.");
+    }
+    if (purchase.supplierId === null) {
+      throw new BadRequestError(
+        "A supplier must be assigned to process a purchase return.",
+      );
+    }
+
+    const items = await tx
       .select({
         id: purchaseItems.id,
-        costPrice: purchaseItems.costPrice,
+        variantId: purchaseItems.variantId,
+        productId: productVariants.productId,
+        quantity: purchaseItems.quantity,
+        receivedQuantity: purchaseItems.receivedQuantity,
+        unitCost: purchaseItems.unitCost,
+        discount: purchaseItems.discount,
+        tax: purchaseItems.tax,
+        trackingType: products.trackingType,
       })
       .from(purchaseItems)
-      .where(inArray(purchaseItems.id, itemIds));
-    // 3. Create a quick lookup map for the prices { id: cost_price }
-    const priceMap = new Map(
-      purchaseItemsResult.map((row) => [row.id, Number(row.costPrice)]),
+      .innerJoin(
+        productVariants,
+        eq(productVariants.id, purchaseItems.variantId),
+      )
+      .innerJoin(products, eq(products.id, productVariants.productId))
+      .where(
+        and(
+          eq(purchaseItems.purchaseId, orderId),
+          inArray(purchaseItems.id, purchaseItemIds),
+        ),
+      )
+      .for("update");
+
+    if (items.length !== purchaseItemIds.length) {
+      throw new BadRequestError(
+        "One or more selected items do not belong to this purchase order.",
+      );
+    }
+
+    const alreadyReturned = await tx
+      .select({
+        purchaseItemId: purchaseReturnItems.purchaseItemId,
+        quantity: sql<number>`COALESCE(SUM(${purchaseReturnItems.quantity}), 0)`,
+      })
+      .from(purchaseReturnItems)
+      .where(inArray(purchaseReturnItems.purchaseItemId, purchaseItemIds))
+      .groupBy(purchaseReturnItems.purchaseItemId);
+    const returnedByItem = new Map(
+      alreadyReturned.map((item) => [
+        item.purchaseItemId,
+        Number(item.quantity),
+      ]),
     );
+    const requestedByItem = new Map(
+      changedItems.map((item) => [item.purchaseItemId, item.quantity]),
+    );
+    const stockRows = await tx
+      .select({
+        variantId: inventoryStock.variantId,
+        quantity: inventoryStock.quantity,
+      })
+      .from(inventoryStock)
+      .where(
+        inArray(
+          inventoryStock.variantId,
+          [...new Set(items.map((item) => item.variantId))],
+        ),
+      )
+      .for("update");
+    const stockByVariant = new Map(
+      stockRows.map((row) => [row.variantId, Number(row.quantity ?? 0)]),
+    );
+    const requestedByVariant = new Map<number, number>();
 
-    // 4. Calculate the total amount
-    for (let item of changedItems) {
-      const costPrice = priceMap.get(Number(item.id));
+    for (const item of items) {
+      const quantity = requestedByItem.get(item.id) ?? 0;
+      const remainingReceived =
+        Number(item.receivedQuantity) -
+        (returnedByItem.get(item.id) ?? 0);
 
-      if (costPrice === undefined) {
-        // Handle error: an item ID was sent from the frontend that doesn't exist in DB
-        throw new Error(`Item with ID ${item.id} not found.`);
+      if (quantity > remainingReceived) {
+        throw new BadRequestError(
+          `Cannot return ${quantity} of item ${item.id}; only ${Math.max(remainingReceived, 0)} received units remain eligible.`,
+        );
       }
 
-      total_amount += Number(item.returnPurchaseQty) * costPrice;
+      requestedByVariant.set(
+        item.variantId,
+        (requestedByVariant.get(item.variantId) ?? 0) + quantity,
+      );
     }
-    const [purchaseReturn] = await db
+
+    for (const [variantId, quantity] of requestedByVariant) {
+      const available = stockByVariant.get(variantId);
+      if (available === undefined || quantity > available) {
+        throw new BadRequestError(
+          `Insufficient on-hand stock to return ${quantity} unit(s) of variant ${variantId}.`,
+        );
+      }
+    }
+
+    let totalAmount = 0;
+    const getReturnUnitPrice = (item: (typeof items)[number]) =>
+      Math.max(
+        0,
+        Number(
+          (
+            (Number(item.quantity) * Number(item.unitCost) -
+              Number(item.discount) +
+              Number(item.tax)) /
+            Number(item.quantity)
+          ).toFixed(2),
+        ),
+      );
+    for (const item of items) {
+      const quantity = requestedByItem.get(item.id) ?? 0;
+      const trackingType = item.trackingType;
+      const batches = await tx
+        .select({
+          id: inventoryBatches.id,
+          quantityRemaining: inventoryBatches.quantityRemaining,
+        })
+        .from(inventoryBatches)
+        .where(eq(inventoryBatches.purchaseItemId, item.id))
+        .orderBy(inventoryBatches.id)
+        .for("update");
+
+      let remainingToRemove = quantity;
+      for (const batch of batches) {
+        if (remainingToRemove <= 0) break;
+        const removed = Math.min(batch.quantityRemaining, remainingToRemove);
+        if (removed <= 0) continue;
+        await tx
+          .update(inventoryBatches)
+          .set({
+            quantityRemaining: sql`${inventoryBatches.quantityRemaining} - ${removed}`,
+          })
+          .where(eq(inventoryBatches.id, batch.id));
+        remainingToRemove -= removed;
+      }
+
+      if (remainingToRemove > 0 && trackingType !== "none") {
+        throw new BadRequestError(
+          `Insufficient available batch quantity for purchase item ${item.id}.`,
+        );
+      }
+
+      if (trackingType === "serial") {
+        const availableSerials = await tx
+          .select({ id: serialNumbers.id })
+          .from(serialNumbers)
+          .where(
+            and(
+              eq(serialNumbers.purchaseItemId, item.id),
+              eq(serialNumbers.status, "in_stock"),
+            ),
+          )
+          .limit(quantity)
+          .for("update");
+
+        if (availableSerials.length < quantity) {
+          throw new BadRequestError(
+            `Insufficient in-stock serial numbers for purchase item ${item.id}.`,
+          );
+        }
+
+        if (availableSerials.length > 0) {
+          await tx
+            .update(serialNumbers)
+            .set({ status: "returned" })
+            .where(
+              inArray(
+                serialNumbers.id,
+                availableSerials.map((serial) => serial.id),
+              ),
+            );
+        }
+      }
+
+      totalAmount += quantity * getReturnUnitPrice(item);
+    }
+
+    totalAmount = Number(totalAmount.toFixed(2));
+    const [purchaseReturn] = await tx
       .insert(purchaseReturns)
       .values({
         purchaseId: orderId,
-        supplierId: 1,
-        totalAmount: total_amount,
+        supplierId: purchase.supplierId,
+        reason: reason?.trim() || null,
+        status: "completed",
+        totalAmount,
       })
       .returning({ id: purchaseReturns.id });
+
     if (!purchaseReturn) {
-      throw new Error("Failed to create purchase return");
+      throw new Error("Failed to create purchase return.");
     }
-    const purchaseReturnId = purchaseReturn.id;
-    for (let item of changedItems) {
-      const costPrice = priceMap.get(Number(item.id));
-      if (costPrice === undefined) {
-        throw new Error("Price not found");
+
+    await tx.insert(purchaseReturnItems).values(
+      items.map((item) => {
+        const quantity = requestedByItem.get(item.id) ?? 0;
+        const unitPrice = getReturnUnitPrice(item);
+        return {
+          purchaseReturnId: purchaseReturn.id,
+          purchaseItemId: item.id,
+          productId: item.productId,
+          quantity,
+          unitPrice: Math.max(0, Number(unitPrice.toFixed(2))),
+        };
+      }),
+    );
+
+    for (const [variantId, quantity] of requestedByVariant) {
+      const [updatedStock] = await tx
+        .update(inventoryStock)
+        .set({
+          quantity: sql`${inventoryStock.quantity} - ${quantity}`,
+        })
+        .where(
+          and(
+            eq(inventoryStock.variantId, variantId),
+            sql`${inventoryStock.quantity} >= ${quantity}`,
+          ),
+        )
+        .returning({ variantId: inventoryStock.variantId });
+
+      if (!updatedStock) {
+        throw new BadRequestError(
+          `Stock changed while processing the return for variant ${variantId}. Please retry.`,
+        );
       }
-      const { returnPurchaseQty, product_id, id } = item;
-      await db.insert(purchaseReturnItems).values({
-        purchaseReturnId,
-        purchaseItemId: id,
-        productId: product_id,
-        quantity: returnPurchaseQty,
-        unitPrice: costPrice,
+
+      await tx.insert(inventoryMovements).values({
+        variantId,
+        movementType: "adjustment",
+        referenceType: "purchase_return",
+        referenceId: purchaseReturn.id,
+        quantity: -quantity,
       });
     }
-    await db.insert(supplierLedger).values({
-      supplierId: 1,
+
+    await tx.insert(supplierLedger).values({
+      supplierId: purchase.supplierId,
       transactionType: "PURCHASE_RETURN",
-      referenceId: purchaseReturnId,
-      credit: total_amount,
-      note: `Purchase Return #${purchaseReturnId}`,
+      referenceId: purchaseReturn.id,
+      credit: totalAmount,
+      note: reason?.trim() || `Purchase return #${purchaseReturn.id}`,
     });
-  }
+
+    const updatedDueAmount = Math.max(
+      0,
+      Number(purchase.dueAmount) - totalAmount,
+    );
+    await tx
+      .update(purchases)
+      .set({
+        dueAmount: updatedDueAmount,
+        paymentStatus:
+          updatedDueAmount === 0
+            ? "paid"
+            : Number(purchase.paidAmount) > 0
+              ? "partial"
+              : "unpaid",
+        updatedAt: new Date(),
+      })
+      .where(eq(purchases.id, orderId));
+
+    return {
+      success: true,
+      message: "Purchase return processed successfully.",
+      data: {
+        purchaseReturnId: purchaseReturn.id,
+        totalAmount,
+      },
+    };
+  });
 }
+
 export async function getPurchaseReturnItems() {
-  return await db
+  return db
     .select({
       purchaseItemId: purchaseReturnItems.purchaseItemId,
-      returnQuantity: sql<number>`
-          COALESCE(SUM(${purchaseReturnItems.quantity}), 0)
-        `.as("return_quantity"),
+      returnQuantity: sql<number>`COALESCE(SUM(${purchaseReturnItems.quantity}), 0)`,
     })
     .from(purchaseReturnItems)
-    .innerJoin(products, eq(purchaseReturnItems.productId, products.id))
-    .innerJoin(
-      purchaseItems,
-      eq(purchaseReturnItems.purchaseItemId, purchaseItems.id),
-    )
     .groupBy(purchaseReturnItems.purchaseItemId);
 }

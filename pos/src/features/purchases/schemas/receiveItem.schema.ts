@@ -1,14 +1,14 @@
 import { z } from "zod";
 export const receiveItemsFormSchema = z.object({
-  purchaseId:z.number(),
+  purchaseId: z.number().int().positive(),
   items: z.array(
     z
       .object({
-        itemId: z.number(),
-        trackingType: z.string(),
-        receiveNow: z.number().min(0),
-        unitCost: z.number().min(0),
-        sellingPrice: z.number().min(0),
+        itemId: z.number().int().positive(),
+        trackingType: z.enum(["none", "batch", "serial"]),
+        receiveNow: z.number().finite().min(0),
+        unitCost: z.number().finite().min(0),
+        sellingPrice: z.number().finite().min(0),
         batches: z.array(
           z.object({
             batchNumber: z.string().min(1),
@@ -22,6 +22,16 @@ export const receiveItemsFormSchema = z.object({
         ),
       })
       .superRefine((data, ctx) => {
+        if (
+          data.trackingType === "serial" &&
+          !Number.isInteger(data.receiveNow)
+        ) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["receiveNow"],
+            message: "Serial-tracked quantities must be whole numbers.",
+          });
+        }
         if (data.trackingType === "serial" && data.receiveNow > 0) {
           if (data.serialNumbers.length !== data.receiveNow) {
             ctx.addIssue({
@@ -31,7 +41,7 @@ export const receiveItemsFormSchema = z.object({
             });
           }
         }
-        if (data.trackingType === "batch" && data.receiveNow >= 0) {
+        if (data.trackingType === "batch" && data.receiveNow > 0) {
           const totalBatchQty = data.batches.reduce(
             (sum, b) => sum + b.quantity,
             0,
@@ -45,10 +55,15 @@ export const receiveItemsFormSchema = z.object({
           }
         }
       }),
-  ),
-
-  paymentAmount: z.number().min(0),
-  paymentMethod: z.string(),
-  paymentNotes: z.string(),
+  ).min(1, "At least one purchase item is required"),
+  paymentAmount: z.number().finite().min(0),
+  paymentMethod: z.enum([
+    "cash",
+    "bank_transfer",
+    "cheque",
+    "card",
+    "other",
+  ]),
+  paymentNotes: z.string().max(300),
 });
 export type ReceiveItemsFormValues = z.infer<typeof receiveItemsFormSchema>;

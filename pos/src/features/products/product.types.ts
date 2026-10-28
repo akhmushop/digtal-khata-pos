@@ -199,7 +199,3 @@ export type VariantTableRowProps = {
   onRemoveVariant: (variantIndex: number) => void;
   isEditing?: boolean;
 };
-export interface PurchaseCart extends ProductType {
-  purchaseQty: number;
-  purchasePrice:number
-}
