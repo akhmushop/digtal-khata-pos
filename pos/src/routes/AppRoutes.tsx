@@ -1,6 +1,6 @@
 import { createBrowserRouter, RouterProvider } from "react-router";
 import Pos from "../features/pos/pages/PosPage";
-import { AddCustomerModal } from "../pages/Customer/Customer";
+import { CustomersPage } from "../features/Contacts/pages/CustomersPage";
 import ProductStockForm from "../features/products/pages/AddProductPage";
 import DashboardComponent from "../pages/Dashboard/Dashboard";
 import { Sales } from "../features/pos/pages/Sales";
@@ -76,7 +76,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/customer",
-        element: <AddCustomerModal />,
+        element: <CustomersPage />,
       },
       {
         path: "/receive-items/:id",

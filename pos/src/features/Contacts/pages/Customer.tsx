@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { RiUserAddFill, RiCloseLargeFill } from "react-icons/ri";
-import Sidebar from "../../components/layout/Sidebar.js";
-import { useCustomerStore } from "../../store/useCustomerStore.js";
+import Sidebar from "../../../components/layout/Sidebar.js";
+import { useCustomerStore } from "../../../store/useCustomerStore.js";
 import type {
   InputValue,
   PeerFocusInputProps,
   AddCustomerProps,
-} from "../../types/customers.types.js";
+} from "../../../types/customers.types.js";
 export function AddCustomerModal({}) {
   const { customerInfo, handleOnchange, resetCustomerInfo, handleAddCustomer } =
     useCustomerStore();
@@ -143,7 +143,8 @@ export function AddCustomer({
               >
                 Cancel
               </button>
-              <button type="button"
+              <button
+                type="button"
                 onClick={() => {
                   handleAddCustomer();
                   handleClose();
