@@ -14,5 +14,11 @@ export const variantOptionSchema = z.object({
     .array(z.string().min(1, { message: "Option name cannot be empty" }))
     .min(1, { message: "Please add at least one variant option" }),
 });
+export const variantOptionValueSchema = z.object({
+  value: z.string().trim().min(1, { message: "Option name is required" }).max(100),
+});
 export type VariantTypeSchemaType = z.infer<typeof variantTypeSchema>;
 export type VariantOptionSchemaType = z.infer<typeof variantOptionSchema>;
+export type VariantOptionValueSchemaType = z.infer<
+  typeof variantOptionValueSchema
+>;

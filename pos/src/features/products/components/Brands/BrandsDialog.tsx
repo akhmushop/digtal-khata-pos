@@ -1,7 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { brandSchema, BrandSchemaType } from "../../brand.schema";
-import { Controller, FieldPath, useForm, UseFormReturn } from "react-hook-form";
-import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { useEffect, useState } from "react";
 import useProductStore from "../../useProductStore";
 import {
   Dialog,
@@ -21,53 +20,74 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-
 import { Spinner } from "@/components/ui/spinner";
-
-import { brandsStatus } from "../../constants/status";
+import { brandSchema, BrandSchemaType } from "../../brand.schema";
 import { createEntityPromiseToast } from "@/lib/toast-utils";
 import { SelectOptions } from "@/components/common/SelectOptions";
+import { brandsStatus } from "../../constants/status";
+import type { BrandOption } from "../../product.types";
 
-export function BrandsDialog() {
+export function BrandsDialog({ brand }: { brand?: BrandOption }) {
   const [open, setOpen] = useState(false);
+  const store = useProductStore();
   const form = useForm<BrandSchemaType>({
     resolver: zodResolver(brandSchema),
     defaultValues: {
-      brandName: "",
-      status: "active",
+      brandName: brand?.label ?? "",
+      status: brand?.status ?? "active",
     },
   });
-  const {  createBrand } = useProductStore();
+
+  useEffect(() => {
+    form.reset({
+      brandName: brand?.label ?? "",
+      status: brand?.status ?? "active",
+    });
+  }, [brand, form]);
+
   function handleOpenChange(nextOpen: boolean) {
     setOpen(nextOpen);
     if (!nextOpen) {
       form.reset();
     }
   }
+
   async function onSubmit(data: BrandSchemaType) {
+    const isEditing = Boolean(brand);
     await createEntityPromiseToast({
       data,
-      apiCall: createBrand,
+      apiCall: isEditing
+        ? (payload) => store.updateBrand(brand!.value, payload)
+        : store.createBrand,
       entityName: "Brand",
       displayName: data.brandName,
     });
     form.reset();
+    setOpen(false);
   }
+
   const isSubmitting = form.formState.isSubmitting;
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <form id="add-category-form" onSubmit={form.handleSubmit(onSubmit)}>
+      <form
+        id={brand ? `edit-brand-${brand.value}` : "add-brand-form"}
+        onSubmit={form.handleSubmit(onSubmit)}
+      >
         <DialogTrigger
           render={
-            <Button variant="outline">
-              <Plus />
-              Add Brand
+            <Button
+              variant={brand ? "ghost" : "outline"}
+              size={brand ? "icon-sm" : "default"}
+            >
+              <Plus className="size-4" />
+              {!brand ? "Add Brand" : null}
             </Button>
           }
         />
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Add Brand</DialogTitle>
+            <DialogTitle>{brand ? "Edit Brand" : "Add Brand"}</DialogTitle>
           </DialogHeader>
           <FieldGroup>
             <Controller
@@ -82,7 +102,7 @@ export function BrandsDialog() {
                     placeholder="Type Brand Name"
                   />
                   {fieldState.error && (
-                    <FieldError> {fieldState.error.message}</FieldError>
+                    <FieldError>{fieldState.error.message}</FieldError>
                   )}
                 </Field>
               )}
@@ -96,20 +116,18 @@ export function BrandsDialog() {
           </FieldGroup>
           <DialogFooter>
             <DialogClose render={<Button variant="outline">Cancel</Button>} />
-
             <Button
               disabled={isSubmitting}
-              form="add-category-form"
+              form={brand ? `edit-brand-${brand.value}` : "add-brand-form"}
               type="submit"
             >
               {isSubmitting ? (
                 <>
-                  <Spinner /> Creating
+                  <Spinner /> {brand ? "Saving" : "Creating"}
                 </>
               ) : (
                 <>
-                  <Save />
-                  Create Brand
+                  <Save /> {brand ? "Save Changes" : "Create Brand"}
                 </>
               )}
             </Button>
