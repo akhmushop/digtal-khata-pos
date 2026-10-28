@@ -125,12 +125,17 @@ export function PaymentModal({
     >
       <DialogTrigger
         render={
-          <Button disabled={cart.length === 0} className="w-full h-17">
-            PAY - {finalTotal.toFixed(2)}
+          <Button
+            type="button"
+            disabled={cart.length === 0}
+            className="h-14 w-full justify-between px-4 text-base font-semibold"
+          >
+            <span>Charge customer</span>
+            <span>৳{finalTotal.toFixed(2)}</span>
           </Button>
         }
       />
-      <DialogContent className="sm:max-w-xl w-full">
+      <DialogContent className="max-h-[90dvh] w-[calc(100vw-2rem)] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Payment</DialogTitle>
           <DialogDescription>
@@ -138,7 +143,7 @@ export function PaymentModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex justify-between gap-5">
+        <div className="flex flex-col gap-5 sm:flex-row sm:justify-between">
           <PaymentMethod
             form={form}
             finalTotal={finalTotal}
@@ -146,7 +151,7 @@ export function PaymentModal({
             customerId={customerId}
           />
 
-          <div className="flex flex-col gap-5">
+          <div className="flex min-w-0 flex-1 flex-col gap-5">
             {mode === "cash" && (
               <CashPayment finalTotal={finalTotal} form={form} />
             )}
@@ -176,7 +181,13 @@ export function PaymentModal({
         </div>
 
         <DialogFooter>
-          <DialogClose render={<Button variant="outline">Cancel</Button>} />
+          <DialogClose
+            render={
+              <Button type="button" variant="outline">
+                Cancel
+              </Button>
+            }
+          />
           <Button
             form="cart-form"
             type="submit"

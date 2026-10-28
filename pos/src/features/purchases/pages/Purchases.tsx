@@ -20,6 +20,7 @@ import {
   ProductVariantType,
 } from "@/features/products/product.schema";
 import useProductStore from "@/features/products/useProductStore";
+import { getVariantPurchaseCost } from "@/features/products/utils/getVariantPurchaseCost";
 import type { PurchaseCart } from "../purchase.types";
 import { PurchaseTable } from "../components/purchases/PurchaseTable";
 import { usePurchasesStore } from "../usePurchaseStore";
@@ -132,7 +133,7 @@ export function PurchasesOrder() {
           id: productId,
           variants: [{ ...variant, id: variantId }],
           purchaseQty: 1,
-          purchasePrice: roundCurrency(variant.purchasePrice),
+          purchasePrice: roundCurrency(getVariantPurchaseCost(variant)),
           purchaseDiscount: 0,
           purchaseTax: 0,
         },

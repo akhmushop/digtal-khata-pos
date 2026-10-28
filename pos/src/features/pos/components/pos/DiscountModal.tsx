@@ -104,7 +104,13 @@ export function DiscountModal({
   }, [cartLength, form]);
   return (
     <Dialog>
-      <DialogTrigger render={<Button className="w-full">Discount</Button>} />
+      <DialogTrigger
+        render={
+          <Button type="button" className="w-full">
+            Discount
+          </Button>
+        }
+      />
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Discounts & VAT</DialogTitle>
