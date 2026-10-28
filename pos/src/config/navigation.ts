@@ -1,5 +1,6 @@
 import {
   ContactRound,
+  CreditCard,
   LayoutDashboard,
   Package,
   ShoppingCart,
@@ -14,6 +15,11 @@ export const navigation = [
     title: "Dashboard",
     url: "/dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    title: "Due Management",
+    url: "/due-management",
+    icon: CreditCard,
   },
   {
     title: "POS",
