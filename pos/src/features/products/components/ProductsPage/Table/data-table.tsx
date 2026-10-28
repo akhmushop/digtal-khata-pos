@@ -18,6 +18,7 @@ import { features, type DataTableFeatures } from "./data-table-features";
 import { Fragment, useEffect, useState } from "react";
 import { DataTablePagination } from "./data-table-pagination";
 import { DataTableViewOptions } from "./data-table-view-options";
+import { Check, Download, Pencil, X } from "lucide-react";
 import {
   ProductVariantType,
   type ProductType,
@@ -33,16 +34,23 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Check, Pencil, X } from "lucide-react";
 import { isAxiosError } from "axios";
 
 interface DataTableProps {
   columns: ColumnDef<DataTableFeatures, ProductType>[];
   data: ProductType[];
+  loading?: boolean;
   getRowCanExpand: (row: Row<DataTableFeatures, ProductType>) => boolean;
+  onExportSelected: (products: ProductType[]) => void;
 }
 
-export function DataTable({ columns, data, getRowCanExpand }: DataTableProps) {
+export function DataTable({
+  columns,
+  data,
+  loading = false,
+  getRowCanExpand,
+  onExportSelected,
+}: DataTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] =
@@ -66,19 +74,26 @@ export function DataTable({ columns, data, getRowCanExpand }: DataTableProps) {
   });
 
   return (
-    <div>
-      <div className="flex justify-between items-center py-4">
-        <Input
-          placeholder="Filter Products..."
-          value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("name")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
+    <div className="space-y-4">
+      <div className="flex min-h-8 items-center justify-end gap-2">
+        {table.getSelectedRowModel().rows.length > 0 && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              onExportSelected(
+                table.getSelectedRowModel().rows.map((row) => row.original),
+              )
+            }
+          >
+            <Download aria-hidden="true" />
+            Export selected ({table.getSelectedRowModel().rows.length})
+          </Button>
+        )}
         <DataTableViewOptions table={table} />
       </div>
-      <div className="overflow-hidden rounded-md border">
+      <div className="overflow-x-auto rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -96,7 +111,17 @@ export function DataTable({ columns, data, getRowCanExpand }: DataTableProps) {
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
+            {loading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-32 text-center text-muted-foreground"
+                  role="status"
+                >
+                  Loading products…
+                </TableCell>
+              </TableRow>
+            ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <Fragment key={row.id}>
                   <TableRow
@@ -166,16 +191,15 @@ export function DataTable({ columns, data, getRowCanExpand }: DataTableProps) {
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-24 text-center"
+                  className="h-32 text-center text-muted-foreground"
                 >
-                  No results.
+                  No products match these filters.
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
-      <br></br>
       <DataTablePagination table={table} />
     </div>
   );

@@ -81,6 +81,22 @@ export const productSchema = z
       });
     }
     data.variants.forEach((variant, index) => {
+      if (data.trackingType === "serial" && data.source === "opening") {
+        const seenSerials = new Set<string>();
+        variant.serialNumbers?.forEach((item, serialIndex) => {
+          const normalizedSerial = item.serial.trim().toLocaleLowerCase();
+          if (!normalizedSerial) return;
+          if (seenSerials.has(normalizedSerial)) {
+            ctx.addIssue({
+              code: "custom",
+              path: ["variants", index, "serialNumbers", serialIndex, "serial"],
+              message: "Serial numbers must be unique within this variant",
+            });
+          }
+          seenSerials.add(normalizedSerial);
+        });
+      }
+
       const openingRequiredFields = [
         { key: "quantity" as const, label: "Quantity" },
         { key: "purchasePrice" as const, label: "Purchase Price" },

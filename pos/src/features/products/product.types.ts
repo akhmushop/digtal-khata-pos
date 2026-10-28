@@ -157,6 +157,7 @@ export interface InputFieldProps {
   type: "text" | "number" | "textArea";
   form: UseFormReturn<ProductTypeInput>;
   disabled?: boolean;
+  numberFormat?: "currency" | "quantity";
 }
 export interface ExpiryDatePickerProps {
   form: UseFormReturn<ProductTypeInput>;
@@ -172,6 +173,7 @@ export interface ProductInfoInputProps {
   remove?: UseFieldArrayRemove;
   canRemoveVariant?: boolean;
   canEditImages?: boolean;
+  canEditStock?: boolean;
 }
 export interface AccordionCardProps {
   form: UseFormReturn<ProductTypeInput>;
@@ -186,9 +188,8 @@ export interface VariantRowProps {
   append: UseFieldArrayAppend<ProductTypeInput, "variants">;
   remove: UseFieldArrayRemove;
   replace: UseFieldArrayReplace<ProductTypeInput, "variants">;
-  comboboxVariantTypeName: string[];
   allVariants: GeneratedVariant[];
-  fields: FieldArrayWithId<ProductTypeInput, "variants">[];
+  onForgetVariant: (variant: ProductTypeInput["variants"][number]) => void;
   isEditing?: boolean;
 }
 export interface InputFileProps {
