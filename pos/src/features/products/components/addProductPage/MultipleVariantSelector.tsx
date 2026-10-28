@@ -1,5 +1,4 @@
-import { UseFieldArrayReplace } from "react-hook-form";
-import { Field, FieldLabel, FieldDescription } from "@/components/ui/field.js";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field.js";
 import {
   Combobox,
   ComboboxChip,
@@ -12,46 +11,57 @@ import {
   ComboboxValue,
   useComboboxAnchor,
 } from "@/components/ui/combobox";
-import React from "react";
-import { ProductTypeInput } from "../../product.schema";
 import useProductStore from "../../useProductStore";
 
 export function MultipleVariantSelector({
-  setComboboxVariantTypeName,
-  replace,
+  selectedVariantTypeNames,
+  onSelectionChange,
+  disabled = false,
 }: {
-  setComboboxVariantTypeName: React.Dispatch<React.SetStateAction<string[]>>;
-  replace: UseFieldArrayReplace<ProductTypeInput, "variants">;
+  selectedVariantTypeNames: string[];
+  onSelectionChange: (value: string[]) => void;
+  disabled?: boolean;
 }) {
   const anchor = useComboboxAnchor();
-  const { productVariantOptions } = useProductStore();
+  const productVariantOptions = useProductStore(
+    (state) => state.productVariantOptions,
+  );
+  const variantTypeNames = productVariantOptions.map(
+    (option) => option.typeName,
+  );
+
   return (
     <Field>
-      <FieldLabel>Variant Types</FieldLabel>
-
+      <FieldLabel>Variant options</FieldLabel>
       <Combobox
         multiple
         autoHighlight
-        items={productVariantOptions.map((item) => item.typeName)}
-        onValueChange={(value) => {
-          replace([]);
-          setComboboxVariantTypeName(value as string[]);
-        }}
+        disabled={disabled}
+        items={variantTypeNames}
+        value={selectedVariantTypeNames}
+        onValueChange={onSelectionChange}
       >
-        <ComboboxChips ref={anchor} className="w-full">
+        <ComboboxChips ref={anchor} className="w-full bg-background">
           <ComboboxValue>
             {(values) => (
-              <React.Fragment>
+              <>
                 {values.map((value: string) => (
                   <ComboboxChip key={value}>{value}</ComboboxChip>
                 ))}
-                <ComboboxChipsInput placeholder="Select a Variant Types" />
-              </React.Fragment>
+                <ComboboxChipsInput
+                  aria-label="Select variant options"
+                  placeholder={
+                    values.length > 0
+                      ? "Add another option…"
+                      : "Choose size, color, or other options"
+                  }
+                />
+              </>
             )}
           </ComboboxValue>
         </ComboboxChips>
         <ComboboxContent anchor={anchor}>
-          <ComboboxEmpty>No Variant Type found.</ComboboxEmpty>
+          <ComboboxEmpty>No variant options found.</ComboboxEmpty>
           <ComboboxList>
             {(item) => (
               <ComboboxItem key={item} value={item}>
@@ -62,7 +72,8 @@ export function MultipleVariantSelector({
         </ComboboxContent>
       </Combobox>
       <FieldDescription>
-        Pick the dimensions you want to vary on.{" "}
+        Choose one or more dimensions. The combinations are generated below;
+        configured details are kept for combinations that remain selected.
       </FieldDescription>
     </Field>
   );

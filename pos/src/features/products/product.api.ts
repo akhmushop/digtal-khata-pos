@@ -31,7 +31,13 @@ export async function getProductForEditApi(id: number) {
   return data;
 }
 export async function updateProductApi(id: number, data: ProductTypeOutput) {
-  return axios.put(`/product/${id}`, data);
+  const { data: response } = await axios.put<{
+    data: {
+      productId: number;
+      addedVariants: { id: number; sku: string }[];
+    };
+  }>(`/product/${id}`, data);
+  return response.data;
 }
 export async function adjustVariantStockApi(
   variantId: number,

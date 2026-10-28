@@ -1,16 +1,9 @@
-import { useEffect, useState } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
-import {
-  ProductTypeInput,
-  ProductTypeOutput,
-  productSchema,
-} from "@/features/products/product.schema.js";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useFieldArray, useForm } from "react-hook-form";
+import { ArrowLeft, PackagePlus } from "lucide-react";
+import { Link, useBlocker, useNavigate, useParams } from "react-router";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { defaultValues } from "../constants/form-defaults.js";
-import { VariantsInfoCard } from "../components/addProductPage/VariantsInfoCard.js";
-import { GeneralInfoCard } from "../components/addProductPage/GeneralInfoCard.js";
-import { RightColumnInfoCard } from "../components/addProductPage/RightColumnInfoCard.js";
-import { SaveAndUpdateActionsCard } from "../components/addProductPage/SaveAndUpdateActionsCard.js";
+import { Button } from "@/components/ui/button.js";
 import {
   Card,
   CardContent,
@@ -18,6 +11,25 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card.js";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog.js";
+import { Spinner } from "@/components/ui/spinner.js";
+import {
+  ProductTypeInput,
+  ProductTypeOutput,
+  productSchema,
+} from "@/features/products/product.schema.js";
+import { defaultValues } from "../constants/form-defaults.js";
+import { VariantsInfoCard } from "../components/addProductPage/VariantsInfoCard.js";
+import { GeneralInfoCard } from "../components/addProductPage/GeneralInfoCard.js";
+import { RightColumnInfoCard } from "../components/addProductPage/RightColumnInfoCard.js";
+import { SaveAndUpdateActionsCard } from "../components/addProductPage/SaveAndUpdateActionsCard.js";
 import useProductStore from "@/features/products/useProductStore.js";
 import {
   createProductPromiseToast,
@@ -25,7 +37,6 @@ import {
 } from "../utils/productPromiseToast.js";
 import { getProductForEditApi } from "../product.api.js";
 import { getErrorMessage } from "@/utils/getErrorMessage.js";
-import { useNavigate, useParams } from "react-router";
 
 const ProductStockForm = () => {
   const { id: productId } = useParams();
@@ -34,61 +45,107 @@ const ProductStockForm = () => {
   const form = useForm<ProductTypeInput, unknown, ProductTypeOutput>({
     defaultValues,
     resolver: zodResolver(productSchema),
+    mode: "onBlur",
   });
   const createProduct = useProductStore((state) => state.createProduct);
   const updateProduct = useProductStore((state) => state.updateProduct);
   const [isLoadingProduct, setIsLoadingProduct] = useState(isEditing);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const isDirty = form.formState.isDirty;
+  const isSubmitting = form.formState.isSubmitting;
+  const skipNextNavigationBlock = useRef(false);
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) => {
+      if (skipNextNavigationBlock.current) {
+        skipNextNavigationBlock.current = false;
+        return false;
+      }
+      return isDirty && currentLocation.pathname !== nextLocation.pathname;
+    },
+  );
 
-  useEffect(() => {
+  const loadProduct = useCallback(async (isCancelled: () => boolean = () => false) => {
     if (!productId) {
-      setIsLoadingProduct(false);
+      if (!isCancelled()) setIsLoadingProduct(false);
       return;
     }
 
-    setLoadError(null);
     const id = Number(productId);
     if (!Number.isInteger(id) || id < 1) {
-      setLoadError("Invalid product ID.");
-      setIsLoadingProduct(false);
+      if (!isCancelled()) {
+        setLoadError("This product link is invalid. Check the URL and try again.");
+        setIsLoadingProduct(false);
+      }
       return;
     }
 
+    if (!isCancelled()) {
+      setLoadError(null);
+      setIsLoadingProduct(true);
+    }
+    try {
+      const product = await getProductForEditApi(id);
+      if (isCancelled()) return;
+      form.reset(product);
+    } catch (error: unknown) {
+      if (!isCancelled()) setLoadError(getErrorMessage(error));
+    } finally {
+      if (!isCancelled()) setIsLoadingProduct(false);
+    }
+  }, [form, productId]);
+
+  useEffect(() => {
     let cancelled = false;
-    setIsLoadingProduct(true);
-    getProductForEditApi(id)
-      .then((product) => {
-        if (!cancelled) {
-          form.reset(product);
-        }
-      })
-      .catch((error: unknown) => {
-        if (!cancelled) {
-          setLoadError(getErrorMessage(error));
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLoadingProduct(false);
-        }
-      });
+    void loadProduct(() => cancelled);
 
     return () => {
       cancelled = true;
     };
-  }, [form, productId]);
+  }, [loadProduct]);
+
+  useEffect(() => {
+    if (!isDirty || isSubmitting) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty, isSubmitting]);
 
   async function onSubmit(data: ProductTypeOutput) {
-    if (productId) {
-      await updateProductPromiseToast(data, () =>
-        updateProduct(Number(productId), data),
-      );
-      navigate("/product");
-      return;
-    }
+    setSubmitError(null);
+    try {
+      if (productId) {
+        const id = Number(productId);
+        await updateProductPromiseToast(data, () => updateProduct(id, data));
+        form.reset(data);
+        skipNextNavigationBlock.current = true;
+        navigate("/product");
+        return;
+      }
 
-    await createProductPromiseToast(data, createProduct);
-    form.reset();
+      await createProductPromiseToast(data, createProduct);
+      form.reset(defaultValues);
+    } catch (error: unknown) {
+      setSubmitError(getErrorMessage(error));
+    }
+  }
+
+  function focusFirstInvalidField() {
+    window.requestAnimationFrame(() => {
+      const firstInvalidField = document.querySelector<HTMLElement>(
+        '[aria-invalid="true"]',
+      );
+      firstInvalidField?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+      firstInvalidField?.focus({ preventScroll: true });
+    });
   }
 
   const { fields, append, remove, replace } = useFieldArray({
@@ -98,61 +155,162 @@ const ProductStockForm = () => {
 
   if (isEditing && (isLoadingProduct || loadError)) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-4 md:p-8">
-        <Card className="max-w-7xl mx-auto">
+      <div className="min-h-screen bg-muted/20 p-4 md:p-8">
+        <Card className="mx-auto max-w-3xl">
           <CardHeader>
-            <CardTitle>Edit Product</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <PackagePlus className="size-5 text-primary" aria-hidden="true" />
+              Edit product
+            </CardTitle>
             <CardDescription>
-              {loadError ?? "Loading product…"}
+              {loadError
+                ? "The product details could not be loaded."
+                : "Loading product details…"}
             </CardDescription>
           </CardHeader>
+          <CardContent className="flex flex-col items-start gap-4">
+            {isLoadingProduct ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
+                <Spinner />
+                Loading product details
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-destructive" role="alert">
+                  {loadError}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" onClick={() => void loadProduct()}>
+                    Try again
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    nativeButton={false}
+                    render={<Link to="/product" />}
+                  >
+                    <ArrowLeft aria-hidden="true" />
+                    Back to products
+                  </Button>
+                </div>
+              </>
+            )}
+          </CardContent>
         </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-4 md:p-8">
-      <Card className="max-w-7xl mx-auto">
-        <CardHeader>
-          <CardTitle>
-            {isEditing ? "Edit Product" : "Product Stock Management"}
-          </CardTitle>
-          <CardDescription>
-            {isEditing
-              ? "Update product details and variant pricing. Existing stock is not changed."
-              : "Add and manage inventory with detailed specifications"}
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <div className="md:p-8">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-8">
-                  <GeneralInfoCard form={form} />
-                  <VariantsInfoCard
-                    fields={fields}
-                    form={form}
-                    append={append}
-                    replace={replace}
-                    remove={remove}
-                    isEditing={isEditing}
-                  />
-                </div>
-                <div className="space-y-8">
-                  <RightColumnInfoCard form={form} isEditing={isEditing} />
-                  <SaveAndUpdateActionsCard
-                    form={form}
-                    isEditing={isEditing}
-                    onCancel={() => navigate("/product")}
-                  />
-                </div>
-              </div>
+    <div className="min-h-screen bg-muted/20 p-4 md:p-8">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="mt-1 rounded-xl bg-primary/10 p-2.5 text-primary">
+              <PackagePlus className="size-5" aria-hidden="true" />
+            </span>
+            <div>
+              <p className="text-sm text-muted-foreground">
+                <Link
+                  to="/product"
+                  className="transition-colors hover:text-foreground"
+                >
+                  Products
+                </Link>
+                <span aria-hidden="true"> / </span>
+                {isEditing ? "Edit product" : "New product"}
+              </p>
+              <h1 className="mt-1 text-2xl font-semibold tracking-tight">
+                {isEditing ? "Edit product" : "Add a product"}
+              </h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {isEditing
+                  ? "Update product details and pricing. Use stock adjustment to change on-hand quantities."
+                  : "Set up product details, variants, and inventory in one place."}
+              </p>
             </div>
-          </form>
-        </CardContent>
-      </Card>
+          </div>
+          {isDirty && (
+            <span className="w-fit rounded-full border bg-background px-3 py-1 text-xs font-medium text-muted-foreground">
+              Unsaved changes
+            </span>
+          )}
+        </header>
+
+        <form
+          onSubmit={form.handleSubmit(onSubmit, focusFirstInvalidField)}
+          noValidate
+        >
+          <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
+            <div className="space-y-6 lg:col-span-2">
+              <GeneralInfoCard form={form} />
+              <VariantsInfoCard
+                fields={fields}
+                form={form}
+                append={append}
+                replace={replace}
+                remove={remove}
+                isEditing={isEditing}
+              />
+            </div>
+            <aside className="space-y-6 lg:sticky lg:top-6">
+              <RightColumnInfoCard form={form} isEditing={isEditing} />
+              {submitError && (
+                <p
+                  className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+                  role="alert"
+                >
+                  {submitError}
+                </p>
+              )}
+              <SaveAndUpdateActionsCard
+                form={form}
+                isEditing={isEditing}
+                onCancel={() => navigate("/product")}
+              />
+            </aside>
+          </div>
+        </form>
+      </div>
+
+      <Dialog
+        open={blocker.state === "blocked"}
+        onOpenChange={(open) => {
+          if (!open && blocker.state === "blocked") {
+            blocker.reset();
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Discard unsaved changes?</DialogTitle>
+            <DialogDescription>
+              Your product changes haven’t been saved. Leave this page and lose
+              those changes?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                if (blocker.state === "blocked") blocker.reset();
+              }}
+            >
+              Keep editing
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => {
+                if (blocker.state === "blocked") blocker.proceed();
+              }}
+            >
+              Discard changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
