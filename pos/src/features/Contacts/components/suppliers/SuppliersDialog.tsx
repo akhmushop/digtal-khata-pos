@@ -57,15 +57,18 @@ export function SupplierDialog() {
     }
   }
   async function onSubmit(data: SupplierSchemaTypeOutput) {
-    console.log(data);
-    await createEntityPromiseToast({
-      data,
-      apiCall: createSupplier,
-      entityName: "Supplier",
-      displayName: data.supplierName,
-    });
-
-    form.reset();
+    try {
+      await createEntityPromiseToast({
+        data,
+        apiCall: createSupplier,
+        entityName: "Supplier",
+        displayName: data.supplierName,
+      });
+      form.reset();
+      setOpen(false);
+    } catch {
+      // The promise toast displays the API error; keep the dialog open for correction.
+    }
   }
   const isSubmitting = form.formState.isSubmitting;
   return (

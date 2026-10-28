@@ -76,7 +76,7 @@ function CartCustomerInfo() {
         <span className="col-span-2">Address: {address}</span>
         <span className="col-span-2">
           {customerDue
-            ? `Total Amount: ${customerDue.totalAmount ?? 0}, Total Paid: ${customerDue.total_paid ?? 0}, Total Due: ${customerDue.total_due ?? 0}`
+            ? `Total Amount: ${customerDue.totalAmount ?? 0}, Total Paid: ${customerDue.totalPaid ?? 0}, Total Due: ${customerDue.totalDue ?? 0}`
             : "No Due"}
         </span>
       </CardContent>

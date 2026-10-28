@@ -1,6 +1,19 @@
 import type { NextFunction, Request, Response } from "express";
 import * as contactService from "../contact/contact.service.js";
 import { supplierSchema } from "./schemas/supplier.schema.js";
+export async function getSuppliers(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const suppliers = await contactService.getSuppliers();
+    return res.status(200).json(suppliers);
+  } catch (err: unknown) {
+    next(err);
+  }
+}
+
 export async function createSupplier(
   req: Request,
   res: Response,
