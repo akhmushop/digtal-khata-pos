@@ -1,150 +1,444 @@
-
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
-import type { PurchaseNewProps } from "../purchase.types.js";
-import { usePurchasesStore } from "../usePurchaseStore.js";
+import {
+  ArrowUpRight,
+  ClipboardList,
+  PackageCheck,
+  Plus,
+  Search,
+  Wallet,
+} from "lucide-react";
+import type { ReactNode } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { usePurchasesStore } from "../usePurchaseStore";
+import type { PurchaseNewProps, PurchaseStoreType } from "../purchase.types";
+
+type PurchaseFilter = "all" | "ordered" | "partially_received" | "received";
+
+const filters: { value: PurchaseFilter; label: string }[] = [
+  { value: "all", label: "All orders" },
+  { value: "ordered", label: "Ordered" },
+  { value: "partially_received", label: "Partially received" },
+  { value: "received", label: "Received" },
+];
+
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("en-BD", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+
+function formatDate(value: Date | string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "—"
+    : new Intl.DateTimeFormat("en-BD", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }).format(date);
+}
+
 export const PurchasesList = () => {
-  const { purchases } = usePurchasesStore();
+  const [filter, setFilter] = useState<PurchaseFilter>("all");
+  const [search, setSearch] = useState("");
+  const purchases = usePurchasesStore((state) => state.purchases);
+  const purchaseItems = usePurchasesStore((state) => state.purchasesItems);
+  const returnedItems = usePurchasesStore(
+    (state) => state.purchasesReturnItems,
+  );
+  const getPurchases = usePurchasesStore((state) => state.getPurchases);
+  const getPurchaseItems = usePurchasesStore((state) => state.getPurchaseItems);
+  const getPurchasesReturnItems = usePurchasesStore(
+    (state) => state.getPurchasesReturnItems,
+  );
+  const loading = usePurchasesStore((state) => state.loading);
+  const error = usePurchasesStore((state) => state.error);
+
+  useEffect(() => {
+    void Promise.all([
+      getPurchases(),
+      getPurchaseItems(),
+      getPurchasesReturnItems(),
+    ]);
+  }, [getPurchaseItems, getPurchases, getPurchasesReturnItems]);
+
+  const allPurchases = purchases.allPurchases ?? [];
+  const returnStatusByPurchase = useMemo(() => {
+    const returnedByItem = new Map(
+      returnedItems.map((item) => [
+        item.purchaseItemId,
+        Number(item.returnQuantity) || 0,
+      ]),
+    );
+    const totalsByPurchase = new Map<
+      number,
+      { received: number; returned: number }
+    >();
+
+    for (const item of purchaseItems) {
+      const totals = totalsByPurchase.get(item.purchaseId) ?? {
+        received: 0,
+        returned: 0,
+      };
+      totals.received += Number(item.receivedQuantity) || 0;
+      totals.returned += returnedByItem.get(item.id) ?? 0;
+      totalsByPurchase.set(item.purchaseId, totals);
+    }
+
+    return new Map(
+      [...totalsByPurchase].flatMap(([purchaseId, totals]) => {
+        if (totals.returned <= 0) return [];
+        return [
+          [
+            purchaseId,
+            totals.returned >= totals.received
+              ? "Returned"
+              : "Partially returned",
+          ] as const,
+        ];
+      }),
+    );
+  }, [purchaseItems, returnedItems]);
+
+  const visiblePurchases = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return allPurchases
+      .filter((purchase) => filter === "all" || purchase.status === filter)
+      .filter(
+        (purchase) =>
+          !query ||
+          purchase.purchaseOrderNumber.toLowerCase().includes(query) ||
+          purchase.supplierName?.toLowerCase().includes(query) ||
+          purchase.notes?.toLowerCase().includes(query),
+      )
+      .sort(
+        (first, second) =>
+          new Date(second.purchaseDate).getTime() -
+          new Date(first.purchaseDate).getTime(),
+      );
+  }, [allPurchases, filter, search]);
+
+  const outstanding = allPurchases.reduce(
+    (sum, purchase) => sum + Number(purchase.dueAmount || 0),
+    0,
+  );
+  const awaitingReceipt = allPurchases.filter(
+    (purchase) => purchase.status !== "received",
+  ).length;
+
   return (
-    <div className="px-5">
-      {/* create purchase order */}
-      <div className="h-20 m-5 flex items-center bg-gray-100 rounded">
-        <div className="flex justify-between p-5 w-full">
+    <div className="min-h-[calc(100vh-1rem)] bg-muted/30 p-4 md:p-6">
+      <div className="mx-auto max-w-[1500px] space-y-6">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1>Purchase Orders</h1>
-            <p className="text-xs">
-              Manage your purchase orders and drafts efficiently
+            <p className="text-sm font-medium text-muted-foreground">
+              Inventory / Purchases
+            </p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight">
+              Purchase orders
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Track supplier orders, receiving progress, and outstanding
+              balances.
             </p>
           </div>
-          <div>
-            <button className="btn btn-primary">Create Purchase Order</button>
-          </div>
-        </div>
-      </div>
-      {/* filter */}
-      <div className="mx-5">
-        <div className="tabs tabs-border">
-          <input
-            type="radio"
-            name="my_tabs_2"
-            className="tab"
-            aria-label="Drafts"
+          <Button nativeButton={false} render={<Link to="/purchases" />}>
+            <Plus /> New purchase
+          </Button>
+        </header>
+
+        <section className="grid gap-4 sm:grid-cols-3">
+          <SummaryCard
+            title="Total purchase orders"
+            value={String(allPurchases.length)}
+            icon={<ClipboardList />}
           />
-          <div className="tab-content border-base-300 bg-base-100 p-10">
-            Tab content 1
-          </div>
-          <input
-            type="radio"
-            name="my_tabs_2"
-            className="tab"
-            aria-label="Purchase Orders"
-            defaultChecked
+          <SummaryCard
+            title="Awaiting receipt"
+            value={String(awaitingReceipt)}
+            icon={<PackageCheck />}
           />
-          <div className="tab-content border-base-300 bg-base-100">
-            <PurchaseOrder purchases={purchases.orderedPurchase} />
-          </div>
-          <input
-            type="radio"
-            name="my_tabs_2"
-            className="tab"
-            aria-label="Purchase Progress"
+          <SummaryCard
+            title="Outstanding balance"
+            value={`৳ ${formatCurrency(outstanding)}`}
+            icon={<Wallet />}
           />
-          <div className="tab-content border-base-300 bg-base-100 ">
-            <PurchaseOrder purchases={purchases.partiallyPaidPurchase} />
+        </section>
+
+        <section className="overflow-hidden rounded-xl border bg-background shadow-sm">
+          <div className="space-y-4 border-b p-4 md:p-5">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="font-semibold">Orders</h2>
+                <p className="text-sm text-muted-foreground">
+                  {visiblePurchases.length} of {allPurchases.length} orders
+                </p>
+              </div>
+              <div className="relative w-full md:max-w-sm">
+                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search order, supplier, or note..."
+                  aria-label="Search purchase orders"
+                  className="pl-9"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {filters.map((item) => {
+                const count =
+                  item.value === "all"
+                    ? allPurchases.length
+                    : allPurchases.filter(
+                        (purchase) => purchase.status === item.value,
+                      ).length;
+                return (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => setFilter(item.value)}
+                    className={`shrink-0 rounded-full px-3 py-1.5 text-sm transition-colors ${
+                      filter === item.value
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-muted/70"
+                    }`}
+                  >
+                    {item.label}{" "}
+                    <span className="ml-1 opacity-70">{count}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          <input
-            type="radio"
-            name="my_tabs_2"
-            className="tab"
-            aria-label="Completed"
-          />
-          <div className="tab-content border-base-300 bg-base-100">
-            <PurchaseOrder purchases={purchases.completedPurchase} />
-          </div>
-        </div>
+
+          {error && (
+            <p
+              role="alert"
+              className="m-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive"
+            >
+              {error}
+            </p>
+          )}
+
+          {loading && allPurchases.length === 0 ? (
+            <div className="space-y-3 p-5">
+              {Array.from({ length: 5 }, (_, index) => (
+                <div
+                  key={index}
+                  className="h-12 animate-pulse rounded-md bg-muted"
+                />
+              ))}
+            </div>
+          ) : visiblePurchases.length ? (
+            <PurchaseOrderTable
+              purchases={visiblePurchases}
+              items={purchaseItems}
+              returnStatusByPurchase={returnStatusByPurchase}
+            />
+          ) : (
+            <div className="flex min-h-64 flex-col items-center justify-center px-6 text-center">
+              <ClipboardList className="size-10 text-muted-foreground/50" />
+              <p className="mt-3 font-medium">
+                {search
+                  ? "No matching purchase orders"
+                  : "No purchase orders yet"}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {search
+                  ? "Change your search or status filter and try again."
+                  : "Create a purchase order to start tracking stock from suppliers."}
+              </p>
+              {!search && (
+                <Button
+                  nativeButton={false}
+                  className="mt-4"
+                  variant="outline"
+                  render={<Link to="/purchases" />}
+                >
+                  <Plus /> Create purchase
+                </Button>
+              )}
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );
 };
-const PurchaseOrder = ({ purchases }: PurchaseNewProps) => {
+
+function SummaryCard({
+  title,
+  value,
+  icon,
+}: {
+  title: string;
+  value: string;
+  icon: ReactNode;
+}) {
   return (
-    <div className="rounded-box border border-base-content/5 bg-base-100">
-      <table className="table table-sm ">
-        {/* head */}
-        <thead>
+    <div className="flex items-center gap-4 rounded-xl border bg-background p-4 shadow-sm">
+      <div className="rounded-lg bg-primary/10 p-2.5 text-primary">{icon}</div>
+      <div>
+        <p className="text-sm text-muted-foreground">{title}</p>
+        <p className="mt-1 text-xl font-semibold">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function PurchaseOrderTable({
+  purchases,
+  items,
+  returnStatusByPurchase,
+}: PurchaseNewProps & {
+  items: { purchaseId: number }[];
+  returnStatusByPurchase: Map<number, string>;
+}) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[980px] text-left text-sm">
+        <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
           <tr>
-            <th>INVOICE</th>
-            <th>SUPPLIER</th>
-            <th>STORE</th>
-            <th>ITEMS</th>
-            <th>TOTAL AMOUNT</th>
-            <th>DUE AMOUNT</th>
-            <th>PAYMENT STATUS</th>
-            <th>ORDER STATUS</th>
-            <th>CREATED DATE</th>
-            <th>UPDATED DATE</th>
-            <th>ACTIONS</th>
+            <th className="px-5 py-3 font-medium">Order</th>
+            <th className="px-4 py-3 font-medium">Supplier</th>
+            <th className="px-4 py-3 font-medium">Date</th>
+            <th className="px-4 py-3 text-right font-medium">Items</th>
+            <th className="px-4 py-3 text-right font-medium">Total</th>
+            <th className="px-4 py-3 text-right font-medium">Due</th>
+            <th className="px-4 py-3 font-medium">Payment</th>
+            <th className="px-4 py-3 font-medium">Receiving</th>
+            <th className="px-4 py-3 font-medium">Return status</th>
+            <th className="px-5 py-3 text-right font-medium">Actions</th>
           </tr>
         </thead>
-        <tbody>
-          {/* row 1 */}
-          {purchases?.map((pur) => {
-            const purchaseDate = new Date(pur.purchaseDate).toLocaleDateString();
-            const updatedDate = new Date(pur.updatedAt).toLocaleDateString();
-            const supplierName =pur.supplierName ? pur.supplierName : "walk-in purchases"
+        <tbody className="divide-y">
+          {purchases.map((purchase) => {
+            const lineCount = items.filter(
+              (item) => item.purchaseId === purchase.id,
+            ).length;
             return (
-              <tr key={pur.id}>
-                <th>{pur.purchaseOrderNumber}</th>
-                <th>
-                  {supplierName}
-                </th>
-                <th>Akhmu Shop</th>
-                <th>1items</th>
-                <th>{pur.totalAmount}</th>
-                <th>{pur.dueAmount}</th>
-                <th>{pur.paymentStatus}</th>
-                <th>{pur.status}</th>
-                <th>{purchaseDate}</th>
-                <th>{updatedDate}</th>
-                <th>
-                  <div className="dropdown dropdown-end">
-                    <div tabIndex={0} role="button" className="btn">
-                      . . .
-                    </div>
-                    <ul
-                      tabIndex={-1}
-                      className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm"
-                    >
-                      <li>
-                        <Link to={`/purchase-return/${pur.id}`}>Return</Link>
-                      </li>
-                      <li>
-                        <Link to={`/receive-items/${pur.id}`}>
-                          Receive Items
-                        </Link>
-                      </li>
-                      <li>
-                        <a>View Transactions</a>
-                      </li>
-                      <li>
-                        <a>Partial Payment</a>
-                      </li>
-                      <li>
-                        <a>Clear Full Due</a>
-                      </li>
-                      <li>
-                        <a>Print</a>
-                      </li>
-                      <li>
-                        <a>Delete</a>
-                      </li>
-                    </ul>
-                  </div>
-                </th>
-              </tr>
+              <PurchaseOrderRow
+                key={purchase.id}
+                purchase={purchase}
+                lineCount={lineCount}
+                returnStatus={returnStatusByPurchase.get(purchase.id)}
+              />
             );
           })}
         </tbody>
       </table>
     </div>
   );
-};
+}
+
+function PurchaseOrderRow({
+  purchase,
+  lineCount,
+  returnStatus,
+}: {
+  purchase: PurchaseStoreType;
+  lineCount: number;
+  returnStatus?: string;
+}) {
+  const statusStyles: Record<PurchaseStoreType["status"], string> = {
+    ordered: "bg-sky-100 text-sky-800",
+    partially_received: "bg-amber-100 text-amber-800",
+    received: "bg-emerald-100 text-emerald-800",
+  };
+  const paymentStyles: Record<PurchaseStoreType["paymentStatus"], string> = {
+    unpaid: "bg-rose-100 text-rose-800",
+    partial: "bg-amber-100 text-amber-800",
+    paid: "bg-emerald-100 text-emerald-800",
+  };
+
+  return (
+    <tr className="hover:bg-muted/30">
+      <td className="px-5 py-4">
+        <p className="font-medium">{purchase.purchaseOrderNumber}</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          Updated {formatDate(purchase.updatedAt)}
+        </p>
+      </td>
+      <td className="px-4 py-4">
+        <span className="font-medium">
+          {purchase.supplierName || "Walk-in purchase"}
+        </span>
+      </td>
+      <td className="px-4 py-4 text-muted-foreground">
+        {formatDate(purchase.purchaseDate)}
+      </td>
+      <td className="px-4 py-4 text-right">{lineCount}</td>
+      <td className="whitespace-nowrap px-4 py-4 text-right font-medium">
+        ৳ {formatCurrency(Number(purchase.totalAmount) || 0)}
+      </td>
+      <td className="whitespace-nowrap px-4 py-4 text-right">
+        ৳ {formatCurrency(Number(purchase.dueAmount) || 0)}
+      </td>
+      <td className="px-4 py-4">
+        <StatusBadge
+          label={purchase.paymentStatus.replace("_", " ")}
+          className={paymentStyles[purchase.paymentStatus]}
+        />
+      </td>
+      <td className="px-4 py-4">
+        <StatusBadge
+          label={purchase.status.replace("_", " ")}
+          className={statusStyles[purchase.status]}
+        />
+      </td>
+      <td className="px-4 py-4">
+        {returnStatus ? (
+          <StatusBadge
+            label={returnStatus}
+            className="bg-violet-100 text-violet-800"
+          />
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        )}
+      </td>
+      <td className="px-5 py-4">
+        <div className="flex justify-end gap-2">
+          {purchase.status !== "received" && (
+            <Button
+              nativeButton={false}
+              size="sm"
+              variant="outline"
+              render={<Link to={`/receive-items/${purchase.id}`} />}
+            >
+              Receive
+            </Button>
+          )}
+          {purchase.status !== "ordered" && purchase.supplierId !== null && (
+            <Button
+              nativeButton={false}
+              size="sm"
+              variant="outline"
+              render={<Link to={`/purchase-return/${purchase.id}`} />}
+            >
+              <ArrowUpRight /> Return
+            </Button>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function StatusBadge({
+  label,
+  className,
+}: {
+  label: string;
+  className: string;
+}) {
+  return (
+    <span
+      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize ${className}`}
+    >
+      {label}
+    </span>
+  );
+}

@@ -23,6 +23,16 @@ export const receiveItemsFormSchema = z.object({
         ),
       })
       .superRefine((data, ctx) => {
+        if (
+          data.trackingType === "serial" &&
+          !Number.isInteger(data.receiveNow)
+        ) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["receiveNow"],
+            message: "Serial-tracked quantities must be whole numbers.",
+          });
+        }
         if (data.trackingType === "serial" && data.receiveNow > 0) {
           if (data.serialNumbers.length !== data.receiveNow) {
             ctx.addIssue({
@@ -32,7 +42,7 @@ export const receiveItemsFormSchema = z.object({
             });
           }
         }
-        if (data.trackingType === "batch" && data.receiveNow >= 0) {
+        if (data.trackingType === "batch" && data.receiveNow > 0) {
           const totalBatchQty = data.batches.reduce(
             (sum, b) => sum + b.quantity,
             0,

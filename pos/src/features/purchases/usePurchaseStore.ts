@@ -55,13 +55,8 @@ export const usePurchasesStore = create<PurchasesStore>((set) => ({
       throw err;
     }
   },
-  purchaseReturn: async (orderId, changedItems) => {
-    try {
-      const data = await purchaseReturnApi(orderId, changedItems);
-      return data;
-    } catch (err) {
-      throw err;
-    }
+  purchaseReturn: async (data) => {
+    return purchaseReturnApi(data);
   },
   createReceivePurchase: async (data) => {
     const response = await createReceivePurchaseApi(data);
