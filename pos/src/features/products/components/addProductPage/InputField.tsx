@@ -17,6 +17,7 @@ export function InputField({
   name,
   form,
   disabled,
+  numberFormat = "currency",
 }: InputFieldProps) {
   return (
     <Controller
@@ -27,11 +28,13 @@ export function InputField({
           {label && <FieldLabel htmlFor={field.name}>{label}</FieldLabel>}
           {type === "number" && (
             <InputGroup>
-              <InputGroupAddon>
-                <InputGroupText>
-                  <TbCurrencyTaka />
-                </InputGroupText>
-              </InputGroupAddon>
+              {numberFormat === "currency" && (
+                <InputGroupAddon>
+                  <InputGroupText>
+                    <TbCurrencyTaka />
+                  </InputGroupText>
+                </InputGroupAddon>
+              )}
               <InputGroupInput
                 disabled={disabled}
                 id={field.name}
@@ -45,10 +48,14 @@ export function InputField({
                 aria-invalid={fieldState.invalid}
                 placeholder={placeholder}
                 type={type}
+                min={0}
+                step={numberFormat === "quantity" ? 1 : "any"}
               />
-              <InputGroupAddon align="inline-end">
-                <InputGroupText>BDT</InputGroupText>
-              </InputGroupAddon>
+              {numberFormat === "currency" && (
+                <InputGroupAddon align="inline-end">
+                  <InputGroupText>BDT</InputGroupText>
+                </InputGroupAddon>
+              )}
             </InputGroup>
           )}
           {type === "text" && (

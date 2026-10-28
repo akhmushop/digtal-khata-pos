@@ -1,96 +1,152 @@
+import { useEffect, useState } from "react";
 import { Controller, useFieldArray } from "react-hook-form";
+import { Barcode, Plus, Trash2 } from "lucide-react";
 import { ProductInfoInputProps } from "../../product.types";
-import { Field, FieldLabel, FieldError } from "@/components/ui/field.js";
-import { Trash2 } from "lucide-react";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field.js";
 import { InputField } from "./InputField";
 import { ExpiryDatePicker } from "./ExpiryDatePicker";
 import { InputFile } from "./InputFile";
 import { variantStatus } from "../../constants/form-status";
 import { SelectOptions } from "./SelectOptions";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
 export function ProductInfoInput({
   form,
   variantIndex,
   remove,
   canRemoveVariant = true,
   canEditImages = true,
+  canEditStock = true,
 }: ProductInfoInputProps) {
+  const [isPasteDialogOpen, setIsPasteDialogOpen] = useState(false);
+  const [pastedSerials, setPastedSerials] = useState("");
+  const [pasteError, setPasteError] = useState("");
+  const [serialNotice, setSerialNotice] = useState("");
+  const serialFieldName = `variants.${variantIndex}.serialNumbers` as const;
   const {
-    fields,
-    append,
-    remove: serialRemove,
+    fields: serialFields,
+    append: appendSerial,
+    remove: removeSerial,
   } = useFieldArray({
     control: form.control,
-    name: `variants.${variantIndex}.serialNumbers`,
+    name: serialFieldName,
   });
   const hasVariants = form.watch("hasVariants");
-  const serialNumbers = form.watch(`variants.${variantIndex}.serialNumbers`);
   const source = form.watch("source");
   const trackingType = form.watch("trackingType");
+
+  useEffect(() => {
+    if (
+      !canEditStock ||
+      source !== "opening" ||
+      trackingType !== "serial"
+    ) {
+      return;
+    }
+
+    form.setValue(`variants.${variantIndex}.quantity`, serialFields.length, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  }, [canEditStock, form, serialFields.length, source, trackingType, variantIndex]);
+
+  const importSerials = () => {
+    const serials = pastedSerials
+      .split(/\r?\n/)
+      .map((serial) => serial.trim())
+      .filter(Boolean);
+    const currentSerials =
+      form.getValues(serialFieldName)?.map((item) => item.serial.trim()) ?? [];
+    const existing = new Set(
+      currentSerials.map((serial) => serial.toLocaleLowerCase()),
+    );
+    const additions: string[] = [];
+
+    for (const serial of serials) {
+      const normalized = serial.toLocaleLowerCase();
+      if (existing.has(normalized)) continue;
+      existing.add(normalized);
+      additions.push(serial);
+    }
+
+    if (additions.length === 0) {
+      setPasteError(
+        serials.length === 0
+          ? "Enter at least one serial number."
+          : "All entered serial numbers are already in the list.",
+      );
+      return;
+    }
+
+    additions.forEach((serial) => appendSerial({ serial }));
+    setSerialNotice(
+      `Added ${additions.length} serial number${additions.length === 1 ? "" : "s"}${serials.length > additions.length ? "; duplicates were skipped." : "."}`,
+    );
+    setPastedSerials("");
+    setPasteError("");
+    setIsPasteDialogOpen(false);
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
       {source === "opening" && (
         <InputField
           placeholder="0.00"
-          label="Purchase Price"
+          label="Purchase price"
           type="number"
           name={`variants.${variantIndex}.purchasePrice`}
           form={form}
         />
       )}
-      {/* Price */}
       {!hasVariants && (
         <InputField
           placeholder="0.00"
-          label="Selling Price"
+          label="Selling price"
           type="number"
           name={`variants.${variantIndex}.sellingPrice`}
           form={form}
         />
       )}
-      {/*WholeSale Price */}
-      {/* <div className="space-y-2">
-      <InputField
-        placeholder="0.00"
-        label="WholeSale Price"
-        type="number"
-        name={`variants.${index}.wholeSalePrice`}
-        form={form}
-      />
-    </div> */}
-      {/* Quantity */}
-      {source === "opening" && (
+      {source === "opening" && canEditStock && (
         <InputField
-          disabled={trackingType !== "serial" ? false : true}
-          placeholder="0.00"
-          label="Quantity"
+          disabled={trackingType === "serial"}
+          numberFormat="quantity"
+          placeholder="0"
+          label="Opening quantity"
           type="number"
           name={`variants.${variantIndex}.quantity`}
           form={form}
         />
       )}
-      {/* Alert Quantity */}
       <InputField
-        placeholder="0.00"
-        label="Alert Quantity"
+        numberFormat="quantity"
+        placeholder="0"
+        label="Low-stock alert quantity"
         type="number"
         name={`variants.${variantIndex}.alertQuantity`}
         form={form}
       />
-      {/* Barcode */}
       <InputField
-        placeholder="Enter Barcode"
+        placeholder="Enter barcode"
         label="Barcode"
         type="text"
         name={`variants.${variantIndex}.barcode`}
         form={form}
       />
-      {/* Batch Number */}
       {source === "opening" && trackingType === "batch" && (
         <InputField
-          placeholder="Enter Batch Number"
-          label="Batch Number"
+          placeholder="Enter batch number"
+          label="Batch number"
           type="text"
           name={`variants.${variantIndex}.batchNumber`}
           form={form}
@@ -98,14 +154,13 @@ export function ProductInfoInput({
       )}
       {!hasVariants && (
         <InputField
-          placeholder="auto-generated if blank"
-          label="Sku"
+          placeholder="Auto-generated if blank"
+          label="SKU"
           type="text"
           name={`variants.${variantIndex}.sku`}
           form={form}
         />
       )}
-      {/* Expiry Date */}
       {source === "opening" && trackingType === "batch" && (
         <ExpiryDatePicker form={form} index={variantIndex} />
       )}
@@ -114,97 +169,180 @@ export function ProductInfoInput({
           urlName={`variants.${variantIndex}.imageUrl`}
           fileName={`variants.${variantIndex}.imageFile`}
           form={form}
-          label="Image"
+          label="Variant image"
         />
       )}
-      {/* status */}
       <SelectOptions
         options={variantStatus}
-        label="Status"
+        label="Variant status"
         form={form}
         name={`variants.${variantIndex}.status`}
       />
-      {/* switch */}
-      {/* {trackingType === "serial" && (
-        <div className="col-span-3">
-          <div className="flex justify-end mb-5">
-            <div className="flex items-center space-x-2">
-              <Switch
-                checked={hasSerials}
-                onCheckedChange={(checked) => {
-                  setHasSerials(checked); // Update the state
-                  if (!checked) {
-                    replace([]);
-                  }
+
+      {canEditStock && trackingType === "serial" && source === "opening" && (
+        <section
+          aria-labelledby={`serials-heading-${variantIndex}`}
+          className="space-y-3 rounded-lg border bg-background p-4 md:col-span-2 lg:col-span-3"
+        >
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+            <div className="space-y-1">
+              <h3
+                id={`serials-heading-${variantIndex}`}
+                className="flex items-center gap-2 text-sm font-medium"
+              >
+                <Barcode className="size-4 text-muted-foreground" aria-hidden="true" />
+                Serial numbers
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                  {serialFields.length}
+                </span>
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Opening quantity is calculated from the serial numbers listed
+                here. Add one serial per unit.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setPasteError("");
+                  setIsPasteDialogOpen(true);
                 }}
-                id="track-serials"
-              />
-              <Label htmlFor="track-serials">Track Serials</Label>
+              >
+                Paste list
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => appendSerial({ serial: "" })}
+              >
+                <Plus aria-hidden="true" />
+                Add serial
+              </Button>
             </div>
           </div>
-        </div>
-      )} */}
-      {trackingType === "serial" && source === "opening" && (
-        <div className="space-y-2 col-span-1 md:col-span-2 lg:col-span-3">
-          <p className="text-center">
-            The quantity will automatically equal the number of serial numbers
-          </p>
-          {fields.map((field, serialIndex) => (
-            <Controller
-              key={serialIndex}
-              control={form.control}
-              name={`variants.${variantIndex}.serialNumbers.${serialIndex}.serial`}
-              render={({ field, fieldState }) => (
-                <>
-                  <Field>
-                    <FieldLabel>
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
-                    </FieldLabel>
-                    <div className="flex gap-5 items-center">
-                      <Input
-                        {...field}
-                        aria-invalid={fieldState.invalid}
-                        type="text"
-                        placeholder="e.g.IMEI12345678"
-                      />
-                      <Trash2
-                        onClick={() => {
-                          serialRemove(serialIndex);
-                        }}
-                      />
-                    </div>
-                  </Field>
-                </>
-              )}
-            />
-          ))}
-          {serialNumbers?.length === 0 && (
-            <div className="h-15 w-full border border-gray border-dashed rounded flex items-center justify-center">
-              <p>No serial numbers tracked. Click “Add serial” to start.</p>
+
+          {serialNotice && (
+            <p className="text-sm text-emerald-700" role="status">
+              {serialNotice}
+            </p>
+          )}
+
+          {serialFields.length === 0 ? (
+            <div className="rounded-md border border-dashed p-6 text-center">
+              <p className="text-sm font-medium">No serial numbers yet</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Add serials one at a time or paste a list on separate lines.
+              </p>
+            </div>
+          ) : (
+            <div className="grid max-h-80 grid-cols-1 gap-3 overflow-y-auto sm:grid-cols-2">
+              {serialFields.map((serialField, serialIndex) => {
+                const serialName =
+                  `variants.${variantIndex}.serialNumbers.${serialIndex}.serial` as const;
+                const serialId = `variant-${variantIndex}-serial-${serialIndex}`;
+
+                return (
+                  <Controller
+                    key={serialField.id}
+                    control={form.control}
+                    name={serialName}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor={serialId}>
+                          Serial number {serialIndex + 1}
+                        </FieldLabel>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            {...field}
+                            id={serialId}
+                            aria-invalid={fieldState.invalid}
+                            placeholder="e.g. IMEI12345678"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Remove serial number ${serialIndex + 1}`}
+                            onClick={() => removeSerial(serialIndex)}
+                          >
+                            <Trash2 aria-hidden="true" />
+                          </Button>
+                        </div>
+                        {fieldState.invalid && (
+                          <FieldError errors={[fieldState.error]} />
+                        )}
+                      </Field>
+                    )}
+                  />
+                );
+              })}
             </div>
           )}
-          <Button
-            onClick={() => {
-              append({ serial: "" });
-            }}
-          >
-            Add Serial
-          </Button>
-        </div>
+        </section>
       )}
+
       {hasVariants && canRemoveVariant && (
-        <div className="space-y-2 col-span-1 md:col-span-2 lg:col-span-3 flex justify-end gap-5">
+        <div className="flex justify-end md:col-span-2 lg:col-span-3">
           <Button
-            onClick={() => {
-              remove?.(variantIndex);
-            }}
+            type="button"
+            variant="outline"
+            onClick={() => remove?.(variantIndex)}
           >
-            Remove
+            <Trash2 aria-hidden="true" />
+            Remove variant
           </Button>
         </div>
       )}
+
+      <Dialog
+        open={isPasteDialogOpen}
+        onOpenChange={(open) => {
+          setIsPasteDialogOpen(open);
+          if (!open) setPasteError("");
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Paste serial numbers</DialogTitle>
+            <DialogDescription>
+              Paste one serial number per line. Blank lines and duplicates
+              already in this variant will be skipped.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            autoFocus
+            aria-label="Serial numbers to import"
+            value={pastedSerials}
+            onChange={(event) => {
+              setPastedSerials(event.target.value);
+              setPasteError("");
+            }}
+            placeholder={"IMEI12345678\nIMEI12345679\nIMEI12345680"}
+            rows={8}
+          />
+          {pasteError && (
+            <p className="text-sm text-destructive" role="alert">
+              {pasteError}
+            </p>
+          )}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsPasteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="button" onClick={importSerials}>
+              Add serials
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
