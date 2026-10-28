@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { ProductHeader } from "@/features/pos/components/pos/ProductHeader.js";
 import { ProductList } from "@/features/pos/components/pos/ProductList.js";
 import { CartHeader } from "@/features/pos/components/pos/CartHeader.js";
 import CartItems, {
@@ -17,16 +16,15 @@ import { useCartStore } from "@/features/pos/stores/useCartStore.js";
 import {
   Card,
   CardContent,
-  CardFooter,
   CardHeader,
 } from "@/components/ui/card.js";
 import { toast } from "@/components/ui/toast.js";
 import { useSalesStore } from "../stores/useSalesStore.js";
 import { createEntityPromiseToast } from "@/lib/toast-utils.js";
 import { useCustomerStore } from "@/store/useCustomerStore.js";
+
 function Pos() {
   const { cart, resetCart } = useCartStore();
-  const [searchProducts, setSearchProducts] = useState("");
   const { setShowCustomerInfo } = useCustomerStore();
   const { createSale } = useSalesStore();
   const form = useForm<CartSchemaType>({
@@ -40,12 +38,12 @@ function Pos() {
     },
   });
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+
   async function onSubmit(data: CartSchemaType) {
-    // 1. Build the raw payload
     const rawPayload = {
       ...data,
       items: cart.map((item) => ({
-        variantId: item.variants[0]?.id ?? 0, // Fallback if undefined
+        variantId: item.variants[0]?.id ?? 0,
         quantity: item.quantity,
         unitPrice: item.variants[0]?.sellingPrice ?? 0,
         discount: item.discount ?? null,
@@ -54,10 +52,8 @@ function Pos() {
       })),
     };
 
-    // 2. Validate the payload using Zod!
     const result = createSalePayloadSchema.safeParse(rawPayload);
     if (!result.success) {
-      // If Zustand cart data is broken, catch it here!
       console.error("Payload validation failed:", result.error.flatten());
       toast.add({
         type: "error",
@@ -67,64 +63,53 @@ function Pos() {
       return;
     }
 
-    // 3. Use the clean, validated data
     const payload: CreateSalePayload = result.data;
-
-    // 4. Send to backend
     await createEntityPromiseToast({
       data: payload,
       apiCall: createSale,
       entityName: "Create Sale",
-      getSuccessMessage: (response) => {
-        return `${response.data.sale.invoiceNumber} ${response.message} `;
-      },
+      getSuccessMessage: (response) =>
+        `${response.data.sale.invoiceNumber} ${response.message}`,
     });
     resetCart();
     setIsPaymentDialogOpen(false);
     setShowCustomerInfo(null);
     form.reset();
   }
+
   return (
-    <div className="flex h-screen overflow-hidden p-3">
-      {/* LEFT SIDE */}
-      <div className="w-5/8 h-full flex flex-col overflow-hidden pr-3">
-        <ProductHeader setSearchProducts={setSearchProducts} />
-        <div className="flex-1 overflow-y-auto no-scrollbar">
-          <ProductList searchProducts={searchProducts} />
-        </div>
+    <main className="min-h-dvh bg-muted/40 p-3 sm:p-4 lg:h-dvh lg:min-h-0 lg:overflow-hidden">
+      <div className="mx-auto flex min-h-[calc(100dvh-1.5rem)] max-w-[1800px] flex-col gap-3 sm:min-h-[calc(100dvh-2rem)] lg:grid lg:h-full lg:min-h-0 lg:grid-cols-[minmax(0,1.55fr)_minmax(380px,0.9fr)] lg:gap-4">
+        <section className="flex h-[60dvh] min-h-[420px] shrink-0 flex-col overflow-hidden rounded-xl border bg-background shadow-sm lg:h-full lg:min-h-0 lg:shrink">
+          <ProductList />
+        </section>
+
+        <form
+          id="cart-form"
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="flex min-h-[620px] flex-col lg:min-h-0"
+        >
+          <Card className="flex min-h-0 flex-1 flex-col overflow-hidden shadow-sm">
+            <CardHeader className="shrink-0 border-b bg-muted/20 p-4">
+              <CartHeader form={form} cartItemCount={cart.length} />
+            </CardHeader>
+            <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
+              <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+                <CartItems />
+              </div>
+              <div className="shrink-0 border-t bg-background p-3 sm:p-4">
+                <CartCalculation
+                  isPaymentDialogOpen={isPaymentDialogOpen}
+                  setIsPaymentDialogOpen={setIsPaymentDialogOpen}
+                  form={form}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </form>
       </div>
-
-      {/* RIGHT SIDE: THE FORM */}
-      <form
-        id="cart-form"
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="w-3/8 h-full flex flex-col"
-      >
-        <Card className="flex-1 flex flex-col overflow-hidden">
-          {/* 1. Header (Fixed at top) */}
-          <CardHeader className="shrink-0">
-            <CartHeader form={form} />
-          </CardHeader>
-
-          {/* 2. Content Wrapper (Flex column) */}
-          <CardContent className="flex-1 flex flex-col overflow-hidden p-0 min-h-0">
-            {/* 3. Cart Items */}
-            <div className="flex-1 overflow-y-auto no-scrollbar px-4 pt-4 pb-8">
-              <CartItems />
-            </div>
-
-            {/* 4. Calculation (Pinned to bottom) */}
-            <div className="shrink-0 border-t p-4 bg-background">
-              <CartCalculation
-                isPaymentDialogOpen={isPaymentDialogOpen}
-                setIsPaymentDialogOpen={setIsPaymentDialogOpen}
-                form={form}
-              />
-            </div>
-          </CardContent>
-        </Card>
-      </form>
-    </div>
+    </main>
   );
 }
+
 export default Pos;

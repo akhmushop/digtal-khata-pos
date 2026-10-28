@@ -1,19 +1,23 @@
+import { useMemo, useState } from "react";
+import {
+  Check,
+  PackageCheck,
+  ScanBarcode,
+  ShoppingBag,
+} from "lucide-react";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog.js";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+} from "@/components/ui/dialog";
+import { Card } from "@/components/ui/card";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { GroupedVariantOption } from "@/features/purchases/purchase.types";
-import { ProductCard } from "./ProductCard";
+import { ProductCard, ProductImage } from "./ProductCard";
 import {
   ProductType,
   ProductVariantType,
@@ -21,48 +25,61 @@ import {
 import { toast } from "../ui/toast";
 import { SerialPickerDialog } from "@/features/pos/components/pos/SerialPickerDialog";
 import { useCartStore } from "@/features/pos/stores/useCartStore";
+import { getVariantPurchaseCost } from "@/features/products/utils/getVariantPurchaseCost";
+
+type VariantOptionGroup = {
+  typeName: string;
+  options: string[];
+};
+
+const EMPTY_SERIALS: string[] = [];
+const currency = new Intl.NumberFormat("en-BD", {
+  style: "currency",
+  currency: "BDT",
+  maximumFractionDigits: 2,
+});
+
 export interface ShowVariantsProps {
   product: ProductType;
   handleAdd: (product: ProductType) => void;
   defaultVariant: ProductVariantType;
   type: "purchase" | "sale";
 }
+
 export function ShowVariants({
   product,
   handleAdd,
   defaultVariant,
   type,
 }: ShowVariantsProps) {
-  const [isSerialOpen, setIsSerialOpen] = useState(false);
-  const [selectedVariant, setSelectedVariant] = useState<
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [serialDialogOpen, setSerialDialogOpen] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState<
     Record<string, string>
   >({});
-  const variantsGroup = product.variants.reduce<GroupedVariantOption[]>(
-    (group, current) => {
-      current.options?.forEach((option) => {
-        // 1. Check if the typeName already exists in our array
-        let existingGroup = group.find((g) => g.typeName === option.typeName);
+  const isSale = type === "sale";
+  const isSerial = isSale && product.trackingType === "serial";
+  const addSerialItem = useCartStore((state) => state.addSerialItem);
 
-        // 2. If it doesn't exist, create it and push it to the array
-        if (!existingGroup) {
-          existingGroup = { typeName: option.typeName, optionsName: [] };
-          group.push(existingGroup);
-        }
+  const variantGroups = useMemo(() => {
+    const groups = new Map<string, Set<string>>();
+    for (const variant of product.variants) {
+      for (const option of variant.options ?? []) {
+        const values = groups.get(option.typeName) ?? new Set<string>();
+        values.add(option.value);
+        groups.set(option.typeName, values);
+      }
+    }
 
-        // 3. Check if the value already exists in THIS specific group
-        // This is much faster and cleaner than searching the whole array again!
-        if (!existingGroup.optionsName.includes(option.value)) {
-          existingGroup.optionsName.push(option.value);
-        }
-      });
+    return [...groups].map(([typeName, values]) => ({
+      typeName,
+      options: [...values],
+    }));
+  }, [product.variants]);
 
-      return group;
-    },
-    [],
-  );
-  const selectedEntries = Object.entries(selectedVariant);
-  const findVariant =
-    selectedEntries.length === variantsGroup.length
+  const selectedEntries = Object.entries(selectedOptions);
+  const selectedVariant =
+    variantGroups.length > 0 && selectedEntries.length === variantGroups.length
       ? product.variants.find((variant) =>
           selectedEntries.every(([typeName, value]) =>
             variant.options?.some(
@@ -72,66 +89,91 @@ export function ShowVariants({
           ),
         )
       : undefined;
-  function isOptionAvailable(typeName: string, optionName: string) {
-    const candidateSelection = { ...selectedVariant, [typeName]: optionName };
 
-    return product.variants.some((variant) => {
-      if (variant.quantity <= 0) return false;
-
-      return Object.entries(candidateSelection).every(([tName, val]) =>
-        variant.options?.some(
-          (option) => option.typeName === tName && option.value === val,
-        ),
-      );
-    });
-  }
-  const handleValueChange = (
-    value: string[],
-    variant: GroupedVariantOption,
-  ) => {
-    const selectedValue = Array.isArray(value) ? value[0] : value;
-
-    setSelectedVariant((prev) => {
-      const updated = { ...prev };
-
-      if (!selectedValue) {
-        // deselected — remove this attribute type entirely
-        delete updated[variant.typeName];
-      } else {
-        updated[variant.typeName] = selectedValue;
-      }
-
-      return updated;
-    });
-  };
-  const variantFullName = findVariant
-    ? `${product.name} (${findVariant.options?.map((opt) => opt.value).join(", ")})`
-    : "Select Variant";
-  const handleAddVariant = () => {
-    if (findVariant === undefined) return;
-    const { variants, ...updatedProduct } = product;
-    handleAdd({
-      ...updatedProduct,
-      name: variantFullName,
-      variants: findVariant ? [findVariant] : [],
-    });
-    toast.add({
-      description: `${variantFullName} added to cart!`,
-    });
-  };
-  const isSerial = product.trackingType === "serial";
-  const addSerialItem = useCartStore((s) => s.addSerialItem);
-  const cart = useCartStore((s) => s.cart);
   const cartSerials =
     useCartStore(
       (state) =>
-        state.cart.find((p) => p.variants.some((v) => v.id === findVariant?.id))
-          ?.serialNumbers,
-    ) ?? [];
+        state.cart.find((item) =>
+          item.variants.some(
+            (variant) => variant.id === selectedVariant?.id,
+          ),
+        )?.serialNumbers,
+    ) ?? EMPTY_SERIALS;
+
+  const getMatchingVariants = (
+    typeName: string,
+    optionValue: string,
+  ): ProductVariantType[] => {
+    const candidateSelection = {
+      ...selectedOptions,
+      [typeName]: optionValue,
+    };
+
+    return product.variants.filter((variant) =>
+      Object.entries(candidateSelection).every(([selectedType, value]) =>
+        variant.options?.some(
+          (option) =>
+            option.typeName === selectedType && option.value === value,
+        ),
+      ),
+    );
+  };
+
+  const handleOptionChange = (typeName: string, value: string) => {
+    setSelectedOptions((current) => {
+      const next = { ...current };
+      if (value) {
+        next[typeName] = value;
+      } else {
+        delete next[typeName];
+      }
+      return next;
+    });
+  };
+
+  const variantName = selectedVariant
+    ? `${product.name} (${selectedVariant.options?.map((option) => option.value).join(", ")})`
+    : product.name;
+  const variantPrice = selectedVariant
+    ? isSale
+      ? selectedVariant.sellingPrice
+      : getVariantPurchaseCost(selectedVariant)
+    : null;
+  const canSelectVariant =
+    selectedVariant !== undefined &&
+    (!isSale || selectedVariant.quantity > 0);
+
+  const handleAddVariant = () => {
+    if (!selectedVariant || !canSelectVariant) return;
+
+    const { variants: _variants, ...productDetails } = product;
+    const selectedProduct = {
+      ...productDetails,
+      name: variantName,
+      variants: [selectedVariant],
+    };
+
+    if (isSerial) {
+      setSerialDialogOpen(true);
+      return;
+    }
+
+    handleAdd(selectedProduct);
+    if (isSale) {
+      toast.add({ description: `${variantName} added to cart.` });
+    }
+    setDialogOpen(false);
+  };
 
   return (
     <>
-      <Dialog>
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (open) setSelectedOptions({});
+        }}
+      >
         <DialogTrigger>
           <ProductCard
             type={type}
@@ -140,112 +182,203 @@ export function ShowVariants({
             defaultVariant={defaultVariant}
           />
         </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              Product has variations. Please select a variation.
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader className="pr-8">
+            <DialogTitle className="text-lg">
+              Choose product options
             </DialogTitle>
+            <DialogDescription>
+              Select an available combination to continue.
+            </DialogDescription>
           </DialogHeader>
-          <Card>
-            <CardContent>
-              <AspectRatio
-                ratio={16 / 9}
-                className="w-full max-w-sm rounded-lg"
-              >
-                <img
-                  className="h-full w-full object-contain rounded-md"
-                  src={
-                    product.imageUrl ??
-                    "https://www.startech.com.bd/image/cache/catalog/ceiling-fan/qulik/windora/windora-01-500x500.webp"
-                  }
-                  alt={product.name}
-                />
-              </AspectRatio>
-              <span className="text-xl"> {variantFullName}</span>
-              <span className="text-xl">
-                Price: {findVariant?.sellingPrice ?? "0"} TK
-              </span>
-              {variantsGroup.map((variant) => (
-                <div key={variant.typeName} className="flex flex-col gap-3">
-                  <span className="text-lg">{variant.typeName}</span>
-                  <ToggleGroup
-                    value={(() => {
-                      const selectedValue = selectedVariant[variant.typeName];
-                      return selectedValue ? [selectedValue] : [];
-                    })()}
-                    onValueChange={(value) => {
-                      handleValueChange(value, variant);
-                    }}
-                    variant="outline"
-                  >
-                    {variant.optionsName.map((optionName, key) => {
-                      const available = isOptionAvailable(
-                        variant.typeName,
-                        optionName,
-                      );
-                      const id = `${key}-${variant.typeName}`;
-                      return (
-                        <ToggleGroupItem
-                          key={id}
-                          value={optionName}
-                          disabled={type === "sale" && !available}
-                          className={
-                            type === "sale" && !available
-                              ? "opacity-50 line-through"
-                              : ""
-                          }
-                        >
-                          {optionName}
-                        </ToggleGroupItem>
-                      );
-                    })}
-                  </ToggleGroup>
+
+          <div className="grid gap-5 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+            <div className="space-y-3">
+              <div className="overflow-hidden rounded-xl border bg-muted/20 p-2">
+                <AspectRatio ratio={4 / 3}>
+                  <ProductImage
+                    src={product.imageUrl}
+                    alt={product.name}
+                    className="rounded-lg"
+                  />
+                </AspectRatio>
+              </div>
+              <div>
+                <h3 className="font-semibold">{product.name}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {selectedVariant
+                    ? selectedVariant.options
+                        ?.map((option) => `${option.typeName}: ${option.value}`)
+                        .join(" · ")
+                    : "Choose the options for this product"}
+                </p>
+              </div>
+              <Card className="gap-0 rounded-lg bg-muted/30 p-3 shadow-none ring-0">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-muted-foreground">
+                    {isSale ? "Selling price" : "Avg. purchase cost"}
+                  </span>
+                  <span className="font-semibold">
+                    {variantPrice === null
+                      ? "Select options"
+                      : currency.format(variantPrice)}
+                  </span>
                 </div>
-              ))}
-            </CardContent>
-            <CardFooter className="justify-end gap-2">
-              <DialogClose render={<Button variant="outline">Done</Button>} />
-              {type === "sale" && isSerial ? (
+                {selectedVariant && (
+                  <>
+                    <div className="my-2 border-t" />
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="text-muted-foreground">Stock</span>
+                      <span
+                        className={
+                          isSale && selectedVariant.quantity === 0
+                            ? "font-medium text-destructive"
+                            : "font-medium"
+                        }
+                      >
+                        {selectedVariant.quantity}{" "}
+                        {isSale ? "available" : "in stock"}
+                      </span>
+                    </div>
+                    {selectedVariant.sku && (
+                      <div className="mt-2 flex items-center justify-between gap-3 text-sm">
+                        <span className="flex items-center gap-1.5 text-muted-foreground">
+                          <ScanBarcode className="size-4" />
+                          SKU
+                        </span>
+                        <span className="max-w-[65%] truncate font-mono text-xs">
+                          {selectedVariant.sku}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </Card>
+            </div>
+
+            <div className="space-y-5">
+              {variantGroups.length === 0 ? (
+                <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                  No selectable options are configured for this product.
+                </p>
+              ) : (
+                variantGroups.map((group) => {
+                  const selectedOption = selectedOptions[group.typeName] ?? "";
+                  return (
+                    <fieldset key={group.typeName} className="space-y-2.5">
+                      <legend className="text-sm font-semibold">
+                        {group.typeName}
+                      </legend>
+                      <ToggleGroup
+                        value={selectedOption ? [selectedOption] : []}
+                        onValueChange={(value) =>
+                          handleOptionChange(group.typeName, value[0] ?? "")
+                        }
+                        variant="outline"
+                        className="flex flex-wrap justify-start gap-2"
+                        aria-label={`Choose ${group.typeName}`}
+                      >
+                        {group.options.map((optionValue) => {
+                          const matchingVariants = getMatchingVariants(
+                            group.typeName,
+                            optionValue,
+                          );
+                          const availableQuantity = matchingVariants.reduce(
+                            (quantity, variant) => quantity + variant.quantity,
+                            0,
+                          );
+                          const available = !isSale || availableQuantity > 0;
+                          const selected =
+                            selectedOptions[group.typeName] === optionValue;
+
+                          return (
+                            <ToggleGroupItem
+                              key={optionValue}
+                              value={optionValue}
+                              disabled={!available}
+                              className={`h-auto min-h-10 gap-2 px-3 py-2 ${
+                                selected
+                                  ? "border-primary bg-primary/5 text-primary"
+                                  : ""
+                              } ${!available ? "line-through opacity-50" : ""}`}
+                            >
+                              {selected && (
+                                <Check
+                                  className="size-3.5"
+                                  aria-hidden="true"
+                                />
+                              )}
+                              <span>{optionValue}</span>
+                              <span className="text-[10px] text-muted-foreground">
+                                {availableQuantity}
+                              </span>
+                            </ToggleGroupItem>
+                          );
+                        })}
+                      </ToggleGroup>
+                    </fieldset>
+                  );
+                })
+              )}
+              <div
+                className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground"
+                aria-live="polite"
+              >
+                {selectedVariant
+                  ? canSelectVariant
+                    ? `Ready to add ${variantName}.`
+                    : "This option is out of stock. Choose another combination."
+                  : "Choose one option from each group."}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={!canSelectVariant}
+              onClick={handleAddVariant}
+            >
+              {isSerial ? (
                 <>
-                  <Button
-                    onClick={(e) => {
-                      e.currentTarget.blur();
-                      setIsSerialOpen(true);
-                    }}
-                    disabled={!findVariant}
-                  >
-                    Select Serials
-                  </Button>
+                  <PackageCheck />
+                  Select serials
                 </>
               ) : (
-                <Button
-                  disabled={findVariant ? false : true}
-                  onClick={() => {
-                    handleAddVariant();
-                  }}
-                >
-                  Add Variant
-                </Button>
+                <>
+                  <ShoppingBag />
+                  {isSale ? "Add to cart" : "Add to purchase"}
+                </>
               )}
-            </CardFooter>
-          </Card>
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
-      {type === "sale" && isSerial && (
+
+      {isSerial && (
         <SerialPickerDialog
-          serialDialogOpen={isSerialOpen}
-          setSerialDialogOpen={setIsSerialOpen}
-          variantId={findVariant?.id}
+          serialDialogOpen={serialDialogOpen}
+          setSerialDialogOpen={(open) => {
+            setSerialDialogOpen(open);
+          }}
+          variantId={selectedVariant?.id}
           selected={cartSerials}
           onConfirm={(serials) => {
+            if (!selectedVariant) return;
             addSerialItem(
-              { ...product, name: variantFullName },
-              findVariant?.id,
+              { ...product, name: variantName, variants: [selectedVariant] },
+              selectedVariant.id,
               serials,
             );
-            toast.add({
-              description: `${variantFullName} added to cart!`,
-            });
+            toast.add({ description: `${variantName} added to cart.` });
+            setDialogOpen(false);
           }}
         />
       )}
