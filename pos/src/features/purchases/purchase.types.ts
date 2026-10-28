@@ -1,11 +1,14 @@
-import { ProductType, ProductVariantType } from "../products/product.schema";
+import {
+  ProductType,
+  ProductVariantType,
+} from "../products/product.schema";
 import { ReceiveItemsFormValues } from "./schemas/receiveItem.schema";
 
-interface PurchaseStoreType {
+export interface PurchaseStoreType {
   id: number;
   supplierId: number | null;
   purchaseOrderNumber: string;
-  purchaseDate: Date;
+  purchaseDate: Date | string;
   subtotal: number;
   discount: string;
   tax: string;
@@ -14,14 +17,18 @@ interface PurchaseStoreType {
   paidAmount: number;
   dueAmount: number;
   status: "ordered" | "received" | "partially_received";
-  paymentStatus: "received" | "paid" | "unpaid" | "partial_paid";
+  paymentStatus: "paid" | "unpaid" | "partial";
   notes: string | null;
   createdAt: Date;
   updatedAt: Date;
   supplierName: string | null;
 }
-export interface PurchaseCart extends ProductType {
+export interface PurchaseCart extends Omit<ProductType, "variants"> {
+  variants: [(ProductVariantType & { id: number })];
   purchaseQty: number;
+  purchasePrice: number;
+  purchaseDiscount: number;
+  purchaseTax: number;
 }
 export interface PurchasesItems {
   productName: string;
@@ -39,15 +46,28 @@ export interface PurchasesItems {
   productId: number;
   receiveNow: number;
   trackingType: string;
+  availableStock: number | null;
 }
-export interface PurchasesReturnItems extends ProductType {
+export interface PurchasesReturnItems {
   purchaseItemId: number;
-  return_quantity: number;
+  returnQuantity: number;
 }
 export interface ChangedItems {
-  id: number;
-  productId: number;
-  returnPurchaseQty: number;
+  purchaseItemId: number;
+  quantity: number;
+}
+export interface PurchaseReturnInput {
+  orderId: number;
+  reason?: string;
+  changedItems: ChangedItems[];
+}
+export interface PurchaseReturnResponse {
+  success: boolean;
+  message: string;
+  data: {
+    purchaseReturnId: number;
+    totalAmount: number;
+  };
 }
 export interface UpdateStockChangedItems {
   id: number;
@@ -74,7 +94,6 @@ export type ReceivePurchaseResponse = {
   };
 };
 export type CreatePurchaseResponse = {
-  success: boolean;
   message: string;
   data: {
     purchaseOrderNumber: string;
@@ -91,17 +110,16 @@ export interface PurchasesStore {
   purchasesReturnItems: PurchasesReturnItems[];
   loading: boolean;
   error: string | null;
-  getPurchaseItems: () => void;
-  getPurchases: () => void;
-  getPurchasesReturnItems: () => void;
+  getPurchaseItems: () => Promise<void>;
+  getPurchases: () => Promise<void>;
+  getPurchasesReturnItems: () => Promise<void>;
   updateStock: (
     paymentDetails: PaymentDetails,
     changedItems: UpdateStockChangedItems[],
   ) => Promise<UpdateStockResponse>;
   purchaseReturn: (
-    orderId: number,
-    changedItems: ChangedItems[],
-  ) => Promise<void>;
+    data: PurchaseReturnInput,
+  ) => Promise<PurchaseReturnResponse>;
   createReceivePurchase: (
     data: ReceiveItemsFormValues,
   ) => Promise<ReceivePurchaseResponse>;
@@ -152,16 +170,21 @@ export interface GroupedVariantOption {
   optionsName: string[];
 }
 export type CreatePurchaseItem = {
-  variantId: number | undefined;
+  variantId: number;
   quantity: number;
   purchasePrice: number;
+  discount: number;
+  tax: number;
 };
 
 export type CreatePurchaseInput = {
   items: CreatePurchaseItem[];
-  supplierId: number | null | undefined;
-  purchaseDate: string | undefined;
+  supplierId: number | null;
+  purchaseDate: string;
   notes: string;
+  discount: number;
+  tax: number;
+  shippingCost: number;
 };
 export interface ReceivePurchasePayload {
   purchaseId: number;

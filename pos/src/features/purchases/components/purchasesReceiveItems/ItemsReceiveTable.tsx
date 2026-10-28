@@ -1,213 +1,209 @@
-import { Input } from "@/components/ui/input";
-import { PurchasesItems } from "../../purchase.types";
-import { Controller, UseFormReturn } from "react-hook-form";
-import { Field, FieldError, FieldLabel } from "@/components/ui/field";
-import { ReceiveItemsFormValues } from "../../schemas/receiveItem.schema";
+import { Controller, useWatch, type UseFormReturn } from "react-hook-form";
 import { Minus } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Field, FieldError } from "@/components/ui/field";
+import type { PurchasesItems } from "../../purchase.types";
+import type { ReceiveItemsFormValues } from "../../schemas/receiveItem.schema";
 import { SerialsDialog } from "./SerialsDialog";
 import { BatchesDialog } from "./BatchesDialog";
 
 export function ItemsReceiveTable({
-  fields,
   receivePurchasesItems,
   form,
 }: {
-  fields: ({
-    itemId: number;
-    receiveNow: number;
-    unitCost: number;
-    sellingPrice: number;
-  } & Record<"id", string> & {
-      disabled?: boolean;
-    })[];
   receivePurchasesItems: PurchasesItems[];
   form: UseFormReturn<ReceiveItemsFormValues>;
 }) {
   return (
-    <div>
-      <h1>Items To Receive</h1>
-      <div className="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
-        <table className="table">
-          {/* head */}
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th>Type/Variant</th>
-              <th>Ordered</th>
-              <th>Already Received</th>
-              <th>Remaining</th>
-              <th>Receive Now</th>
-              <th>Unit Cost</th>
-              <th>Selling Price</th>
-              <th>Total</th>
-              <th>Details</th>
-            </tr>
-          </thead>
-          <tbody>
-            {/* row 1 */}
-            {fields.map((field, index) => {
-              const originalItem = receivePurchasesItems.find(
-                (p) => p.id === field.itemId,
-              );
-              if (!originalItem) return null;
-              const itemsReceived =
-                Number(originalItem.receivedQuantity) ===
-                Number(originalItem.quantity);
-              const remaining =
-                originalItem.quantity - originalItem.receivedQuantity;
-              const rowTotal =
-                (Number(form.getValues(`items.${index}.receiveNow`)) || 0) *
-                (Number(form.getValues(`items.${index}.unitCost`)) || 0);
-              const serialError =
-                form.formState.errors.items?.[index]?.serialNumbers?.message;
-              const batchError =
-                form.formState.errors.items?.[index]?.batches?.message;
-              return (
-                <tr key={field.id}>
-                  <th>{originalItem.productName}</th>
-                  <td>{originalItem.productUnit}</td>
-                  <td>{originalItem.quantity}</td>
-                  <td>{originalItem.receivedQuantity}</td>
-                  <td>{remaining}</td>
-                  <td>
-                    <Controller
-                      name={`items.${index}.receiveNow`}
-                      control={form.control}
-                      render={({ field: inputField, fieldState }) => (
-                        <Field data-invalid={fieldState.invalid}>
-                          <Input
-                            disabled={itemsReceived}
-                            min={0}
-                            max={remaining}
-                            {...inputField}
-                            value={
-                              inputField.value === undefined ||
-                              inputField.value === null
-                                ? ""
-                                : inputField.value
-                            }
-                            // 2. Convert the HTML string back to a number for RHF!
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              // If empty, pass undefined (or 0). If typed, convert to Number.
-                              inputField.onChange(
-                                val === "" ? undefined : Number(val),
-                              );
-                            }}
-                            type="number"
-                          />
-
-                          {fieldState.error && (
-                            <FieldError> {fieldState.error.message}</FieldError>
-                          )}
-                          {serialError &&
-                            originalItem.trackingType === "serial" && (
-                              <p className="text-sm font-medium text-destructive bg-red-50 border border-red-200 p-2 rounded-md">
-                                {serialError as string}
-                              </p>
-                            )}
-                          {batchError &&
-                            originalItem.trackingType === "batch" && (
-                              <p className="text-sm font-medium text-destructive bg-red-50 border border-red-200 p-2 rounded-md">
-                                {batchError as string}
-                              </p>
-                            )}
-                        </Field>
-                      )}
-                    />
-                  </td>
-                  <td>
-                    <Controller
-                      name={`items.${index}.unitCost`}
-                      control={form.control}
-                      render={({ field: inputField, fieldState }) => (
-                        <Field data-invalid={fieldState.invalid}>
-                          <Input
-                            disabled={itemsReceived}
-                            min={0}
-                            {...inputField}
-                            value={
-                              inputField.value === undefined ||
-                              inputField.value === null
-                                ? ""
-                                : inputField.value
-                            }
-                            // 2. Convert the HTML string back to a number for RHF!
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              // If empty, pass undefined (or 0). If typed, convert to Number.
-                              inputField.onChange(
-                                val === "" ? undefined : Number(val),
-                              );
-                            }}
-                            type="number"
-                          />
-
-                          {fieldState.error && (
-                            <FieldError> {fieldState.error.message}</FieldError>
-                          )}
-                        </Field>
-                      )}
-                    />
-                  </td>
-                  <td>
-                    <Controller
-                      name={`items.${index}.sellingPrice`}
-                      control={form.control}
-                      render={({ field: inputField, fieldState }) => (
-                        <Field data-invalid={fieldState.invalid}>
-                          <Input
-                            disabled={itemsReceived}
-                            min={0}
-                            {...inputField}
-                            value={
-                              inputField.value === undefined ||
-                              inputField.value === null
-                                ? ""
-                                : inputField.value
-                            }
-                            // 2. Convert the HTML string back to a number for RHF!
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              // If empty, pass undefined (or 0). If typed, convert to Number.
-                              inputField.onChange(
-                                val === "" ? undefined : Number(val),
-                              );
-                            }}
-                            type="number"
-                          />
-
-                          {fieldState.error && (
-                            <FieldError> {fieldState.error.message}</FieldError>
-                          )}
-                        </Field>
-                      )}
-                    />
-                  </td>
-                  <td>{rowTotal.toFixed(2)}</td>
-                  <td>
-                    {originalItem.trackingType === "batch" ? (
-                      <BatchesDialog
-                        item={originalItem}
-                        form={form}
-                        index={index}
-                      />
-                    ) : originalItem.trackingType === "serial" ? (
-                      <SerialsDialog
-                        item={originalItem}
-                        form={form}
-                        index={index}
-                      />
-                    ) : (
-                      <Minus />
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[1050px] text-left text-sm">
+        <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
+          <tr>
+            <th className="px-4 py-3 font-medium">Product</th>
+            <th className="px-3 py-3 font-medium">Unit</th>
+            <th className="px-3 py-3 text-right font-medium">Ordered</th>
+            <th className="px-3 py-3 text-right font-medium">Received</th>
+            <th className="px-3 py-3 text-right font-medium">Remaining</th>
+            <th className="w-28 px-3 py-3 font-medium">Receive now</th>
+            <th className="w-28 px-3 py-3 font-medium">Unit cost</th>
+            <th className="w-28 px-3 py-3 font-medium">Selling price</th>
+            <th className="px-3 py-3 text-right font-medium">Total</th>
+            <th className="px-4 py-3 font-medium">Tracking</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y">
+          {receivePurchasesItems.map((item, index) => (
+            <ReceiveItemRow
+              key={item.id}
+              item={item}
+              index={index}
+              form={form}
+            />
+          ))}
+        </tbody>
+      </table>
     </div>
+  );
+}
+
+function ReceiveItemRow({
+  item,
+  index,
+  form,
+}: {
+  item: PurchasesItems;
+  index: number;
+  form: UseFormReturn<ReceiveItemsFormValues>;
+}) {
+  const receiveNow =
+    useWatch({
+      control: form.control,
+      name: `items.${index}.receiveNow`,
+    }) ?? 0;
+  const unitCost =
+    useWatch({
+      control: form.control,
+      name: `items.${index}.unitCost`,
+    }) ?? 0;
+  const remaining = Math.max(
+    0,
+    Number(item.quantity) - Number(item.receivedQuantity),
+  );
+  const rowTotal = (Number(receiveNow) || 0) * (Number(unitCost) || 0);
+  const disabled = remaining === 0;
+  const serialError =
+    form.formState.errors.items?.[index]?.serialNumbers?.message;
+  const batchError =
+    form.formState.errors.items?.[index]?.batches?.message;
+
+  return (
+    <tr className="align-top">
+      <td className="px-4 py-3">
+        <p className="font-medium">{item.productName}</p>
+        {item.variantId && (
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Variant #{item.variantId}
+          </p>
+        )}
+      </td>
+      <td className="px-3 py-3 text-muted-foreground">
+        {item.productUnit || "—"}
+      </td>
+      <td className="px-3 py-3 text-right">{item.quantity}</td>
+      <td className="px-3 py-3 text-right">{item.receivedQuantity}</td>
+      <td className="px-3 py-3 text-right font-medium">{remaining}</td>
+      <td className="px-3 py-2">
+        <NumberField
+          form={form}
+          name={`items.${index}.receiveNow`}
+          label={`${item.productName} receive quantity`}
+          disabled={disabled}
+          min={0}
+          max={remaining}
+          step={item.trackingType === "serial" ? "1" : "0.001"}
+        />
+        {serialError && item.trackingType === "serial" && (
+          <p className="mt-1 text-xs text-destructive">{serialError}</p>
+        )}
+        {batchError && item.trackingType === "batch" && (
+          <p className="mt-1 text-xs text-destructive">{batchError}</p>
+        )}
+      </td>
+      <td className="px-3 py-2">
+        <NumberField
+          form={form}
+          name={`items.${index}.unitCost`}
+          label={`${item.productName} unit cost`}
+          disabled={disabled}
+          min={0}
+          step="0.01"
+        />
+      </td>
+      <td className="px-3 py-2">
+        <NumberField
+          form={form}
+          name={`items.${index}.sellingPrice`}
+          label={`${item.productName} selling price`}
+          disabled={disabled}
+          min={0}
+          step="0.01"
+        />
+      </td>
+      <td className="whitespace-nowrap px-3 py-3 text-right font-medium">
+        {rowTotal.toFixed(2)}
+      </td>
+      <td className="px-4 py-2">
+        {disabled ? (
+          <span className="text-xs text-muted-foreground">Complete</span>
+        ) : item.trackingType === "batch" ? (
+          <div className="space-y-1">
+            <BatchesDialog item={item} form={form} index={index} />
+            {batchError && (
+              <p className="max-w-36 text-xs text-destructive">{batchError}</p>
+            )}
+          </div>
+        ) : item.trackingType === "serial" ? (
+          <div className="space-y-1">
+            <SerialsDialog item={item} form={form} index={index} />
+            {serialError && (
+              <p className="max-w-36 text-xs text-destructive">{serialError}</p>
+            )}
+          </div>
+        ) : (
+          <Minus className="size-4 text-muted-foreground" />
+        )}
+      </td>
+    </tr>
+  );
+}
+
+function NumberField({
+  form,
+  name,
+  label,
+  disabled,
+  min,
+  max,
+  step,
+}: {
+  form: UseFormReturn<ReceiveItemsFormValues>;
+  name:
+    | `items.${number}.receiveNow`
+    | `items.${number}.unitCost`
+    | `items.${number}.sellingPrice`;
+  label: string;
+  disabled: boolean;
+  min: number;
+  max?: number;
+  step: string;
+}) {
+  return (
+    <Controller
+      name={name}
+      control={form.control}
+      render={({ field, fieldState }) => (
+        <Field data-invalid={fieldState.invalid}>
+          <Input
+            {...field}
+            aria-label={label}
+            aria-invalid={fieldState.invalid}
+            disabled={disabled}
+            min={min}
+            max={max}
+            step={step}
+            type="number"
+            value={field.value ?? ""}
+            onChange={(event) => {
+              const value = event.target.value;
+              field.onChange(value === "" ? 0 : Number(value));
+            }}
+            className="h-9"
+          />
+          {fieldState.error && (
+            <FieldError>{fieldState.error.message}</FieldError>
+          )}
+        </Field>
+      )}
+    />
   );
 }
