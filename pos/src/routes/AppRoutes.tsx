@@ -4,7 +4,7 @@ import { CustomersPage } from "../features/Contacts/pages/CustomersPage";
 import ProductStockForm from "../features/products/pages/AddProductPage";
 import DashboardComponent from "../pages/Dashboard/Dashboard";
 import { Sales } from "../features/pos/pages/Sales";
-import { Expense } from "../pages/Expense/Expense";
+import { Expense } from "../features/Expense/Expense";
 import { PurchasesOrder } from "../features/purchases/pages/Purchases";
 import { PurchasesList } from "../features/purchases/pages/PurchasesList";
 import { ReceiveItems } from "../features/purchases/pages/ReceiveItems";
