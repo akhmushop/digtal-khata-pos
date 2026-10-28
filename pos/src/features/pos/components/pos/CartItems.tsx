@@ -127,11 +127,12 @@ function CartItemRow({ item }: { item: CartItem }) {
   const { addSerialItem } = useCartStore();
 
   const variant = item.variants[0];
-  if (!variant) return null;
+  if (!variant || variant.id === undefined) return null;
+  const variantId = variant.id;
   const cartSerials =
     useCartStore(
       (state) =>
-        state.cart.find((p) => p.variants.some((v) => v.id === variant.id))
+        state.cart.find((p) => p.variants.some((v) => v.id === variantId))
           ?.serialNumbers,
     ) ?? [];
 
@@ -141,11 +142,11 @@ function CartItemRow({ item }: { item: CartItem }) {
   const isSerial = item.trackingType === "serial";
   const [isSerialOpen, setIsSerialOpen] = useState(false);
   return (
-    <Card>
-      <CardContent>
-        <div className="flex items-center gap-3">
+    <Card className="overflow-hidden shadow-none">
+      <CardContent className="p-3 sm:p-4">
+        <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap">
           <img
-            className="h-20 w-20 shrink-0 rounded-xl object-cover"
+            className="size-16 shrink-0 rounded-xl object-cover sm:size-20"
             src={item.imageUrl ?? FALLBACK_IMAGE}
             alt={item.name}
           />
@@ -160,7 +161,7 @@ function CartItemRow({ item }: { item: CartItem }) {
             </span>
 
             <CartItemDiscount
-              variantId={variant.id}
+              variantId={variantId}
               discount={item.discount}
               lineBase={line.base}
               lineTotal={line.total}
@@ -174,12 +175,12 @@ function CartItemRow({ item }: { item: CartItem }) {
               <SerialPickerDialog
                 serialDialogOpen={isSerialOpen}
                 setSerialDialogOpen={setIsSerialOpen}
-                variantId={variant.id}
+                variantId={variantId}
                 selected={cartSerials}
                 onConfirm={(serials) => {
                   addSerialItem(
                     { ...item, name: item.name },
-                    variant.id,
+                    variantId,
                     serials,
                   );
                   toast.add({
@@ -187,8 +188,9 @@ function CartItemRow({ item }: { item: CartItem }) {
                   });
                 }}
               />
-              <div className="flex items-center gap-x-3 text-2xl">
+              <div className="ml-auto flex w-full items-center justify-end gap-2 text-xl sm:w-auto">
                 <Button
+                  type="button"
                   onClick={() => {
                     setIsSerialOpen(true);
                   }}
@@ -201,23 +203,23 @@ function CartItemRow({ item }: { item: CartItem }) {
                   aria-label="Remove item"
                   onClick={() => {
                     restoreSingleProductQuantityToCart(item.id, item.quantity);
-                    removeCartItem(variant.id);
+                    removeCartItem(variantId);
                   }}
-                  className="cursor-pointer rounded-full text-red-500 transition hover:text-red-600"
+                  className="cursor-pointer rounded-full text-muted-foreground transition hover:text-destructive"
                 >
                   <MdDeleteOutline />
                 </button>
               </div>
             </>
           ) : (
-            <div className="flex items-center gap-x-3 text-2xl">
+            <div className="ml-auto flex w-full items-center justify-end gap-2 text-xl sm:w-auto">
               <button
                 type="button"
                 aria-label="Decrease quantity"
                 disabled={quantity <= 1}
                 onClick={() => {
                   addProductQuantityToCart(item.id);
-                  removeCartQuantity(variant.id);
+                  removeCartQuantity(variantId);
                 }}
                 className="cursor-pointer rounded-full transition hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
               >
@@ -225,7 +227,7 @@ function CartItemRow({ item }: { item: CartItem }) {
               </button>
 
               <CartQuantityInput
-                itemId={variant.id}
+                itemId={variantId}
                 quantity={quantity}
                 addCustomCartQuantity={addCustomCartQuantity}
               />
@@ -235,7 +237,7 @@ function CartItemRow({ item }: { item: CartItem }) {
                 aria-label="Increase quantity"
                 onClick={() => {
                   removeProductQuantityToCart(item.id);
-                  addCartQuantity(variant.id);
+                  addCartQuantity(variantId);
                 }}
                 className="cursor-pointer rounded-full transition hover:text-primary"
               >
@@ -247,9 +249,9 @@ function CartItemRow({ item }: { item: CartItem }) {
                 aria-label="Remove item"
                 onClick={() => {
                   restoreSingleProductQuantityToCart(item.id, item.quantity);
-                  removeCartItem(variant.id);
+                  removeCartItem(variantId);
                 }}
-                className="cursor-pointer rounded-full text-red-500 transition hover:text-red-600"
+                className="cursor-pointer rounded-full text-muted-foreground transition hover:text-destructive"
               >
                 <MdDeleteOutline />
               </button>
@@ -270,7 +272,7 @@ export function CartCalculation({
   const totals = useCartTotals(form);
 
   return (
-    <div className="p-5">
+    <div className="space-y-2">
       <CartTextModal totals={totals} />
       <div className="grid grid-cols-6 gap-1 py-2">
         <div className="col-span-2">
@@ -312,35 +314,37 @@ function CartTextModal({
 
   return (
     <>
-      <div className="flex justify-between border-b py-2">
-        <span>Total Items: {totalItemsCount}</span>
-        <span>Qty: {totalQuantityCount}</span>
+      <div className="flex justify-between border-b pb-2 text-sm text-muted-foreground">
+        <span>
+          {totalItemsCount} {totalItemsCount === 1 ? "line item" : "line items"}
+        </span>
+        <span>{totalQuantityCount} units</span>
       </div>
-      <div className="flex justify-between border-b py-2">
+      <div className="flex justify-between py-1.5 text-sm">
         <span>Subtotal</span>
         <span>{tk(totals.itemsBase)}</span>
       </div>
       {totals.itemDiscount > 0 && (
-        <div className="flex justify-between py-2">
+        <div className="flex justify-between py-1.5 text-sm text-emerald-700">
           <span>Item discounts</span>
           <span>-{tk(totals.itemDiscount)}</span>
         </div>
       )}
       {totals.cartDiscountAmount > 0 && (
-        <div className="flex justify-between py-2">
+        <div className="flex justify-between py-1.5 text-sm text-emerald-700">
           <span>Discount</span>
           <span>-{tk(totals.cartDiscountAmount)}</span>
         </div>
       )}
       {totals.vatPercent > 0 && (
-        <div className="flex justify-between py-2">
+        <div className="flex justify-between py-1.5 text-sm">
           <span>VAT: {totals.vatPercent}%</span>
           <span>{tk(totals.vat)}</span>
         </div>
       )}
-      <div className="flex justify-between border-b py-2 font-semibold">
-        <span>FINAL TOTAL</span>
-        <span>{tk(totals.finalTotal)}</span>
+      <div className="flex items-center justify-between border-t pt-2 font-semibold">
+        <span>Total due</span>
+        <span className="text-lg tracking-tight">{tk(totals.finalTotal)}</span>
       </div>
     </>
   );
