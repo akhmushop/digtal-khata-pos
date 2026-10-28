@@ -179,21 +179,30 @@ export function calculatePayments(
   const currentPaidAmount = Number(paidAmount ?? 0);
 
   const newPaymentAmount = Number(paymentAmount ?? 0);
+  const paymentLimit = Math.max(
+    0,
+    Math.min(
+      receivedAmount - currentPaidAmount,
+      Number(totalAmount ?? receivedAmount) - currentPaidAmount,
+    ),
+  );
 
   if (newPaymentAmount < 0) {
     throw new NotFoundError("Payment amount cannot be negative.");
   }
 
-  if (newPaymentAmount > receivedAmount) {
+  if (newPaymentAmount > paymentLimit) {
     throw new NotFoundError(
-      "Payment cannot be greater than the received purchase value.",
+      `Payment cannot be greater than the available received balance (${paymentLimit.toFixed(2)}).`,
     );
   }
 
   const updatedPaidAmount = currentPaidAmount + newPaymentAmount;
 
-  const updatedDueAmount =
-    Number(totalAmount ?? receivedAmount) - updatedPaidAmount;
+  const updatedDueAmount = Math.max(
+    0,
+    Number(totalAmount ?? receivedAmount) - updatedPaidAmount,
+  );
   return {
     updatedPaidAmount,
     receivedAmount,

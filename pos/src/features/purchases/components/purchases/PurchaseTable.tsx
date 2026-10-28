@@ -1,102 +1,149 @@
-import { ProductType } from "@/features/products/product.schema";
-import { PurchaseCart } from "@/features/products/product.types";
-import useProductStore from "@/features/products/useProductStore";
+import { Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import type { PurchaseCart } from "../../purchase.types";
+
+type PurchaseLineField =
+  | "purchaseQty"
+  | "purchasePrice"
+  | "purchaseDiscount"
+  | "purchaseTax";
 
 export function PurchaseTable({
   purchasesCart,
-  handleOnchange,
-  setPurchasesCart,
+  onUpdateItem,
+  onRemoveItem,
 }: {
   purchasesCart: PurchaseCart[];
-  handleOnchange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement, Element>,
-    purchaseProduct: ProductType,
-  ) => void;
-  setPurchasesCart: React.Dispatch<React.SetStateAction<PurchaseCart[]>>;
+  onUpdateItem: (variantId: number, field: PurchaseLineField, value: number) => void;
+  onRemoveItem: (variantId: number) => void;
 }) {
-  const { productSelectOptions } = useProductStore();
   return (
-    <table className="table">
-      {/* head */}
-      <thead>
-        <tr>
-          <th>S.No</th>
-          <th>Product</th>
-          <th>Type</th>
-          <th>Unit</th>
-          <th>Ordered Qty</th>
-          <th>Est Price</th>
-          <th>Est Total</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        {purchasesCart.map((pur, i) => {
-          const variant = pur.variants[0];
-          if (!variant) {
-            return;
-          }
-          const unitName = productSelectOptions.units.find(
-            (u) => u.value === pur.unitId,
-          );
-          return (
-            <tr key={variant.id}>
-              <th>{i + 1}</th>
-              <td>{pur.name}</td>
-              <td>{pur.productType}</td>
-              <td>{unitName?.label}</td>
-              {/* ordered qty */}
-              <td>
-                <input
-                  id="orderedQty"
-                  onChange={(e) => {
-                    handleOnchange(e, pur);
-                  }}
-                  onFocus={(e) => {
-                    e.target.select();
-                  }}
-                  value={pur.purchaseQty}
-                  className="w-full input"
-                  type="number"
-                />
-              </td>
-              {/* est price */}
-              <td>
-                <input
-                  id="estPrice"
-                  onChange={(e) => {
-                    handleOnchange(e, pur);
-                  }}
-                  onFocus={(e) => {
-                    e.target.select();
-                  }}
-                  value={pur.purchasePrice}
-                  className="w-full input"
-                  type="number"
-                />
-              </td>
-              {/* est total */}
-              <td>
-                {(pur.purchaseQty * pur.purchasePrice || 0).toFixed(2)}
-              </td>
-              <td>
-                <button
-                  onClick={() => {
-                    setPurchasesCart((prev) =>
-                      prev.filter((p) =>
-                        p.variants.some((v) => v.id !== variant.id),
-                      ),
-                    );
-                  }}
-                  className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 hover:cursor-pointer"
-                >
-                  X
-                </button>
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+    <div className="max-w-full overflow-x-auto">
+      <table className="w-full min-w-[690px] text-left text-sm">
+        <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
+          <tr>
+            <th className="px-3 py-3 font-medium">Product</th>
+            <th className="w-24 px-2 py-3 font-medium">Qty</th>
+            <th className="w-28 px-2 py-3 font-medium">Unit cost</th>
+            <th className="w-24 px-2 py-3 font-medium">Discount</th>
+            <th className="w-24 px-2 py-3 font-medium">Tax</th>
+            <th className="px-2 py-3 text-right font-medium">Total</th>
+            <th className="w-12 px-2 py-3" aria-label="Actions" />
+          </tr>
+        </thead>
+        <tbody className="divide-y">
+          {purchasesCart.map((item) => {
+            const variant = item.variants[0];
+            const variantId = variant?.id;
+            if (variantId === undefined) return null;
+            const lineTotal =
+              item.purchaseQty * item.purchasePrice -
+              item.purchaseDiscount +
+              item.purchaseTax;
+
+            return (
+              <tr key={variantId} className="align-middle">
+                <td className="px-3 py-3">
+                  <p className="max-w-40 truncate font-medium">{item.name}</p>
+                  {variant.sku && (
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      SKU: {variant.sku}
+                    </p>
+                  )}
+                  {variant.options && variant.options.length > 0 && (
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {variant.options.map((option) => option.value).join(" / ")}
+                    </p>
+                  )}
+                </td>
+                <td className="px-2 py-2">
+                  <Input
+                    aria-label={`${item.name} quantity`}
+                    min="0.001"
+                    step="0.001"
+                    type="number"
+                    value={item.purchaseQty}
+                    onChange={(event) =>
+                      onUpdateItem(
+                        variantId,
+                        "purchaseQty",
+                        Number(event.target.value) || 0,
+                      )
+                    }
+                    className="h-8 px-2"
+                  />
+                </td>
+                <td className="px-2 py-2">
+                  <Input
+                    aria-label={`${item.name} unit cost`}
+                    min="0"
+                    step="0.01"
+                    type="number"
+                    value={item.purchasePrice}
+                    onChange={(event) =>
+                      onUpdateItem(
+                        variantId,
+                        "purchasePrice",
+                        Number(event.target.value) || 0,
+                      )
+                    }
+                    className="h-8 px-2"
+                  />
+                </td>
+                <td className="px-2 py-2">
+                  <Input
+                    aria-label={`${item.name} discount`}
+                    min="0"
+                    step="0.01"
+                    type="number"
+                    value={item.purchaseDiscount}
+                    onChange={(event) =>
+                      onUpdateItem(
+                        variantId,
+                        "purchaseDiscount",
+                        Number(event.target.value) || 0,
+                      )
+                    }
+                    className="h-8 px-2"
+                  />
+                </td>
+                <td className="px-2 py-2">
+                  <Input
+                    aria-label={`${item.name} tax`}
+                    min="0"
+                    step="0.01"
+                    type="number"
+                    value={item.purchaseTax}
+                    onChange={(event) =>
+                      onUpdateItem(
+                        variantId,
+                        "purchaseTax",
+                        Number(event.target.value) || 0,
+                      )
+                    }
+                    className="h-8 px-2"
+                  />
+                </td>
+                <td className="whitespace-nowrap px-2 py-3 text-right font-medium">
+                  {lineTotal.toFixed(2)}
+                </td>
+                <td className="px-2 py-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Remove ${item.name}`}
+                    onClick={() => onRemoveItem(variantId)}
+                  >
+                    <Trash2 className="text-muted-foreground" />
+                  </Button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }

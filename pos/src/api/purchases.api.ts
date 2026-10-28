@@ -1,7 +1,7 @@
 import axios from "./axios.js";
 import {
-  ChangedItems,
   PaymentDetails,
+  PurchaseReturnInput,
   UpdateStockChangedItems,
 } from "../features/purchases/purchase.types.js";
 
@@ -28,12 +28,8 @@ export async function updateStockApi(
   return data;
 }
 export async function purchaseReturnApi(
-  orderId: number,
-  changedItems: ChangedItems[],
+  data: PurchaseReturnInput,
 ) {
-  const { data } = await axios.post("/purchase-return", {
-    orderId,
-    changedItems,
-  });
-  return data;
+  const response = await axios.post("/purchase-return", data);
+  return response.data;
 }

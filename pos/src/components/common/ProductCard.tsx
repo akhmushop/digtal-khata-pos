@@ -45,7 +45,7 @@ export function ProductCard({
       }}
       className={`relative h-full select-none p-3 flex flex-col items-center justify-between gap-2 transition-colors`}
     >
-      {outOfStock && (
+      {type === "sale" && outOfStock && (
         <div className="absolute inset-0 z-10 bg-black/50 rounded-xl flex items-center justify-center text-white text-lg font-medium">
           Stock Out
         </div>

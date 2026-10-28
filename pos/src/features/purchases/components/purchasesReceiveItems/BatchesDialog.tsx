@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { PurchasesItems } from "../../purchase.types";
-import { Controller, useForm, UseFormReturn } from "react-hook-form";
+import { Controller, useForm, useWatch, type UseFormReturn } from "react-hook-form";
 import {
   batchSchema,
   BatchSchemaTypeInput,
@@ -60,26 +60,43 @@ export function BatchesDialog({
       batchForm.reset();
     }
   }
-  const currentBatches = form.watch(`items.${index}.batches`) || [];
-  async function onSubmit(data: BatchSchemaTypeOutput) {
+  const receiveNow =
+    useWatch({
+      control: form.control,
+      name: `items.${index}.receiveNow`,
+    }) ?? 0;
+  const currentBatches =
+    useWatch({
+      control: form.control,
+      name: `items.${index}.batches`,
+    }) ?? [];
+  const batchTotal = currentBatches.reduce(
+    (sum, batch) => sum + batch.quantity,
+    0,
+  );
+  const remainingQuantity = Math.max(0, receiveNow - batchTotal);
+  const batchError = form.formState.errors.items?.[index]?.batches?.message;
+
+  function onSubmit(data: BatchSchemaTypeOutput) {
+    if (data.quantity > remainingQuantity) {
+      batchForm.setError("quantity", {
+        type: "validate",
+        message: `Only ${remainingQuantity} more can be assigned to this receipt.`,
+      });
+      return;
+    }
+
     const existingBatches = form.getValues(`items.${index}.batches`) || [];
-    // Append the new batch to the list
     form.setValue(`items.${index}.batches`, [...existingBatches, data], {
       shouldValidate: true,
       shouldDirty: true,
     });
 
-    // Reset the mini-form so the user can type another batch
     batchForm.reset();
   }
   const handleRemoveBatch = (batchIndex: number) => {
-    // 1. Get the current batches for this specific item
     const currentBatches = form.getValues(`items.${index}.batches`) || [];
-
-    // 2. Filter out the batch at the specific index
     const updatedBatches = currentBatches.filter((_, i) => i !== batchIndex);
-
-    // 3. Update the form state with the new list
     form.setValue(`items.${index}.batches`, updatedBatches, {
       shouldValidate: true,
       shouldDirty: true,
@@ -89,26 +106,27 @@ export function BatchesDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger
         render={
-          <Button className="hover:cursor-pointer">
-            {item.trackingType}
+          <Button type="button" className="hover:cursor-pointer">
+            Batches ({currentBatches.length})
           </Button>
         }
       />
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Batch Information</DialogTitle>
-          <DialogDescription>Product Name: {item.productName}</DialogDescription>
+          <DialogDescription>
+            {item.productName} · Assign {receiveNow} units across batches.{" "}
+            {remainingQuantity} remaining.
+          </DialogDescription>
         </DialogHeader>
         <FieldGroup>
           <div className="flex gap-3">
-            {/* batchNumber */}
             <InputField
               name="batchNumber"
               form={batchForm}
               fieldLabel="Batch Number"
-              placeholder="Type Batch Number"
+              placeholder="Enter batch number"
             />
-            {/* Quantity */}
             <Controller
               name="quantity"
               control={batchForm.control}
@@ -117,13 +135,17 @@ export function BatchesDialog({
                   <FieldLabel htmlFor={field.name}>Quantity</FieldLabel>
                   <Input
                     min={1}
+                    max={remainingQuantity}
+                    step="0.001"
                     id={field.name}
                     {...field}
-                    placeholder="0"
                     type="number"
+                    disabled={remainingQuantity === 0}
+                    aria-label="Batch quantity"
+                    value={field.value ?? ""}
                   />
                   {fieldState.error && (
-                    <FieldError> {fieldState.error.message}</FieldError>
+                    <FieldError>{fieldState.error.message}</FieldError>
                   )}
                 </Field>
               )}
@@ -141,26 +163,49 @@ export function BatchesDialog({
               label="Expiry Date"
             />
           </div>
-          <Button
-            type="button"
-            onClick={() => batchForm.handleSubmit(onSubmit)()}
-          >
-            Add Batch
-          </Button>
+          <div className="flex justify-end">
+              <Button
+                type="button"
+                disabled={remainingQuantity === 0}
+                onClick={() => batchForm.handleSubmit(onSubmit)()}
+              >
+                Add Batch
+              </Button>
+          </div>
         </FieldGroup>
-        {/* batch list */}
-        <div>
-          <h1 className="text-lg font-semibold mb-2">Batch List</h1>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold">Batch list</h2>
+              <p className="text-sm text-muted-foreground">
+                {batchTotal} / {receiveNow} units assigned
+              </p>
+          </div>
+          {batchError && (
+              <p className="text-sm text-destructive" role="alert">
+                {batchError}
+              </p>
+          )}
           <div className="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
-            <BatchListTable
-              batchList={currentBatches}
-              handleRemoveBatch={handleRemoveBatch}
-            />
+              {currentBatches.length > 0 ? (
+                <BatchListTable
+                  batchList={currentBatches}
+                  handleRemoveBatch={handleRemoveBatch}
+                />
+              ) : (
+                <p className="p-4 text-center text-sm text-muted-foreground">
+                  No batches added yet.
+                </p>
+              )}
           </div>
         </div>
         <DialogFooter>
-          <DialogClose render={<Button variant="outline">Done</Button>} />
-          
+          <DialogClose
+            render={
+              <Button type="button" variant="outline">
+                Done
+              </Button>
+            }
+          />
         </DialogFooter>
       </DialogContent>
     </Dialog>

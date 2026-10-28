@@ -42,7 +42,15 @@ import {
 
 export async function createPurchase(data: CreatePurchaseInput) {
   return db.transaction(async (tx) => {
-    const { supplierId, items, purchaseDate, notes } = data;
+    const {
+      supplierId,
+      items,
+      purchaseDate,
+      notes,
+      discount,
+      tax,
+      shippingCost,
+    } = data;
 
     // 1. Validate Supplier
     if (supplierId) {
@@ -78,9 +86,24 @@ export async function createPurchase(data: CreatePurchaseInput) {
     }
 
     // 3. Calculate totals
-    const subtotal = items.reduce(
-      (sum, item) => sum + item.purchasePrice * item.quantity,
-      0,
+    const subtotal = Number(
+      items
+        .reduce(
+          (sum, item) =>
+            sum +
+            Number(
+              (
+                item.purchasePrice * item.quantity -
+                item.discount +
+                item.tax
+              ).toFixed(2),
+            ),
+          0,
+        )
+        .toFixed(2),
+    );
+    const totalAmount = Number(
+      (subtotal - discount + tax + shippingCost).toFixed(2),
     );
 
     // 4. Create Purchase
@@ -91,6 +114,11 @@ export async function createPurchase(data: CreatePurchaseInput) {
         purchaseDate,
         notes,
         subtotal,
+        discount: String(discount),
+        tax: String(tax),
+        shippingCost: String(shippingCost),
+        totalAmount,
+        dueAmount: totalAmount,
       })
       .returning();
 
@@ -105,6 +133,8 @@ export async function createPurchase(data: CreatePurchaseInput) {
       quantity: item.quantity,
       receivedQuantity: 0,
       unitCost: item.purchasePrice,
+      discount: item.discount,
+      tax: item.tax,
     }));
 
     // Insert them all in ONE single database query!
@@ -126,14 +156,19 @@ export async function getPurchasesSummary() {
       .from(purchases)
       .leftJoin(suppliers, eq(purchases.supplierId, suppliers.id))
       .where(eq(purchases.status, "ordered")),
-    db.select().from(purchases),
     db
-      .select()
+      .select({ ...getTableColumns(purchases), supplierName: suppliers.name })
       .from(purchases)
+      .leftJoin(suppliers, eq(purchases.supplierId, suppliers.id)),
+    db
+      .select({ ...getTableColumns(purchases), supplierName: suppliers.name })
+      .from(purchases)
+      .leftJoin(suppliers, eq(purchases.supplierId, suppliers.id))
       .where(inArray(purchases.paymentStatus, ["partial", "unpaid"])),
     db
-      .select()
+      .select({ ...getTableColumns(purchases), supplierName: suppliers.name })
       .from(purchases)
+      .leftJoin(suppliers, eq(purchases.supplierId, suppliers.id))
       .where(inArray(purchases.paymentStatus, ["paid"])),
   ]);
   return {
@@ -156,6 +191,7 @@ export async function getPurchasesItems() {
         sellingPrice: productVariants.sellingPrice,
         productId: products.id,
         trackingType: products.trackingType,
+        availableStock: inventoryStock.quantity,
       })
       .from(purchaseItems)
       // 3. Join Variant (Purchase Items link to Variants, not directly to Products!)
@@ -167,6 +203,10 @@ export async function getPurchasesItems() {
       .innerJoin(products, eq(productVariants.productId, products.id))
       // 5. Join Unit (Products link to Units)
       .leftJoin(units, eq(units.id, products.unitId))
+      .leftJoin(
+        inventoryStock,
+        eq(inventoryStock.variantId, productVariants.id),
+      )
   ); // leftJoin is safer in case a product has no unit
 }
 
@@ -195,11 +235,11 @@ export async function createReceivePurchase(data: ReceiveItemsFormValues) {
       }
       await receiveItemsValidation(purchaseItem, receiveItem);
 
-      if (receiveItem.trackingType === "batch") {
+      if (receiveItem.receiveNow > 0 && receiveItem.trackingType === "batch") {
         batchValidation(purchaseItem, receiveItem);
       }
 
-      if (receiveItem.trackingType === "serial") {
+      if (receiveItem.receiveNow > 0 && receiveItem.trackingType === "serial") {
         serialNumberValidation(purchaseItem, receiveItem);
       }
     }
