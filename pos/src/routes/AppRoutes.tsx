@@ -17,11 +17,23 @@ import { Units } from "@/features/products/pages/Units";
 import { Suppliers } from "@/features/Contacts/pages/Suppliers";
 import { VariantManager } from "@/features/products/pages/Variants";
 import { StockAdjustment } from "@/features/products/pages/StockAdjustment";
+import { DueManagementPage } from "@/features/due-management/DueManagementPage";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <Pos />,
+  },
+  {
+    path: "/due-management",
+    element: (
+      <QueryClientProvider client={queryClient}>
+        <DueManagementPage />
+      </QueryClientProvider>
+    ),
   },
   {
     element: <AppLayout />,
