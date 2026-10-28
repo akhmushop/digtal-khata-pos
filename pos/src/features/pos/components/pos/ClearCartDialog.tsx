@@ -27,7 +27,7 @@ export function ClearCartDialog() {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger
         render={
-          <Button disabled={cart.length === 0} className="w-full">
+          <Button type="button" disabled={cart.length === 0} className="w-full">
             Clear Cart
           </Button>
         }
@@ -36,9 +36,9 @@ export function ClearCartDialog() {
         <div className={`flex flex-col items-center justify-center `}>
           <span className="text-xl mb-5">Do you want to clear this cart?</span>
           <div className="flex  w-full justify-center gap-3">
-            <Button onClick={handleClearCart}>Yes</Button>
+            <Button type="button" onClick={handleClearCart}>Yes</Button>
 
-            <DialogClose render={<Button>No</Button>} />
+            <DialogClose render={<Button type="button">No</Button>} />
           </div>
         </div>
       </DialogContent>

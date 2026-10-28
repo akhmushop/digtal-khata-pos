@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError } from "@/components/ui/field";
 import {
   Popover,
   PopoverContent,
@@ -8,13 +8,8 @@ import {
 } from "@/components/ui/popover";
 import { AddCustomer } from "@/features/Contacts/pages/Customer";
 import { useCustomerStore } from "@/store/useCustomerStore";
-import React, { useState, useRef, useEffect } from "react";
-import { Controller, FieldValues, UseFormReturn } from "react-hook-form";
-import {
-  RiCloseLargeFill,
-  RiArrowDropDownFill,
-  RiUserAddFill,
-} from "react-icons/ri";
+import { useState } from "react";
+import { Controller, type UseFormReturn } from "react-hook-form";
 
 import {
   Combobox,
@@ -25,39 +20,55 @@ import {
   ComboboxList,
 } from "@/components/ui/combobox";
 import { UserPlus } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { CartSchemaType } from "../../schemas/cart.schema";
-export function CartHeader({ form }: { form: UseFormReturn<CartSchemaType> }) {
+import type { CartSchemaType } from "../../schemas/cart.schema";
+export function CartHeader({
+  form,
+  cartItemCount,
+}: {
+  form: UseFormReturn<CartSchemaType>;
+  cartItemCount: number;
+}) {
   const {
     customerInfo,
     handleOnchange,
     resetCustomerInfo,
     handleAddCustomer,
-    resetShowCustomerInfo,
   } = useCustomerStore();
   const [isOpenCustomerModal, setIsOpenCustomerModal] = useState(false);
-  const [checked, setChecked] = useState(true);
-
   return (
     <>
-      <Card>
-        <CardContent className="gap-4 grid grid-cols-12">
-          <div className="col-span-3">
+      <div className="space-y-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Current sale
+            </p>
+            <h2 className="mt-1 text-lg font-semibold tracking-tight">
+              Order details
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              {cartItemCount} {cartItemCount === 1 ? "line item" : "line items"}
+            </p>
+          </div>
+          <div className="w-28 shrink-0 sm:w-40">
             <SaleDatePicker form={form} />
           </div>
-          <div className="col-span-9 flex gap-4">
+        </div>
+        <div className="flex gap-2">
+          <div className="min-w-0 flex-1">
             <CustomerInputAndSearch form={form} />
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setIsOpenCustomerModal(true);
-              }}
-            >
-              <UserPlus />
-            </Button>
           </div>
-        </CardContent>
-      </Card>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label="Add a new customer"
+            onClick={() => setIsOpenCustomerModal(true)}
+          >
+            <UserPlus />
+          </Button>
+        </div>
+      </div>
       {isOpenCustomerModal && (
         <AddCustomer
           handleOnchange={handleOnchange}
@@ -153,7 +164,7 @@ export function SaleDatePicker({
                 <Button
                   variant="outline"
                   id={field.name}
-                  className="justify-start font-normal"
+                  className="w-full justify-start font-normal"
                 >
                   {field.value
                     ? new Date(field.value).toLocaleDateString()

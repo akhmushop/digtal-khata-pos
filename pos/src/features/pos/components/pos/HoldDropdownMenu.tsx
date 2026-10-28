@@ -26,7 +26,11 @@ export function HoldDropdownMenu() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger
-          render={<Button className="w-full">HOLD</Button>}
+          render={
+            <Button type="button" className="w-full">
+              Hold
+            </Button>
+          }
         ></DropdownMenuTrigger>
         <DropdownMenuContent side="top">
           <DropdownMenuItem
