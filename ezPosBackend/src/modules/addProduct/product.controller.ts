@@ -7,8 +7,18 @@ import { brandSchema } from "./schemas/brand.schema.js";
 import { unitSchema } from "./schemas/unit.schema.js";
 import {
   variantOptionSchema,
+  variantOptionValueSchema,
   variantTypeSchema,
 } from "./schemas/variant.schema.js";
+
+function getEntityId(req: Request, res: Response): number | null {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id < 1) {
+    res.status(400).json({ message: "Invalid entity ID" });
+    return null;
+  }
+  return id;
+}
 
 export async function getProductSelectOptions(req: Request, res: Response) {
   try {
@@ -107,6 +117,41 @@ export async function createCategory(
     next(err);
   }
 }
+export async function updateCategory(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  const id = getEntityId(req, res);
+  if (id === null) return;
+  const result = addCategorySchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({
+      message: "Invalid category data",
+      errors: result.error.flatten(),
+    });
+  }
+  try {
+    const category = await productService.updateCategory(id, result.data);
+    return res.json({ message: "Category updated successfully", data: category });
+  } catch (err: unknown) {
+    return next(err);
+  }
+}
+export async function deleteCategory(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  const id = getEntityId(req, res);
+  if (id === null) return;
+  try {
+    await productService.deleteCategory(id);
+    return res.json({ message: "Category deleted successfully" });
+  } catch (err: unknown) {
+    return next(err);
+  }
+}
 export async function createBrand(
   req: Request,
   res: Response,
@@ -127,6 +172,41 @@ export async function createBrand(
     });
   } catch (err: unknown) {
     next(err);
+  }
+}
+export async function updateBrand(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  const id = getEntityId(req, res);
+  if (id === null) return;
+  const result = brandSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({
+      message: "Invalid brand data",
+      errors: result.error.flatten(),
+    });
+  }
+  try {
+    const brand = await productService.updateBrand(id, result.data);
+    return res.json({ message: "Brand updated successfully", data: brand });
+  } catch (err: unknown) {
+    return next(err);
+  }
+}
+export async function deleteBrand(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  const id = getEntityId(req, res);
+  if (id === null) return;
+  try {
+    await productService.deleteBrand(id);
+    return res.json({ message: "Brand deleted successfully" });
+  } catch (err: unknown) {
+    return next(err);
   }
 }
 export async function createUnit(
@@ -151,6 +231,41 @@ export async function createUnit(
     next(err);
   }
 }
+export async function updateUnit(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  const id = getEntityId(req, res);
+  if (id === null) return;
+  const result = unitSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({
+      message: "Invalid unit data",
+      errors: result.error.flatten(),
+    });
+  }
+  try {
+    const unit = await productService.updateUnit(id, result.data);
+    return res.json({ message: "Unit updated successfully", data: unit });
+  } catch (err: unknown) {
+    return next(err);
+  }
+}
+export async function deleteUnit(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  const id = getEntityId(req, res);
+  if (id === null) return;
+  try {
+    await productService.deleteUnit(id);
+    return res.json({ message: "Unit deleted successfully" });
+  } catch (err: unknown) {
+    return next(err);
+  }
+}
 export async function createVariantType(
   req: Request,
   res: Response,
@@ -171,6 +286,44 @@ export async function createVariantType(
     });
   } catch (err: unknown) {
     next(err);
+  }
+}
+export async function updateVariantType(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  const id = getEntityId(req, res);
+  if (id === null) return;
+  const result = variantTypeSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({
+      message: "Invalid variant type data",
+      errors: result.error.flatten(),
+    });
+  }
+  try {
+    const variantType = await productService.updateVariantType(id, result.data);
+    return res.json({
+      message: "Variant type updated successfully",
+      data: variantType,
+    });
+  } catch (err: unknown) {
+    return next(err);
+  }
+}
+export async function deleteVariantType(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  const id = getEntityId(req, res);
+  if (id === null) return;
+  try {
+    await productService.deleteVariantType(id);
+    return res.json({ message: "Variant type deleted successfully" });
+  } catch (err: unknown) {
+    return next(err);
   }
 }
 export async function createVariantOption(
@@ -195,5 +348,45 @@ export async function createVariantOption(
     });
   } catch (err: unknown) {
     next(err);
+  }
+}
+
+export async function updateVariantOption(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  const id = getEntityId(req, res);
+  if (id === null) return;
+  const result = variantOptionValueSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({
+      message: "Invalid variant option data",
+      errors: result.error.flatten(),
+    });
+  }
+  try {
+    const option = await productService.updateVariantOption(id, result.data);
+    return res.json({
+      message: "Variant option updated successfully",
+      data: option,
+    });
+  } catch (err: unknown) {
+    return next(err);
+  }
+}
+
+export async function deleteVariantOption(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  const id = getEntityId(req, res);
+  if (id === null) return;
+  try {
+    await productService.deleteVariantOption(id);
+    return res.json({ message: "Variant option deleted successfully" });
+  } catch (err: unknown) {
+    return next(err);
   }
 }
