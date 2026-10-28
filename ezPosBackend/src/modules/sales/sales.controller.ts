@@ -7,6 +7,14 @@ import {
   saleRefundRequestSchema,
   updateAvailableSerialSchema,
 } from "./schemas/sales.schema.js";
+import {
+  dashboardPeriods,
+  type DashboardPeriod,
+} from "./dashboardMatrix.service.js";
+
+function isDashboardPeriod(period: string): period is DashboardPeriod {
+  return dashboardPeriods.some((supportedPeriod) => supportedPeriod === period);
+}
 
 export async function getSalesData(req: Request, res: Response) {
   try {
@@ -83,7 +91,44 @@ export async function createMultipleRefunds(req: Request, res: Response) {
 }
 export async function getDashboardSummary(req: Request, res: Response) {
   try {
-    const summary = await salesService.getDashboardSummary();
+    const period = req.query.period;
+    const selectedPeriod = period === undefined ? "today" : period;
+    if (typeof selectedPeriod !== "string") {
+      return res.status(400).json({ message: "Invalid dashboard period" });
+    }
+    if (!isDashboardPeriod(selectedPeriod)) {
+      return res.status(400).json({
+        message:
+          "Dashboard period must be today, yesterday, 7d, 30d, 60d, 90d, or 365d",
+      });
+    }
+    const staleDaysQuery = req.query.staleDays;
+    const staleDays = staleDaysQuery === undefined ? 60 : Number(staleDaysQuery);
+    if (
+      (typeof staleDaysQuery !== "undefined" &&
+        typeof staleDaysQuery !== "string") ||
+      ![30, 60, 90, 180].includes(staleDays)
+    ) {
+      return res.status(400).json({
+        message: "Stale stock threshold must be 30, 60, 90, or 180 days",
+      });
+    }
+    const staleLimitQuery = req.query.staleLimit;
+    const staleLimit = staleLimitQuery === undefined ? 10 : Number(staleLimitQuery);
+    if (
+      (typeof staleLimitQuery !== "undefined" &&
+        typeof staleLimitQuery !== "string") ||
+      ![10, 20, 30, 50, 100].includes(staleLimit)
+    ) {
+      return res.status(400).json({
+        message: "Stale stock limit must be 10, 20, 30, 50, or 100",
+      });
+    }
+    const summary = await salesService.getDashboardSummary(
+      selectedPeriod,
+      staleDays,
+      staleLimit,
+    );
     res.status(200).json(summary);
   } catch (err) {
     handleError(res, err);
