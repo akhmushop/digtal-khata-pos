@@ -193,11 +193,23 @@ async function validateVariantRulesAndRef(
       }
 
       // Validate option IDs
+      const optionTypeIds = new Set<number>();
       for (const option of variant.options) {
+        if (optionTypeIds.has(option.typeId)) {
+          throw new BadRequestError(
+            "A variant can only include one value for each option type.",
+          );
+        }
+        optionTypeIds.add(option.typeId);
         const variantOption = await tx
           .select({ id: variantOptions.id })
           .from(variantOptions)
-          .where(eq(variantOptions.id, option.optionId));
+          .where(
+            and(
+              eq(variantOptions.id, option.optionId),
+              eq(variantOptions.variantTypeId, option.typeId),
+            ),
+          );
 
         if (variantOption.length === 0) {
           throw new NotFoundError(
@@ -565,19 +577,89 @@ export async function updateProduct(id: number, data: ProductType) {
     const existingVariantIds = new Set(
       existingVariants.map((variant) => variant.id),
     );
-    const submittedVariantIds = data.variants.map((variant) => variant.id);
+    const submittedExistingIds = data.variants.flatMap((variant) =>
+      variant.id === undefined ? [] : [variant.id],
+    );
     if (
-      submittedVariantIds.length !== existingVariants.length ||
-      submittedVariantIds.some((variantId) => variantId === undefined) ||
-      new Set(submittedVariantIds).size !== existingVariants.length ||
-      submittedVariantIds.some(
-        (variantId) =>
-          variantId === undefined || !existingVariantIds.has(variantId),
+      new Set(submittedExistingIds).size !== submittedExistingIds.length ||
+      submittedExistingIds.length !== existingVariants.length ||
+      submittedExistingIds.some((variantId) => !existingVariantIds.has(variantId))
+    ) {
+      throw new BadRequestError(
+        "Existing variants cannot be removed while editing. Stock and variant history are preserved.",
+      );
+    }
+
+    const newVariants = data.variants.filter(
+      (variant) => variant.id === undefined,
+    );
+    if (!data.hasVariants && newVariants.length > 0) {
+      throw new BadRequestError(
+        "New variants can only be added to products that already have variants.",
+      );
+    }
+    if (newVariants.length > 0 && data.source !== "purchase") {
+      throw new BadRequestError(
+        "New variants must be created with zero stock and received through a purchase or stock adjustment.",
+      );
+    }
+    if (
+      newVariants.some(
+        (variant) =>
+          variant.quantity !== 0 || (variant.serialNumbers?.length ?? 0) > 0,
       )
     ) {
       throw new BadRequestError(
-        "Existing variants cannot be added or removed while editing. Stock and variant history are preserved.",
+        "New variants must start with zero stock. Receive stock through a purchase or stock adjustment.",
       );
+    }
+
+    const submittedCombinationKeys = new Set<string>();
+    for (const variant of data.variants) {
+      const optionIds = variant.options?.map((option) => option.optionId) ?? [];
+      const combinationKey = [...optionIds].sort((a, b) => a - b).join(",");
+      if (data.hasVariants && submittedCombinationKeys.has(combinationKey)) {
+        throw new BadRequestError(
+          "Each variant must have a unique combination of options.",
+        );
+      }
+      submittedCombinationKeys.add(combinationKey);
+    }
+
+    const existingOptionRows =
+      existingVariantIds.size === 0
+        ? []
+        : await tx
+            .select({
+              variantId: variantValues.variantId,
+              optionId: variantValues.optionId,
+            })
+            .from(variantValues)
+            .where(inArray(variantValues.variantId, [...existingVariantIds]));
+    const existingOptionsByVariant = new Map<number, number[]>();
+    for (const row of existingOptionRows) {
+      const optionIds = existingOptionsByVariant.get(row.variantId) ?? [];
+      optionIds.push(row.optionId);
+      existingOptionsByVariant.set(row.variantId, optionIds);
+    }
+    for (const variant of data.variants) {
+      if (variant.id === undefined) continue;
+      const existingOptions = [
+        ...(existingOptionsByVariant.get(variant.id) ?? []),
+      ].sort((a, b) => a - b);
+      const submittedOptions = (variant.options ?? [])
+        .map((option) => option.optionId)
+        .sort((a, b) => a - b);
+      if (
+        existingOptions.length !== submittedOptions.length ||
+        existingOptions.some(
+          (optionId, index) => optionId !== submittedOptions[index],
+        )
+      ) {
+        throw new BadRequestError(
+          "Existing variant options cannot be changed. Add a new variant instead.",
+        );
+      }
     }
 
     await tx
@@ -595,10 +677,16 @@ export async function updateProduct(id: number, data: ProductType) {
       })
       .where(eq(products.id, id));
 
+    const addedVariants: { id: number; sku: string }[] = [];
     for (const variant of data.variants) {
       const variantId = variant.id;
       if (variantId === undefined) {
-        throw new BadRequestError("Variant ID is required while editing.");
+        const sku = variant.sku.trim() || (await generateSku(tx));
+        const createdVariant = await insertVariant(tx, id, variant, sku);
+        await insertVariantOptions(tx, data, variant, createdVariant.id);
+        await insertInventoryStock(tx, createdVariant.id, 0);
+        addedVariants.push({ id: createdVariant.id, sku });
+        continue;
       }
 
       await tx
@@ -631,7 +719,7 @@ export async function updateProduct(id: number, data: ProductType) {
       }
     }
 
-    return { productId: id };
+    return { productId: id, addedVariants };
   });
 }
 export async function createCategory(data: AddCategorySchemaType) {

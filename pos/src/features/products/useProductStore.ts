@@ -86,7 +86,16 @@ const useProductStore = create<ProductStoreType>((set) => ({
     return response.data;
   },
   updateProduct: async (id, data) => {
-    await updateProductApi(id, data);
+    const result = await updateProductApi(id, data);
+    const newVariants = data.variants.filter(
+      (variant) => variant.id === undefined,
+    );
+    if (newVariants.length !== result.addedVariants.length) {
+      throw new Error(
+        "Product was updated, but the server returned an unexpected number of new variants. Refresh the product list.",
+      );
+    }
+
     set((state) => ({
       products: state.products.map((product) => {
         if (product.id !== id) {
@@ -104,25 +113,40 @@ const useProductStore = create<ProductStoreType>((set) => ({
           hasVariants: data.hasVariants,
           trackingType: data.trackingType,
           status: data.status,
-          variants: product.variants.map((variant) => {
-            const updatedVariant = data.variants.find(
-              (item) => item.id === variant.id,
-            );
-            if (!updatedVariant) {
-              return variant;
-            }
+          variants: [
+            ...product.variants.map((variant) => {
+              const updatedVariant = data.variants.find(
+                (item) => item.id === variant.id,
+              );
+              if (!updatedVariant) return variant;
 
-            return {
-              ...variant,
-              sku: updatedVariant.sku,
-              barcode: updatedVariant.barcode,
-              sellingPrice: updatedVariant.sellingPrice,
-              alertQuantity: updatedVariant.alertQuantity,
-              isDefault: updatedVariant.isDefault,
-              status: updatedVariant.status,
-              options: updatedVariant.options,
-            };
-          }),
+              return {
+                ...variant,
+                sku: updatedVariant.sku,
+                barcode: updatedVariant.barcode,
+                sellingPrice: updatedVariant.sellingPrice,
+                alertQuantity: updatedVariant.alertQuantity,
+                isDefault: updatedVariant.isDefault,
+                status: updatedVariant.status,
+                options: updatedVariant.options,
+              };
+            }),
+            ...newVariants.map((variant, index) => {
+              const created = result.addedVariants[index];
+              if (!created) {
+                throw new Error(
+                  "Product was updated, but a new variant ID was not returned.",
+                );
+              }
+              return {
+                ...variant,
+                id: created.id,
+                sku: created.sku,
+                purchaseCost: variant.purchasePrice,
+                quantity: 0,
+              };
+            }),
+          ],
         };
       }),
     }));
