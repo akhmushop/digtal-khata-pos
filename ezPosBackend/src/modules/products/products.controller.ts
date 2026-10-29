@@ -1,9 +1,7 @@
 import type { Request, Response } from "express";
 import * as productsService from "./products.service.js";
-import {
-  BadRequestError,
-  handleError,
-} from "../../utils/handleError.js";
+import { getBusinessId } from "../../middleware/business.js";
+import { sendSafeError } from "../../utils/safeError.js";
 import { z } from "zod";
 
 const stockAdjustmentSchema = z.object({
@@ -21,17 +19,20 @@ const stockAdjustmentSchema = z.object({
 });
 export async function getProducts(req: Request, res: Response) {
   try {
-    res.json(await productsService.getAllProducts());
+    res.json(await productsService.getAllProducts(getBusinessId(req)));
   } catch (err) {
-    handleError(res, err);
+    sendSafeError(res, err, "Unable to load products.");
   }
 }
 export async function createProduct(req: Request, res: Response) {
   try {
-    const created = await productsService.createProduct(req.body);
+    const created = await productsService.createProduct(
+      getBusinessId(req),
+      req.body,
+    );
     res.status(201).json(created);
   } catch (err) {
-    handleError(res, err);
+    sendSafeError(res, err, "Unable to create the product.");
   }
 }
 export async function decrementQuantity(req: Request, res: Response) {
@@ -41,7 +42,7 @@ export async function decrementQuantity(req: Request, res: Response) {
     await productsService.decrementQuantity(id, quantity);
     res.status(200).json({ message: "Quantity updated" });
   } catch (err) {
-    handleError(res, err);
+    sendSafeError(res, err, "Unable to update the quantity.");
   }
 }
 export async function incrementQuantity(req: Request, res: Response) {
@@ -51,7 +52,7 @@ export async function incrementQuantity(req: Request, res: Response) {
     await productsService.incrementQuantity(id, quantity);
     res.status(200).json({ message: "Quantity updated" });
   } catch (err) {
-    handleError(res, err);
+    sendSafeError(res, err, "Unable to update the quantity.");
   }
 }
 export async function restoreQuantity(req: Request, res: Response) {
@@ -61,7 +62,7 @@ export async function restoreQuantity(req: Request, res: Response) {
     await productsService.restoreQuantity(id, quantity, sold_quantity);
     res.status(200).json({ message: "Quantity restored" });
   } catch (err) {
-    handleError(res, err);
+    sendSafeError(res, err, "Unable to restore the quantity.");
   }
 }
 export async function restoreAllQuantity(req: Request, res: Response) {
@@ -75,7 +76,7 @@ export async function restoreAllQuantity(req: Request, res: Response) {
     );
     res.status(200).json({ message: "Quantity restored" });
   } catch (err) {
-    handleError(res, err);
+    sendSafeError(res, err, "Unable to restore the quantity.");
   }
 }
 export async function customQuantity(req: Request, res: Response) {
@@ -90,32 +91,34 @@ export async function customQuantity(req: Request, res: Response) {
     );
     res.status(200).json({ message: "Quantity updated" });
   } catch (err) {
-    handleError(res, err);
+    sendSafeError(res, err, "Unable to update the quantity.");
   }
 }
 export async function updateStock(req: Request, res: Response) {
   try {
     const id = Number(req.params.id);
     const { newStock, status } = req.body;
-    await productsService.updateStock(id, newStock, status);
+    await productsService.updateStock(getBusinessId(req), id, newStock, status);
     res.status(200).json({ message: "Stock updated" });
   } catch (err) {
-    handleError(res, err);
+    sendSafeError(res, err, "Unable to update the stock status.");
   }
 }
 export async function adjustVariantStock(req: Request, res: Response) {
   try {
     const variantId = Number(req.params.variantId);
     if (!Number.isInteger(variantId) || variantId < 1) {
-      throw new BadRequestError("Invalid product variant ID.");
+      return res.status(400).json({ success: false, message: "Invalid product variant ID." });
     }
     const parsed = stockAdjustmentSchema.safeParse(req.body);
     if (!parsed.success) {
-      throw new BadRequestError(
-        parsed.error.issues.map((issue) => issue.message).join(" "),
-      );
+      return res.status(400).json({
+        success: false,
+        message: parsed.error.issues.map((issue) => issue.message).join(" "),
+      });
     }
     const result = await productsService.adjustVariantStock(
+      getBusinessId(req),
       variantId,
       parsed.data,
     );
@@ -124,19 +127,19 @@ export async function adjustVariantStock(req: Request, res: Response) {
       data: result,
     });
   } catch (err) {
-    handleError(res, err);
+    sendSafeError(res, err, "Unable to adjust the stock.");
   }
 }
 export async function duplicateProduct(req: Request, res: Response) {
   try {
     const id = Number(req.params.id);
-    const created = await productsService.duplicateProduct(id);
+    const created = await productsService.duplicateProduct(getBusinessId(req), id);
     if (!created) {
       return res.status(404).json({ message: "Product not found" });
     }
     res.status(201).json(created);
   } catch (err) {
-    handleError(res, err);
+    sendSafeError(res, err, "Unable to duplicate the product.");
   }
 }
 export async function patchProduct(req: Request, res: Response) {
@@ -146,9 +149,9 @@ export async function patchProduct(req: Request, res: Response) {
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ error: "No fields to update" });
     }
-    await productsService.patchProduct(id, updates);
+    await productsService.patchProduct(getBusinessId(req), id, updates);
     res.status(200).json({ message: "Product updated" });
   } catch (err) {
-    handleError(res, err);
+    sendSafeError(res, err, "Unable to update the product.");
   }
 }

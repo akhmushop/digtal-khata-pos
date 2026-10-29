@@ -1,1 +1,9 @@
 /dist/
+node_modules/
+.env
+.env.*
+!.env.example
+*.log
+npm-debug.log*
+*.tsbuildinfo
+.DS_Store

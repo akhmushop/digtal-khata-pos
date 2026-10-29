@@ -1,4 +1,4 @@
-import { eq, inArray, type ExtractTablesWithRelations } from "drizzle-orm";
+import { and, eq, inArray, type ExtractTablesWithRelations } from "drizzle-orm";
 import { customers } from "../../db/schema/customers.js";
 import {
   BadRequestError,
@@ -15,13 +15,16 @@ import { products } from "../../db/schema/products.js";
 
 export async function customerValidation(
   tx: DbTransaction,
+  businessId: number,
   customerId: number | null,
 ) {
   if (customerId === null) return;
   const [customer] = await tx
     .select({ id: customers.id })
     .from(customers)
-    .where(eq(customers.id, customerId))
+    .where(
+      and(eq(customers.id, customerId), eq(customers.businessId, businessId)),
+    )
     .limit(1);
   if (!customer) {
     throw new NotFoundError(`Customer with ID ${customerId} not found.`);
@@ -36,7 +39,11 @@ export type Items = {
     value: number;
   } | null;
 };
-export async function validateVariants(tx: DbTransaction, items: Items[]) {
+export async function validateVariants(
+  tx: DbTransaction,
+  businessId: number,
+  items: Items[],
+) {
   if (items.length === 0) {
     throw new NotFoundError("A sale must contain at least one item.");
   }
@@ -54,7 +61,12 @@ export async function validateVariants(tx: DbTransaction, items: Items[]) {
     })
     .from(productVariants)
     .innerJoin(products, eq(productVariants.productId, products.id))
-    .where(inArray(productVariants.id, variantIds))
+    .where(
+      and(
+        inArray(productVariants.id, variantIds),
+        eq(productVariants.businessId, businessId),
+      ),
+    )
     .for("update");
   if (existingVariants.length !== variantIds.length) {
     const foundIds = new Set(existingVariants.map((v) => v.id));
@@ -67,6 +79,7 @@ export async function validateVariants(tx: DbTransaction, items: Items[]) {
 }
 export async function validateStock(
   tx: DbTransaction,
+  businessId: number,
   variantIds: number[],
   items: Items[],
 ) {
@@ -76,7 +89,12 @@ export async function validateStock(
       quantity: inventoryStock.quantity,
     })
     .from(inventoryStock)
-    .where(inArray(inventoryStock.variantId, variantIds))
+    .where(
+      and(
+        inArray(inventoryStock.variantId, variantIds),
+        eq(inventoryStock.businessId, businessId),
+      ),
+    )
     .for("update");
   const stockMap = new Map(
     stockRows.map((row) => [row.variantId, Number(row.quantity)]),
@@ -124,7 +142,6 @@ export function validatePayments(
   if (new Set(methods).size !== methods.length) {
     throw new ConflictError("Duplicate payment methods are not allowed.");
   }
-  console.log(payments);
   for (const payment of payments) {
     if (payment.method === "due") {
       continue;

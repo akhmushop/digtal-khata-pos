@@ -1,6 +1,7 @@
 import {
-  pgTable,
   foreignKey,
+  index,
+  pgTable,
   serial,
   integer,
   numeric,
@@ -10,11 +11,15 @@ import { sql } from "drizzle-orm";
 import { products } from "./products.js";
 import { purchaseReturns } from "./purchaseReturns.js";
 import { purchaseItems } from "./purchaseItems.js";
+import { businesses } from "./businesses.js";
 
 export const purchaseReturnItems = pgTable(
   "purchase_return_items",
   {
     id: serial().primaryKey().notNull(),
+    businessId: integer("business_id")
+      .notNull()
+      .references(() => businesses.id),
     purchaseReturnId: integer("purchase_return_id").notNull(),
     purchaseItemId: integer("purchase_item_id").notNull(),
     productId: integer("product_id").notNull(),
@@ -30,20 +35,21 @@ export const purchaseReturnItems = pgTable(
     }).generatedAlwaysAs(sql`(quantity * unit_price)`),
   },
   (table) => [
+    index("purchase_return_items_business_id_idx").on(table.businessId),
     foreignKey({
-      columns: [table.purchaseReturnId],
-      foreignColumns: [purchaseReturns.id],
-      name: "purchase_return_items_purchase_return_id_fkey",
+      columns: [table.purchaseReturnId, table.businessId],
+      foreignColumns: [purchaseReturns.id, purchaseReturns.businessId],
+      name: "purchase_return_items_return_business_fkey",
     }).onDelete("cascade"),
     foreignKey({
-      columns: [table.purchaseItemId],
-      foreignColumns: [purchaseItems.id],
-      name: "purchase_return_items_purchase_item_id_fkey",
+      columns: [table.purchaseItemId, table.businessId],
+      foreignColumns: [purchaseItems.id, purchaseItems.businessId],
+      name: "purchase_return_items_item_business_fkey",
     }),
     foreignKey({
-      columns: [table.productId],
-      foreignColumns: [products.id],
-      name: "purchase_return_items_product_id_fkey",
+      columns: [table.productId, table.businessId],
+      foreignColumns: [products.id, products.businessId],
+      name: "purchase_return_items_product_business_fkey",
     }),
     check("purchase_return_items_quantity_check", sql`quantity > (0)::numeric`),
   ],

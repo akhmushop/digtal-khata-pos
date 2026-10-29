@@ -20,6 +20,7 @@ import {
   ChevronsUpDown,
   ChevronUp,
   LayoutDashboard,
+  LogOut,
   Settings,
   User,
   Zap,
@@ -36,10 +37,22 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Avatar, AvatarBadge, AvatarFallback } from "./ui/avatar";
+import { getSessionUser, logout } from "@/api/axios";
+
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "U";
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0]!.toUpperCase())
+    .join("");
+}
 
 export function AppSidebar() {
   const location = useLocation();
+  const user = getSessionUser();
+  const displayName = user?.fullName?.trim() || user?.email || "Signed in";
   return (
     <Sidebar variant="inset">
       <SidebarHeader className="bg-sidebar-accent border-b border-sidebar-border rounded mb-2">
@@ -125,21 +138,27 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg">
-              <Avatar>
-                <AvatarImage
-                  src="https://github.com/shadcn.png"
-                  alt="@shadcn"
-                />
-                <AvatarFallback>CN</AvatarFallback>
-                <AvatarBadge className="bg-green-600 dark:bg-green-800" />
-              </Avatar>
-              <div className="grid flex-1 text-left leading-tight">
-                <span className="">Arif</span>
-                <span className="text-gray-500">Admin</span>
-              </div>
-              <ChevronsUpDown className="ml-auto" />
-            </SidebarMenuButton>
+            <DropdownMenu>
+              <DropdownMenuTrigger render={<SidebarMenuButton size="lg" />}>
+                <Avatar>
+                  <AvatarFallback>{initialsOf(displayName)}</AvatarFallback>
+                  <AvatarBadge className="bg-green-600 dark:bg-green-800" />
+                </Avatar>
+                <div className="grid flex-1 text-left leading-tight">
+                  <span className="truncate">{displayName}</span>
+                  <span className="text-gray-500 truncate">
+                    {user?.roleName ?? user?.roleSlug ?? ""}
+                  </span>
+                </div>
+                <ChevronsUpDown className="ml-auto" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="top" align="start">
+                <DropdownMenuItem onSelect={() => void logout()}>
+                  <LogOut />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
