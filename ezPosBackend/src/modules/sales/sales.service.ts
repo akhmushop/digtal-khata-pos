@@ -731,10 +731,67 @@ async function applySaleRefund(
   const reason = options.notes
     ? `${options.reason}: ${options.notes}`
     : options.reason;
-  const refundTotal = items.reduce(
-    (total, item) => total + Number(item.lineTotal),
+
+  // Money correctness: sale_items.line_total is price minus item discount —
+  // it carries neither the cart-level discount nor the VAT, so refunding raw
+  // line totals over-refunds discounted sales. The sale's final total differs
+  // from the sum of line totals by a single sale-level delta (vat − cart
+  // discount); allocate that delta across all of the sale's items pro rata so
+  // the effective refund value of a line is its true share of what the
+  // customer actually paid or owes.
+  const [sale] = await tx
+    .select({
+      finalTotal: sales.finalTotal,
+      dueAmount: sales.dueAmount,
+      paymentStatus: sales.paymentStatus,
+    })
+    .from(sales)
+    .where(and(eq(sales.id, saleId), eq(sales.businessId, businessId)))
+    .for("update");
+  if (!sale) throw new NotFoundError("Sale not found");
+
+  const allItems = await tx
+    .select({ lineTotal: saleItems.lineTotal })
+    .from(saleItems)
+    .where(and(eq(saleItems.saleId, saleId), eq(saleItems.businessId, businessId)));
+  const totalLineBase = allItems.reduce(
+    (sum, row) => sum + Number(row.lineTotal),
     0,
   );
+  const delta = Number(sale.finalTotal) - totalLineBase;
+  const effectiveByItemId = new Map<number, number>();
+  for (const item of items) {
+    const share =
+      totalLineBase > 0 ? Number(item.lineTotal) / totalLineBase : 0;
+    effectiveByItemId.set(
+      item.id,
+      Math.max(0, roundMoney(Number(item.lineTotal) + delta * share)),
+    );
+  }
+  const batchEffective = items.reduce(
+    (sum, item) => sum + (effectiveByItemId.get(item.id) ?? 0),
+    0,
+  );
+
+  // Never refund more than the sale is worth in total (defense in depth —
+  // the per-item double-refund guard already blocks the common path).
+  const [priorRefunds] = await tx
+    .select({
+      total: sql<string>`COALESCE(SUM(${saleRefunds.refundTotal}), 0)`,
+    })
+    .from(saleRefunds)
+    .where(
+      and(eq(saleRefunds.saleId, saleId), eq(saleRefunds.businessId, businessId)),
+    );
+  const remainingValue = Math.max(
+    0,
+    Number(sale.finalTotal) - Number(priorRefunds?.total ?? 0),
+  );
+  const refundTotal = Math.min(roundMoney(batchEffective), remainingValue);
+  if (refundTotal <= 0) {
+    throw new ConflictError("This sale has no refundable value left.");
+  }
+
   const [refund] = await tx
     .insert(saleRefunds)
     .values({
@@ -766,14 +823,15 @@ async function applySaleRefund(
       throw new NotFoundError(`Variant ${item.variantId} not found`);
     }
 
+    const effective = effectiveByItemId.get(item.id) ?? 0;
     await tx.insert(saleRefundItems).values({
       businessId,
       refundId: refund.id,
       saleItemId: item.id,
       productId: variant.productId,
       quantity: item.quantity,
-      refundPrice: item.sellingPrice,
-      refundTotal: item.lineTotal,
+      refundPrice: roundMoney(effective / item.quantity),
+      refundTotal: effective,
     });
 
     const serialStatus =
@@ -856,6 +914,23 @@ async function applySaleRefund(
       referenceType: "sale_refund",
       referenceId: refund.id,
     });
+  }
+
+  // A refund returns value to the customer: on credit (unpaid/partial) sales
+  // this reduces what the customer still owes. The customer due summary reads
+  // this maintained due_amount, so refunds now net off receivables. (For
+  // fully paid sales the refund cash-out record arrives with the dedicated
+  // refund-payments table; the refund header already records the amount.)
+  if (sale.paymentStatus !== "paid") {
+    const paid = Number(sale.finalTotal) - Number(sale.dueAmount);
+    const newDue = Math.max(0, Number(sale.dueAmount) - refundTotal);
+    await tx
+      .update(sales)
+      .set({
+        dueAmount: newDue,
+        paymentStatus: getPaymentStatus(paid, newDue),
+      })
+      .where(and(eq(sales.id, saleId), eq(sales.businessId, businessId)));
   }
 
   const allSaleItems = await tx

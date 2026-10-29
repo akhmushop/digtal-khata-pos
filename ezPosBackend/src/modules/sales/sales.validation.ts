@@ -142,7 +142,6 @@ export function validatePayments(
   if (new Set(methods).size !== methods.length) {
     throw new ConflictError("Duplicate payment methods are not allowed.");
   }
-  console.log(payments);
   for (const payment of payments) {
     if (payment.method === "due") {
       continue;

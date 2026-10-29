@@ -716,4 +716,97 @@ describe("P0 regression integration", { skip: !runIntegration }, () => {
       "SN-A-1",
     ]);
   });
+
+  it("refunds a discounted due sale at its real value and clears the customer's due", async () => {
+    // Regression for the refund money model: a 10%-discounted 200 sale has a
+    // final total of 180 — the refund must be 180 (pro-rata cart-discount
+    // allocation), not the raw 200 line total, and the customer's due must
+    // drop to zero.
+    const custRes = await api(tokenA, businessA, "POST", "/api/customers", {
+      name: "Due Customer",
+      phone: "1711000002",
+    });
+    assert.equal(custRes.status, 201);
+    const customer = (await custRes.json()) as { id: number };
+
+    const productRes = await createProduct(tokenA, businessA, {
+      name: "Discounted Product",
+      unitId: unitIdA,
+      trackingType: "none",
+      variants: [
+        {
+          sku: "",
+          barcode: null,
+          sellingPrice: 200,
+          alertQuantity: 0,
+          isDefault: true,
+          status: "active",
+          imageUrl: null,
+          imageFile: null,
+          batchNumber: "",
+          purchasePrice: 80,
+          quantity: 3,
+          expiryDate: null,
+        },
+      ],
+    });
+    const variantId = await getFirstVariantId(tokenA, businessA, productRes);
+
+    const saleRes = await api(tokenA, businessA, "POST", "/api/sales", {
+      saleDate: new Date().toISOString(),
+      customerId: customer.id,
+      payments: [{ method: "due", amount: 180 }],
+      discount: { type: "percentage", value: 10 },
+      vatPercent: 0,
+      items: [
+        { variantId, quantity: 1, unitPrice: 200, discount: null },
+      ],
+    });
+    assert.equal(saleRes.status, 201);
+    const saleBody = (await saleRes.json()) as {
+      data: { sale: { id: number } };
+    };
+    const dueSaleId = saleBody.data.sale.id;
+
+    const refundRes = await api(
+      tokenA,
+      businessA,
+      "POST",
+      `/api/sold_products/refunds_all/${dueSaleId}`,
+      { reason: "customer_request", disposition: "restock" },
+    );
+    assert.equal(refundRes.status, 200);
+
+    // The refund record carries the pro-rata value (180), not the raw line
+    // total (200).
+    const refundsReport = await api(
+      tokenA,
+      businessA,
+      "GET",
+      "/api/reports/sales/refunds",
+    );
+    assert.equal(refundsReport.status, 200);
+    const refundsBody = (await refundsReport.json()) as {
+      data: { data: { refundTotal: string | number }[] };
+    };
+    const thisRefund = refundsBody.data.data.find(
+      (row) => Number(row.refundTotal) > 0,
+    );
+    assert.ok(thisRefund, "refund row missing from the refunds report");
+    assert.equal(Number(thisRefund.refundTotal), 180);
+
+    // The customer's due must be cleared: the sale no longer contributes to
+    // the receivables summary.
+    const dueRes = await api(tokenA, businessA, "GET", "/api/due_by_customers");
+    assert.equal(dueRes.status, 200);
+    const dues = (await dueRes.json()) as {
+      customerId: number;
+      totalDue: string | number;
+    }[];
+    const customerDue = dues.find((row) => row.customerId === customer.id);
+    assert.ok(
+      customerDue === undefined || Number(customerDue.totalDue) === 0,
+      "refunded due sale still contributes to the customer's due",
+    );
+  });
 });

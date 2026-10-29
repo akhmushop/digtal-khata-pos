@@ -41,8 +41,11 @@ export async function getCustomerDueSummary(businessId: number) {
     .with(paymentSummaryCte)
     .select({
       customerId: customers.id,
+      // sales.due_amount is maintained by the sale/refund flows (refunds
+      // reduce it), so refunds net off receivables here. For un-refunded
+      // sales it equals finalTotal − payments.
       totalDue:
-        sql<number>`COALESCE(SUM(${sales.finalTotal} - COALESCE(${paymentSummaryCte.totalPaid}, 0)),0)`.as(
+        sql<number>`COALESCE(SUM(${sales.dueAmount}),0)`.as(
           "TOTAL_DUE",
         ),
       totalPaid:
@@ -67,6 +70,6 @@ export async function getCustomerDueSummary(businessId: number) {
     )
     .groupBy(customers.id)
     .having(
-      sql`COALESCE(SUM(${sales.finalTotal} - COALESCE(${paymentSummaryCte.totalPaid}, 0)),0) > 0`,
+      sql`COALESCE(SUM(${sales.dueAmount}),0) > 0`,
     );
 }
