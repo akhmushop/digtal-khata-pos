@@ -5,6 +5,8 @@ import { categories } from "../../db/schema/categories.js";
 import { saleItems } from "../../db/schema/saleItems.js";
 import { sales } from "../../db/schema/sales.js";
 import { productVariants } from "../../db/schema/productVariants.js";
+import { variantOptions } from "../../db/schema/variantOptions.js";
+import { variantValues } from "../../db/schema/variantValues.js";
 import type { saleDataInput } from "../../types/sales-types.js";
 import { salePayments } from "../../db/schema/salePayments.js";
 import {
@@ -277,10 +279,148 @@ function getPaymentStatus(paid: number, due: number) {
   return "unpaid";
 }
 
+export async function getSaleReceipt(saleId: number) {
+  const [sale] = await db
+    .select({
+      id: sales.id,
+      invoiceNumber: sales.invoiceNumber,
+      saleDate: sales.saleDate,
+      createdAt: sales.createdAt,
+      subtotal: sales.subtotal,
+      discount: sales.discount,
+      vat: sales.vat,
+      finalTotal: sales.finalTotal,
+      dueAmount: sales.dueAmount,
+      paymentStatus: sales.paymentStatus,
+      note: sales.note,
+      customerId: sales.customerId,
+      customerName: customers.name,
+      customerPhone: customers.phone,
+      customerAddress: customers.address,
+    })
+    .from(sales)
+    .leftJoin(customers, eq(sales.customerId, customers.id))
+    .where(eq(sales.id, saleId))
+    .limit(1);
+
+  if (!sale) {
+    throw new NotFoundError(`Sale #${saleId} not found`);
+  }
+
+  const items = await db
+    .select({
+      id: saleItems.id,
+      variantId: saleItems.variantId,
+      productName: products.name,
+      sku: productVariants.sku,
+      barcode: productVariants.barcode,
+      quantity: saleItems.quantity,
+      unitPrice: saleItems.sellingPrice,
+      discount: saleItems.discount,
+      lineTotal: saleItems.lineTotal,
+    })
+    .from(saleItems)
+    .innerJoin(productVariants, eq(saleItems.variantId, productVariants.id))
+    .innerJoin(products, eq(productVariants.productId, products.id))
+    .where(eq(saleItems.saleId, saleId))
+    .orderBy(asc(saleItems.id));
+
+  const variantIds = items.map((i) => i.variantId);
+  const optionsMap = new Map<number, string[]>();
+
+  if (variantIds.length > 0) {
+    const optRows = await db
+      .select({
+        variantId: variantValues.variantId,
+        value: variantOptions.value,
+      })
+      .from(variantValues)
+      .innerJoin(variantOptions, eq(variantValues.optionId, variantOptions.id))
+      .where(inArray(variantValues.variantId, variantIds));
+
+    for (const opt of optRows) {
+      const list = optionsMap.get(opt.variantId) ?? [];
+      list.push(opt.value);
+      optionsMap.set(opt.variantId, list);
+    }
+  }
+
+  const payments = await db
+    .select({
+      id: salePayments.id,
+      method: salePayments.paymentMethod,
+      amount: salePayments.amount,
+      tendered: salePayments.tendered,
+      reference: salePayments.reference,
+      paymentDate: salePayments.paymentDate,
+    })
+    .from(salePayments)
+    .where(eq(salePayments.saleId, saleId))
+    .orderBy(asc(salePayments.id));
+
+  const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount ?? 0), 0);
+  const change = payments.reduce((max, p) => {
+    if (p.method === 'cash' && p.tendered != null) {
+      const diff = Number(p.tendered) - Number(p.amount);
+      return diff > 0 ? diff : max;
+    }
+    return max;
+  }, 0);
+
+  return {
+    saleId: sale.id,
+    invoiceNumber: sale.invoiceNumber,
+    saleDate: sale.saleDate,
+    createdAt: sale.createdAt,
+    customer: sale.customerId
+      ? {
+          id: sale.customerId,
+          name: sale.customerName ?? 'Customer',
+          phone: sale.customerPhone ?? null,
+          address: sale.customerAddress ?? null,
+        }
+      : null,
+    items: items.map((item) => {
+      const optValues = optionsMap.get(item.variantId);
+      const variantName =
+        optValues && optValues.length > 0 ? optValues.join(' / ') : (item.sku || null);
+      return {
+        id: item.id,
+        variantId: item.variantId,
+        productName: item.productName,
+        variantName,
+        sku: item.sku,
+        barcode: item.barcode,
+        quantity: Number(item.quantity),
+        unitPrice: Number(item.unitPrice),
+        discount: Number(item.discount),
+        lineTotal: Number(item.lineTotal),
+      };
+    }),
+    subtotal: Number(sale.subtotal ?? 0),
+    discount: Number(sale.discount ?? 0),
+    vat: Number(sale.vat ?? 0),
+    finalTotal: Number(sale.finalTotal ?? 0),
+    dueAmount: Number(sale.dueAmount ?? 0),
+    paidAmount: Number(totalPaid),
+    change: Number(change),
+    paymentStatus: sale.paymentStatus,
+    note: sale.note,
+    payments: payments.map((p) => ({
+      id: p.id,
+      method: p.method,
+      amount: Number(p.amount),
+      tendered: p.tendered != null ? Number(p.tendered) : null,
+      reference: p.reference,
+      paymentDate: p.paymentDate,
+    })),
+  };
+}
+
 export async function createSale(data: CreateSalePayload) {
   const { customerId, items, discount, vatPercent, payments, saleDate } = data;
 
-  return db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     // 1. Validate customer.
     await customerValidation(tx, customerId);
 
@@ -454,6 +594,12 @@ export async function createSale(data: CreateSalePayload) {
       dueAmount,
     };
   });
+
+  const receipt = await getSaleReceipt(result.sale.id);
+  return {
+    ...result,
+    receipt,
+  };
 }
 async function applySaleRefund(
   tx: DbTransaction,
