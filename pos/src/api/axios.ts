@@ -25,7 +25,16 @@ const WEBSITE_URL =
 
 let accessToken: string | null = null;
 let activeBusinessId: number | null = null;
+let sessionUser: SessionUser | null = null;
 let bootstrapPromise: Promise<void> | null = null;
+
+export interface SessionUser {
+  id?: number | undefined;
+  fullName?: string | undefined;
+  email?: string | undefined;
+  roleSlug?: string | undefined;
+  roleName?: string | undefined;
+}
 
 export function getAccessToken(): string | null {
   return accessToken;
@@ -35,15 +44,38 @@ export function getActiveBusinessId(): number | null {
   return activeBusinessId;
 }
 
+export function getSessionUser(): SessionUser | null {
+  return sessionUser;
+}
+
 export function clearSession(): void {
   accessToken = null;
   activeBusinessId = null;
+  sessionUser = null;
   bootstrapPromise = null;
 }
 
-function redirectToSignIn(reason?: string): void {
+/**
+ * Signs the user out: best-effort backend call (revokes the refresh token
+ * family), clears the in-memory session, and returns to the website sign-in.
+ * Never throws — logout must succeed locally even if the network is down.
+ */
+export async function logout(): Promise<void> {
+  try {
+    await api.post("/auth/logout", null, { withCredentials: true });
+  } catch {
+    // Best-effort: the cookie will expire on its own if the call fails.
+  }
+  clearSession();
+  window.location.href = `${WEBSITE_URL}/sign-in`;
+}
+
+function redirectToSignIn(reason?: string): never {
   const query = reason ? `?pos_error=${encodeURIComponent(reason)}` : "";
   window.location.href = `${WEBSITE_URL}/sign-in${query}`;
+  // Reject instead of resolving: the app must not mount without a session
+  // (it would fire every store call unauthenticated and re-trigger redirects).
+  throw new Error(`session_redirect: ${reason ?? "unknown"}`);
 }
 
 async function loadSession(): Promise<void> {
@@ -62,28 +94,39 @@ async function loadSession(): Promise<void> {
   accessToken = res?.data?.accessToken ?? null;
   if (accessToken === null || res?.status !== 200) {
     redirectToSignIn(`refresh_failed_${res?.status ?? "network"}`);
-    return;
   }
 
-  // 2. Resolve the active business from the session's memberships. The
-  //    backend picks nothing for us; the POS defaults to the first business.
-  //    (A business switcher is future work.)
+  // 2. Resolve the active business and the signed-in user from the session's
+  //    memberships. The backend picks nothing for us; the POS defaults to the
+  //    first business. (A business switcher is future work.)
   try {
-    const me = await api.get<{ businesses?: { businessId: number }[] }>(
-      "/auth/me",
-    );
+    const me = await api.get<{
+      user?: { id?: number; fullName?: string; email?: string };
+      businesses?: {
+        businessId: number;
+        roleSlug?: string;
+        roleName?: string;
+      }[];
+    }>("/auth/me");
     const first = me.data.businesses?.[0];
     activeBusinessId = first?.businessId ?? null;
+    sessionUser = {
+      id: me.data.user?.id,
+      fullName: me.data.user?.fullName,
+      email: me.data.user?.email,
+      roleSlug: first?.roleSlug,
+      roleName: first?.roleName,
+    };
   } catch (err) {
     const status = axios.isAxiosError(err) ? err.response?.status : "network";
     redirectToSignIn(`me_failed_${status}`);
-    return;
   }
 
   // 3. Signed in but no business yet — the website dashboard is where
   //    businesses are created.
   if (activeBusinessId === null) {
     window.location.href = `${WEBSITE_URL}/dashboard`;
+    throw new Error("session_redirect: no_active_business");
   }
 }
 

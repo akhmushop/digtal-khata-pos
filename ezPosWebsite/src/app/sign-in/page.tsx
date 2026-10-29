@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Container } from "@/components/ui/container";
 import { SignInForm } from "@/components/forms/sign-in-form";
+import { PosSessionAlert } from "@/components/forms/pos-session-alert";
 
 export const metadata: Metadata = {
   title: "Sign in",
@@ -20,6 +22,10 @@ export default function SignInPage() {
           <p className="mt-2 text-sm text-slate-600">
             Sign in to open your ezPos workspace.
           </p>
+
+          <Suspense fallback={null}>
+            <PosSessionAlert />
+          </Suspense>
 
           <div className="mt-6">
             <SignInForm />
