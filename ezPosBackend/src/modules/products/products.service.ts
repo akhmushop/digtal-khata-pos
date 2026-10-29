@@ -379,6 +379,8 @@ async function setQuantity(id: number, quantity: number) {
   throw new BadRequestError(
     "Legacy product quantity endpoints are not supported with variant-based inventory. Use the stock adjustment flow instead.",
   );
+async function setQuantity(_id: number, _quantity: number) {
+  return;
 }
 export async function decrementQuantity(id: number, currentQuantity: number) {
   return setQuantity(id, currentQuantity - 1);
@@ -416,6 +418,10 @@ export async function updateStock(
   void newStock;
   void status;
   return setQuantity(id, 0);
+  return db
+    .update(products)
+    .set({ status: status })
+    .where(eq(products.id, id));
 }
 async function getProductById(id: number) {
   const [product] = await db.select().from(products).where(eq(products.id, id));

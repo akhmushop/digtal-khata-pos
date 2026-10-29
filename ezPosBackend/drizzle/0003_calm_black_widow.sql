@@ -1,2 +1,0 @@
-CREATE SEQUENCE "public"."product_sku_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1;--> statement-breakpoint
-ALTER TABLE "product_variants" ALTER COLUMN "sku" SET NOT NULL;

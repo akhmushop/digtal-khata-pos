@@ -29,6 +29,20 @@ import { variantValues } from "./variantValues.js";
 import { inventoryStock } from "./inventoryStock.js";
 import { inventoryMovements } from "./inventoryMovements.js";
 import { purchasePayments } from "./purchasePayments.js";
+import { users } from "./users.js";
+import { businesses } from "./businesses.js";
+import { businessMemberships } from "./businessMemberships.js";
+import { permissions } from "./permissions.js";
+import { roles } from "./roles.js";
+import { rolePermissions } from "./rolePermissions.js";
+import { subscriptionPlans } from "./subscriptionPlans.js";
+import { subscriptions } from "./subscriptions.js";
+import { subscriptionPayments } from "./subscriptionPayments.js";
+import { refreshTokens } from "./refreshTokens.js";
+import { emailVerificationTokens } from "./emailVerificationTokens.js";
+import { passwordResetTokens } from "./passwordResetTokens.js";
+import { businessInvitations } from "./businessInvitations.js";
+import { documentSequences } from "./documentSequences.js";
 
 export const saleRefundsRelations = relations(saleRefunds, ({ one, many }) => ({
   sale: one(sales, {
@@ -292,6 +306,164 @@ export const purchasePaymentsRelations = relations(
     purchase: one(purchases, {
       fields: [purchasePayments.purchaseId],
       references: [purchases.id],
+    }),
+  }),
+);
+
+export const usersRelations = relations(users, ({ many }) => ({
+  createdBusinesses: many(businesses),
+  businessMemberships: many(businessMemberships),
+  refreshTokens: many(refreshTokens),
+  emailVerificationTokens: many(emailVerificationTokens),
+  passwordResetTokens: many(passwordResetTokens),
+  sentInvitations: many(businessInvitations),
+}));
+
+export const businessesRelations = relations(businesses, ({ one, many }) => ({
+  createdByUser: one(users, {
+    fields: [businesses.createdByUserId],
+    references: [users.id],
+  }),
+  memberships: many(businessMemberships),
+  roles: many(roles),
+  subscriptions: many(subscriptions),
+  invitations: many(businessInvitations),
+  documentSequences: many(documentSequences),
+}));
+
+export const permissionsRelations = relations(permissions, ({ many }) => ({
+  rolePermissions: many(rolePermissions),
+}));
+
+export const rolesRelations = relations(roles, ({ one, many }) => ({
+  business: one(businesses, {
+    fields: [roles.businessId],
+    references: [businesses.id],
+  }),
+  clonedFromRole: one(roles, {
+    fields: [roles.clonedFromRoleId],
+    references: [roles.id],
+  }),
+  rolePermissions: many(rolePermissions),
+  memberships: many(businessMemberships),
+  invitations: many(businessInvitations),
+}));
+
+export const rolePermissionsRelations = relations(
+  rolePermissions,
+  ({ one }) => ({
+    role: one(roles, {
+      fields: [rolePermissions.roleId],
+      references: [roles.id],
+    }),
+    permission: one(permissions, {
+      fields: [rolePermissions.permissionId],
+      references: [permissions.id],
+    }),
+  }),
+);
+
+export const businessMembershipsRelations = relations(
+  businessMemberships,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [businessMemberships.userId],
+      references: [users.id],
+    }),
+    business: one(businesses, {
+      fields: [businessMemberships.businessId],
+      references: [businesses.id],
+    }),
+    role: one(roles, {
+      fields: [businessMemberships.roleId],
+      references: [roles.id],
+    }),
+  }),
+);
+
+export const subscriptionPlansRelations = relations(
+  subscriptionPlans,
+  ({ many }) => ({
+    subscriptions: many(subscriptions),
+  }),
+);
+
+export const subscriptionsRelations = relations(
+  subscriptions,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [subscriptions.businessId],
+      references: [businesses.id],
+    }),
+    plan: one(subscriptionPlans, {
+      fields: [subscriptions.planId],
+      references: [subscriptionPlans.id],
+    }),
+    payments: many(subscriptionPayments),
+  }),
+);
+
+export const subscriptionPaymentsRelations = relations(
+  subscriptionPayments,
+  ({ one }) => ({
+    subscription: one(subscriptions, {
+      fields: [subscriptionPayments.subscriptionId],
+      references: [subscriptions.id],
+    }),
+  }),
+);
+
+export const refreshTokensRelations = relations(refreshTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [refreshTokens.userId],
+    references: [users.id],
+  }),
+}));
+
+export const emailVerificationTokensRelations = relations(
+  emailVerificationTokens,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [emailVerificationTokens.userId],
+      references: [users.id],
+    }),
+  }),
+);
+
+export const passwordResetTokensRelations = relations(
+  passwordResetTokens,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [passwordResetTokens.userId],
+      references: [users.id],
+    }),
+  }),
+);
+
+export const businessInvitationsRelations = relations(
+  businessInvitations,
+  ({ one }) => ({
+    business: one(businesses, {
+      fields: [businessInvitations.businessId],
+      references: [businesses.id],
+    }),
+    role: one(roles, {
+      fields: [businessInvitations.roleId],
+      references: [roles.id],
+    }),
+    invitedByUser: one(users, {
+      fields: [businessInvitations.invitedByUserId],
+      references: [users.id],
+    }),
+  }),
+);
+
+export const documentSequencesRelations = relations(
+  documentSequences,
+  ({ one }) => ({
+    business: one(businesses, {
+      fields: [documentSequences.businessId],
+      references: [businesses.id],
     }),
   }),
 );
