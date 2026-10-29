@@ -1,25 +1,30 @@
-import { eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { customers } from "../../db/schema/customers.js";
 import { db } from "../../db/schema/index.js";
 import { salePayments } from "../../db/schema/salePayments.js";
 import { sales } from "../../db/schema/sales.js";
 
-export async function getCustomers() {
-  const allCustomers = db.select().from(customers);
-  return allCustomers;
+// Every function takes the caller's server-verified businessId (from
+// requireBusinessContext) and scopes all reads and writes to it.
+export async function getCustomers(businessId: number) {
+  return db
+    .select()
+    .from(customers)
+    .where(eq(customers.businessId, businessId));
 }
 export async function createCustomer(
+  businessId: number,
   name: string,
   phone: string,
   address: string,
 ) {
   const [customer] = await db
     .insert(customers)
-    .values({ name, phone, address })
+    .values({ businessId, name, phone, address })
     .returning();
   return customer;
 }
-export async function getCustomerDueSummary() {
+export async function getCustomerDueSummary(businessId: number) {
   const paymentSummaryCte = db.$with("payment_summary").as(
     db
       .select({
@@ -29,6 +34,7 @@ export async function getCustomerDueSummary() {
         ),
       })
       .from(salePayments)
+      .where(eq(salePayments.businessId, businessId))
       .groupBy(salePayments.saleId),
   );
   return db
@@ -48,9 +54,17 @@ export async function getCustomerDueSummary() {
       ),
     })
     .from(customers)
-    .innerJoin(sales, eq(sales.customerId, customers.id))
+    .innerJoin(
+      sales,
+      and(eq(sales.customerId, customers.id), eq(sales.businessId, businessId)),
+    )
     .leftJoin(paymentSummaryCte, eq(paymentSummaryCte.saleId, sales.id))
-    .where(inArray(sales.paymentStatus, ["unpaid", "partial"]))
+    .where(
+      and(
+        eq(customers.businessId, businessId),
+        inArray(sales.paymentStatus, ["unpaid", "partial"]),
+      ),
+    )
     .groupBy(customers.id)
     .having(
       sql`COALESCE(SUM(${sales.finalTotal} - COALESCE(${paymentSummaryCte.totalPaid}, 0)),0) > 0`,

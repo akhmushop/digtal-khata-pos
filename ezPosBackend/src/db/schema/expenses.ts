@@ -1,6 +1,7 @@
 import {
   pgTable,
   foreignKey,
+  index,
   serial,
   integer,
   text,
@@ -8,15 +9,20 @@ import {
   varchar,
   numeric,
   date,
+  unique,
   check,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { expenseCategories } from "./expenseCategories.js";
+import { businesses } from "./businesses.js";
 
 export const expenses = pgTable(
   "expenses",
   {
     id: serial().primaryKey().notNull(),
+    businessId: integer("business_id")
+      .notNull()
+      .references(() => businesses.id),
     title: varchar({ length: 255 }).notNull(),
     amount: numeric({ precision: 10, scale: 2, mode: "number" }).notNull(),
     categoryId: integer("category_id"),
@@ -32,10 +38,11 @@ export const expenses = pgTable(
     ),
   },
   (table) => [
+    index("expenses_business_id_idx").on(table.businessId),
     foreignKey({
-      columns: [table.categoryId],
-      foreignColumns: [expenseCategories.id],
-      name: "expenses_category_id_fkey",
+      columns: [table.categoryId, table.businessId],
+      foreignColumns: [expenseCategories.id, expenseCategories.businessId],
+      name: "expenses_category_business_fkey",
     }),
     check("expenses_amount_check", sql`amount >= (0)::numeric`),
     check(

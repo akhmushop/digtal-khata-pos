@@ -28,6 +28,13 @@ export class ConflictError extends Error {
     this.name = "ConflictsError";
   }
 }
+//5. for missing or invalid authentication (HTTP 401)
+export class UnauthorizedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UnauthorizedError";
+  }
+}
 export function handleError(res: Response, err: unknown) {
   console.error(err);
   if (err instanceof BadRequestError) {
