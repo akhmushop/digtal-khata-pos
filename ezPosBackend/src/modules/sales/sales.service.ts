@@ -52,6 +52,21 @@ import { inventoryMovements } from "../../db/schema/inventoryMovements.js";
 import type { DbTransaction } from "../purchases/purchase.types.js";
 import { inventoryBatches } from "../../db/schema/inventoryBatches.js";
 import { serialNumbers } from "../../db/schema/serialNumbers.js";
+
+function isDuplicatePaymentReferenceError(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+
+  const cause = "cause" in error ? error.cause : error;
+  return (
+    typeof cause === "object" &&
+    cause !== null &&
+    "code" in cause &&
+    cause.code === "23505" &&
+    "constraint" in cause &&
+    cause.constraint === "sale_payments_method_reference_unique"
+  );
+}
+
 export async function getSalesData() {
   const rows = await db
     .select({
@@ -565,25 +580,34 @@ export async function createSale(data: CreateSalePayload) {
     );
 
     if (receivedPayments.length > 0) {
-      await tx.insert(salePayments).values(
-        receivedPayments.map((payment) => {
-          if (payment.amount === undefined) {
-            throw new NotFoundError("payment amount not found");
-          }
-          return {
-            saleId,
-            customerId,
-            amount: payment.amount,
-            paymentMethod: payment.method,
-            reference:
-              payment.method === "cash"
-                ? null
-                : payment.reference?.trim() || null,
-            tendered:
-              payment.method === "cash" ? (payment.tendered ?? null) : null,
-          };
-        }),
-      );
+      try {
+        await tx.insert(salePayments).values(
+          receivedPayments.map((payment) => {
+            if (payment.amount === undefined) {
+              throw new NotFoundError("payment amount not found");
+            }
+            return {
+              saleId,
+              customerId,
+              amount: payment.amount,
+              paymentMethod: payment.method,
+              reference:
+                payment.method === "cash"
+                  ? null
+                  : payment.reference?.trim() || null,
+              tendered:
+                payment.method === "cash" ? (payment.tendered ?? null) : null,
+            };
+          }),
+        );
+      } catch (error: unknown) {
+        if (isDuplicatePaymentReferenceError(error)) {
+          throw new ConflictError(
+            "This transaction reference has already been used for this payment method.",
+          );
+        }
+        throw error;
+      }
     }
     // 11. Return receipt data; transaction commits on success.
     console.log(dueAmount);

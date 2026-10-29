@@ -36,6 +36,7 @@ function createColumns(
   onViewSale: (id: number) => void,
   onRefundSale: (sale: AllSoldProduct) => void,
   busySaleId: number | null,
+  onPrintSale: (saleId: number) => Promise<void>,
 ): ColumnDef<DataTableFeatures, AllSoldProduct>[] {
   return [
     {
@@ -43,7 +44,9 @@ function createColumns(
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Invoice" />
       ),
-      cell: ({ row }) => <span className="font-medium">{row.original.invoiceNumber}</span>,
+      cell: ({ row }) => (
+        <span className="font-medium">{row.original.invoiceNumber}</span>
+      ),
     },
     {
       accessorKey: "createdAt",
@@ -113,7 +116,11 @@ function createColumns(
           : someReturned
             ? "Partial return"
             : row.original.paymentStatus;
-        return <Badge variant={allReturned ? "destructive" : "outline"}>{status}</Badge>;
+        return (
+          <Badge variant={allReturned ? "destructive" : "outline"}>
+            {status}
+          </Badge>
+        );
       },
     },
     {
@@ -168,12 +175,14 @@ export function SalesDataTable({
   onViewSale,
   onRefundSale,
   busySaleId,
+  onPrintSale,
 }: {
   data: AllSoldProduct[];
   loading: boolean;
   onViewSale: (id: number) => void;
   onRefundSale: (sale: AllSoldProduct) => void;
   busySaleId: number | null;
+  onPrintSale: (saleId: number) => Promise<void>;
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -223,7 +232,10 @@ export function SalesDataTable({
           <TableBody>
             {table.getRowModel().rows.length > 0 ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
@@ -240,7 +252,10 @@ export function SalesDataTable({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
                   {loading ? "Loading sales..." : "No sales found."}
                 </TableCell>
               </TableRow>
