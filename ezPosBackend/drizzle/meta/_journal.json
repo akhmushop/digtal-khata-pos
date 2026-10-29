@@ -5,71 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1786294517027,
-      "tag": "0000_silly_mattie_franklin",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1787161890551,
-      "tag": "0001_burly_longshot",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1787551068972,
-      "tag": "0002_sticky_imperial_guard",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1787636566956,
-      "tag": "0003_calm_black_widow",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1790133912544,
-      "tag": "0004_gorgeous_sprite",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1790151211221,
-      "tag": "0005_past_groot",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1790598604043,
-      "tag": "0006_grey_terror",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1791727836055,
-      "tag": "0007_faulty_joseph",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1793160601225,
-      "tag": "0008_seed_expense_categories",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1793271351426,
-      "tag": "0009_tiny_bastion",
+      "when": 1793277229546,
+      "tag": "0000_fine_shadow_king",
       "breakpoints": true
     }
   ]
