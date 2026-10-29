@@ -31,6 +31,9 @@ const router = createBrowserRouter([
       {
         path: "/due-management",
         element: <DueManagementPage />,
+        
+      },
+      {
         path: "/reports",
         element: <ReportsHub />,
       },
