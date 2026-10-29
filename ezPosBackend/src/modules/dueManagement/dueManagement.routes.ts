@@ -4,8 +4,12 @@ import * as dueManagementController from "./dueManagement.controller.js";
 const router = express.Router();
 
 router.get("/api/due-management/summary", dueManagementController.getDueManagementSummary);
+router.get("/api/due-management/trend", dueManagementController.getDueManagementTrend);
 router.get("/api/due-management/customers", dueManagementController.getCustomerDueRows);
+router.get("/api/due-management/customers/balances", dueManagementController.getCustomerDueBalances);
 router.get("/api/due-management/suppliers", dueManagementController.getSupplierDueRows);
+router.get("/api/due-management/sales/:saleId/payments", dueManagementController.getSalePaymentHistory);
+router.get("/api/due-management/purchases/:purchaseId/payments", dueManagementController.getPurchasePaymentHistory);
 router.post("/api/due-management/customer-payment", dueManagementController.recordCustomerPayment);
 router.post("/api/due-management/supplier-payment", dueManagementController.recordSupplierPayment);
 router.get("/api/due-management/customer-ledger/:customerId", dueManagementController.getCustomerLedger);
