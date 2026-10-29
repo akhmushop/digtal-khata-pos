@@ -370,7 +370,8 @@ export async function getPaymentMethodReport(businessId: number, params: DateRan
       COUNT(*)::int AS "paymentCount",
       COALESCE(SUM(sp.amount), 0)::numeric AS "totalAmount"
     FROM sale_payments sp
-    WHERE sp.payment_date >= ${start}::timestamp 
+    WHERE sp.business_id = ${businessId}
+      AND sp.payment_date >= ${start}::timestamp
       AND sp.payment_date <= ${end}::timestamp
     GROUP BY sp.payment_method
     ORDER BY "totalAmount" DESC
@@ -484,7 +485,8 @@ export async function getExpenseReport(businessId: number, params: DateRangeQuer
   const countQuery = await db.execute(sql`
     SELECT COUNT(e.id)::int AS total
     FROM expenses e
-    WHERE e.expense_date >= ${startDateOnly}::date 
+    WHERE e.business_id = ${businessId}
+      AND e.expense_date >= ${startDateOnly}::date
       AND e.expense_date <= ${endDateOnly}::date
   `);
 
@@ -500,7 +502,8 @@ export async function getExpenseReport(businessId: number, params: DateRangeQuer
       e.note
     FROM expenses e
     LEFT JOIN expense_categories ec ON ec.id = e.category_id
-    WHERE e.expense_date >= ${startDateOnly}::date 
+    WHERE e.business_id = ${businessId}
+      AND e.expense_date >= ${startDateOnly}::date
       AND e.expense_date <= ${endDateOnly}::date
     ORDER BY e.expense_date DESC, e.id DESC
     LIMIT ${limit} OFFSET ${offset}
@@ -513,7 +516,8 @@ export async function getExpenseReport(businessId: number, params: DateRangeQuer
       COALESCE(SUM(e.amount), 0)::numeric AS "totalAmount"
     FROM expenses e
     LEFT JOIN expense_categories ec ON ec.id = e.category_id
-    WHERE e.expense_date >= ${startDateOnly}::date 
+    WHERE e.business_id = ${businessId}
+      AND e.expense_date >= ${startDateOnly}::date
       AND e.expense_date <= ${endDateOnly}::date
     GROUP BY ec.category_name
     ORDER BY "totalAmount" DESC
@@ -524,7 +528,8 @@ export async function getExpenseReport(businessId: number, params: DateRangeQuer
       COUNT(e.id)::int AS "totalCount",
       COALESCE(SUM(e.amount), 0)::numeric AS "grandTotal"
     FROM expenses e
-    WHERE e.expense_date >= ${startDateOnly}::date 
+    WHERE e.business_id = ${businessId}
+      AND e.expense_date >= ${startDateOnly}::date
       AND e.expense_date <= ${endDateOnly}::date
   `);
 
@@ -663,7 +668,8 @@ export async function getStockMovementReport(businessId: number, params: DateRan
   const countQuery = await db.execute(sql`
     SELECT COUNT(im.id)::int AS total
     FROM inventory_movements im
-    WHERE im.created_at >= ${start}::timestamp 
+    WHERE im.business_id = ${businessId}
+      AND im.created_at >= ${start}::timestamp
       AND im.created_at <= ${end}::timestamp
   `);
 
@@ -680,7 +686,8 @@ export async function getStockMovementReport(businessId: number, params: DateRan
     FROM inventory_movements im
     INNER JOIN product_variants pv ON pv.id = im.variant_id
     INNER JOIN products p ON p.id = pv.product_id
-    WHERE im.created_at >= ${start}::timestamp 
+    WHERE im.business_id = ${businessId}
+      AND im.created_at >= ${start}::timestamp
       AND im.created_at <= ${end}::timestamp
     ORDER BY im.created_at DESC
     LIMIT ${limit} OFFSET ${offset}
@@ -753,7 +760,8 @@ export async function getPurchaseSummaryReport(businessId: number, params: DateR
   const countQuery = await db.execute(sql`
     SELECT COUNT(p.id)::int AS total
     FROM purchases p
-    WHERE p.created_at >= ${start}::timestamp 
+    WHERE p.business_id = ${businessId}
+      AND p.created_at >= ${start}::timestamp
       AND p.created_at <= ${end}::timestamp
       ${params.supplierId ? sql`AND p.supplier_id = ${params.supplierId}` : sql``}
   `);
@@ -772,7 +780,8 @@ export async function getPurchaseSummaryReport(businessId: number, params: DateR
       p.payment_status AS "paymentStatus"
     FROM purchases p
     LEFT JOIN suppliers s ON s.id = p.supplier_id
-    WHERE p.created_at >= ${start}::timestamp 
+    WHERE p.business_id = ${businessId}
+      AND p.created_at >= ${start}::timestamp
       AND p.created_at <= ${end}::timestamp
       ${params.supplierId ? sql`AND p.supplier_id = ${params.supplierId}` : sql``}
     ORDER BY p.created_at DESC
@@ -786,7 +795,8 @@ export async function getPurchaseSummaryReport(businessId: number, params: DateR
       COALESCE(SUM(p.paid_amount), 0)::numeric AS "grandPaidAmount",
       COALESCE(SUM(p.due_amount), 0)::numeric AS "grandDueAmount"
     FROM purchases p
-    WHERE p.created_at >= ${start}::timestamp 
+    WHERE p.business_id = ${businessId}
+      AND p.created_at >= ${start}::timestamp
       AND p.created_at <= ${end}::timestamp
       ${params.supplierId ? sql`AND p.supplier_id = ${params.supplierId}` : sql``}
   `);
@@ -813,7 +823,9 @@ export async function getSupplierPayablesReport(businessId: number) {
       COALESCE(SUM(p.due_amount), 0)::numeric AS "outstandingDue"
     FROM suppliers s
     INNER JOIN purchases p ON p.supplier_id = s.id
-    WHERE p.payment_status IN ('unpaid', 'partial')
+    WHERE s.business_id = ${businessId}
+      AND p.business_id = ${businessId}
+      AND p.payment_status IN ('unpaid', 'partial')
     GROUP BY s.id, s.name, s.phone, s.email
     HAVING SUM(p.due_amount) > 0
     ORDER BY "outstandingDue" DESC
@@ -825,7 +837,9 @@ export async function getSupplierPayablesReport(businessId: number) {
       COALESCE(SUM(p.due_amount), 0)::numeric AS "totalPayable"
     FROM suppliers s
     INNER JOIN purchases p ON p.supplier_id = s.id
-    WHERE p.payment_status IN ('unpaid', 'partial')
+    WHERE s.business_id = ${businessId}
+      AND p.business_id = ${businessId}
+      AND p.payment_status IN ('unpaid', 'partial')
   `);
 
   return {

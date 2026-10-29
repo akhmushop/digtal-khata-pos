@@ -18,6 +18,9 @@ import { inventoryStock } from "../../db/schema/inventoryStock.js";
 import { inventoryBatches } from "../../db/schema/inventoryBatches.js";
 import { inventoryMovements } from "../../db/schema/inventoryMovements.js";
 import { serialNumbers } from "../../db/schema/serialNumbers.js";
+import { categories } from "../../db/schema/categories.js";
+import { brands } from "../../db/schema/brands.js";
+import { units } from "../../db/schema/units.js";
 import {
   BadRequestError,
   ConflictError,
@@ -487,6 +490,48 @@ export async function patchProduct(
   const { businessId: _ignored, ...safeUpdates } = updates as Partial<ProductsTypes> & {
     businessId?: number;
   };
+  // Reference columns are plain FKs (no composite tenant constraint), so each
+  // supplied reference must be verified against the caller's business here —
+  // otherwise a patch could point this product at another business's rows.
+  if (safeUpdates.categoryId != null) {
+    const [category] = await db
+      .select({ id: categories.id })
+      .from(categories)
+      .where(
+        and(
+          eq(categories.id, safeUpdates.categoryId),
+          eq(categories.businessId, businessId),
+        ),
+      )
+      .limit(1);
+    if (!category) throw new NotFoundError("Category does not exist");
+  }
+  if (safeUpdates.brandId != null) {
+    const [brand] = await db
+      .select({ id: brands.id })
+      .from(brands)
+      .where(
+        and(
+          eq(brands.id, safeUpdates.brandId),
+          eq(brands.businessId, businessId),
+        ),
+      )
+      .limit(1);
+    if (!brand) throw new NotFoundError("Brand does not exist");
+  }
+  if (safeUpdates.unitId != null) {
+    const [unit] = await db
+      .select({ id: units.id })
+      .from(units)
+      .where(
+        and(
+          eq(units.id, safeUpdates.unitId),
+          eq(units.businessId, businessId),
+        ),
+      )
+      .limit(1);
+    if (!unit) throw new NotFoundError("Unit does not exist");
+  }
   return db
     .update(products)
     .set(safeUpdates)

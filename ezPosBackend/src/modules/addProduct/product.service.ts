@@ -782,6 +782,24 @@ export async function createCategory(
   businessId: number,
   data: AddCategorySchemaType,
 ) {
+  // categories.parentId is a plain self-FK, so the parent's ownership must be
+  // verified here — otherwise a category could be nested under another
+  // business's category. Same rule updateCategory enforces for ancestors.
+  if (data.parentCategoryId !== null && data.parentCategoryId !== undefined) {
+    const [parent] = await db
+      .select({ id: categories.id })
+      .from(categories)
+      .where(
+        and(
+          eq(categories.id, data.parentCategoryId),
+          eq(categories.businessId, businessId),
+        ),
+      )
+      .limit(1);
+    if (!parent) {
+      throw new NotFoundError("Parent category does not exist");
+    }
+  }
   const [category] = await db
     .insert(categories)
     .values({

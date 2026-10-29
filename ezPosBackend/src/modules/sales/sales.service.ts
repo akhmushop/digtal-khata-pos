@@ -614,6 +614,32 @@ export async function createSale(businessId: number, data: CreateSalePayload) {
         })
         .returning({ id: saleItems.id });
       if (!saleItem) throw new Error("Failed to create sale item.");
+
+      // Link the serials consumed for this line to the sale item. Refunds
+      // key off serial_numbers.sale_item_id, so leaving it NULL would make
+      // serial-tracked stock unsellable after the first sale. The WHERE
+      // guards re-assert the business/variant ownership of the rows; a row
+      // count mismatch aborts the transaction (full rollback).
+      if (item.trackingType === "serial" && cost.serialIds?.length) {
+        const linkedSerials = await tx
+          .update(serialNumbers)
+          .set({ saleItemId: saleItem.id })
+          .where(
+            and(
+              inArray(serialNumbers.id, cost.serialIds),
+              eq(serialNumbers.businessId, businessId),
+              eq(serialNumbers.variantId, item.variantId),
+              eq(serialNumbers.status, "sold"),
+            ),
+          )
+          .returning({ id: serialNumbers.id });
+        if (linkedSerials.length !== cost.serialIds.length) {
+          throw new Error(
+            `Failed to link serial numbers for variant ${item.variantId}.`,
+          );
+        }
+      }
+
       const updatedRows = await tx
         .update(inventoryStock)
         .set({

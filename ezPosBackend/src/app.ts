@@ -73,14 +73,19 @@ export function buildApp() {
       return res.status(403).json({ success: false, message: err.message });
     }
 
-    // Fallback for standard Errors or unknown issues
-    if (err instanceof Error) {
-      return res.status(500).json({ success: false, message: err.message });
+    // Malformed JSON bodies surface as SyntaxError from express.json().
+    if (err instanceof SyntaxError && "body" in err) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid JSON body." });
     }
 
+    // Fallback for standard Errors or unknown issues. Never return err.message
+    // here — it can contain SQL fragments, driver messages, or internal paths.
+    // Detailed errors stay in the server log above only.
     return res
       .status(500)
-      .json({ success: false, message: "An unknown server error occurred." });
+      .json({ success: false, message: "An unexpected server error occurred." });
   });
 
   return app;

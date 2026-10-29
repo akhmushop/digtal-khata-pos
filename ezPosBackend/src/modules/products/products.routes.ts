@@ -54,6 +54,6 @@ router.post(
 router.patch(
   "/api/products/updated_product/:id",
   ...write,
-  productsController.duplicateProduct,
+  productsController.patchProduct,
 );
 export default router;
