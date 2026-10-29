@@ -6,7 +6,7 @@ import {
   type SortingState,
   useTable,
 } from "@tanstack/react-table";
-import { Eye, RotateCcw } from "lucide-react";
+import { Eye, RotateCcw, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -122,6 +122,17 @@ function createColumns(
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => (
         <div className="flex justify-end gap-2">
+          {onPrintSale && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPrintSale(row.original.id)}
+              title="Print receipt"
+            >
+              <Printer className="size-4" />
+              Receipt
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -170,8 +181,8 @@ export function SalesDataTable({
     useState<ColumnVisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
   const columns = useMemo(
-    () => createColumns(onViewSale, onRefundSale, busySaleId),
-    [busySaleId, onRefundSale, onViewSale],
+    () => createColumns(onViewSale, onRefundSale, busySaleId, onPrintSale),
+    [busySaleId, onRefundSale, onViewSale, onPrintSale],
   );
   const table = useTable({
     features,

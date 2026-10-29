@@ -3,6 +3,7 @@ import {
   CalendarDays,
   Package,
   ReceiptText,
+  Printer,
   RefreshCw,
   RotateCcw,
   Search,
@@ -47,6 +48,9 @@ import type {
   SalesStoreType,
 } from "../types/sales.types.js";
 import { SalesDataTable } from "../components/sales/SalesDataTable.js";
+import { getSaleReceiptApi } from "../sales.api.js";
+import type { SaleReceiptData } from "../types/receipt.types.js";
+import { ReceiptPrintDialog } from "../components/receipt/ReceiptPrintDialog.js";
 
 const DATE_RANGES = ["all", "today", "7-days", "30-days"] as const;
 type DateRange = (typeof DATE_RANGES)[number];
@@ -191,6 +195,23 @@ export function Sales() {
   >(null);
   const [refundNotes, setRefundNotes] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
+  const [activeReceipt, setActiveReceipt] = useState<SaleReceiptData | null>(null);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [isFetchingReceipt, setIsFetchingReceipt] = useState(false);
+
+  const handlePrintReceipt = async (saleId: number) => {
+    try {
+      setIsFetchingReceipt(true);
+      const receipt = await getSaleReceiptApi(saleId);
+      setActiveReceipt(receipt);
+      setIsReceiptModalOpen(true);
+    } catch (err) {
+      console.error("Failed to fetch receipt:", err);
+      setActionError(getErrorMessage(err));
+    } finally {
+      setIsFetchingReceipt(false);
+    }
+  };
 
   const allSales = useMemo(() => summarizeSales(sales), [sales]);
   const visibleSales = useMemo(() => {
@@ -387,6 +408,7 @@ export function Sales() {
             onViewSale={setSelectedSaleId}
             onRefundSale={openSaleRefund}
             busySaleId={busySaleId}
+            onPrintSale={handlePrintReceipt}
           />
         </CardContent>
       </Card>
@@ -490,7 +512,16 @@ export function Sales() {
                   </TableBody>
                 </Table>
               </div>
-              <div className="flex justify-end">
+              <div className="flex justify-between items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handlePrintReceipt(selectedSale.id)}
+                  disabled={isFetchingReceipt}
+                >
+                  <Printer className="size-4" />
+                  {isFetchingReceipt ? "Loading..." : "Print Receipt"}
+                </Button>
                 <Button
                   variant="destructive"
                   disabled={
@@ -615,6 +646,11 @@ export function Sales() {
           )}
         </DialogContent>
       </Dialog>
+      <ReceiptPrintDialog
+        receipt={activeReceipt}
+        open={isReceiptModalOpen}
+        onOpenChange={setIsReceiptModalOpen}
+      />
     </main>
   );
 }
