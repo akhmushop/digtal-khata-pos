@@ -1,12 +1,4 @@
-import {
-  and,
-  asc,
-  eq,
-  getTableColumns,
-  gt,
-  inArray,
-  sql,
-} from "drizzle-orm";
+import { and, asc, eq, getTableColumns, gt, inArray, sql } from "drizzle-orm";
 import { db } from "../../db/schema/index.js";
 import { products } from "../../db/schema/products.js";
 import type { ProductsTypes } from "../../types/product-types.js";
@@ -64,7 +56,12 @@ export async function adjustVariantStock(
     const previousQuantity = stock.quantity ?? 0;
     const change = adjustment.newQuantity - previousQuantity;
     if (change === 0) {
-      return { variantId, previousQuantity, quantity: previousQuantity, change };
+      return {
+        variantId,
+        previousQuantity,
+        quantity: previousQuantity,
+        change,
+      };
     }
     if (
       change > 0 &&
@@ -87,10 +84,7 @@ export async function adjustVariantStock(
         "Serial numbers can only be adjusted for serial-tracked products.",
       );
     }
-    if (
-      trackingType === "serial" &&
-      serialList.length !== Math.abs(change)
-    ) {
+    if (trackingType === "serial" && serialList.length !== Math.abs(change)) {
       throw new BadRequestError(
         `Provide exactly ${Math.abs(change)} serial number(s) for this adjustment.`,
       );
@@ -196,15 +190,15 @@ export async function adjustVariantStock(
       }
     } else {
       let batchNumber =
-        adjustment.batchNumber?.trim() ||
-        `ADJ-${Date.now()}-${variantId}`;
+        adjustment.batchNumber?.trim() || `ADJ-${Date.now()}-${variantId}`;
       if (batchNumber.length > 100) {
-        throw new BadRequestError("Batch number must be 100 characters or fewer.");
+        throw new BadRequestError(
+          "Batch number must be 100 characters or fewer.",
+        );
       }
 
       const currentCostValue = batches.reduce(
-        (total, batch) =>
-          total + batch.purchasePrice * batch.quantityRemaining,
+        (total, batch) => total + batch.purchasePrice * batch.quantityRemaining,
         0,
       );
       const currentBatchQuantity = batches.reduce(
@@ -212,9 +206,7 @@ export async function adjustVariantStock(
         0,
       );
       const currentAverageCost =
-        currentBatchQuantity > 0
-          ? currentCostValue / currentBatchQuantity
-          : 0;
+        currentBatchQuantity > 0 ? currentCostValue / currentBatchQuantity : 0;
       const [createdBatch] = await tx
         .insert(inventoryBatches)
         .values({
@@ -228,7 +220,9 @@ export async function adjustVariantStock(
         .returning({ id: inventoryBatches.id });
 
       if (!createdBatch) {
-        throw new Error("Could not create an inventory batch for the adjustment.");
+        throw new Error(
+          "Could not create an inventory batch for the adjustment.",
+        );
       }
 
       if (trackingType === "serial") {
@@ -293,7 +287,10 @@ export async function adjustVariantStock(
       .set({ quantity: adjustment.newQuantity })
       .where(eq(inventoryStock.variantId, variantId))
       .returning({ quantity: inventoryStock.quantity });
-    if (updatedStock?.quantity === null || updatedStock?.quantity === undefined) {
+    if (
+      updatedStock?.quantity === null ||
+      updatedStock?.quantity === undefined
+    ) {
       throw new Error("Failed to update variant inventory.");
     }
 
@@ -369,8 +366,16 @@ export async function createProduct(product: ProductsTypes) {
   const [created] = await db.insert(products).values(product).returning();
   return created;
 }
-async function setQuantity(_id: number, _quantity: number) {
-  return;
+async function setQuantity(id: number, quantity: number) {
+  // Legacy single-column stock endpoints predate variant-based inventory.
+  // The products.quantity column no longer exists; stock now lives in
+  // inventory_stock per variant. Fail with a clear message instead of a
+  // cryptic query error.
+  void id;
+  void quantity;
+  throw new BadRequestError(
+    "Legacy product quantity endpoints are not supported with variant-based inventory. Use the stock adjustment flow instead.",
+  );
 }
 export async function decrementQuantity(id: number, currentQuantity: number) {
   return setQuantity(id, currentQuantity - 1);
@@ -405,6 +410,10 @@ export async function updateStock(
   newStock: number,
   status: string,
 ) {
+  void newStock;
+  void status;
+  return setQuantity(id, 0);
+  return db.update(products).set({ status: status }).where(eq(products.id, id));
   return db
     .update(products)
     .set({ status: status })
