@@ -12,6 +12,7 @@ import purchasesRouter from "./modules/purchases/purchases.routes.js";
 import purchasesReturnRouter from "./modules/purchaseReturn/purchaseReturn.routes.js";
 import addProductRouter from "./modules/addProduct/product.routes.js";
 import contactRouter from "./modules/contact/contact.routes.js";
+import reportsRouter from "./modules/reports/reports.routes.js";
 import cors from "cors";
 import {
   BadRequestError,
@@ -19,7 +20,7 @@ import {
   ForbiddenError,
   NotFoundError,
 } from "./utils/handleError.js";
-import { success } from "zod";
+
 const app = express();
 // middleware
 app.use(cors());
@@ -32,7 +33,9 @@ app.use("/", purchasesRouter);
 app.use("/", purchasesReturnRouter);
 app.use("/", addProductRouter);
 app.use("/", contactRouter);
-// routes
+app.use("/", reportsRouter);
+
+// error handling
 app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
   console.error(err);
 
@@ -61,6 +64,7 @@ app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
     .status(500)
     .json({ success: false, message: "An unknown server error occurred." });
 });
+
 const PORT = 3000;
 
 app.listen(PORT, () => console.log(`server is running on PORT ${PORT}`));

@@ -5,10 +5,12 @@ import {
   ShoppingCart,
   Tags,
   Users,
+  BarChart3,
 } from "lucide-react";
 import { GiExpense } from "react-icons/gi";
 import { MdOutlinePointOfSale } from "react-icons/md";
 import { FcSalesPerformance } from "react-icons/fc";
+
 export const navigation = [
   {
     title: "Dashboard",
@@ -19,6 +21,24 @@ export const navigation = [
     title: "POS",
     url: "/",
     icon: MdOutlinePointOfSale,
+  },
+  {
+    title: "Reports",
+    icon: BarChart3,
+    items: [
+      { title: "All Reports Hub", url: "/reports" },
+      { title: "Sales Summary", url: "/reports?tab=sales-summary" },
+      { title: "Sales by Invoice", url: "/reports?tab=sales-invoices" },
+      { title: "Product Sales", url: "/reports?tab=sales-products" },
+      { title: "Payment Breakdown", url: "/reports?tab=sales-payments" },
+      { title: "Gross Profit & Margins", url: "/reports?tab=profit" },
+      { title: "Expense Summary", url: "/reports?tab=expenses" },
+      { title: "Customer Receivables", url: "/reports?tab=receivables" },
+      { title: "Stock & Valuation", url: "/reports?tab=stock" },
+      { title: "Batch & Expiry", url: "/reports?tab=batch-expiry" },
+      { title: "Purchase Summary", url: "/reports?tab=purchases-summary" },
+      { title: "Supplier Payables", url: "/reports?tab=supplier-payables" },
+    ],
   },
   {
     title: "Products",
@@ -40,7 +60,6 @@ export const navigation = [
   },
   {
     title: "Contacts",
-
     icon: ContactRound,
     items: [
       { title: "Customers", url: "/customer" },
@@ -52,7 +71,6 @@ export const navigation = [
     url: "/expense",
     icon: GiExpense,
   },
-  ,
   {
     title: "Purchases",
     icon: Tags,

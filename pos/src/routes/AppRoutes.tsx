@@ -17,6 +17,7 @@ import { Units } from "@/features/products/pages/Units";
 import { Suppliers } from "@/features/Contacts/pages/Suppliers";
 import { VariantManager } from "@/features/products/pages/Variants";
 import { StockAdjustment } from "@/features/products/pages/StockAdjustment";
+import ReportsHub from "@/features/reports/pages/ReportsHub";
 
 const router = createBrowserRouter([
   {
@@ -26,6 +27,10 @@ const router = createBrowserRouter([
   {
     element: <AppLayout />,
     children: [
+      {
+        path: "/reports",
+        element: <ReportsHub />,
+      },
       {
         path: "/product",
         element: <Products />,
@@ -97,6 +102,7 @@ const router = createBrowserRouter([
     element: <ProductStockForm />,
   },
 ]);
+
 export default function AppRoutes() {
   return <RouterProvider router={router} />;
 }
