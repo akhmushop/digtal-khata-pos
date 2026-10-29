@@ -1,70 +1,12 @@
-import express, {
-  type NextFunction,
-  type Request,
-  type Response,
-} from "express";
-import { pool } from "./config/db.js";
-import productRouter from "./modules/products/products.routes.js";
-import salesRouter from "./modules/sales/sales.routes.js";
-import customersRouter from "./modules/customers/customers.routes.js";
-import expenseRouter from "./modules/expenses/expenses.routes.js";
-import purchasesRouter from "./modules/purchases/purchases.routes.js";
-import purchasesReturnRouter from "./modules/purchaseReturn/purchaseReturn.routes.js";
-import addProductRouter from "./modules/addProduct/product.routes.js";
-import contactRouter from "./modules/contact/contact.routes.js";
-import reportsRouter from "./modules/reports/reports.routes.js";
-import cors from "cors";
-import {
-  BadRequestError,
-  ConflictError,
-  ForbiddenError,
-  NotFoundError,
-} from "./utils/handleError.js";
+// Imported for its startup-validation side effects: fails fast with a clear
+// message when required configuration (e.g. AUTH_JWT_SECRET) is missing.
+import "./config/env.js";
+import { buildApp } from "./app.js";
 
-const app = express();
-// middleware
-app.use(cors());
-app.use(express.json());
-app.use("/", productRouter);
-app.use("/", salesRouter);
-app.use("/", customersRouter);
-app.use("/", expenseRouter);
-app.use("/", purchasesRouter);
-app.use("/", purchasesReturnRouter);
-app.use("/", addProductRouter);
-app.use("/", contactRouter);
-app.use("/", reportsRouter);
+const app = buildApp();
 
-// error handling
-app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
-  console.error(err);
-
-  if (err instanceof BadRequestError) {
-    return res.status(400).json({ success: false, message: err.message });
-  }
-
-  if (err instanceof NotFoundError) {
-    return res.status(404).json({ success: false, message: err.message });
-  }
-
-  if (err instanceof ConflictError) {
-    return res.status(409).json({ success: false, message: err.message });
-  }
-
-  if (err instanceof ForbiddenError) {
-    return res.status(403).json({ success: false, message: err.message });
-  }
-
-  // Fallback for standard Errors or unknown issues
-  if (err instanceof Error) {
-    return res.status(500).json({ success: false, message: err.message });
-  }
-
-  return res
-    .status(500)
-    .json({ success: false, message: "An unknown server error occurred." });
-});
-
-const PORT = 3000;
+// Configurable for local development so the website (3001), POS frontend,
+// and a second backend instance can run alongside the default port.
+const PORT = Number(process.env.PORT) || 3000;
 
 app.listen(PORT, () => console.log(`server is running on PORT ${PORT}`));

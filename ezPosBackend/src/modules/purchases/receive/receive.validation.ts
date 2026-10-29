@@ -28,12 +28,18 @@ export async function purchaseValidation(
     Record<string, never>,
     ExtractTablesWithRelations<Record<string, never>>
   >,
+  businessId: number,
   purchaseId: number,
 ) {
   const [purchase] = await tx
     .select()
     .from(purchases)
-    .where(eq(purchases.id, purchaseId))
+    .where(
+      and(
+        eq(purchases.id, purchaseId),
+        eq(purchases.businessId, businessId),
+      ),
+    )
     .for("update");
 
   if (!purchase) {
@@ -54,6 +60,7 @@ export async function purchaseItemsValidation(
     Record<string, never>,
     ExtractTablesWithRelations<Record<string, never>>
   >,
+  businessId: number,
   purchaseId: number,
   itemIds: number[],
 ) {
@@ -63,6 +70,7 @@ export async function purchaseItemsValidation(
     .where(
       and(
         eq(purchaseItems.purchaseId, purchaseId),
+        eq(purchaseItems.businessId, businessId),
         inArray(purchaseItems.id, itemIds),
       ),
     )

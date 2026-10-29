@@ -1,20 +1,26 @@
 import {
-  pgTable,
   foreignKey,
-  serial,
+  index,
   integer,
+  pgTable,
+  serial,
   text,
   timestamp,
+  unique,
   varchar,
   numeric,
 } from "drizzle-orm/pg-core";
 import { purchases } from "./purchases.js";
 import { suppliers } from "./suppliers.js";
+import { businesses } from "./businesses.js";
 
 export const purchaseReturns = pgTable(
   "purchase_returns",
   {
     id: serial().primaryKey().notNull(),
+    businessId: integer("business_id")
+      .notNull()
+      .references(() => businesses.id),
     purchaseId: integer("purchase_id").notNull(),
     supplierId: integer("supplier_id").notNull(),
     returnDate: timestamp("return_date", { mode: "string" })
@@ -32,15 +38,17 @@ export const purchaseReturns = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
+    index("purchase_returns_business_id_idx").on(table.businessId),
+    unique("purchase_returns_id_business_uq").on(table.id, table.businessId),
     foreignKey({
-      columns: [table.purchaseId],
-      foreignColumns: [purchases.id],
-      name: "purchase_returns_purchase_id_fkey",
+      columns: [table.purchaseId, table.businessId],
+      foreignColumns: [purchases.id, purchases.businessId],
+      name: "purchase_returns_purchase_business_fkey",
     }),
     foreignKey({
-      columns: [table.supplierId],
-      foreignColumns: [suppliers.id],
-      name: "purchase_returns_supplier_id_fkey",
+      columns: [table.supplierId, table.businessId],
+      foreignColumns: [suppliers.id, suppliers.businessId],
+      name: "purchase_returns_supplier_business_fkey",
     }),
   ],
 );

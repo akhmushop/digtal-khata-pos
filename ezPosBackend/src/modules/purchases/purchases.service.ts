@@ -1,11 +1,8 @@
-import { error } from "node:console";
 import { db } from "../../db/schema/index.js";
 import { purchaseItems } from "../../db/schema/purchaseItems.js";
 import { purchases } from "../../db/schema/purchases.js";
-import type { purchasesUpdateInput } from "./purchase.types.js";
-import { and, eq, getTableColumns, inArray, sql } from "drizzle-orm";
+import { and, eq, getTableColumns, inArray } from "drizzle-orm";
 import { products } from "../../db/schema/products.js";
-import type { ChangedItems } from "../../types/changedItems-types.js";
 import { NotFoundError } from "../../utils/handleError.js";
 import type { CreatePurchaseInput } from "./schemas/purchase.schema.js";
 import { suppliers } from "../../db/schema/suppliers.js";
@@ -13,10 +10,6 @@ import { productVariants } from "../../db/schema/productVariants.js";
 import { units } from "../../db/schema/units.js";
 import type { ReceiveItemsFormValues } from "./schemas/receiveItem.schema.js";
 import { inventoryStock } from "../../db/schema/inventoryStock.js";
-import { inventoryMovements } from "../../db/schema/inventoryMovements.js";
-import { inventoryBatches } from "../../db/schema/inventoryBatches.js";
-import { serialNumbers } from "../../db/schema/serialNumbers.js";
-import { purchasePayments } from "../../db/schema/purchasePayments.js";
 import {
   basicRequestValidation,
   batchValidation,
@@ -39,8 +32,18 @@ import {
   updatePurchase,
   updatePurchaseItems,
 } from "./receive/receive.service.js";
+import {
+  formatPurchaseOrderNumber,
+  nextDocumentNumber,
+} from "../../utils/documentSequence.js";
 
-export async function createPurchase(data: CreatePurchaseInput) {
+// Every function takes the caller's server-verified businessId (from
+// requireBusinessContext) and scopes all reads and writes to it.
+
+export async function createPurchase(
+  businessId: number,
+  data: CreatePurchaseInput,
+) {
   return db.transaction(async (tx) => {
     const {
       supplierId,
@@ -52,23 +55,33 @@ export async function createPurchase(data: CreatePurchaseInput) {
       shippingCost,
     } = data;
 
-    // 1. Validate Supplier
+    // 1. Validate Supplier (same business only)
     if (supplierId) {
       const supplier = await tx
         .select({ id: suppliers.id })
         .from(suppliers)
-        .where(eq(suppliers.id, supplierId));
+        .where(
+          and(
+            eq(suppliers.id, supplierId),
+            eq(suppliers.businessId, businessId),
+          ),
+        );
       if (supplier.length === 0) {
         throw new NotFoundError("Supplier not found");
       }
     }
 
-    // 2. Validate Variants
+    // 2. Validate Variants (same business only)
     const variantIds = [...new Set(items.map((item) => item.variantId))];
     const existingVariants = await tx
       .select({ id: productVariants.id, status: productVariants.status })
       .from(productVariants)
-      .where(inArray(productVariants.id, variantIds));
+      .where(
+        and(
+          inArray(productVariants.id, variantIds),
+          eq(productVariants.businessId, businessId),
+        ),
+      );
 
     if (existingVariants.length !== variantIds.length) {
       const foundIds = existingVariants.map((v) => v.id);
@@ -106,11 +119,22 @@ export async function createPurchase(data: CreatePurchaseInput) {
       (subtotal - discount + tax + shippingCost).toFixed(2),
     );
 
-    // 4. Create Purchase
+    // 4. Per-business PO number. The number comes from the business's own
+    // document_sequences counter inside this transaction (rollback-safe);
+    // the year in the prefix is the document's issue year.
+    const number = await nextDocumentNumber(tx, businessId, "purchase_order");
+    const purchaseOrderNumber = formatPurchaseOrderNumber(
+      new Date(purchaseDate).getFullYear(),
+      number,
+    );
+
+    // 5. Create Purchase
     const [newPurchase] = await tx
       .insert(purchases)
       .values({
+        businessId,
         supplierId,
+        purchaseOrderNumber,
         purchaseDate,
         notes,
         subtotal,
@@ -126,8 +150,9 @@ export async function createPurchase(data: CreatePurchaseInput) {
       throw new Error("Failed to create purchase record");
     }
 
-    // 5. Create Purchase Items (BULK INSERT)
+    // 6. Create Purchase Items (BULK INSERT)
     const itemsToInsert = items.map((item) => ({
+      businessId,
       purchaseId: newPurchase.id,
       variantId: item.variantId,
       quantity: item.quantity,
@@ -140,11 +165,11 @@ export async function createPurchase(data: CreatePurchaseInput) {
     // Insert them all in ONE single database query!
     await tx.insert(purchaseItems).values(itemsToInsert);
 
-    // 6. Return the new purchase so the frontend can use it
+    // 7. Return the new purchase so the frontend can use it
     return { purchaseOrderNumber: newPurchase.purchaseOrderNumber };
   });
 }
-export async function getPurchasesSummary() {
+export async function getPurchasesSummary(businessId: number) {
   const [
     orderedPurchase,
     allPurchases,
@@ -155,21 +180,37 @@ export async function getPurchasesSummary() {
       .select({ ...getTableColumns(purchases), supplierName: suppliers.name })
       .from(purchases)
       .leftJoin(suppliers, eq(purchases.supplierId, suppliers.id))
-      .where(eq(purchases.status, "ordered")),
-    db
-      .select({ ...getTableColumns(purchases), supplierName: suppliers.name })
-      .from(purchases)
-      .leftJoin(suppliers, eq(purchases.supplierId, suppliers.id)),
-    db
-      .select({ ...getTableColumns(purchases), supplierName: suppliers.name })
-      .from(purchases)
-      .leftJoin(suppliers, eq(purchases.supplierId, suppliers.id))
-      .where(inArray(purchases.paymentStatus, ["partial", "unpaid"])),
+      .where(
+        and(
+          eq(purchases.status, "ordered"),
+          eq(purchases.businessId, businessId),
+        ),
+      ),
     db
       .select({ ...getTableColumns(purchases), supplierName: suppliers.name })
       .from(purchases)
       .leftJoin(suppliers, eq(purchases.supplierId, suppliers.id))
-      .where(inArray(purchases.paymentStatus, ["paid"])),
+      .where(eq(purchases.businessId, businessId)),
+    db
+      .select({ ...getTableColumns(purchases), supplierName: suppliers.name })
+      .from(purchases)
+      .leftJoin(suppliers, eq(purchases.supplierId, suppliers.id))
+      .where(
+        and(
+          inArray(purchases.paymentStatus, ["partial", "unpaid"]),
+          eq(purchases.businessId, businessId),
+        ),
+      ),
+    db
+      .select({ ...getTableColumns(purchases), supplierName: suppliers.name })
+      .from(purchases)
+      .leftJoin(suppliers, eq(purchases.supplierId, suppliers.id))
+      .where(
+        and(
+          inArray(purchases.paymentStatus, ["paid"]),
+          eq(purchases.businessId, businessId),
+        ),
+      ),
   ]);
   return {
     orderedPurchase,
@@ -178,7 +219,7 @@ export async function getPurchasesSummary() {
     completedPurchase,
   };
 }
-export async function getPurchasesItems() {
+export async function getPurchasesItems(businessId: number) {
   return (
     db
       .select({
@@ -207,19 +248,24 @@ export async function getPurchasesItems() {
         inventoryStock,
         eq(inventoryStock.variantId, productVariants.id),
       )
+      .where(eq(purchaseItems.businessId, businessId))
   ); // leftJoin is safer in case a product has no unit
 }
 
-export async function createReceivePurchase(data: ReceiveItemsFormValues) {
+export async function createReceivePurchase(
+  businessId: number,
+  data: ReceiveItemsFormValues,
+) {
   const { purchaseId, items, paymentAmount, paymentMethod, paymentNotes } =
     data;
 
   return db.transaction(async (tx) => {
     const itemIds = basicRequestValidation(items);
-    const purchase = await purchaseValidation(tx, purchaseId);
+    const purchase = await purchaseValidation(tx, businessId, purchaseId);
 
     const existingItems = await purchaseItemsValidation(
       tx,
+      businessId,
       purchaseId,
       itemIds,
     );
@@ -256,24 +302,28 @@ export async function createReceivePurchase(data: ReceiveItemsFormValues) {
 
       await updatePurchaseItems(
         tx,
+        businessId,
         purchaseItem.id,
         newReceivedQuantity,
         receiveItem.unitCost,
       );
       await updateProductVariants(
         tx,
+        businessId,
         receiveItem.sellingPrice,
         purchaseItem.variantId,
       );
 
       await insertInventoryStockOnConflictDoUpdate(
         tx,
+        businessId,
         purchaseItem.variantId,
         receiveItem.receiveNow,
       );
 
       await insertInventoryMovements(
         tx,
+        businessId,
         purchaseItem.variantId,
         purchaseId,
         receiveItem.receiveNow,
@@ -281,6 +331,7 @@ export async function createReceivePurchase(data: ReceiveItemsFormValues) {
 
       const insertedBatches = await insertInventoryBatches(
         tx,
+        businessId,
         receiveItem,
         purchaseItem.variantId,
         purchaseItem.id,
@@ -297,6 +348,7 @@ export async function createReceivePurchase(data: ReceiveItemsFormValues) {
 
         await insertSerialNumbers(
           tx,
+          businessId,
           receiveItem,
           purchaseItem.variantId,
           purchaseItem.id,
@@ -305,7 +357,11 @@ export async function createReceivePurchase(data: ReceiveItemsFormValues) {
       }
     }
 
-    const allPurchaseItems = await getAllPurchaseItems(tx, purchaseId);
+    const allPurchaseItems = await getAllPurchaseItems(
+      tx,
+      businessId,
+      purchaseId,
+    );
 
     const newStatus = calculatePurchaseStatus(allPurchaseItems);
 
@@ -337,6 +393,7 @@ export async function createReceivePurchase(data: ReceiveItemsFormValues) {
       updatedPaidAmount,
       updatedDueAmount,
       paymentStatus,
+      businessId,
       purchaseId,
     );
 
@@ -347,6 +404,7 @@ export async function createReceivePurchase(data: ReceiveItemsFormValues) {
     if (newPaymentAmount > 0) {
       await insertPurchasePayments(
         tx,
+        businessId,
         purchaseId,
         paymentMethod,
         newPaymentAmount,

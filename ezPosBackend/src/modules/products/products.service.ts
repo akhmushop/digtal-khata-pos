@@ -24,6 +24,9 @@ import {
   NotFoundError,
 } from "../../utils/handleError.js";
 
+// Every function takes the caller's server-verified businessId (from
+// requireBusinessContext) and scopes all reads and writes to it.
+
 type StockAdjustment = {
   newQuantity: number;
   reason: "count_correction" | "damaged" | "expired" | "lost" | "found";
@@ -33,6 +36,7 @@ type StockAdjustment = {
 };
 
 export async function adjustVariantStock(
+  businessId: number,
   variantId: number,
   adjustment: StockAdjustment,
 ) {
@@ -44,7 +48,12 @@ export async function adjustVariantStock(
       })
       .from(productVariants)
       .innerJoin(products, eq(products.id, productVariants.productId))
-      .where(eq(productVariants.id, variantId))
+      .where(
+        and(
+          eq(productVariants.id, variantId),
+          eq(products.businessId, businessId),
+        ),
+      )
       .for("update");
 
     if (!variant) {
@@ -54,7 +63,12 @@ export async function adjustVariantStock(
     const [stock] = await tx
       .select()
       .from(inventoryStock)
-      .where(eq(inventoryStock.variantId, variantId))
+      .where(
+        and(
+          eq(inventoryStock.variantId, variantId),
+          eq(inventoryStock.businessId, businessId),
+        ),
+      )
       .for("update");
 
     if (!stock) {
@@ -114,6 +128,7 @@ export async function adjustVariantStock(
       .where(
         and(
           eq(inventoryBatches.variantId, variantId),
+          eq(inventoryBatches.businessId, businessId),
           gt(inventoryBatches.quantityRemaining, 0),
         ),
       )
@@ -131,6 +146,7 @@ export async function adjustVariantStock(
         .where(
           and(
             eq(serialNumbers.variantId, variantId),
+            eq(serialNumbers.businessId, businessId),
             eq(serialNumbers.status, "in_stock"),
             inArray(serialNumbers.serialNumber, serialList),
           ),
@@ -176,7 +192,12 @@ export async function adjustVariantStock(
         await tx
           .update(inventoryBatches)
           .set({ quantityRemaining: batch.quantityRemaining - quantity })
-          .where(eq(inventoryBatches.id, batchId));
+          .where(
+            and(
+              eq(inventoryBatches.id, batchId),
+              eq(inventoryBatches.businessId, businessId),
+            ),
+          );
       }
     } else if (change < 0) {
       let remaining = Math.abs(change);
@@ -186,7 +207,12 @@ export async function adjustVariantStock(
         await tx
           .update(inventoryBatches)
           .set({ quantityRemaining: batch.quantityRemaining - take })
-          .where(eq(inventoryBatches.id, batch.id));
+          .where(
+            and(
+              eq(inventoryBatches.id, batch.id),
+              eq(inventoryBatches.businessId, businessId),
+            ),
+          );
         remaining -= take;
       }
       if (remaining > 0) {
@@ -218,6 +244,7 @@ export async function adjustVariantStock(
       const [createdBatch] = await tx
         .insert(inventoryBatches)
         .values({
+          businessId,
           variantId,
           locationId: stock.locationId,
           batchNumber,
@@ -240,7 +267,12 @@ export async function adjustVariantStock(
             serialNumber: serialNumbers.serialNumber,
           })
           .from(serialNumbers)
-          .where(inArray(serialNumbers.serialNumber, serialList))
+          .where(
+            and(
+              eq(serialNumbers.businessId, businessId),
+              inArray(serialNumbers.serialNumber, serialList),
+            ),
+          )
           .for("update");
 
         if (existingSerials.length > 0) {
@@ -279,6 +311,7 @@ export async function adjustVariantStock(
         if (newSerials.length > 0) {
           await tx.insert(serialNumbers).values(
             newSerials.map((serialNumber) => ({
+              businessId,
               variantId,
               batchId: createdBatch.id,
               serialNumber,
@@ -291,13 +324,19 @@ export async function adjustVariantStock(
     const [updatedStock] = await tx
       .update(inventoryStock)
       .set({ quantity: adjustment.newQuantity })
-      .where(eq(inventoryStock.variantId, variantId))
+      .where(
+        and(
+          eq(inventoryStock.variantId, variantId),
+          eq(inventoryStock.businessId, businessId),
+        ),
+      )
       .returning({ quantity: inventoryStock.quantity });
     if (updatedStock?.quantity === null || updatedStock?.quantity === undefined) {
       throw new Error("Failed to update variant inventory.");
     }
 
     await tx.insert(inventoryMovements).values({
+      businessId,
       variantId,
       locationId: stock.locationId,
       movementType: "adjustment",
@@ -314,7 +353,7 @@ export async function adjustVariantStock(
   });
 }
 
-export async function getAllProducts() {
+export async function getAllProducts(businessId: number) {
   return db
     .select({
       ...getTableColumns(products),
@@ -341,6 +380,7 @@ export async function getAllProducts() {
                               )
                             FROM ${inventoryBatches}
                             WHERE ${inventoryBatches.variantId} = ${productVariants.id}
+                              AND ${inventoryBatches.businessId} = ${businessId}
                               AND ${inventoryBatches.quantityRemaining} > 0
                           ),
             'options', (
@@ -355,6 +395,7 @@ export async function getAllProducts() {
               JOIN ${variantTypes} ON ${variantTypes.id} = ${variantOptions.variantTypeId}
               -- Removed inventoryStock from here!
               WHERE ${variantValues.variantId} = ${productVariants.id}
+                AND ${variantValues.businessId} = ${businessId}
             )
           )
         ), '[]'::json) -- Returns [] instead of null if no variants exist
@@ -363,10 +404,14 @@ export async function getAllProducts() {
     .from(products)
     .leftJoin(productVariants, eq(productVariants.productId, products.id))
     .leftJoin(inventoryStock, eq(inventoryStock.variantId, productVariants.id))
+    .where(eq(products.businessId, businessId))
     .groupBy(products.id);
 }
-export async function createProduct(product: ProductsTypes) {
-  const [created] = await db.insert(products).values(product).returning();
+export async function createProduct(businessId: number, product: ProductsTypes) {
+  const [created] = await db
+    .insert(products)
+    .values({ ...product, businessId })
+    .returning();
   return created;
 }
 async function setQuantity(_id: number, _quantity: number) {
@@ -401,6 +446,7 @@ export async function adjustCustomQuantity(
   return setQuantity(id, productsQuantity - (newQuantity - prevQuantity));
 }
 export async function updateStock(
+  businessId: number,
   id: number,
   newStock: number,
   status: string,
@@ -408,18 +454,22 @@ export async function updateStock(
   return db
     .update(products)
     .set({ status: status })
-    .where(eq(products.id, id));
+    .where(and(eq(products.id, id), eq(products.businessId, businessId)));
 }
-async function getProductById(id: number) {
-  const [product] = await db.select().from(products).where(eq(products.id, id));
+async function getProductById(businessId: number, id: number) {
+  const [product] = await db
+    .select()
+    .from(products)
+    .where(and(eq(products.id, id), eq(products.businessId, businessId)));
   return product;
 }
-export async function duplicateProduct(id: number) {
-  const product = await getProductById(id);
+export async function duplicateProduct(businessId: number, id: number) {
+  const product = await getProductById(businessId, id);
   if (!product) return null;
   const { id: _, ...productData } = product;
   const duplicateProduct = {
     ...productData,
+    businessId,
     name: `${productData.name} (copy)`,
   };
   const [created] = await db
@@ -429,10 +479,18 @@ export async function duplicateProduct(id: number) {
   return created;
 }
 export async function patchProduct(
+  businessId: number,
   id: number,
   updates: Partial<ProductsTypes>,
 ) {
-  return db.update(products).set(updates).where(eq(products.id, id));
+  // Never allow the tenant column to be changed through patch payloads.
+  const { businessId: _ignored, ...safeUpdates } = updates as Partial<ProductsTypes> & {
+    businessId?: number;
+  };
+  return db
+    .update(products)
+    .set(safeUpdates)
+    .where(and(eq(products.id, id), eq(products.businessId, businessId)));
 }
 // router.delete("/api/products/remove_product/:id", async (req, res) => {
 //   try {

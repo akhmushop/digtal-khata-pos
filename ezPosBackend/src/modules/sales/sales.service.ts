@@ -52,6 +52,13 @@ import { inventoryMovements } from "../../db/schema/inventoryMovements.js";
 import type { DbTransaction } from "../purchases/purchase.types.js";
 import { inventoryBatches } from "../../db/schema/inventoryBatches.js";
 import { serialNumbers } from "../../db/schema/serialNumbers.js";
+import {
+  formatSaleInvoiceNumber,
+  nextDocumentNumber,
+} from "../../utils/documentSequence.js";
+
+// Every function takes the caller's server-verified businessId (from
+// requireBusinessContext) and scopes all reads and writes to it.
 
 function isDuplicatePaymentReferenceError(error: unknown): boolean {
   if (typeof error !== "object" || error === null) return false;
@@ -67,7 +74,7 @@ function isDuplicatePaymentReferenceError(error: unknown): boolean {
   );
 }
 
-export async function getSalesData() {
+export async function getSalesData(businessId: number) {
   const rows = await db
     .select({
       saleId: sales.id,
@@ -94,7 +101,12 @@ export async function getSalesData() {
     .innerJoin(products, eq(productVariants.productId, products.id))
     .leftJoin(categories, eq(products.categoryId, categories.id))
     .leftJoin(customers, eq(sales.customerId, customers.id))
-    .where(inArray(sales.status, ["completed", "refunded"]));
+    .where(
+      and(
+        inArray(sales.status, ["completed", "refunded"]),
+        eq(sales.businessId, businessId),
+      ),
+    );
 
   if (rows.length === 0) return [];
 
@@ -108,9 +120,12 @@ export async function getSalesData() {
     .from(saleRefundItems)
     .innerJoin(saleRefunds, eq(saleRefundItems.refundId, saleRefunds.id))
     .where(
-      inArray(
-        saleRefundItems.saleItemId,
-        rows.map((row) => row.saleItemsId),
+      and(
+        eq(saleRefundItems.businessId, businessId),
+        inArray(
+          saleRefundItems.saleItemId,
+          rows.map((row) => row.saleItemsId),
+        ),
       ),
     );
 
@@ -162,6 +177,7 @@ export async function calculateSubtotals(
 
 export async function consumeStockFifo(
   tx: DbTransaction,
+  businessId: number,
   variantId: number,
   quantity: number,
 ) {
@@ -173,6 +189,7 @@ export async function consumeStockFifo(
     .where(
       and(
         eq(inventoryBatches.variantId, variantId),
+        eq(inventoryBatches.businessId, businessId),
         gt(inventoryBatches.quantityRemaining, 0),
       ),
     )
@@ -191,7 +208,12 @@ export async function consumeStockFifo(
     await tx
       .update(inventoryBatches)
       .set({ quantityRemaining: batch.quantityRemaining - take })
-      .where(eq(inventoryBatches.id, batch.id));
+      .where(
+        and(
+          eq(inventoryBatches.id, batch.id),
+          eq(inventoryBatches.businessId, businessId),
+        ),
+      );
 
     totalCost += take * batch.purchasePrice;
     remaining -= take;
@@ -211,6 +233,7 @@ export async function consumeStockFifo(
 }
 export async function consumeSerials(
   tx: DbTransaction,
+  businessId: number,
   variantId: number,
   serials: string[],
 ) {
@@ -219,13 +242,14 @@ export async function consumeSerials(
   if (new Set(serials).size !== serials.length)
     throw new Error("Duplicate serial number");
 
-  // 1. Find and lock the serials (must be in stock, and for this variant)
+  // 1. Find and lock the serials (must be in stock, for this variant and business)
   const rows = await tx
     .select()
     .from(serialNumbers)
     .where(
       and(
         eq(serialNumbers.variantId, variantId),
+        eq(serialNumbers.businessId, businessId),
         inArray(serialNumbers.serialNumber, serials),
         eq(serialNumbers.status, "in_stock"),
       ),
@@ -249,7 +273,12 @@ export async function consumeSerials(
   const batches = await tx
     .select()
     .from(inventoryBatches)
-    .where(inArray(inventoryBatches.id, [...perBatch.keys()]))
+    .where(
+      and(
+        inArray(inventoryBatches.id, [...perBatch.keys()]),
+        eq(inventoryBatches.businessId, businessId),
+      ),
+    )
     .for("update");
 
   let totalCost = 0;
@@ -264,7 +293,12 @@ export async function consumeSerials(
     await tx
       .update(inventoryBatches)
       .set({ quantityRemaining: batch.quantityRemaining - take })
-      .where(eq(inventoryBatches.id, batch.id));
+      .where(
+        and(
+          eq(inventoryBatches.id, batch.id),
+          eq(inventoryBatches.businessId, businessId),
+        ),
+      );
 
     totalCost += take * batch.purchasePrice;
     used.push({
@@ -294,7 +328,7 @@ function getPaymentStatus(paid: number, due: number) {
   return "unpaid";
 }
 
-export async function getSaleReceipt(saleId: number) {
+export async function getSaleReceipt(businessId: number, saleId: number) {
   const [sale] = await db
     .select({
       id: sales.id,
@@ -315,7 +349,7 @@ export async function getSaleReceipt(saleId: number) {
     })
     .from(sales)
     .leftJoin(customers, eq(sales.customerId, customers.id))
-    .where(eq(sales.id, saleId))
+    .where(and(eq(sales.id, saleId), eq(sales.businessId, businessId)))
     .limit(1);
 
   if (!sale) {
@@ -337,7 +371,12 @@ export async function getSaleReceipt(saleId: number) {
     .from(saleItems)
     .innerJoin(productVariants, eq(saleItems.variantId, productVariants.id))
     .innerJoin(products, eq(productVariants.productId, products.id))
-    .where(eq(saleItems.saleId, saleId))
+    .where(
+      and(
+        eq(saleItems.saleId, saleId),
+        eq(saleItems.businessId, businessId),
+      ),
+    )
     .orderBy(asc(saleItems.id));
 
   const variantIds = items.map((i) => i.variantId);
@@ -370,7 +409,12 @@ export async function getSaleReceipt(saleId: number) {
       paymentDate: salePayments.paymentDate,
     })
     .from(salePayments)
-    .where(eq(salePayments.saleId, saleId))
+    .where(
+      and(
+        eq(salePayments.saleId, saleId),
+        eq(salePayments.businessId, businessId),
+      ),
+    )
     .orderBy(asc(salePayments.id));
 
   const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount ?? 0), 0);
@@ -432,18 +476,22 @@ export async function getSaleReceipt(saleId: number) {
   };
 }
 
-export async function createSale(data: CreateSalePayload) {
+export async function createSale(businessId: number, data: CreateSalePayload) {
   const { customerId, items, discount, vatPercent, payments, saleDate } = data;
 
   const result = await db.transaction(async (tx) => {
-    // 1. Validate customer.
-    await customerValidation(tx, customerId);
+    // 1. Validate customer (same business only).
+    await customerValidation(tx, businessId, customerId);
 
-    // 2. Validate variants and lock their rows.
-    const { variantIds, existingVariants } = await validateVariants(tx, items);
+    // 2. Validate variants and lock their rows (same business only).
+    const { variantIds, existingVariants } = await validateVariants(
+      tx,
+      businessId,
+      items,
+    );
 
     // 3. Lock inventory rows and validate stock.
-    await validateStock(tx, variantIds, items);
+    await validateStock(tx, businessId, variantIds, items);
 
     // 2. Trusted prices and tracking types come from the database
     const variantMap = new Map(existingVariants.map((v) => [v.id, v]));
@@ -481,10 +529,20 @@ export async function createSale(data: CreateSalePayload) {
 
     const paymentStatus = getPaymentStatus(paidAmount, dueAmount);
 
-    // 7. Insert the sale header.
+    // 7. Per-business invoice number from the business's own
+    // document_sequences counter inside this transaction (rollback-safe).
+    // The year in the prefix is the issue year from the document date.
+    const invoiceNumber = formatSaleInvoiceNumber(
+      new Date(saleDate).getFullYear(),
+      await nextDocumentNumber(tx, businessId, "sale_invoice"),
+    );
+
+    // 8. Insert the sale header.
     const [newSale] = await tx
       .insert(sales)
       .values({
+        businessId,
+        invoiceNumber,
         saleDate,
         customerId,
         subtotal: totals.itemsBase,
@@ -512,7 +570,7 @@ export async function createSale(data: CreateSalePayload) {
 
     const saleId = newSale.id;
 
-    // 8. Insert sale items with price and cost snapshots.
+    // 9. Insert sale items with price and cost snapshots.
     for (const item of trustedItems) {
       const line = getLinePricing(item.unitPrice, item.quantity, item.discount);
 
@@ -526,9 +584,14 @@ export async function createSale(data: CreateSalePayload) {
             `Select exactly ${item.quantity} serial number(s) for variant ${item.variantId}.`,
           );
         }
-        cost = await consumeSerials(tx, item.variantId, serials);
+        cost = await consumeSerials(tx, businessId, item.variantId, serials);
       } else {
-        cost = await consumeStockFifo(tx, item.variantId, item.quantity);
+        cost = await consumeStockFifo(
+          tx,
+          businessId,
+          item.variantId,
+          item.quantity,
+        );
       }
 
       if (!Number.isFinite(cost.costAtSale) || cost.costAtSale < 0) {
@@ -540,6 +603,7 @@ export async function createSale(data: CreateSalePayload) {
       const [saleItem] = await tx
         .insert(saleItems)
         .values({
+          businessId,
           saleId,
           variantId: item.variantId,
           quantity: item.quantity,
@@ -555,7 +619,12 @@ export async function createSale(data: CreateSalePayload) {
         .set({
           quantity: sql`${inventoryStock.quantity} - ${item.quantity}`,
         })
-        .where(eq(inventoryStock.variantId, item.variantId))
+        .where(
+          and(
+            eq(inventoryStock.variantId, item.variantId),
+            eq(inventoryStock.businessId, businessId),
+          ),
+        )
         .returning({
           variantId: inventoryStock.variantId,
         });
@@ -566,6 +635,7 @@ export async function createSale(data: CreateSalePayload) {
         );
       }
       await tx.insert(inventoryMovements).values({
+        businessId,
         variantId: item.variantId,
         movementType: "sale",
         quantity: item.quantity,
@@ -587,6 +657,7 @@ export async function createSale(data: CreateSalePayload) {
               throw new NotFoundError("payment amount not found");
             }
             return {
+              businessId,
               saleId,
               customerId,
               amount: payment.amount,
@@ -610,7 +681,6 @@ export async function createSale(data: CreateSalePayload) {
       }
     }
     // 11. Return receipt data; transaction commits on success.
-    console.log(dueAmount);
     return {
       sale: newSale,
       change,
@@ -619,7 +689,7 @@ export async function createSale(data: CreateSalePayload) {
     };
   });
 
-  const receipt = await getSaleReceipt(result.sale.id);
+  const receipt = await getSaleReceipt(businessId, result.sale.id);
   return {
     ...result,
     receipt,
@@ -627,6 +697,7 @@ export async function createSale(data: CreateSalePayload) {
 }
 async function applySaleRefund(
   tx: DbTransaction,
+  businessId: number,
   saleId: number,
   items: (typeof saleItems.$inferSelect)[],
   options: SaleRefundRequest,
@@ -641,6 +712,7 @@ async function applySaleRefund(
   const [refund] = await tx
     .insert(saleRefunds)
     .values({
+      businessId,
       saleId,
       reason,
       status: options.disposition,
@@ -657,13 +729,19 @@ async function applySaleRefund(
       })
       .from(productVariants)
       .innerJoin(products, eq(productVariants.productId, products.id))
-      .where(eq(productVariants.id, item.variantId))
+      .where(
+        and(
+          eq(productVariants.id, item.variantId),
+          eq(productVariants.businessId, businessId),
+        ),
+      )
       .limit(1);
     if (!variant) {
       throw new NotFoundError(`Variant ${item.variantId} not found`);
     }
 
     await tx.insert(saleRefundItems).values({
+      businessId,
       refundId: refund.id,
       saleItemId: item.id,
       productId: variant.productId,
@@ -681,14 +759,24 @@ async function applySaleRefund(
     await tx
       .update(serialNumbers)
       .set({ status: serialStatus })
-      .where(eq(serialNumbers.saleItemId, item.id));
+      .where(
+        and(
+          eq(serialNumbers.saleItemId, item.id),
+          eq(serialNumbers.businessId, businessId),
+        ),
+      );
 
     if (options.disposition !== "restock") continue;
 
     const [stock] = await tx
       .select()
       .from(inventoryStock)
-      .where(eq(inventoryStock.variantId, item.variantId))
+      .where(
+        and(
+          eq(inventoryStock.variantId, item.variantId),
+          eq(inventoryStock.businessId, businessId),
+        ),
+      )
       .for("update");
     if (!stock) {
       throw new NotFoundError(
@@ -701,11 +789,17 @@ async function applySaleRefund(
       .set({
         quantity: sql`coalesce(${inventoryStock.quantity}, 0) + ${item.quantity}`,
       })
-      .where(eq(inventoryStock.id, stock.id));
+      .where(
+        and(
+          eq(inventoryStock.id, stock.id),
+          eq(inventoryStock.businessId, businessId),
+        ),
+      );
 
     const [returnBatch] = await tx
       .insert(inventoryBatches)
       .values({
+        businessId,
         variantId: item.variantId,
         locationId: stock.locationId,
         batchNumber: `RETURN-${refund.id}-${item.id}`,
@@ -718,10 +812,16 @@ async function applySaleRefund(
       await tx
         .update(serialNumbers)
         .set({ batchId: returnBatch.id })
-        .where(eq(serialNumbers.saleItemId, item.id));
+        .where(
+          and(
+            eq(serialNumbers.saleItemId, item.id),
+            eq(serialNumbers.businessId, businessId),
+          ),
+        );
     }
 
     await tx.insert(inventoryMovements).values({
+      businessId,
       variantId: item.variantId,
       locationId: stock.locationId,
       batchId: returnBatch?.id ?? null,
@@ -735,13 +835,23 @@ async function applySaleRefund(
   const allSaleItems = await tx
     .select({ id: saleItems.id })
     .from(saleItems)
-    .where(eq(saleItems.saleId, saleId))
+    .where(
+      and(
+        eq(saleItems.saleId, saleId),
+        eq(saleItems.businessId, businessId),
+      ),
+    )
     .for("update");
   const refundedSaleItems = await tx
     .select({ saleItemId: saleRefundItems.saleItemId })
     .from(saleRefundItems)
     .innerJoin(saleRefunds, eq(saleRefundItems.refundId, saleRefunds.id))
-    .where(eq(saleRefunds.saleId, saleId));
+    .where(
+      and(
+        eq(saleRefunds.saleId, saleId),
+        eq(saleRefunds.businessId, businessId),
+      ),
+    );
   const refundedIds = new Set(
     refundedSaleItems.flatMap((row) =>
       row.saleItemId === null ? [] : [row.saleItemId],
@@ -754,13 +864,14 @@ async function applySaleRefund(
     await tx
       .update(sales)
       .set({ status: "refunded" })
-      .where(eq(sales.id, saleId));
+      .where(and(eq(sales.id, saleId), eq(sales.businessId, businessId)));
   }
 
   return refund.id;
 }
 
 export async function createSingleRefund(
+  businessId: number,
   id: number,
   options: SaleRefundRequest,
 ) {
@@ -768,14 +879,18 @@ export async function createSingleRefund(
     const [saleItem] = await tx
       .select()
       .from(saleItems)
-      .where(eq(saleItems.id, id))
+      .where(
+        and(eq(saleItems.id, id), eq(saleItems.businessId, businessId)),
+      )
       .limit(1);
     if (!saleItem) throw new NotFoundError("Sale item not found");
 
     const [sale] = await tx
       .select({ id: sales.id, status: sales.status })
       .from(sales)
-      .where(eq(sales.id, saleItem.saleId))
+      .where(
+        and(eq(sales.id, saleItem.saleId), eq(sales.businessId, businessId)),
+      )
       .for("update");
     if (!sale) throw new NotFoundError("Sale not found");
     if (sale.status !== "completed") {
@@ -784,7 +899,12 @@ export async function createSingleRefund(
     const [alreadyRefunded] = await tx
       .select({ id: saleRefundItems.id })
       .from(saleRefundItems)
-      .where(eq(saleRefundItems.saleItemId, saleItem.id))
+      .where(
+        and(
+          eq(saleRefundItems.saleItemId, saleItem.id),
+          eq(saleRefundItems.businessId, businessId),
+        ),
+      )
       .limit(1);
     if (alreadyRefunded) {
       throw new ConflictError("This sale item has already been returned");
@@ -792,6 +912,7 @@ export async function createSingleRefund(
 
     const refundId = await applySaleRefund(
       tx,
+      businessId,
       saleItem.saleId,
       [saleItem],
       options,
@@ -801,6 +922,7 @@ export async function createSingleRefund(
 }
 
 export async function createMultipleRefunds(
+  businessId: number,
   id: number,
   options: SaleRefundRequest,
 ) {
@@ -808,7 +930,7 @@ export async function createMultipleRefunds(
     const [sale] = await tx
       .select({ id: sales.id, status: sales.status })
       .from(sales)
-      .where(eq(sales.id, id))
+      .where(and(eq(sales.id, id), eq(sales.businessId, businessId)))
       .for("update");
     if (!sale) throw new NotFoundError("Sale not found");
     if (sale.status !== "completed") {
@@ -818,7 +940,9 @@ export async function createMultipleRefunds(
     const items = await tx
       .select()
       .from(saleItems)
-      .where(eq(saleItems.saleId, id))
+      .where(
+        and(eq(saleItems.saleId, id), eq(saleItems.businessId, businessId)),
+      )
       .for("update");
     if (items.length === 0) throw new NotFoundError("Sale items not found");
 
@@ -826,9 +950,12 @@ export async function createMultipleRefunds(
       .select({ saleItemId: saleRefundItems.saleItemId })
       .from(saleRefundItems)
       .where(
-        inArray(
-          saleRefundItems.saleItemId,
-          items.map((item) => item.id),
+        and(
+          eq(saleRefundItems.businessId, businessId),
+          inArray(
+            saleRefundItems.saleItemId,
+            items.map((item) => item.id),
+          ),
         ),
       );
     const refundedIds = new Set(
@@ -843,6 +970,7 @@ export async function createMultipleRefunds(
 
     const refundId = await applySaleRefund(
       tx,
+      businessId,
       id,
       refundableItems,
       options,
@@ -851,6 +979,7 @@ export async function createMultipleRefunds(
   });
 }
 export async function getDashboardSummary(
+  businessId: number,
   period: DashboardPeriod = "today",
   staleDays = 60,
   staleLimit = 10,
@@ -874,23 +1003,23 @@ export async function getDashboardSummary(
     staleStockSummary,
     topSellingProducts,
   ] = await Promise.all([
-    getSalesOverview(period),
-    getTopCategories(period),
-    getProfitByCategory(period),
-    getTopItemsByGross(period),
-    getProductsSummary(),
-    getSalesSummary(period),
-    getSalesActivity(period),
-    getPaymentBreakdown(period),
-    getNetProfit(period),
-    getInvoiceDues(),
-    getExpensesSummary(period),
-    getPurchasesSummary(period),
-    getReturnSummary(period),
-    getRecentSalesSummary(period),
-    getLowStockSummary(),
-    getStaleStockSummary(staleDays, staleLimit),
-    getTopSellingProducts(period),
+    getSalesOverview(businessId, period),
+    getTopCategories(businessId, period),
+    getProfitByCategory(businessId, period),
+    getTopItemsByGross(businessId, period),
+    getProductsSummary(businessId),
+    getSalesSummary(businessId, period),
+    getSalesActivity(businessId, period),
+    getPaymentBreakdown(businessId, period),
+    getNetProfit(businessId, period),
+    getInvoiceDues(businessId),
+    getExpensesSummary(businessId, period),
+    getPurchasesSummary(businessId, period),
+    getReturnSummary(businessId, period),
+    getRecentSalesSummary(businessId, period),
+    getLowStockSummary(businessId),
+    getStaleStockSummary(businessId, staleDays, staleLimit),
+    getTopSellingProducts(businessId, period),
   ]);
   return {
     salesOverview: salesOverview.rows,
@@ -913,13 +1042,17 @@ export async function getDashboardSummary(
   };
 }
 // GET /variants/:variantId/serials
-export async function getAvailableSerials(variantId: number) {
+export async function getAvailableSerials(
+  businessId: number,
+  variantId: number,
+) {
   const rows = await db
     .select({ serialNumber: serialNumbers.serialNumber })
     .from(serialNumbers)
     .where(
       and(
         eq(serialNumbers.variantId, variantId),
+        eq(serialNumbers.businessId, businessId),
         eq(serialNumbers.status, "in_stock"),
       ),
     )
@@ -928,6 +1061,7 @@ export async function getAvailableSerials(variantId: number) {
 }
 
 export async function updateAvailableSerial(
+  businessId: number,
   variantId: number,
   currentSerial: string,
   serialNumber: string,
@@ -939,6 +1073,7 @@ export async function updateAvailableSerial(
       .where(
         and(
           eq(serialNumbers.variantId, variantId),
+          eq(serialNumbers.businessId, businessId),
           eq(serialNumbers.serialNumber, currentSerial),
           eq(serialNumbers.status, "in_stock"),
         ),
