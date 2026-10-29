@@ -114,6 +114,9 @@ export function MessageDialog({
 
   if (!target) return null;
 
+  // Capture for use inside closures: TS cannot narrow `target` there.
+  const activeTarget: MessageTarget = target;
+
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(message);
@@ -123,13 +126,16 @@ export function MessageDialog({
       document.execCommand("copy");
     }
     setCopied(true);
-    toast.success("Message copied. Paste it into SMS, Messenger, or WhatsApp.");
+    toast.add({
+      title: "Message copied. Paste it into SMS, Messenger, or WhatsApp.",
+      type: "success",
+    });
   }
 
   function handleWhatsApp() {
     if (!phone) return;
     if (template) {
-      const key = `${audience}-${target.invoiceNumber}-${template.key}`;
+      const key = `${audience}-${activeTarget.invoiceNumber}-${template.key}`;
       reminderLog.set(key, Date.now());
     }
     window.open(whatsappLink(phone, message), "_blank", "noopener,noreferrer");
