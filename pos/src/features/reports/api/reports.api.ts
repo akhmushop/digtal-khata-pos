@@ -1,0 +1,136 @@
+import api from "@/api/axios";
+import type {
+  ReportFilters,
+  SalesSummaryReportData,
+  PaginatedResponse,
+  SalesInvoiceRow,
+  ProductSalesRow,
+  CustomerSalesRow,
+  PaymentMethodRow,
+  RefundRow,
+  ProfitReportData,
+  ExpenseReportData,
+  CustomerReceivablesReportData,
+  StockReportData,
+  StockMovementRow,
+  BatchRow,
+  PurchaseReportData,
+  SupplierPayablesReportData,
+  HourlySalesReportData,
+  TaxReconciliationData,
+  ShrinkageReportData,
+  RegisterCloseData,
+} from "../types/report.types";
+
+function buildParams(filters: Partial<ReportFilters>) {
+  const params: Record<string, string | number | undefined> = {};
+  if (filters.period) params.period = filters.period;
+  if (filters.dateRange?.startDate) params.startDate = filters.dateRange.startDate;
+  if (filters.dateRange?.endDate) params.endDate = filters.dateRange.endDate;
+  if (filters.customerId) params.customerId = filters.customerId;
+  if (filters.supplierId) params.supplierId = filters.supplierId;
+  if (filters.categoryId) params.categoryId = filters.categoryId;
+  if (filters.brandId) params.brandId = filters.brandId;
+  if (filters.paymentMethod) params.paymentMethod = filters.paymentMethod;
+  if (filters.paymentStatus) params.paymentStatus = filters.paymentStatus;
+  if (filters.search) params.search = filters.search;
+  if (filters.page) params.page = filters.page;
+  if (filters.limit) params.limit = filters.limit;
+  if (filters.sortBy) params.sortBy = filters.sortBy;
+  if (filters.sortDir) params.sortDir = filters.sortDir;
+  return params;
+}
+
+export const reportsApi = {
+  // Sales
+  getSalesSummary: (filters: Partial<ReportFilters> = {}) =>
+    api.get<{ success: boolean; data: SalesSummaryReportData }>("/reports/sales/summary", {
+      params: buildParams(filters),
+    }),
+
+  getHourlySales: (filters: Partial<ReportFilters> = {}) =>
+    api.get<{ success: boolean; data: HourlySalesReportData }>("/reports/sales/hourly", {
+      params: buildParams(filters),
+    }),
+
+  getSalesByInvoice: (filters: Partial<ReportFilters> = {}) =>
+    api.get<{ success: boolean; data: PaginatedResponse<SalesInvoiceRow> }>("/reports/sales/invoices", {
+      params: buildParams(filters),
+    }),
+
+  getProductSales: (filters: Partial<ReportFilters> = {}) =>
+    api.get<{ success: boolean; data: PaginatedResponse<ProductSalesRow> }>("/reports/sales/products", {
+      params: buildParams(filters),
+    }),
+
+  getCustomerSales: (filters: Partial<ReportFilters> = {}) =>
+    api.get<{ success: boolean; data: PaginatedResponse<CustomerSalesRow> }>("/reports/sales/customers", {
+      params: buildParams(filters),
+    }),
+
+  getPaymentMethods: (filters: Partial<ReportFilters> = {}) =>
+    api.get<{ success: boolean; data: PaymentMethodRow[] }>("/reports/sales/payments", {
+      params: buildParams(filters),
+    }),
+
+  getSaleRefunds: (filters: Partial<ReportFilters> = {}) =>
+    api.get<{ success: boolean; data: PaginatedResponse<RefundRow> }>("/reports/sales/refunds", {
+      params: buildParams(filters),
+    }),
+
+  // Financial
+  getProfit: (filters: Partial<ReportFilters> = {}) =>
+    api.get<{ success: boolean; data: ProfitReportData }>("/reports/financial/profit", {
+      params: buildParams(filters),
+    }),
+
+  getExpenses: (filters: Partial<ReportFilters> = {}) =>
+    api.get<{ success: boolean; data: ExpenseReportData }>("/reports/financial/expenses", {
+      params: buildParams(filters),
+    }),
+
+  getCustomerReceivables: (filters: Partial<ReportFilters> = {}) =>
+    api.get<{ success: boolean; data: CustomerReceivablesReportData }>("/reports/financial/receivables", {
+      params: buildParams(filters),
+    }),
+
+  getTaxReconciliation: (filters: Partial<ReportFilters> = {}) =>
+    api.get<{ success: boolean; data: TaxReconciliationData }>("/reports/financial/tax", {
+      params: buildParams(filters),
+    }),
+
+  getRegisterClose: (filters: Partial<ReportFilters> = {}) =>
+    api.get<{ success: boolean; data: RegisterCloseData }>("/reports/financial/register-close", {
+      params: buildParams(filters),
+    }),
+
+  // Inventory
+  getStock: (filters: Partial<ReportFilters> = {}) =>
+    api.get<{ success: boolean; data: StockReportData }>("/reports/inventory/stock", {
+      params: buildParams(filters),
+    }),
+
+  getStockMovements: (filters: Partial<ReportFilters> = {}) =>
+    api.get<{ success: boolean; data: PaginatedResponse<StockMovementRow> }>("/reports/inventory/movements", {
+      params: buildParams(filters),
+    }),
+
+  getBatchExpiry: (filters: Partial<ReportFilters> = {}) =>
+    api.get<{ success: boolean; data: PaginatedResponse<BatchRow> }>("/reports/inventory/batches", {
+      params: buildParams(filters),
+    }),
+
+  getInventoryShrinkage: (filters: Partial<ReportFilters> = {}) =>
+    api.get<{ success: boolean; data: ShrinkageReportData }>("/reports/inventory/shrinkage", {
+      params: buildParams(filters),
+    }),
+
+  // Purchases
+  getPurchaseSummary: (filters: Partial<ReportFilters> = {}) =>
+    api.get<{ success: boolean; data: PurchaseReportData }>("/reports/purchases/summary", {
+      params: buildParams(filters),
+    }),
+
+  getSupplierPayables: () =>
+    api.get<{ success: boolean; data: SupplierPayablesReportData }>("/reports/purchases/payables"),
+};
