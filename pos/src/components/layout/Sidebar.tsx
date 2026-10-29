@@ -8,6 +8,7 @@ import {
   RiArchiveDrawerFill,
   RiMoneyDollarBoxFill,
   RiUserFill,
+  RiExchangeDollarFill,
 } from "react-icons/ri";
 import { MdPointOfSale, MdManageAccounts } from "react-icons/md";
 
@@ -17,6 +18,7 @@ const MENU_ITEMS = [
   { label: "POS", icon: MdPointOfSale, path: "/" },
   { label: "Products", icon: RiProductHuntFill, path: "/product" },
   { label: "Sales", icon: RiMoneyDollarBoxFill, path: "/sales" },
+  { label: "Due Management", icon: RiExchangeDollarFill, path: "/due-management" },
   { label: "Expense", icon: RiArchiveDrawerFill, path: "/expense" },
   { label: "Customers", icon: MdManageAccounts, path: "/customer" },
   { label: "Purchases Order", icon: MdManageAccounts, path: "/purchases" },
