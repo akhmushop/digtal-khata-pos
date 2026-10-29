@@ -249,7 +249,7 @@ export async function getCustomerDueRows(query: DueRowQuery) {
 
   const paidAmountSql = sql<number>`COALESCE((SELECT SUM(${salePayments.amount}) FROM ${salePayments} WHERE ${salePayments.saleId} = ${sales.id}), 0)::float8`;
   const refundAmountSql = sql<number>`COALESCE((SELECT SUM(${saleRefunds.refundTotal}) FROM ${saleRefunds} WHERE ${saleRefunds.saleId} = ${sales.id}), 0)::float8`;
-  const outstandingSql = sql<number>`ROUND(COALESCE(${sales.finalTotal}, 0) - COALESCE((SELECT SUM(${salePayments.amount}) FROM ${salePayments} WHERE ${salePayments.saleId} = ${sales.id}), 0) - COALESCE((SELECT SUM(${saleRefunds.refundTotal}) FROM ${saleRefunds} WHERE ${saleRefunds.saleId} = ${sales.id}), 0), 2)::float8`;
+  const outstandingSql = sql<number>`ROUND(COALESCE(${sales.finalTotal}, 0) - ${paidAmountSql} - ${refundAmountSql}, 2)::float8`;
 
   const conditions = [
     inArray(sales.status, ["completed", "refunded"]),
@@ -355,7 +355,7 @@ export async function getSupplierDueRows(query: DueRowQuery) {
 
   const paidAmountSql = sql<number>`COALESCE((SELECT SUM(${purchasePayments.amount}) FROM ${purchasePayments} WHERE ${purchasePayments.purchaseId} = ${purchases.id}), 0)::float8`;
   const returnAmountSql = sql<number>`COALESCE((SELECT SUM(${purchaseReturns.totalAmount}) FROM ${purchaseReturns} WHERE ${purchaseReturns.purchaseId} = ${purchases.id}), 0)::float8`;
-  const outstandingSql = sql<number>`ROUND(COALESCE(${purchases.totalAmount}, 0) - COALESCE((SELECT SUM(${purchasePayments.amount}) FROM ${purchasePayments} WHERE ${purchasePayments.purchaseId} = ${purchases.id}), 0) - COALESCE((SELECT SUM(${purchaseReturns.totalAmount}) FROM ${purchaseReturns} WHERE ${purchaseReturns.purchaseId} = ${purchases.id}), 0), 2)::float8`;
+  const outstandingSql = sql<number>`ROUND(COALESCE(${purchases.totalAmount}, 0) - ${paidAmountSql} - ${returnAmountSql}, 2)::float8`;
 
   const conditions = [
     status === "paid"

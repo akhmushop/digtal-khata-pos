@@ -170,10 +170,9 @@ function CustomerPaymentForm({
         notes: values.notes || null,
         paymentDate: values.paymentDate,
       });
-      toast.add({
-        title: `Payment of ${formatMoney(values.amount)} recorded for ${target.invoiceNumber}.`,
-        type: "success",
-      });
+      toast.success(
+        `Payment of ${formatMoney(values.amount)} recorded for ${target.invoiceNumber}.`,
+      );
       onDone();
     } catch (error) {
       setServerError(
@@ -201,13 +200,10 @@ function CustomerPaymentForm({
               step="0.01"
               inputMode="decimal"
               placeholder="0.00"
-              onChange={(event) => {
-                const value = event.target.valueAsNumber;
-                field.onChange(Number.isNaN(value) ? undefined : value);
-              }}
+              {...field}
               value={field.value ?? ""}
             />
-            <FieldErrorText error={fieldState.error} />
+            <FieldErrorText error={fieldState.error as FormFieldError} />
           </div>
         )}
       />
@@ -239,7 +235,7 @@ function CustomerPaymentForm({
                 ))}
               </SelectContent>
             </Select>
-            <FieldErrorText error={fieldState.error} />
+            <FieldErrorText error={fieldState.error as FormFieldError} />
           </div>
         )}
       />
@@ -257,7 +253,7 @@ function CustomerPaymentForm({
                 {...field}
                 value={field.value ?? ""}
               />
-              <FieldErrorText error={fieldState.error} />
+              <FieldErrorText error={fieldState.error as FormFieldError} />
             </div>
           )}
         />
@@ -270,7 +266,7 @@ function CustomerPaymentForm({
           <div className="space-y-2">
             <Label htmlFor="payment-date">Payment date</Label>
             <Input id="payment-date" type="date" {...field} />
-            <FieldErrorText error={fieldState.error} />
+            <FieldErrorText error={fieldState.error as FormFieldError} />
           </div>
         )}
       />
@@ -349,10 +345,9 @@ function SupplierPaymentForm({
         notes: values.notes || null,
         paymentDate: values.paymentDate,
       });
-      toast.add({
-        title: `Payment of ${formatMoney(values.amount)} recorded for ${target.purchaseInvoice}.`,
-        type: "success",
-      });
+      toast.success(
+        `Payment of ${formatMoney(values.amount)} recorded for ${target.purchaseInvoice}.`,
+      );
       onDone();
     } catch (error) {
       setServerError(
@@ -380,13 +375,10 @@ function SupplierPaymentForm({
               step="0.01"
               inputMode="decimal"
               placeholder="0.00"
-              onChange={(event) => {
-                const value = event.target.valueAsNumber;
-                field.onChange(Number.isNaN(value) ? undefined : value);
-              }}
+              {...field}
               value={field.value ?? ""}
             />
-            <FieldErrorText error={fieldState.error} />
+            <FieldErrorText error={fieldState.error as FormFieldError} />
           </div>
         )}
       />
@@ -418,7 +410,7 @@ function SupplierPaymentForm({
                 ))}
               </SelectContent>
             </Select>
-            <FieldErrorText error={fieldState.error} />
+            <FieldErrorText error={fieldState.error as FormFieldError} />
           </div>
         )}
       />
@@ -430,7 +422,7 @@ function SupplierPaymentForm({
           <div className="space-y-2">
             <Label htmlFor="payment-date">Payment date</Label>
             <Input id="payment-date" type="date" {...field} />
-            <FieldErrorText error={fieldState.error} />
+            <FieldErrorText error={fieldState.error as FormFieldError} />
           </div>
         )}
       />
