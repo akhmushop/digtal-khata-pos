@@ -3,6 +3,7 @@ import type { ZodType } from "zod";
 import { z } from "zod";
 import * as dueManagementService from "./dueManagement.service.js";
 import { BadRequestError } from "../../utils/handleError.js";
+import { getBusinessId } from "../../middleware/business.js";
 import {
   customerPaymentSchema,
   dueRowQuerySchema,
@@ -28,7 +29,10 @@ export async function getDueManagementSummary(
 ) {
   try {
     const query = parseOrThrow(dueSummaryQuerySchema, req.query);
-    const result = await dueManagementService.getDueManagementSummary(query);
+    const result = await dueManagementService.getDueManagementSummary(
+      getBusinessId(req),
+      query,
+    );
     res.status(200).json(result);
   } catch (err) {
     next(err);
@@ -42,7 +46,10 @@ export async function getCustomerDueRows(
 ) {
   try {
     const query = parseOrThrow(dueRowQuerySchema, req.query);
-    const result = await dueManagementService.getCustomerDueRows(query);
+    const result = await dueManagementService.getCustomerDueRows(
+      getBusinessId(req),
+      query,
+    );
     res.status(200).json(result);
   } catch (err) {
     next(err);
@@ -62,7 +69,10 @@ export async function getDueManagementTrend(
       .max(90)
       .default(14)
       .parse(req.query.days);
-    const result = await dueManagementService.getDueManagementTrend(days);
+    const result = await dueManagementService.getDueManagementTrend(
+      getBusinessId(req),
+      days,
+    );
     res.status(200).json(result);
   } catch (err) {
     next(err);
@@ -75,7 +85,9 @@ export async function getCustomerDueBalances(
   next: NextFunction,
 ) {
   try {
-    const result = await dueManagementService.getCustomerDueBalances();
+    const result = await dueManagementService.getCustomerDueBalances(
+      getBusinessId(req),
+    );
     res.status(200).json(result);
   } catch (err) {
     next(err);
@@ -89,7 +101,10 @@ export async function getSupplierDueRows(
 ) {
   try {
     const query = parseOrThrow(dueRowQuerySchema, req.query);
-    const result = await dueManagementService.getSupplierDueRows(query);
+    const result = await dueManagementService.getSupplierDueRows(
+      getBusinessId(req),
+      query,
+    );
     res.status(200).json(result);
   } catch (err) {
     next(err);
@@ -103,7 +118,10 @@ export async function recordCustomerPayment(
 ) {
   try {
     const payload = parseOrThrow(customerPaymentSchema, req.body);
-    const result = await dueManagementService.recordCustomerPayment(payload);
+    const result = await dueManagementService.recordCustomerPayment(
+      getBusinessId(req),
+      payload,
+    );
     res.status(201).json({ success: true, data: result });
   } catch (err) {
     next(err);
@@ -117,7 +135,10 @@ export async function recordSupplierPayment(
 ) {
   try {
     const payload = parseOrThrow(supplierPaymentSchema, req.body);
-    const result = await dueManagementService.recordSupplierPayment(payload);
+    const result = await dueManagementService.recordSupplierPayment(
+      getBusinessId(req),
+      payload,
+    );
     res.status(201).json({ success: true, data: result });
   } catch (err) {
     next(err);
@@ -131,7 +152,10 @@ export async function getSalePaymentHistory(
 ) {
   try {
     const saleId = parseOrThrow(idParamSchema, req.params.saleId);
-    const result = await dueManagementService.getSalePayments(saleId);
+    const result = await dueManagementService.getSalePayments(
+      getBusinessId(req),
+      saleId,
+    );
     res.status(200).json(result);
   } catch (err) {
     next(err);
@@ -145,7 +169,10 @@ export async function getPurchasePaymentHistory(
 ) {
   try {
     const purchaseId = parseOrThrow(idParamSchema, req.params.purchaseId);
-    const result = await dueManagementService.getPurchasePayments(purchaseId);
+    const result = await dueManagementService.getPurchasePayments(
+      getBusinessId(req),
+      purchaseId,
+    );
     res.status(200).json(result);
   } catch (err) {
     next(err);
@@ -161,6 +188,7 @@ export async function getCustomerLedger(
     const customerId = parseOrThrow(idParamSchema, req.params.customerId);
     const query = parseOrThrow(ledgerQuerySchema, req.query);
     const result = await dueManagementService.getCustomerLedger(
+      getBusinessId(req),
       customerId,
       query,
     );
@@ -179,6 +207,7 @@ export async function getSupplierLedger(
     const supplierId = parseOrThrow(idParamSchema, req.params.supplierId);
     const query = parseOrThrow(ledgerQuerySchema, req.query);
     const result = await dueManagementService.getSupplierLedger(
+      getBusinessId(req),
       supplierId,
       query,
     );

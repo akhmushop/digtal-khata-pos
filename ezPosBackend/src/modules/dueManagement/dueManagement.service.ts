@@ -72,7 +72,10 @@ function startOfDay(dateString: string): Date {
  * Note: the `sales` table stores the sale date in a column named
  * `purchase_date` (legacy naming), so raw SQL below uses that name.
  */
-export async function getDueManagementSummary(query: DueSummaryQuery) {
+export async function getDueManagementSummary(
+  businessId: number,
+  query: DueSummaryQuery,
+) {
   const overdueDays = query.overdueDays ?? 30;
 
   const [customerResult, supplierResult, collectedToday, paidToday] =
@@ -91,6 +94,7 @@ export async function getDueManagementSummary(query: DueSummaryQuery) {
             )::float8 AS outstanding
           FROM sales s
           WHERE s.status IN ('completed', 'refunded')
+            AND s.business_id = ${businessId}
         ),
         customer_balance AS (
           SELECT
@@ -120,6 +124,7 @@ export async function getDueManagementSummary(query: DueSummaryQuery) {
               2
             )::float8 AS outstanding
           FROM purchases p
+          WHERE p.business_id = ${businessId}
         ),
         supplier_balance AS (
           SELECT
@@ -140,11 +145,13 @@ export async function getDueManagementSummary(query: DueSummaryQuery) {
         SELECT COALESCE(SUM(amount), 0)::float8 AS total
         FROM sale_payments
         WHERE payment_date >= CURRENT_DATE
+          AND business_id = ${businessId}
       `),
       db.execute(sql`
         SELECT COALESCE(SUM(amount), 0)::float8 AS total
         FROM purchase_payments
         WHERE payment_date >= CURRENT_DATE
+          AND business_id = ${businessId}
       `),
     ]);
 
@@ -187,7 +194,7 @@ export async function getDueManagementSummary(query: DueSummaryQuery) {
 /* Customer-level balances (filter dropdown / customer totals)         */
 /* ------------------------------------------------------------------ */
 
-export async function getCustomerDueBalances() {
+export async function getCustomerDueBalances(businessId: number) {
   const result = await db.execute(sql`
     WITH sale_balance AS (
       SELECT
@@ -202,6 +209,7 @@ export async function getCustomerDueBalances() {
         )::float8 AS outstanding
       FROM sales s
       WHERE s.status IN ('completed', 'refunded')
+        AND s.business_id = ${businessId}
     )
     SELECT
       c.id AS customer_id,
@@ -242,16 +250,21 @@ export async function getCustomerDueBalances() {
 /* Invoice-level due rows                                              */
 /* ------------------------------------------------------------------ */
 
-export async function getCustomerDueRows(query: DueRowQuery) {
+export async function getCustomerDueRows(
+  businessId: number,
+  query: DueRowQuery,
+) {
   const search = query.search?.trim();
   const overdueDays = query.overdueDays ?? 30;
   const status = query.status ?? "all";
 
-  const paidAmountSql = sql<number>`COALESCE((SELECT SUM(${salePayments.amount}) FROM ${salePayments} WHERE ${salePayments.saleId} = ${sales.id}), 0)::float8`;
-  const refundAmountSql = sql<number>`COALESCE((SELECT SUM(${saleRefunds.refundTotal}) FROM ${saleRefunds} WHERE ${saleRefunds.saleId} = ${sales.id}), 0)::float8`;
+  // Operands must stay numeric: ROUND(x, 2) does not exist for float8.
+  const paidAmountSql = sql<number>`COALESCE((SELECT SUM(${salePayments.amount}) FROM ${salePayments} WHERE ${salePayments.saleId} = ${sales.id}), 0)::numeric`;
+  const refundAmountSql = sql<number>`COALESCE((SELECT SUM(${saleRefunds.refundTotal}) FROM ${saleRefunds} WHERE ${saleRefunds.saleId} = ${sales.id}), 0)::numeric`;
   const outstandingSql = sql<number>`ROUND(COALESCE(${sales.finalTotal}, 0) - ${paidAmountSql} - ${refundAmountSql}, 2)::float8`;
 
   const conditions = [
+    eq(sales.businessId, businessId),
     inArray(sales.status, ["completed", "refunded"]),
     // Narrow the scan: open dues come from non-paid sales; the settled
     // filter explicitly asks for paid invoices. Computed values below
@@ -348,16 +361,21 @@ export async function getCustomerDueRows(query: DueRowQuery) {
     });
 }
 
-export async function getSupplierDueRows(query: DueRowQuery) {
+export async function getSupplierDueRows(
+  businessId: number,
+  query: DueRowQuery,
+) {
   const search = query.search?.trim();
   const overdueDays = query.overdueDays ?? 30;
   const status = query.status ?? "all";
 
-  const paidAmountSql = sql<number>`COALESCE((SELECT SUM(${purchasePayments.amount}) FROM ${purchasePayments} WHERE ${purchasePayments.purchaseId} = ${purchases.id}), 0)::float8`;
-  const returnAmountSql = sql<number>`COALESCE((SELECT SUM(${purchaseReturns.totalAmount}) FROM ${purchaseReturns} WHERE ${purchaseReturns.purchaseId} = ${purchases.id}), 0)::float8`;
+  // Operands must stay numeric: ROUND(x, 2) does not exist for float8.
+  const paidAmountSql = sql<number>`COALESCE((SELECT SUM(${purchasePayments.amount}) FROM ${purchasePayments} WHERE ${purchasePayments.purchaseId} = ${purchases.id}), 0)::numeric`;
+  const returnAmountSql = sql<number>`COALESCE((SELECT SUM(${purchaseReturns.totalAmount}) FROM ${purchaseReturns} WHERE ${purchaseReturns.purchaseId} = ${purchases.id}), 0)::numeric`;
   const outstandingSql = sql<number>`ROUND(COALESCE(${purchases.totalAmount}, 0) - ${paidAmountSql} - ${returnAmountSql}, 2)::float8`;
 
   const conditions = [
+    eq(purchases.businessId, businessId),
     status === "paid"
       ? and(eq(purchases.paymentStatus, "paid"), eq(purchases.dueAmount, 0))!
       : or(ne(purchases.paymentStatus, "paid"), sql`${purchases.dueAmount} > 0`)!,
@@ -455,7 +473,10 @@ export async function getSupplierDueRows(query: DueRowQuery) {
 /* Recording payments                                                  */
 /* ------------------------------------------------------------------ */
 
-export async function recordCustomerPayment(payload: CustomerPaymentInput) {
+export async function recordCustomerPayment(
+  businessId: number,
+  payload: CustomerPaymentInput,
+) {
   const { saleId, amount, paymentMethod } = payload;
 
   if (!Number.isFinite(amount) || amount <= 0) {
@@ -464,7 +485,9 @@ export async function recordCustomerPayment(payload: CustomerPaymentInput) {
 
   return db.transaction(async (tx) => {
     // Lock the invoice row so two concurrent payments on the same
-    // invoice are serialized and can never over-collect.
+    // invoice are serialized and can never over-collect. Scoping by
+    // businessId here is also the ownership check: another business's
+    // invoice is indistinguishable from a missing one.
     const [sale] = await tx
       .select({
         id: sales.id,
@@ -474,7 +497,7 @@ export async function recordCustomerPayment(payload: CustomerPaymentInput) {
         status: sales.status,
       })
       .from(sales)
-      .where(eq(sales.id, saleId))
+      .where(and(eq(sales.id, saleId), eq(sales.businessId, businessId)))
       .for("update");
 
     if (!sale) {
@@ -492,13 +515,23 @@ export async function recordCustomerPayment(payload: CustomerPaymentInput) {
           paidTotal: sql<number>`COALESCE(SUM(${salePayments.amount}), 0)::float8`,
         })
         .from(salePayments)
-        .where(eq(salePayments.saleId, saleId)),
+        .where(
+          and(
+            eq(salePayments.saleId, saleId),
+            eq(salePayments.businessId, businessId),
+          ),
+        ),
       tx
         .select({
           refundTotal: sql<number>`COALESCE(SUM(${saleRefunds.refundTotal}), 0)::float8`,
         })
         .from(saleRefunds)
-        .where(eq(saleRefunds.saleId, saleId)),
+        .where(
+          and(
+            eq(saleRefunds.saleId, saleId),
+            eq(saleRefunds.businessId, businessId),
+          ),
+        ),
     ]);
 
     const finalTotal = roundMoney(toNumber(sale.finalTotal));
@@ -533,6 +566,7 @@ export async function recordCustomerPayment(payload: CustomerPaymentInput) {
       [inserted] = await tx
         .insert(salePayments)
         .values({
+          businessId,
           saleId,
           customerId: sale.customerId,
           amount: roundMoney(amount),
@@ -564,7 +598,7 @@ export async function recordCustomerPayment(payload: CustomerPaymentInput) {
         dueAmount: Math.max(0, nextOutstanding),
         paymentStatus: nextStatus,
       })
-      .where(eq(sales.id, saleId));
+      .where(and(eq(sales.id, saleId), eq(sales.businessId, businessId)));
 
     return {
       saleId,
@@ -577,7 +611,10 @@ export async function recordCustomerPayment(payload: CustomerPaymentInput) {
   });
 }
 
-export async function recordSupplierPayment(payload: SupplierPaymentInput) {
+export async function recordSupplierPayment(
+  businessId: number,
+  payload: SupplierPaymentInput,
+) {
   const { purchaseId, amount, method } = payload;
 
   if (!Number.isFinite(amount) || amount <= 0) {
@@ -586,6 +623,7 @@ export async function recordSupplierPayment(payload: SupplierPaymentInput) {
 
   return db.transaction(async (tx) => {
     // Lock the purchase row to serialize concurrent supplier payments.
+    // Scoped by businessId — the ownership check.
     const [purchase] = await tx
       .select({
         id: purchases.id,
@@ -595,14 +633,20 @@ export async function recordSupplierPayment(payload: SupplierPaymentInput) {
         purchaseOrderNumber: purchases.purchaseOrderNumber,
       })
       .from(purchases)
-      .where(eq(purchases.id, purchaseId))
+      .where(
+        and(eq(purchases.id, purchaseId), eq(purchases.businessId, businessId)),
+      )
       .for("update");
 
     if (!purchase) {
       throw new NotFoundError("Purchase not found.");
     }
 
-    const allPurchaseItems = await getAllPurchaseItems(tx, purchaseId);
+    const allPurchaseItems = await getAllPurchaseItems(
+      tx,
+      businessId,
+      purchaseId,
+    );
 
     // Reuse the receive-flow rules: you can only pay for goods that have
     // actually been received, never beyond the invoice total.
@@ -626,6 +670,7 @@ export async function recordSupplierPayment(payload: SupplierPaymentInput) {
       [inserted] = await tx
         .insert(purchasePayments)
         .values({
+          businessId,
           purchaseId,
           amount: roundMoney(amount),
           method,
@@ -659,7 +704,9 @@ export async function recordSupplierPayment(payload: SupplierPaymentInput) {
         paymentStatus: nextStatus,
         updatedAt: new Date(),
       })
-      .where(eq(purchases.id, purchaseId));
+      .where(
+        and(eq(purchases.id, purchaseId), eq(purchases.businessId, businessId)),
+      );
 
     return {
       purchaseId,
@@ -676,7 +723,7 @@ export async function recordSupplierPayment(payload: SupplierPaymentInput) {
 /* Daily trend (collections vs supplier payments)                      */
 /* ------------------------------------------------------------------ */
 
-export async function getDueManagementTrend(days: number) {
+export async function getDueManagementTrend(businessId: number, days: number) {
   const safeDays = Math.min(Math.max(1, Math.floor(days) || 14), 90);
 
   const [collections, supplierPayments] = await Promise.all([
@@ -686,6 +733,7 @@ export async function getDueManagementTrend(days: number) {
         COALESCE(SUM(amount), 0)::float8 AS total
       FROM sale_payments
       WHERE payment_date >= CURRENT_DATE - (${safeDays - 1} * INTERVAL '1 day')
+        AND business_id = ${businessId}
       GROUP BY 1
     `),
     db.execute(sql`
@@ -694,6 +742,7 @@ export async function getDueManagementTrend(days: number) {
         COALESCE(SUM(amount), 0)::float8 AS total
       FROM purchase_payments
       WHERE payment_date >= CURRENT_DATE - (${safeDays - 1} * INTERVAL '1 day')
+        AND business_id = ${businessId}
       GROUP BY 1
     `),
   ]);
@@ -727,11 +776,11 @@ export async function getDueManagementTrend(days: number) {
 /* Payment history                                                     */
 /* ------------------------------------------------------------------ */
 
-export async function getSalePayments(saleId: number) {
+export async function getSalePayments(businessId: number, saleId: number) {
   const [sale] = await db
     .select({ id: sales.id, invoiceNumber: sales.invoiceNumber })
     .from(sales)
-    .where(eq(sales.id, saleId))
+    .where(and(eq(sales.id, saleId), eq(sales.businessId, businessId)))
     .limit(1);
   if (!sale) {
     throw new NotFoundError("Sale not found.");
@@ -748,7 +797,12 @@ export async function getSalePayments(saleId: number) {
       notes: salePayments.notes,
     })
     .from(salePayments)
-    .where(eq(salePayments.saleId, saleId))
+    .where(
+      and(
+        eq(salePayments.saleId, saleId),
+        eq(salePayments.businessId, businessId),
+      ),
+    )
     .orderBy(desc(salePayments.paymentDate), desc(salePayments.id));
 
   return {
@@ -763,14 +817,17 @@ export async function getSalePayments(saleId: number) {
   };
 }
 
-export async function getPurchasePayments(purchaseId: number) {
+export async function getPurchasePayments(
+  businessId: number,
+  purchaseId: number,
+) {
   const [purchase] = await db
     .select({
       id: purchases.id,
       purchaseOrderNumber: purchases.purchaseOrderNumber,
     })
     .from(purchases)
-    .where(eq(purchases.id, purchaseId))
+    .where(and(eq(purchases.id, purchaseId), eq(purchases.businessId, businessId)))
     .limit(1);
   if (!purchase) {
     throw new NotFoundError("Purchase not found.");
@@ -785,7 +842,12 @@ export async function getPurchasePayments(purchaseId: number) {
       paymentDate: purchasePayments.paymentDate,
     })
     .from(purchasePayments)
-    .where(eq(purchasePayments.purchaseId, purchaseId))
+    .where(
+      and(
+        eq(purchasePayments.purchaseId, purchaseId),
+        eq(purchasePayments.businessId, businessId),
+      ),
+    )
     .orderBy(desc(purchasePayments.paymentDate), desc(purchasePayments.id));
 
   return {
@@ -859,6 +921,7 @@ function buildLedger(
 }
 
 export async function getCustomerLedger(
+  businessId: number,
   customerId: number,
   query: LedgerQuery,
 ) {
@@ -870,7 +933,7 @@ export async function getCustomerLedger(
       address: customers.address,
     })
     .from(customers)
-    .where(eq(customers.id, customerId))
+    .where(and(eq(customers.id, customerId), eq(customers.businessId, businessId)))
     .limit(1);
 
   if (!customer) {
@@ -893,6 +956,7 @@ export async function getCustomerLedger(
     .where(
       and(
         eq(sales.customerId, customerId),
+        eq(sales.businessId, businessId),
         inArray(sales.status, ["completed", "refunded"]),
       ),
     );
@@ -909,7 +973,12 @@ export async function getCustomerLedger(
     })
     .from(salePayments)
     .innerJoin(sales, eq(salePayments.saleId, sales.id))
-    .where(eq(sales.customerId, customerId));
+    .where(
+      and(
+        eq(sales.customerId, customerId),
+        eq(sales.businessId, businessId),
+      ),
+    );
 
   const refundRows = await db
     .select({
@@ -923,7 +992,12 @@ export async function getCustomerLedger(
     })
     .from(saleRefunds)
     .innerJoin(sales, eq(saleRefunds.saleId, sales.id))
-    .where(eq(sales.customerId, customerId));
+    .where(
+      and(
+        eq(sales.customerId, customerId),
+        eq(sales.businessId, businessId),
+      ),
+    );
 
   const allRows: LedgerTransactionRow[] = [
     ...saleRows,
@@ -971,6 +1045,7 @@ export async function getCustomerLedger(
 }
 
 export async function getSupplierLedger(
+  businessId: number,
   supplierId: number,
   query: LedgerQuery,
 ) {
@@ -982,7 +1057,7 @@ export async function getSupplierLedger(
       address: suppliers.address,
     })
     .from(suppliers)
-    .where(eq(suppliers.id, supplierId))
+    .where(and(eq(suppliers.id, supplierId), eq(suppliers.businessId, businessId)))
     .limit(1);
 
   if (!supplier) {
@@ -1004,7 +1079,12 @@ export async function getSupplierLedger(
       relatedId: purchases.id,
     })
     .from(purchases)
-    .where(eq(purchases.supplierId, supplierId));
+    .where(
+      and(
+        eq(purchases.supplierId, supplierId),
+        eq(purchases.businessId, businessId),
+      ),
+    );
 
   const paymentRows = await db
     .select({
@@ -1018,7 +1098,12 @@ export async function getSupplierLedger(
     })
     .from(purchasePayments)
     .innerJoin(purchases, eq(purchasePayments.purchaseId, purchases.id))
-    .where(eq(purchases.supplierId, supplierId));
+    .where(
+      and(
+        eq(purchases.supplierId, supplierId),
+        eq(purchases.businessId, businessId),
+      ),
+    );
 
   const returnRows = await db
     .select({
@@ -1031,7 +1116,12 @@ export async function getSupplierLedger(
       relatedId: purchaseReturns.id,
     })
     .from(purchaseReturns)
-    .where(eq(purchaseReturns.supplierId, supplierId));
+    .where(
+      and(
+        eq(purchaseReturns.supplierId, supplierId),
+        eq(purchaseReturns.businessId, businessId),
+      ),
+    );
 
   const allRows: LedgerTransactionRow[] = [
     ...purchaseRows,

@@ -12,6 +12,7 @@ import purchasesRouter from "./modules/purchases/purchases.routes.js";
 import purchasesReturnRouter from "./modules/purchaseReturn/purchaseReturn.routes.js";
 import addProductRouter from "./modules/addProduct/product.routes.js";
 import contactRouter from "./modules/contact/contact.routes.js";
+import dueManagementRouter from "./modules/dueManagement/dueManagement.routes.js";
 import reportsRouter from "./modules/reports/reports.routes.js";
 import subscriptionPlansRouter from "./modules/subscriptionPlans/subscriptionPlans.routes.js";
 import authRouter from "./modules/auth/auth.routes.js";
@@ -62,6 +63,7 @@ export function buildApp() {
   app.use("/", purchasesReturnRouter);
   app.use("/", addProductRouter);
   app.use("/", contactRouter);
+  app.use("/", dueManagementRouter);
   app.use("/", reportsRouter);
   app.use("/", subscriptionPlansRouter);
   app.use("/", authRouter);
