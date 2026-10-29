@@ -1,1 +1,0 @@
-ALTER TABLE "purchase_items" ADD COLUMN "cancelled_quantity   " numeric(12, 3) DEFAULT 0 NOT NULL;

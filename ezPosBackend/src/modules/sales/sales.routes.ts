@@ -4,6 +4,7 @@ import * as salesController from "./sales.controller.js";
 const router = express.Router();
 router.get("/api/sold_products", salesController.getSalesData);
 router.post("/api/sales", salesController.createSale);
+router.get("/api/sales/:id/receipt", salesController.getSaleReceipt);
 router.post(
   "/api/sold_products/refund/:id",
   salesController.createSingleRefund,
