@@ -7,24 +7,33 @@ import { Toaster } from "./components/ui/toast.js";
 import { bootstrapSession } from "./api/axios.js";
 
 function App() {
-  useInitializeApp();
+  const [sessionState, setSessionState] = useState<
+    "loading" | "ready" | "failed"
+  >("loading");
 
   // Restore the signed-in session from the HttpOnly refresh cookie before
-  // rendering. Redirects to the website sign-in when there is no session.
-  const [sessionReady, setSessionReady] = useState(false);
+  // rendering. On failure the bootstrap redirects to the website sign-in and
+  // the app must NOT mount (otherwise every store call fires without a
+  // token and re-triggers redirects).
   useEffect(() => {
     let cancelled = false;
     bootstrapSession()
-      .catch(() => undefined)
-      .finally(() => {
-        if (!cancelled) setSessionReady(true);
+      .then(() => {
+        if (!cancelled) setSessionState("ready");
+      })
+      .catch(() => {
+        if (!cancelled) setSessionState("failed");
       });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  if (!sessionReady) {
+  // Startup data fetches wait until the session bootstrap has restored the
+  // token and the active business.
+  useInitializeApp(sessionState === "ready");
+
+  if (sessionState !== "ready") {
     return (
       <div
         role="status"
@@ -37,7 +46,9 @@ function App() {
           color: "#64748b",
         }}
       >
-        Restoring your session…
+        {sessionState === "loading"
+          ? "Restoring your session…"
+          : "Session could not be restored — redirecting to sign-in…"}
       </div>
     );
   }
