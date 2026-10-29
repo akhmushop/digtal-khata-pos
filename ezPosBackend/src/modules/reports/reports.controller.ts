@@ -207,3 +207,60 @@ export async function getSupplierPayables(
   }
 }
 
+
+
+export async function getHourlySales(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const params = getValidatedParams(req);
+    const data = await reportsService.getHourlySalesReport(params);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getTaxReconciliation(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const params = getValidatedParams(req);
+    const data = await reportsService.getTaxReconciliationReport(params);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getInventoryShrinkage(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const params = getValidatedParams(req);
+    const data = await reportsService.getInventoryShrinkageReport(params);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getRegisterClose(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const params = getValidatedParams(req);
+    const data = await reportsService.getRegisterCloseReport(params);
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}

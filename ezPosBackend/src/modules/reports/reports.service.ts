@@ -808,3 +808,314 @@ export async function getSupplierPayablesReport() {
   };
 }
 
+
+
+// ----------------------------------------------------
+// 5. COMMERCIAL ADDITIONS: HOURLY, TAX, SHRINKAGE, REGISTER CLOSE
+// ----------------------------------------------------
+
+export async function getHourlySalesReport(params: DateRangeQuery) {
+  const { start, end } = getDateBounds(params);
+
+  const hourlyData = await db.execute(sql`
+    WITH hours AS (
+      SELECT generate_series(0, 23) AS hour_num
+    ),
+    hourly_sales AS (
+      SELECT 
+        EXTRACT(HOUR FROM s.created_at)::int AS hour_num,
+        COUNT(DISTINCT s.id)::int AS transaction_count,
+        COALESCE(SUM(s.final_total), 0)::numeric AS gross_sales,
+        COALESCE(SUM(si.quantity), 0)::int AS items_sold
+      FROM sales s
+      LEFT JOIN sale_items si ON si.sale_id = s.id
+      WHERE s.status IN ('completed', 'refunded')
+        AND s.created_at >= ${start}::timestamp 
+        AND s.created_at <= ${end}::timestamp
+      GROUP BY EXTRACT(HOUR FROM s.created_at)
+    )
+    SELECT 
+      h.hour_num AS "hourNum",
+      TO_CHAR(TO_TIMESTAMP(h.hour_num::text, 'HH24'), 'HH12:00 AM') || ' - ' || TO_CHAR(TO_TIMESTAMP(((h.hour_num + 1) % 24)::text, 'HH24'), 'HH12:00 AM') AS "hourLabel",
+      COALESCE(hs.transaction_count, 0)::int AS "transactionCount",
+      COALESCE(hs.gross_sales, 0)::numeric AS "grossSales",
+      COALESCE(hs.items_sold, 0)::int AS "itemsSold",
+      CASE 
+        WHEN COALESCE(hs.transaction_count, 0) > 0 
+        THEN ROUND(COALESCE(hs.gross_sales, 0) / hs.transaction_count, 2)
+        ELSE 0 
+      END AS "averageOrderValue"
+    FROM hours h
+    LEFT JOIN hourly_sales hs ON hs.hour_num = h.hour_num
+    ORDER BY h.hour_num ASC
+  `);
+
+  const summary = await db.execute(sql`
+    SELECT 
+      COUNT(DISTINCT s.id)::int AS "totalTransactions",
+      COALESCE(SUM(s.final_total), 0)::numeric AS "totalSales",
+      COALESCE(SUM(si.quantity), 0)::int AS "totalItemsSold",
+      CASE 
+        WHEN COUNT(DISTINCT s.id) > 0 
+        THEN ROUND(COALESCE(SUM(s.final_total), 0) / COUNT(DISTINCT s.id), 2)
+        ELSE 0 
+      END AS "overallAOV"
+    FROM sales s
+    LEFT JOIN sale_items si ON si.sale_id = s.id
+    WHERE s.status IN ('completed', 'refunded')
+      AND s.created_at >= ${start}::timestamp 
+      AND s.created_at <= ${end}::timestamp
+  `);
+
+  return {
+    hours: hourlyData.rows,
+    summary: summary.rows[0] || {},
+  };
+}
+
+export async function getTaxReconciliationReport(params: DateRangeQuery) {
+  const { start, end } = getDateBounds(params);
+
+  const salesTax = await db.execute(sql`
+    SELECT 
+      COUNT(id)::int AS "taxableInvoices",
+      COALESCE(SUM(subtotal), 0)::numeric AS "taxableSales",
+      COALESCE(SUM(vat), 0)::numeric AS "outputVat",
+      COALESCE(SUM(final_total), 0)::numeric AS "totalGrossSales"
+    FROM sales
+    WHERE status IN ('completed', 'refunded')
+      AND created_at >= ${start}::timestamp 
+      AND created_at <= ${end}::timestamp
+  `);
+
+  const purchaseTax = await db.execute(sql`
+    SELECT 
+      COUNT(id)::int AS "purchaseOrdersCount",
+      COALESCE(SUM(subtotal), 0)::numeric AS "taxablePurchases",
+      COALESCE(SUM(tax), 0)::numeric AS "inputVat",
+      COALESCE(SUM(total_amount), 0)::numeric AS "totalPurchases"
+    FROM purchases
+    WHERE created_at >= ${start}::timestamp 
+      AND created_at <= ${end}::timestamp
+  `);
+
+  const dailyBreakdown = await db.execute(sql`
+    WITH daily_sales AS (
+      SELECT 
+        DATE(created_at)::text AS tx_date,
+        COALESCE(SUM(subtotal), 0)::numeric AS sales_subtotal,
+        COALESCE(SUM(vat), 0)::numeric AS output_vat
+      FROM sales
+      WHERE status IN ('completed', 'refunded')
+        AND created_at >= ${start}::timestamp 
+        AND created_at <= ${end}::timestamp
+      GROUP BY DATE(created_at)
+    ),
+    daily_purchases AS (
+      SELECT 
+        DATE(created_at)::text AS tx_date,
+        COALESCE(SUM(subtotal), 0)::numeric AS purchase_subtotal,
+        COALESCE(SUM(tax), 0)::numeric AS input_vat
+      FROM purchases
+      WHERE created_at >= ${start}::timestamp 
+        AND created_at <= ${end}::timestamp
+      GROUP BY DATE(created_at)
+    )
+    SELECT 
+      COALESCE(s.tx_date, p.tx_date) AS "reportDate",
+      COALESCE(s.sales_subtotal, 0)::numeric AS "taxableSales",
+      COALESCE(s.output_vat, 0)::numeric AS "outputVat",
+      COALESCE(p.purchase_subtotal, 0)::numeric AS "taxablePurchases",
+      COALESCE(p.input_vat, 0)::numeric AS "inputVat",
+      (COALESCE(s.output_vat, 0) - COALESCE(p.input_vat, 0))::numeric AS "netVatPayable"
+    FROM daily_sales s
+    FULL OUTER JOIN daily_purchases p ON p.tx_date = s.tx_date
+    ORDER BY "reportDate" DESC
+  `);
+
+  const outputVat = Number(salesTax.rows[0]?.outputVat || 0);
+  const inputVat = Number(purchaseTax.rows[0]?.inputVat || 0);
+  const netTaxLiability = outputVat - inputVat;
+
+  return {
+    salesTax: salesTax.rows[0] || {},
+    purchaseTax: purchaseTax.rows[0] || {},
+    netTaxLiability,
+    dailyBreakdown: dailyBreakdown.rows,
+  };
+}
+
+export async function getInventoryShrinkageReport(params: DateRangeQuery) {
+  const { start, end } = getDateBounds(params);
+  const page = params.page || 1;
+  const limit = params.limit || 50;
+  const offset = (page - 1) * limit;
+
+  const countQuery = await db.execute(sql`
+    SELECT COUNT(im.id)::int AS total
+    FROM inventory_movements im
+    WHERE im.movement_type = 'adjustment'
+      AND im.quantity < 0
+      AND im.created_at >= ${start}::timestamp 
+      AND im.created_at <= ${end}::timestamp
+  `);
+
+  const listQuery = await db.execute(sql`
+    SELECT 
+      im.id,
+      im.created_at AS "createdAt",
+      p.name AS "productName",
+      pv.sku,
+      COALESCE(cat.name, 'Uncategorized') AS "categoryName",
+      CASE 
+        WHEN im.reference_type LIKE 'stock_adjustment:%' 
+        THEN SUBSTRING(im.reference_type FROM 18)
+        ELSE 'correction'
+      END AS reason,
+      ABS(im.quantity)::int AS "unitsLost",
+      pv.selling_price::numeric AS "unitRetailPrice",
+      COALESCE(ib.purchase_price, pv.selling_price * 0.7)::numeric AS "unitCost",
+      (ABS(im.quantity) * COALESCE(ib.purchase_price, pv.selling_price * 0.7))::numeric AS "costLoss",
+      (ABS(im.quantity) * pv.selling_price)::numeric AS "retailLoss"
+    FROM inventory_movements im
+    INNER JOIN product_variants pv ON pv.id = im.variant_id
+    INNER JOIN products p ON p.id = pv.product_id
+    LEFT JOIN categories cat ON cat.id = p.category_id
+    LEFT JOIN (
+      SELECT variant_id, AVG(purchase_price) AS purchase_price
+      FROM inventory_batches
+      GROUP BY variant_id
+    ) ib ON ib.variant_id = pv.id
+    WHERE im.movement_type = 'adjustment'
+      AND im.quantity < 0
+      AND im.created_at >= ${start}::timestamp 
+      AND im.created_at <= ${end}::timestamp
+    ORDER BY im.created_at DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `);
+
+  const summary = await db.execute(sql`
+    SELECT 
+      COUNT(im.id)::int AS "incidentCount",
+      COALESCE(SUM(ABS(im.quantity)), 0)::int AS "totalUnitsLost",
+      COALESCE(SUM(ABS(im.quantity) * COALESCE(ib.purchase_price, pv.selling_price * 0.7)), 0)::numeric AS "totalCostLoss",
+      COALESCE(SUM(ABS(im.quantity) * pv.selling_price), 0)::numeric AS "totalRetailLoss"
+    FROM inventory_movements im
+    INNER JOIN product_variants pv ON pv.id = im.variant_id
+    LEFT JOIN (
+      SELECT variant_id, AVG(purchase_price) AS purchase_price
+      FROM inventory_batches
+      GROUP BY variant_id
+    ) ib ON ib.variant_id = pv.id
+    WHERE im.movement_type = 'adjustment'
+      AND im.quantity < 0
+      AND im.created_at >= ${start}::timestamp 
+      AND im.created_at <= ${end}::timestamp
+  `);
+
+  const byReason = await db.execute(sql`
+    SELECT 
+      CASE 
+        WHEN im.reference_type LIKE 'stock_adjustment:%' 
+        THEN SUBSTRING(im.reference_type FROM 18)
+        ELSE 'correction'
+      END AS reason,
+      COUNT(im.id)::int AS "incidentCount",
+      COALESCE(SUM(ABS(im.quantity)), 0)::int AS "unitsLost",
+      COALESCE(SUM(ABS(im.quantity) * COALESCE(ib.purchase_price, pv.selling_price * 0.7)), 0)::numeric AS "costLoss"
+    FROM inventory_movements im
+    INNER JOIN product_variants pv ON pv.id = im.variant_id
+    LEFT JOIN (
+      SELECT variant_id, AVG(purchase_price) AS purchase_price
+      FROM inventory_batches
+      GROUP BY variant_id
+    ) ib ON ib.variant_id = pv.id
+    WHERE im.movement_type = 'adjustment'
+      AND im.quantity < 0
+      AND im.created_at >= ${start}::timestamp 
+      AND im.created_at <= ${end}::timestamp
+    GROUP BY reason
+    ORDER BY "costLoss" DESC
+  `);
+
+  return {
+    incidents: listQuery.rows,
+    total: Number(countQuery.rows[0]?.total || 0),
+    summary: summary.rows[0] || {},
+    byReason: byReason.rows,
+    page,
+    limit,
+  };
+}
+
+export async function getRegisterCloseReport(params: DateRangeQuery) {
+  const { start, end, startDateOnly, endDateOnly } = getDateBounds(params);
+
+  // Cash collections
+  const cashSales = await db.execute(sql`
+    SELECT 
+      COALESCE(SUM(amount), 0)::numeric AS "cashAmount",
+      COUNT(id)::int AS "cashTxCount"
+    FROM sale_payments
+    WHERE payment_method = 'cash'
+      AND payment_date >= ${start}::timestamp 
+      AND payment_date <= ${end}::timestamp
+  `);
+
+  // Digital and card collections
+  const digitalPayments = await db.execute(sql`
+    SELECT 
+      payment_method AS method,
+      COALESCE(SUM(amount), 0)::numeric AS amount,
+      COUNT(id)::int AS "txCount"
+    FROM sale_payments
+    WHERE payment_method != 'cash'
+      AND payment_date >= ${start}::timestamp 
+      AND payment_date <= ${end}::timestamp
+    GROUP BY payment_method
+  `);
+
+  // Cash expenses paid out of drawer
+  const cashExpenses = await db.execute(sql`
+    SELECT 
+      COALESCE(SUM(amount), 0)::numeric AS "cashExpenseTotal",
+      COUNT(id)::int AS "expenseCount"
+    FROM expenses
+    WHERE payment_method = 'Cash'
+      AND expense_date >= ${startDateOnly}::date 
+      AND expense_date <= ${endDateOnly}::date
+  `);
+
+  // Overall sales summary during this shift window
+  const salesSummary = await db.execute(sql`
+    SELECT 
+      COUNT(id)::int AS "totalInvoices",
+      COALESCE(SUM(final_total), 0)::numeric AS "grossRevenue",
+      COALESCE(SUM(discount), 0)::numeric AS "totalDiscount",
+      COALESCE(SUM(vat), 0)::numeric AS "totalVat",
+      COALESCE(SUM(due_amount), 0)::numeric AS "creditSalesDue"
+    FROM sales
+    WHERE status IN ('completed', 'refunded')
+      AND created_at >= ${start}::timestamp 
+      AND created_at <= ${end}::timestamp
+  `);
+
+  // Refunds issued
+  const refunds = await db.execute(sql`
+    SELECT 
+      COUNT(id)::int AS "refundCount",
+      COALESCE(SUM(refund_total), 0)::numeric AS "refundTotal"
+    FROM sale_refunds
+    WHERE created_at >= ${start}::timestamp 
+      AND created_at <= ${end}::timestamp
+  `);
+
+  return {
+    cashSales: cashSales.rows[0] || {},
+    digitalPayments: digitalPayments.rows,
+    cashExpenses: cashExpenses.rows[0] || {},
+    salesSummary: salesSummary.rows[0] || {},
+    refunds: refunds.rows[0] || {},
+    periodBounds: { start, end, startDateOnly, endDateOnly },
+  };
+}

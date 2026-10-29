@@ -16,6 +16,10 @@ import type {
   BatchRow,
   PurchaseReportData,
   SupplierPayablesReportData,
+  HourlySalesReportData,
+  TaxReconciliationData,
+  ShrinkageReportData,
+  RegisterCloseData,
 } from "../types/report.types";
 
 function buildParams(filters: Partial<ReportFilters>) {
@@ -41,6 +45,11 @@ export const reportsApi = {
   // Sales
   getSalesSummary: (filters: Partial<ReportFilters> = {}) =>
     api.get<{ success: boolean; data: SalesSummaryReportData }>("/reports/sales/summary", {
+      params: buildParams(filters),
+    }),
+
+  getHourlySales: (filters: Partial<ReportFilters> = {}) =>
+    api.get<{ success: boolean; data: HourlySalesReportData }>("/reports/sales/hourly", {
       params: buildParams(filters),
     }),
 
@@ -85,6 +94,16 @@ export const reportsApi = {
       params: buildParams(filters),
     }),
 
+  getTaxReconciliation: (filters: Partial<ReportFilters> = {}) =>
+    api.get<{ success: boolean; data: TaxReconciliationData }>("/reports/financial/tax", {
+      params: buildParams(filters),
+    }),
+
+  getRegisterClose: (filters: Partial<ReportFilters> = {}) =>
+    api.get<{ success: boolean; data: RegisterCloseData }>("/reports/financial/register-close", {
+      params: buildParams(filters),
+    }),
+
   // Inventory
   getStock: (filters: Partial<ReportFilters> = {}) =>
     api.get<{ success: boolean; data: StockReportData }>("/reports/inventory/stock", {
@@ -101,6 +120,11 @@ export const reportsApi = {
       params: buildParams(filters),
     }),
 
+  getInventoryShrinkage: (filters: Partial<ReportFilters> = {}) =>
+    api.get<{ success: boolean; data: ShrinkageReportData }>("/reports/inventory/shrinkage", {
+      params: buildParams(filters),
+    }),
+
   // Purchases
   getPurchaseSummary: (filters: Partial<ReportFilters> = {}) =>
     api.get<{ success: boolean; data: PurchaseReportData }>("/reports/purchases/summary", {
@@ -110,4 +134,3 @@ export const reportsApi = {
   getSupplierPayables: () =>
     api.get<{ success: boolean; data: SupplierPayablesReportData }>("/reports/purchases/payables"),
 };
-
