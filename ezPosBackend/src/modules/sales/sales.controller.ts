@@ -24,6 +24,24 @@ export async function getSalesData(req: Request, res: Response) {
     handleError(res, err);
   }
 }
+
+export async function getSaleReceipt(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ message: "Invalid sale ID" });
+    }
+    const receipt = await salesService.getSaleReceipt(id);
+    return res.status(200).json(receipt);
+  } catch (err: unknown) {
+    next(err);
+  }
+}
+
 export async function createSale(
   req: Request,
   res: Response,

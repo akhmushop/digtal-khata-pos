@@ -6,7 +6,7 @@ import {
   type SortingState,
   useTable,
 } from "@tanstack/react-table";
-import { Eye, RotateCcw } from "lucide-react";
+import { Eye, RotateCcw, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -36,6 +36,7 @@ function createColumns(
   onViewSale: (id: number) => void,
   onRefundSale: (sale: AllSoldProduct) => void,
   busySaleId: number | null,
+  onPrintSale: (saleId: number) => Promise<void>,
 ): ColumnDef<DataTableFeatures, AllSoldProduct>[] {
   return [
     {
@@ -43,7 +44,9 @@ function createColumns(
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Invoice" />
       ),
-      cell: ({ row }) => <span className="font-medium">{row.original.invoiceNumber}</span>,
+      cell: ({ row }) => (
+        <span className="font-medium">{row.original.invoiceNumber}</span>
+      ),
     },
     {
       accessorKey: "createdAt",
@@ -113,7 +116,11 @@ function createColumns(
           : someReturned
             ? "Partial return"
             : row.original.paymentStatus;
-        return <Badge variant={allReturned ? "destructive" : "outline"}>{status}</Badge>;
+        return (
+          <Badge variant={allReturned ? "destructive" : "outline"}>
+            {status}
+          </Badge>
+        );
       },
     },
     {
@@ -122,6 +129,17 @@ function createColumns(
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => (
         <div className="flex justify-end gap-2">
+          {onPrintSale && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPrintSale(row.original.id)}
+              title="Print receipt"
+            >
+              <Printer className="size-4" />
+              Receipt
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -157,12 +175,14 @@ export function SalesDataTable({
   onViewSale,
   onRefundSale,
   busySaleId,
+  onPrintSale,
 }: {
   data: AllSoldProduct[];
   loading: boolean;
   onViewSale: (id: number) => void;
   onRefundSale: (sale: AllSoldProduct) => void;
   busySaleId: number | null;
+  onPrintSale: (saleId: number) => Promise<void>;
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -170,8 +190,8 @@ export function SalesDataTable({
     useState<ColumnVisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
   const columns = useMemo(
-    () => createColumns(onViewSale, onRefundSale, busySaleId),
-    [busySaleId, onRefundSale, onViewSale],
+    () => createColumns(onViewSale, onRefundSale, busySaleId, onPrintSale),
+    [busySaleId, onRefundSale, onViewSale, onPrintSale],
   );
   const table = useTable({
     features,
@@ -212,7 +232,10 @@ export function SalesDataTable({
           <TableBody>
             {table.getRowModel().rows.length > 0 ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
@@ -229,7 +252,10 @@ export function SalesDataTable({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
                   {loading ? "Loading sales..." : "No sales found."}
                 </TableCell>
               </TableRow>
