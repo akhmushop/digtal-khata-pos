@@ -23,6 +23,8 @@ import {
   NotFoundError,
 } from "./utils/handleError.js";
 import { env } from "./config/env.js";
+import { db } from "./db/schema/index.js";
+import { sql } from "drizzle-orm";
 
 /**
  * Builds the fully-wired Express app (routes + error handling) without
@@ -40,6 +42,18 @@ export function buildApp() {
     }),
   );
   app.use(express.json());
+
+  // Liveness/readiness probe for load balancers and container runtimes.
+  app.get("/healthz", async (_req: Request, res: Response) => {
+    try {
+      await db.execute(sql`SELECT 1`);
+      res.status(200).json({ status: "ok" });
+    } catch (err) {
+      console.error("Health check failed:", err);
+      res.status(503).json({ status: "unhealthy" });
+    }
+  });
+
   app.use("/", productRouter);
   app.use("/", salesRouter);
   app.use("/", customersRouter);

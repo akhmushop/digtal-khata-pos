@@ -481,15 +481,34 @@ export async function duplicateProduct(businessId: number, id: number) {
     .returning();
   return created;
 }
+// Columns a PATCH payload may set. Everything else (id, businessId,
+// timestamps, and any non-column keys the client sends) is dropped.
+const PATCHABLE_PRODUCT_FIELDS = [
+  "name",
+  "categoryId",
+  "brandId",
+  "unitId",
+  "description",
+  "productType",
+  "hasVariants",
+  "trackingType",
+  "status",
+] as const;
+
 export async function patchProduct(
   businessId: number,
   id: number,
   updates: Partial<ProductsTypes>,
 ) {
-  // Never allow the tenant column to be changed through patch payloads.
-  const { businessId: _ignored, ...safeUpdates } = updates as Partial<ProductsTypes> & {
-    businessId?: number;
-  };
+  const safeUpdates: Record<string, unknown> = {};
+  for (const field of PATCHABLE_PRODUCT_FIELDS) {
+    if (field in updates) {
+      safeUpdates[field] = updates[field];
+    }
+  }
+  if (Object.keys(safeUpdates).length === 0) {
+    throw new BadRequestError("No updatable fields were provided.");
+  }
   // Reference columns are plain FKs (no composite tenant constraint), so each
   // supplied reference must be verified against the caller's business here —
   // otherwise a patch could point this product at another business's rows.
@@ -499,7 +518,7 @@ export async function patchProduct(
       .from(categories)
       .where(
         and(
-          eq(categories.id, safeUpdates.categoryId),
+          eq(categories.id, safeUpdates.categoryId as number),
           eq(categories.businessId, businessId),
         ),
       )
@@ -512,7 +531,7 @@ export async function patchProduct(
       .from(brands)
       .where(
         and(
-          eq(brands.id, safeUpdates.brandId),
+          eq(brands.id, safeUpdates.brandId as number),
           eq(brands.businessId, businessId),
         ),
       )
@@ -525,7 +544,7 @@ export async function patchProduct(
       .from(units)
       .where(
         and(
-          eq(units.id, safeUpdates.unitId),
+          eq(units.id, safeUpdates.unitId as number),
           eq(units.businessId, businessId),
         ),
       )
@@ -534,7 +553,7 @@ export async function patchProduct(
   }
   return db
     .update(products)
-    .set(safeUpdates)
+    .set(safeUpdates as Partial<ProductsTypes>)
     .where(and(eq(products.id, id), eq(products.businessId, businessId)));
 }
 // router.delete("/api/products/remove_product/:id", async (req, res) => {

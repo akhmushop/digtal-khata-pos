@@ -35,6 +35,12 @@ export class UnauthorizedError extends Error {
     this.name = "UnauthorizedError";
   }
 }
+/**
+ * Legacy helper — no module calls it anymore (new code uses `sendSafeError`).
+ * Kept only so the error classes above stay co-located; its fallback returns
+ * a generic message instead of raw `err.message` so it can never leak
+ * internals if it is ever called again.
+ */
 export function handleError(res: Response, err: unknown) {
   console.error(err);
   if (err instanceof BadRequestError) {
@@ -46,6 +52,7 @@ export function handleError(res: Response, err: unknown) {
   if (err instanceof NotFoundError) {
     return res.status(404).json({ error: err.message });
   }
-  const message = err instanceof Error ? err.message : String(err);
-  res.status(500).json({ error: message });
+  res
+    .status(500)
+    .json({ success: false, message: "An unexpected server error occurred." });
 }

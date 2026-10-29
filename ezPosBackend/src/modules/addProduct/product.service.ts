@@ -433,7 +433,9 @@ async function generateSku(tx: Tx, businessId: number) {
 }
 export async function createProduct(businessId: number, data: ProductType) {
   try {
-    await db.transaction(async (tx) => {
+    // Propagate the transaction result so the API response can carry the new
+    // product's id (the controller exposes it as data.productId).
+    return await db.transaction(async (tx) => {
       await validateProductReferences(tx, businessId, data);
 
       validateProductRules(data);
