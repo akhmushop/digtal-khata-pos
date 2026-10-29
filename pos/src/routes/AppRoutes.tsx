@@ -28,11 +28,6 @@ const router = createBrowserRouter([
     element: <AppLayout />,
     children: [
       {
-        path: "/due-management",
-        element: <DueManagementPage />,
-        
-      },
-      {
         path: "/reports",
         element: <ReportsHub />,
       },
