@@ -369,16 +369,6 @@ export async function createProduct(product: ProductsTypes) {
   const [created] = await db.insert(products).values(product).returning();
   return created;
 }
-async function setQuantity(id: number, quantity: number) {
-  // Legacy single-column stock endpoints predate variant-based inventory.
-  // The products.quantity column no longer exists; stock now lives in
-  // inventory_stock per variant. Fail with a clear message instead of a
-  // cryptic query error.
-  void id;
-  void quantity;
-  throw new BadRequestError(
-    "Legacy product quantity endpoints are not supported with variant-based inventory. Use the stock adjustment flow instead.",
-  );
 async function setQuantity(_id: number, _quantity: number) {
   return;
 }
@@ -415,9 +405,6 @@ export async function updateStock(
   newStock: number,
   status: string,
 ) {
-  void newStock;
-  void status;
-  return setQuantity(id, 0);
   return db
     .update(products)
     .set({ status: status })
@@ -430,11 +417,10 @@ async function getProductById(id: number) {
 export async function duplicateProduct(id: number) {
   const product = await getProductById(id);
   if (!product) return null;
-  const { id: _, createdAt: __, updatedAt: ___, ...productData } = product;
+  const { id: _, ...productData } = product;
   const duplicateProduct = {
     ...productData,
     name: `${productData.name} (copy)`,
-    barcode: `${productData.name} (copy)`,
   };
   const [created] = await db
     .insert(products)
