@@ -369,8 +369,8 @@ export async function createProduct(product: ProductsTypes) {
   const [created] = await db.insert(products).values(product).returning();
   return created;
 }
-async function setQuantity(id: number, quantity: number) {
-  return db.update(products).set({ quantity }).where(eq(products.id, id));
+async function setQuantity(_id: number, _quantity: number) {
+  return;
 }
 export async function decrementQuantity(id: number, currentQuantity: number) {
   return setQuantity(id, currentQuantity - 1);
@@ -407,7 +407,7 @@ export async function updateStock(
 ) {
   return db
     .update(products)
-    .set({ quantity: newStock, status: status })
+    .set({ status: status })
     .where(eq(products.id, id));
 }
 async function getProductById(id: number) {
@@ -420,8 +420,7 @@ export async function duplicateProduct(id: number) {
   const { id: _, ...productData } = product;
   const duplicateProduct = {
     ...productData,
-    productName: `${productData.productName} (copy)`,
-    barcode: `${productData.productName} (copy)`,
+    name: `${productData.name} (copy)`,
   };
   const [created] = await db
     .insert(products)

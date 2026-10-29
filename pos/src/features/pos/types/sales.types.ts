@@ -1,3 +1,4 @@
+import type { SaleReceiptData } from "./receipt.types.js";
 import type { CreateSalePayload } from "../schemas/cart.schema.js";
 export interface SalesStoreType {
   id: number;
@@ -47,6 +48,7 @@ export type CreateSaleResponse = {
     change: number;
     paidAmount: number;
     dueAmount: number;
+    receipt?: SaleReceiptData;
   };
 };
 export interface SalesStore {

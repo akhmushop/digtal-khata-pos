@@ -22,11 +22,16 @@ import { toast } from "@/components/ui/toast.js";
 import { useSalesStore } from "../stores/useSalesStore.js";
 import { createEntityPromiseToast } from "@/lib/toast-utils.js";
 import { useCustomerStore } from "@/store/useCustomerStore.js";
+import type { SaleReceiptData } from "../types/receipt.types.js";
+import { SaleSuccessDialog } from "../components/receipt/SaleSuccessDialog.js";
 
 function Pos() {
   const { cart, resetCart } = useCartStore();
   const { setShowCustomerInfo } = useCustomerStore();
   const { createSale } = useSalesStore();
+  const [lastReceipt, setLastReceipt] = useState<SaleReceiptData | null>(null);
+  const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
+
   const form = useForm<CartSchemaType>({
     resolver: zodResolver(cartSchema),
     defaultValues: {
@@ -64,17 +69,29 @@ function Pos() {
     }
 
     const payload: CreateSalePayload = result.data;
-    await createEntityPromiseToast({
-      data: payload,
-      apiCall: createSale,
-      entityName: "Create Sale",
-      getSuccessMessage: (response) =>
-        `${response.data.sale.invoiceNumber} ${response.message}`,
-    });
-    resetCart();
-    setIsPaymentDialogOpen(false);
-    setShowCustomerInfo(null);
-    form.reset();
+    try {
+      const response = await createEntityPromiseToast({
+        data: payload,
+        apiCall: createSale,
+        entityName: "Create Sale",
+        getSuccessMessage: (res) =>
+          `${res.data.sale.invoiceNumber} ${res.message}`,
+      });
+
+      // Clear checkout inputs and modal
+      resetCart();
+      setIsPaymentDialogOpen(false);
+      setShowCustomerInfo(null);
+      form.reset();
+
+      // Open professional receipt confirmation dialog if receipt exists
+      if (response?.data?.receipt) {
+        setLastReceipt(response.data.receipt);
+        setIsSuccessDialogOpen(true);
+      }
+    } catch (error) {
+      console.error("Sale submission error:", error);
+    }
   }
 
   return (
@@ -108,6 +125,17 @@ function Pos() {
           </Card>
         </form>
       </div>
+
+      {/* Post-sale confirmation and receipt printing */}
+      <SaleSuccessDialog
+        receipt={lastReceipt}
+        open={isSuccessDialogOpen}
+        onOpenChange={setIsSuccessDialogOpen}
+        onNewSale={() => {
+          setLastReceipt(null);
+          setIsSuccessDialogOpen(false);
+        }}
+      />
     </main>
   );
 }
