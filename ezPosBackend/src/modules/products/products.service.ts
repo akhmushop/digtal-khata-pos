@@ -414,6 +414,10 @@ export async function updateStock(
   void status;
   return setQuantity(id, 0);
   return db.update(products).set({ status: status }).where(eq(products.id, id));
+  return db
+    .update(products)
+    .set({ status: status })
+    .where(eq(products.id, id));
 }
 async function getProductById(id: number) {
   const [product] = await db.select().from(products).where(eq(products.id, id));
@@ -422,11 +426,10 @@ async function getProductById(id: number) {
 export async function duplicateProduct(id: number) {
   const product = await getProductById(id);
   if (!product) return null;
-  const { id: _, createdAt: __, updatedAt: ___, ...productData } = product;
+  const { id: _, ...productData } = product;
   const duplicateProduct = {
     ...productData,
     name: `${productData.name} (copy)`,
-    barcode: `${productData.name} (copy)`,
   };
   const [created] = await db
     .insert(products)

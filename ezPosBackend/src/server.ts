@@ -12,7 +12,6 @@ import purchasesRouter from "./modules/purchases/purchases.routes.js";
 import purchasesReturnRouter from "./modules/purchaseReturn/purchaseReturn.routes.js";
 import addProductRouter from "./modules/addProduct/product.routes.js";
 import contactRouter from "./modules/contact/contact.routes.js";
-import dueManagementRouter from "./modules/dueManagement/dueManagement.routes.js";
 import reportsRouter from "./modules/reports/reports.routes.js";
 import cors from "cors";
 import {
@@ -34,8 +33,6 @@ app.use("/", purchasesRouter);
 app.use("/", purchasesReturnRouter);
 app.use("/", addProductRouter);
 app.use("/", contactRouter);
-app.use("/", dueManagementRouter);
-// routes
 app.use("/", reportsRouter);
 
 // error handling
