@@ -64,6 +64,13 @@
       "when": 1793160601225,
       "tag": "0008_seed_expense_categories",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793271351426,
+      "tag": "0009_tiny_bastion",
+      "breakpoints": true
     }
   ]
 }
