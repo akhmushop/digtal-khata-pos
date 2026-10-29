@@ -275,3 +275,129 @@ export interface SupplierPayablesReportData {
   totals: { supplierCount: number; totalPayable: number };
 }
 
+
+
+// ---------------- Commercial Extensions ----------------
+
+// 1. Hourly Sales
+export interface HourlySalesRow {
+  hourNum: number;
+  hourLabel: string;
+  transactionCount: number;
+  grossSales: number;
+  itemsSold: number;
+  averageOrderValue: number;
+}
+
+export interface HourlySalesSummary {
+  totalTransactions: number;
+  totalSales: number;
+  totalItemsSold: number;
+  overallAOV: number;
+}
+
+export interface HourlySalesReportData {
+  hours: HourlySalesRow[];
+  summary: HourlySalesSummary;
+}
+
+// 2. Tax / VAT Reconciliation
+export interface SalesTaxSummary {
+  taxableInvoices: number;
+  taxableSales: number;
+  outputVat: number;
+  totalGrossSales: number;
+}
+
+export interface PurchaseTaxSummary {
+  purchaseOrdersCount: number;
+  taxablePurchases: number;
+  inputVat: number;
+  totalPurchases: number;
+}
+
+export interface DailyVatRow {
+  reportDate: string;
+  taxableSales: number;
+  outputVat: number;
+  taxablePurchases: number;
+  inputVat: number;
+  netVatPayable: number;
+}
+
+export interface TaxReconciliationData {
+  salesTax: SalesTaxSummary;
+  purchaseTax: PurchaseTaxSummary;
+  netTaxLiability: number;
+  dailyBreakdown: DailyVatRow[];
+}
+
+// 3. Inventory Loss & Shrinkage
+export interface ShrinkageRow {
+  id: number;
+  createdAt: string;
+  productName: string;
+  sku: string;
+  categoryName: string;
+  reason: string;
+  unitsLost: number;
+  unitRetailPrice: number;
+  unitCost: number;
+  costLoss: number;
+  retailLoss: number;
+}
+
+export interface ShrinkageReasonSummary {
+  reason: string;
+  incidentCount: number;
+  unitsLost: number;
+  costLoss: number;
+}
+
+export interface ShrinkageReportData {
+  incidents: ShrinkageRow[];
+  total: number;
+  summary: {
+    incidentCount: number;
+    totalUnitsLost: number;
+    totalCostLoss: number;
+    totalRetailLoss: number;
+  };
+  byReason: ShrinkageReasonSummary[];
+  page: number;
+  limit: number;
+}
+
+// 4. Shift & Register Close (Z-Report)
+export interface RegisterCloseData {
+  cashSales: {
+    cashAmount: number;
+    cashTxCount: number;
+  };
+  digitalPayments: {
+    method: string;
+    amount: number;
+    txCount: number;
+  }[];
+  cashExpenses: {
+    cashExpenseTotal: number;
+    expenseCount: number;
+  };
+  salesSummary: {
+    totalInvoices: number;
+    grossRevenue: number;
+    totalDiscount: number;
+    totalVat: number;
+    creditSalesDue: number;
+  };
+  refunds: {
+    refundCount: number;
+    refundTotal: number;
+  };
+  periodBounds: {
+    start: string;
+    end: string;
+    startDateOnly: string;
+    endDateOnly: string;
+  };
+}

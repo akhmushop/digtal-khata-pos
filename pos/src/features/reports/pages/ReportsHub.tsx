@@ -15,6 +15,10 @@ import {
   Truck,
   Layers,
   Calendar,
+  Clock,
+  Landmark,
+  AlertOctagon,
+  Calculator,
 } from "lucide-react";
 import { SalesSummaryReport } from "./SalesSummaryReport";
 import { SalesByInvoiceReport } from "./SalesByInvoiceReport";
@@ -22,18 +26,23 @@ import { ProductSalesReport } from "./ProductSalesReport";
 import { CustomerSalesReport } from "./CustomerSalesReport";
 import { PaymentMethodReport } from "./PaymentMethodReport";
 import { SaleRefundsReport } from "./SaleRefundsReport";
+import { HourlySalesReport } from "./HourlySalesReport";
 import { ProfitReport } from "./ProfitReport";
 import { ExpenseReport } from "./ExpenseReport";
 import { CustomerReceivablesReport } from "./CustomerReceivablesReport";
+import { TaxReconciliationReport } from "./TaxReconciliationReport";
+import { RegisterCloseReport } from "./RegisterCloseReport";
 import { StockReport } from "./StockReport";
 import { StockMovementReport } from "./StockMovementReport";
 import { BatchExpiryReport } from "./BatchExpiryReport";
+import { InventoryShrinkageReport } from "./InventoryShrinkageReport";
 import { PurchaseSummaryReport } from "./PurchaseSummaryReport";
 import { SupplierPayablesReport } from "./SupplierPayablesReport";
 
 type ReportTabId =
   // Sales
   | "sales-summary"
+  | "sales-hourly"
   | "sales-invoices"
   | "sales-products"
   | "sales-customers"
@@ -43,10 +52,13 @@ type ReportTabId =
   | "profit"
   | "expenses"
   | "receivables"
+  | "tax"
+  | "register-close"
   // Inventory
   | "stock"
   | "stock-movements"
   | "batch-expiry"
+  | "shrinkage"
   // Purchases
   | "purchases-summary"
   | "supplier-payables";
@@ -72,6 +84,12 @@ const REPORT_GROUPS: ReportGroup[] = [
         label: "Sales Summary",
         icon: BarChart3,
         description: "Daily revenue, gross & net sales, profit trends",
+      },
+      {
+        id: "sales-hourly",
+        label: "Hourly / Peak Hours",
+        icon: Clock,
+        description: "Transaction velocity by hour and rush hour peaks",
       },
       {
         id: "sales-invoices",
@@ -110,6 +128,12 @@ const REPORT_GROUPS: ReportGroup[] = [
     icon: DollarSign,
     items: [
       {
+        id: "register-close",
+        label: "Shift Close (Z-Report)",
+        icon: Calculator,
+        description: "Drawer balancing, cash over/short, and printable slip",
+      },
+      {
         id: "profit",
         label: "Gross Profit & Margins",
         icon: TrendingUp,
@@ -126,6 +150,12 @@ const REPORT_GROUPS: ReportGroup[] = [
         label: "Customer Receivables",
         icon: AlertCircle,
         description: "Customer credit register (Bakir Khata) and balances",
+      },
+      {
+        id: "tax",
+        label: "Tax / VAT Reconciliation",
+        icon: Landmark,
+        description: "Output VAT vs Input VAT and net liability",
       },
     ],
   },
@@ -144,6 +174,12 @@ const REPORT_GROUPS: ReportGroup[] = [
         label: "Stock Movements",
         icon: BarChart3,
         description: "Audit trail of receiving, sales, and corrections",
+      },
+      {
+        id: "shrinkage",
+        label: "Loss & Shrinkage",
+        icon: AlertOctagon,
+        description: "Damaged, expired, lost, and discrepancy loss report",
       },
       {
         id: "batch-expiry",
@@ -186,6 +222,8 @@ export default function ReportsHub() {
     switch (currentTab) {
       case "sales-summary":
         return <SalesSummaryReport />;
+      case "sales-hourly":
+        return <HourlySalesReport />;
       case "sales-invoices":
         return <SalesByInvoiceReport />;
       case "sales-products":
@@ -196,16 +234,22 @@ export default function ReportsHub() {
         return <PaymentMethodReport />;
       case "sales-refunds":
         return <SaleRefundsReport />;
+      case "register-close":
+        return <RegisterCloseReport />;
       case "profit":
         return <ProfitReport />;
       case "expenses":
         return <ExpenseReport />;
       case "receivables":
         return <CustomerReceivablesReport />;
+      case "tax":
+        return <TaxReconciliationReport />;
       case "stock":
         return <StockReport />;
       case "stock-movements":
         return <StockMovementReport />;
+      case "shrinkage":
+        return <InventoryShrinkageReport />;
       case "batch-expiry":
         return <BatchExpiryReport />;
       case "purchases-summary":
@@ -277,4 +321,3 @@ export default function ReportsHub() {
     </div>
   );
 }
-

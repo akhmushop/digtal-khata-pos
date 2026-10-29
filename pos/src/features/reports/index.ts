@@ -15,12 +15,15 @@ export * from "./pages/ProductSalesReport";
 export * from "./pages/CustomerSalesReport";
 export * from "./pages/PaymentMethodReport";
 export * from "./pages/SaleRefundsReport";
+export * from "./pages/HourlySalesReport";
 export * from "./pages/ProfitReport";
 export * from "./pages/ExpenseReport";
 export * from "./pages/CustomerReceivablesReport";
+export * from "./pages/TaxReconciliationReport";
+export * from "./pages/RegisterCloseReport";
 export * from "./pages/StockReport";
 export * from "./pages/StockMovementReport";
 export * from "./pages/BatchExpiryReport";
+export * from "./pages/InventoryShrinkageReport";
 export * from "./pages/PurchaseSummaryReport";
 export * from "./pages/SupplierPayablesReport";
-
