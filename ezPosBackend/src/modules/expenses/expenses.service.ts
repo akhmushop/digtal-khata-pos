@@ -1,13 +1,17 @@
 import { expenseCategories } from "../../db/schema/expenseCategories.js";
 import { expenses } from "../../db/schema/expenses.js";
 import { db } from "../../db/schema/index.js";
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { ConflictError, NotFoundError } from "../../utils/handleError.js";
 import type { ExpenseWriteInput } from "./expenses.schema.js";
 type NewExpense = typeof expenses.$inferInsert;
 
-function toExpenseValues(data: ExpenseWriteInput): NewExpense {
+// Every function takes the caller's server-verified businessId (from
+// requireBusinessContext) and scopes all reads and writes to it.
+
+function toExpenseValues(businessId: number, data: ExpenseWriteInput): NewExpense {
   return {
+    businessId,
     title: data.title,
     expenseDate: data.expense_date,
     amount: data.amount,
@@ -18,19 +22,26 @@ function toExpenseValues(data: ExpenseWriteInput): NewExpense {
   };
 }
 
-export async function createExpense(data: ExpenseWriteInput) {
+export async function createExpense(
+  businessId: number,
+  data: ExpenseWriteInput,
+) {
   const [expense] = await db
     .insert(expenses)
-    .values(toExpenseValues(data))
+    .values(toExpenseValues(businessId, data))
     .returning();
   return expense;
 }
 
-export async function updateExpense(id: number, data: ExpenseWriteInput) {
+export async function updateExpense(
+  businessId: number,
+  id: number,
+  data: ExpenseWriteInput,
+) {
   const [expense] = await db
     .update(expenses)
-    .set(toExpenseValues(data))
-    .where(eq(expenses.id, id))
+    .set(toExpenseValues(businessId, data))
+    .where(and(eq(expenses.id, id), eq(expenses.businessId, businessId)))
     .returning();
   if (!expense) {
     throw new NotFoundError("Expense not found");
@@ -38,10 +49,10 @@ export async function updateExpense(id: number, data: ExpenseWriteInput) {
   return expense;
 }
 
-export async function deleteExpense(id: number) {
+export async function deleteExpense(businessId: number, id: number) {
   const [deleted] = await db
     .delete(expenses)
-    .where(eq(expenses.id, id))
+    .where(and(eq(expenses.id, id), eq(expenses.businessId, businessId)))
     .returning({ id: expenses.id });
   if (!deleted) {
     throw new NotFoundError("Expense not found");
@@ -49,24 +60,33 @@ export async function deleteExpense(id: number) {
   return deleted;
 }
 
-export async function getExpenseCategories() {
+export async function getExpenseCategories(businessId: number) {
   return db
     .select()
     .from(expenseCategories)
+    .where(eq(expenseCategories.businessId, businessId))
     .orderBy(asc(expenseCategories.categoryName));
 }
 
-export async function createExpenseCategory(categoryName: string) {
+export async function createExpenseCategory(
+  businessId: number,
+  categoryName: string,
+) {
   const [existing] = await db
     .select({ id: expenseCategories.id })
     .from(expenseCategories)
-    .where(eq(expenseCategories.categoryName, categoryName));
+    .where(
+      and(
+        eq(expenseCategories.businessId, businessId),
+        eq(expenseCategories.categoryName, categoryName),
+      ),
+    );
   if (existing) {
     throw new ConflictError("An expense category with this name already exists");
   }
   const [category] = await db
     .insert(expenseCategories)
-    .values({ categoryName })
+    .values({ businessId, categoryName })
     .returning({
       id: expenseCategories.id,
       categoryName: expenseCategories.categoryName,
@@ -74,7 +94,7 @@ export async function createExpenseCategory(categoryName: string) {
   return category;
 }
 
-export async function getExpenses() {
+export async function getExpenses(businessId: number) {
   return db
     .select({
       id: expenses.id,
@@ -91,7 +111,11 @@ export async function getExpenses() {
     .from(expenses)
     .leftJoin(
       expenseCategories,
-      eq(expenses.categoryId, expenseCategories.id),
+      and(
+        eq(expenses.categoryId, expenseCategories.id),
+        eq(expenseCategories.businessId, businessId),
+      ),
     )
+    .where(eq(expenses.businessId, businessId))
     .orderBy(desc(expenses.expenseDate), desc(expenses.createdAt));
 }

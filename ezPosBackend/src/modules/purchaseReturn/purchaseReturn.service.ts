@@ -19,11 +19,16 @@ import { supplierLedger } from "../../db/schema/supplierLedger.js";
 import { BadRequestError, NotFoundError } from "../../utils/handleError.js";
 import type { CreatePurchaseReturnInput } from "./purchaseReturn.schema.js";
 
-export async function createPurchaseReturn({
-  orderId,
-  changedItems,
-  reason,
-}: CreatePurchaseReturnInput) {
+// Takes the caller's server-verified businessId (from requireBusinessContext)
+// and scopes all reads and writes to it.
+export async function createPurchaseReturn(
+  businessId: number,
+  {
+    orderId,
+    changedItems,
+    reason,
+  }: CreatePurchaseReturnInput,
+) {
   const purchaseItemIds = changedItems.map((item) => item.purchaseItemId);
   if (new Set(purchaseItemIds).size !== purchaseItemIds.length) {
     throw new BadRequestError("Duplicate purchase items are not allowed.");
@@ -38,7 +43,9 @@ export async function createPurchaseReturn({
         dueAmount: purchases.dueAmount,
       })
       .from(purchases)
-      .where(eq(purchases.id, orderId))
+      .where(
+        and(eq(purchases.id, orderId), eq(purchases.businessId, businessId)),
+      )
       .for("update");
 
     if (!purchase) {
@@ -71,6 +78,7 @@ export async function createPurchaseReturn({
       .where(
         and(
           eq(purchaseItems.purchaseId, orderId),
+          eq(purchaseItems.businessId, businessId),
           inArray(purchaseItems.id, purchaseItemIds),
         ),
       )
@@ -88,7 +96,12 @@ export async function createPurchaseReturn({
         quantity: sql<number>`COALESCE(SUM(${purchaseReturnItems.quantity}), 0)`,
       })
       .from(purchaseReturnItems)
-      .where(inArray(purchaseReturnItems.purchaseItemId, purchaseItemIds))
+      .where(
+        and(
+          eq(purchaseReturnItems.businessId, businessId),
+          inArray(purchaseReturnItems.purchaseItemId, purchaseItemIds),
+        ),
+      )
       .groupBy(purchaseReturnItems.purchaseItemId);
     const returnedByItem = new Map(
       alreadyReturned.map((item) => [
@@ -106,9 +119,12 @@ export async function createPurchaseReturn({
       })
       .from(inventoryStock)
       .where(
-        inArray(
-          inventoryStock.variantId,
-          [...new Set(items.map((item) => item.variantId))],
+        and(
+          eq(inventoryStock.businessId, businessId),
+          inArray(
+            inventoryStock.variantId,
+            [...new Set(items.map((item) => item.variantId))],
+          ),
         ),
       )
       .for("update");
@@ -166,7 +182,12 @@ export async function createPurchaseReturn({
           quantityRemaining: inventoryBatches.quantityRemaining,
         })
         .from(inventoryBatches)
-        .where(eq(inventoryBatches.purchaseItemId, item.id))
+        .where(
+          and(
+            eq(inventoryBatches.purchaseItemId, item.id),
+            eq(inventoryBatches.businessId, businessId),
+          ),
+        )
         .orderBy(inventoryBatches.id)
         .for("update");
 
@@ -180,7 +201,12 @@ export async function createPurchaseReturn({
           .set({
             quantityRemaining: sql`${inventoryBatches.quantityRemaining} - ${removed}`,
           })
-          .where(eq(inventoryBatches.id, batch.id));
+          .where(
+            and(
+              eq(inventoryBatches.id, batch.id),
+              eq(inventoryBatches.businessId, businessId),
+            ),
+          );
         remainingToRemove -= removed;
       }
 
@@ -197,6 +223,7 @@ export async function createPurchaseReturn({
           .where(
             and(
               eq(serialNumbers.purchaseItemId, item.id),
+              eq(serialNumbers.businessId, businessId),
               eq(serialNumbers.status, "in_stock"),
             ),
           )
@@ -229,6 +256,7 @@ export async function createPurchaseReturn({
     const [purchaseReturn] = await tx
       .insert(purchaseReturns)
       .values({
+        businessId,
         purchaseId: orderId,
         supplierId: purchase.supplierId,
         reason: reason?.trim() || null,
@@ -246,6 +274,7 @@ export async function createPurchaseReturn({
         const quantity = requestedByItem.get(item.id) ?? 0;
         const unitPrice = getReturnUnitPrice(item);
         return {
+          businessId,
           purchaseReturnId: purchaseReturn.id,
           purchaseItemId: item.id,
           productId: item.productId,
@@ -264,6 +293,7 @@ export async function createPurchaseReturn({
         .where(
           and(
             eq(inventoryStock.variantId, variantId),
+            eq(inventoryStock.businessId, businessId),
             sql`${inventoryStock.quantity} >= ${quantity}`,
           ),
         )
@@ -276,6 +306,7 @@ export async function createPurchaseReturn({
       }
 
       await tx.insert(inventoryMovements).values({
+        businessId,
         variantId,
         movementType: "adjustment",
         referenceType: "purchase_return",
@@ -285,6 +316,7 @@ export async function createPurchaseReturn({
     }
 
     await tx.insert(supplierLedger).values({
+      businessId,
       supplierId: purchase.supplierId,
       transactionType: "PURCHASE_RETURN",
       referenceId: purchaseReturn.id,
@@ -308,7 +340,9 @@ export async function createPurchaseReturn({
               : "unpaid",
         updatedAt: new Date(),
       })
-      .where(eq(purchases.id, orderId));
+      .where(
+        and(eq(purchases.id, orderId), eq(purchases.businessId, businessId)),
+      );
 
     return {
       success: true,
@@ -321,12 +355,13 @@ export async function createPurchaseReturn({
   });
 }
 
-export async function getPurchaseReturnItems() {
+export async function getPurchaseReturnItems(businessId: number) {
   return db
     .select({
       purchaseItemId: purchaseReturnItems.purchaseItemId,
       returnQuantity: sql<number>`COALESCE(SUM(${purchaseReturnItems.quantity}), 0)`,
     })
     .from(purchaseReturnItems)
+    .where(eq(purchaseReturnItems.businessId, businessId))
     .groupBy(purchaseReturnItems.purchaseItemId);
 }

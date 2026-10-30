@@ -18,7 +18,6 @@ import {
   ConflictError,
   NotFoundError,
 } from "../../utils/handleError.js";
-import { error } from "node:console";
 import { products } from "../../db/schema/products.js";
 import { productVariants } from "../../db/schema/productVariants.js";
 import { variantValues } from "../../db/schema/variantValues.js";
@@ -28,35 +27,49 @@ import type { PgTransaction } from "drizzle-orm/pg-core";
 import type { NodePgQueryResultHKT } from "drizzle-orm/node-postgres";
 import { inventoryStock } from "../../db/schema/inventoryStock.js";
 import type { AddCategorySchemaType } from "./schemas/category.schema.js";
-import { number } from "zod";
 import type { BrandSchemaType } from "./schemas/brand.schema.js";
 import type { UnitSchemaType } from "./schemas/unit.schema.js";
 import type {
   VariantOptionSchemaType,
   VariantTypeSchemaType,
 } from "./schemas/variant.schema.js";
+import {
+  formatProductSku,
+  nextDocumentNumber,
+} from "../../utils/documentSequence.js";
 
-async function getBrands() {
+type Tx = PgTransaction<
+  NodePgQueryResultHKT,
+  Record<string, never>,
+  ExtractTablesWithRelations<Record<string, never>>
+>;
+
+// Every function takes the caller's server-verified businessId (from
+// requireBusinessContext) and scopes all reads and writes to it.
+
+async function getBrands(businessId: number) {
   return db
     .select({
       value: brands.id,
       label: brands.name,
       status: sql<string>`COALESCE(${brands.status}, 'active')`,
-      productCount: sql<number>`(SELECT COUNT(*)::int FROM products WHERE brand_id = ${brands.id})`,
+      productCount: sql<number>`(SELECT COUNT(*)::int FROM products WHERE brand_id = ${brands.id} AND business_id = ${businessId})`,
     })
-    .from(brands);
+    .from(brands)
+    .where(eq(brands.businessId, businessId));
 }
-async function getUnits() {
+async function getUnits(businessId: number) {
   return db
     .select({
       value: units.id,
       label: units.name,
       abbreviation: units.abbreviation,
-      productCount: sql<number>`(SELECT COUNT(*)::int FROM products WHERE unit_id = ${units.id})`,
+      productCount: sql<number>`(SELECT COUNT(*)::int FROM products WHERE unit_id = ${units.id} AND business_id = ${businessId})`,
     })
-    .from(units);
+    .from(units)
+    .where(eq(units.businessId, businessId));
 }
-async function getCategories() {
+async function getCategories(businessId: number) {
   return db
     .select({
       value: categories.id,
@@ -64,24 +77,26 @@ async function getCategories() {
       parentCategoryId: categories.parentId,
       description: categories.description,
       status: sql<string>`COALESCE(${categories.status}, 'active')`,
-      productCount: sql<number>`(SELECT COUNT(*)::int FROM products WHERE category_id = ${categories.id})`,
+      productCount: sql<number>`(SELECT COUNT(*)::int FROM products WHERE category_id = ${categories.id} AND business_id = ${businessId})`,
     })
-    .from(categories);
+    .from(categories)
+    .where(eq(categories.businessId, businessId));
 }
-async function getSuppliers() {
+async function getSuppliers(businessId: number) {
   return db
     .select({
       value: suppliers.id,
       label: suppliers.name,
     })
-    .from(suppliers);
+    .from(suppliers)
+    .where(eq(suppliers.businessId, businessId));
 }
-export async function getProductSelectOptions() {
+export async function getProductSelectOptions(businessId: number) {
   const [allBrands, allUnits, allCategories, allSuppliers] = await Promise.all([
-    getBrands(),
-    getUnits(),
-    getCategories(),
-    getSuppliers(),
+    getBrands(businessId),
+    getUnits(businessId),
+    getCategories(businessId),
+    getSuppliers(businessId),
   ]);
   return {
     brands: allBrands,
@@ -90,7 +105,7 @@ export async function getProductSelectOptions() {
     suppliers: allSuppliers,
   };
 }
-export async function getProductVariantOptions() {
+export async function getProductVariantOptions(businessId: number) {
   return await db
     .select({
       typeId: variantTypes.id,
@@ -106,15 +121,19 @@ export async function getProductVariantOptions() {
       `,
     })
     .from(variantTypes)
-    .leftJoin(variantOptions, eq(variantOptions.variantTypeId, variantTypes.id))
+    .leftJoin(
+      variantOptions,
+      and(
+        eq(variantOptions.variantTypeId, variantTypes.id),
+        eq(variantOptions.businessId, businessId),
+      ),
+    )
+    .where(eq(variantTypes.businessId, businessId))
     .groupBy(variantTypes.id, variantTypes.name);
 }
 async function validateProductReferences(
-  tx: PgTransaction<
-    NodePgQueryResultHKT,
-    Record<string, never>,
-    ExtractTablesWithRelations<Record<string, never>>
-  >,
+  tx: Tx,
+  businessId: number,
   data: ProductType,
 ) {
   //1. category
@@ -122,7 +141,12 @@ async function validateProductReferences(
     const category = await tx
       .select({ id: categories.id })
       .from(categories)
-      .where(eq(categories.id, data.categoryId));
+      .where(
+        and(
+          eq(categories.id, data.categoryId),
+          eq(categories.businessId, businessId),
+        ),
+      );
     if (category.length === 0) {
       throw new NotFoundError("Category does not exist");
     }
@@ -132,7 +156,7 @@ async function validateProductReferences(
     const brand = await tx
       .select({ id: brands.id })
       .from(brands)
-      .where(eq(brands.id, data.brandId));
+      .where(and(eq(brands.id, data.brandId), eq(brands.businessId, businessId)));
     if (brand.length === 0) {
       throw new NotFoundError("Brand does not exist");
     }
@@ -141,7 +165,7 @@ async function validateProductReferences(
   const unit = await tx
     .select({ id: units.id })
     .from(units)
-    .where(eq(units.id, data.unitId));
+    .where(and(eq(units.id, data.unitId), eq(units.businessId, businessId)));
   if (unit.length === 0) {
     throw new NotFoundError("Unit does not exist");
   }
@@ -150,7 +174,12 @@ async function validateProductReferences(
     const supplier = await tx
       .select({ id: suppliers.id })
       .from(suppliers)
-      .where(eq(suppliers.id, data.supplierId));
+      .where(
+        and(
+          eq(suppliers.id, data.supplierId),
+          eq(suppliers.businessId, businessId),
+        ),
+      );
     if (supplier.length === 0) {
       throw new NotFoundError("Supplier does not exist");
     }
@@ -178,11 +207,8 @@ function validateProductRules(data: ProductType) {
   }
 }
 async function validateVariantRulesAndRef(
-  tx: PgTransaction<
-    NodePgQueryResultHKT,
-    Record<string, never>,
-    ExtractTablesWithRelations<Record<string, never>>
-  >,
+  tx: Tx,
+  businessId: number,
   data: ProductType,
 ) {
   for (const variant of data.variants) {
@@ -208,6 +234,7 @@ async function validateVariantRulesAndRef(
             and(
               eq(variantOptions.id, option.optionId),
               eq(variantOptions.variantTypeId, option.typeId),
+              eq(variantOptions.businessId, businessId),
             ),
           );
 
@@ -276,17 +303,11 @@ async function validateVariantRulesAndRef(
     }
   }
 }
-async function insertProduct(
-  tx: PgTransaction<
-    NodePgQueryResultHKT,
-    Record<string, never>,
-    ExtractTablesWithRelations<Record<string, never>>
-  >,
-  data: ProductType,
-) {
+async function insertProduct(tx: Tx, businessId: number, data: ProductType) {
   const [productResult] = await tx
     .insert(products)
     .values({
+      businessId,
       name: data.name,
       categoryId: data.categoryId,
       brandId: data.brandId,
@@ -304,11 +325,8 @@ async function insertProduct(
   return productResult;
 }
 async function insertVariant(
-  tx: PgTransaction<
-    NodePgQueryResultHKT,
-    Record<string, never>,
-    ExtractTablesWithRelations<Record<string, never>>
-  >,
+  tx: Tx,
+  businessId: number,
   productId: number,
   variant: VariantType,
   sku: string,
@@ -316,6 +334,7 @@ async function insertVariant(
   const [variantResult] = await tx
     .insert(productVariants)
     .values({
+      businessId,
       productId,
       sku,
       barcode: variant.barcode,
@@ -331,11 +350,8 @@ async function insertVariant(
   return variantResult;
 }
 async function insertVariantOptions(
-  tx: PgTransaction<
-    NodePgQueryResultHKT,
-    Record<string, never>,
-    ExtractTablesWithRelations<Record<string, never>>
-  >,
+  tx: Tx,
+  businessId: number,
   data: ProductType,
   variant: VariantType,
   variantId: number,
@@ -346,6 +362,7 @@ async function insertVariantOptions(
     }
     for (const option of variant.options) {
       await tx.insert(variantValues).values({
+        businessId,
         variantId,
         optionId: option.optionId,
       });
@@ -353,17 +370,15 @@ async function insertVariantOptions(
   }
 }
 async function insertBatch(
-  tx: PgTransaction<
-    NodePgQueryResultHKT,
-    Record<string, never>,
-    ExtractTablesWithRelations<Record<string, never>>
-  >,
+  tx: Tx,
+  businessId: number,
   variant: VariantType,
   variantId: number,
 ) {
   const [batchResult] = await tx
     .insert(inventoryBatches)
     .values({
+      businessId,
       variantId,
       locationId: null,
       purchaseItemId: null,
@@ -380,11 +395,8 @@ async function insertBatch(
   return batchResult;
 }
 async function insertSerialNumber(
-  tx: PgTransaction<
-    NodePgQueryResultHKT,
-    Record<string, never>,
-    ExtractTablesWithRelations<Record<string, never>>
-  >,
+  tx: Tx,
+  businessId: number,
   variant: VariantType,
   variantId: number,
   batchId: number,
@@ -394,6 +406,7 @@ async function insertSerialNumber(
   }
   for (const serialNumber of variant.serialNumbers) {
     await tx.insert(serialNumbers).values({
+      businessId,
       variantId,
       serialNumber: serialNumber.serial,
       batchId,
@@ -401,62 +414,69 @@ async function insertSerialNumber(
   }
 }
 async function insertInventoryStock(
-  tx: PgTransaction<
-    NodePgQueryResultHKT,
-    Record<string, never>,
-    ExtractTablesWithRelations<Record<string, never>>
-  >,
+  tx: Tx,
+  businessId: number,
   variantId: number,
   quantity: number,
 ) {
   await tx.insert(inventoryStock).values({
+    businessId,
     variantId,
     quantity,
   });
 }
-async function generateSku(
-  tx: PgTransaction<
-    NodePgQueryResultHKT,
-    Record<string, never>,
-    ExtractTablesWithRelations<Record<string, never>>
-  >,
-) {
-  const result = await tx.execute(
-    sql`SELECT nextval('product_sku_seq') AS number`,
-  );
-  const row = result.rows[0];
-  if (!row) {
-    throw new NotFoundError("Failed to generate product SKU");
-  }
-  const number = Number(row.number);
-  return `SKU-${number.toString().padStart(6, "0")}`;
+async function generateSku(tx: Tx, businessId: number) {
+  // Per-business SKU counter (document_sequences) replaces the global
+  // product_sku_seq sequence. Rollback-safe: shares the caller's transaction.
+  const number = await nextDocumentNumber(tx, businessId, "product_sku");
+  return formatProductSku(number);
 }
-export async function createProduct(data: ProductType) {
+export async function createProduct(businessId: number, data: ProductType) {
   try {
-    await db.transaction(async (tx) => {
-      await validateProductReferences(tx, data);
+    // Propagate the transaction result so the API response can carry the new
+    // product's id (the controller exposes it as data.productId).
+    return await db.transaction(async (tx) => {
+      await validateProductReferences(tx, businessId, data);
 
       validateProductRules(data);
 
-      await validateVariantRulesAndRef(tx, data);
+      await validateVariantRulesAndRef(tx, businessId, data);
 
-      const product = await insertProduct(tx, data);
+      const product = await insertProduct(tx, businessId, data);
 
       for (const variant of data.variants) {
-        const sku = variant.sku?.trim() || (await generateSku(tx));
+        const sku = variant.sku?.trim() || (await generateSku(tx, businessId));
         const createdVariant = await insertVariant(
           tx,
+          businessId,
           product.id,
           variant,
           sku,
         );
 
-        await insertVariantOptions(tx, data, variant, createdVariant.id);
-        await insertInventoryStock(tx, createdVariant.id, variant.quantity);
+        await insertVariantOptions(
+          tx,
+          businessId,
+          data,
+          variant,
+          createdVariant.id,
+        );
+        await insertInventoryStock(
+          tx,
+          businessId,
+          createdVariant.id,
+          variant.quantity,
+        );
         if (data.source === "opening") {
-          const batch = await insertBatch(tx, variant, createdVariant.id);
+          const batch = await insertBatch(tx, businessId, variant, createdVariant.id);
           if (data.trackingType === "serial") {
-            await insertSerialNumber(tx, variant, createdVariant.id, batch.id);
+            await insertSerialNumber(
+              tx,
+              businessId,
+              variant,
+              createdVariant.id,
+              batch.id,
+            );
           }
         }
       }
@@ -467,8 +487,11 @@ export async function createProduct(data: ProductType) {
     throw err;
   }
 }
-export async function getProductForEdit(id: number) {
-  const [product] = await db.select().from(products).where(eq(products.id, id));
+export async function getProductForEdit(businessId: number, id: number) {
+  const [product] = await db
+    .select()
+    .from(products)
+    .where(and(eq(products.id, id), eq(products.businessId, businessId)));
   if (!product) {
     throw new NotFoundError("Product not found");
   }
@@ -484,7 +507,12 @@ export async function getProductForEdit(id: number) {
       status: productVariants.status,
     })
     .from(productVariants)
-    .where(eq(productVariants.productId, id));
+    .where(
+      and(
+        eq(productVariants.productId, id),
+        eq(productVariants.businessId, businessId),
+      ),
+    );
 
   const optionRows =
     variants.length === 0
@@ -507,9 +535,12 @@ export async function getProductForEdit(id: number) {
             eq(variantTypes.id, variantOptions.variantTypeId),
           )
           .where(
-            inArray(
-              variantValues.variantId,
-              variants.map((variant) => variant.id),
+            and(
+              eq(variantValues.businessId, businessId),
+              inArray(
+                variantValues.variantId,
+                variants.map((variant) => variant.id),
+              ),
             ),
           );
   const optionsByVariant = new Map<number, typeof optionRows>();
@@ -556,24 +587,33 @@ export async function getProductForEdit(id: number) {
     })),
   };
 }
-export async function updateProduct(id: number, data: ProductType) {
+export async function updateProduct(
+  businessId: number,
+  id: number,
+  data: ProductType,
+) {
   return db.transaction(async (tx) => {
     const [existingProduct] = await tx
       .select({ id: products.id })
       .from(products)
-      .where(eq(products.id, id));
+      .where(and(eq(products.id, id), eq(products.businessId, businessId)));
     if (!existingProduct) {
       throw new NotFoundError("Product not found");
     }
 
-    await validateProductReferences(tx, data);
+    await validateProductReferences(tx, businessId, data);
     validateProductRules(data);
-    await validateVariantRulesAndRef(tx, data);
+    await validateVariantRulesAndRef(tx, businessId, data);
 
     const existingVariants = await tx
       .select({ id: productVariants.id })
       .from(productVariants)
-      .where(eq(productVariants.productId, id));
+      .where(
+        and(
+          eq(productVariants.productId, id),
+          eq(productVariants.businessId, businessId),
+        ),
+      );
     const existingVariantIds = new Set(
       existingVariants.map((variant) => variant.id),
     );
@@ -635,7 +675,12 @@ export async function updateProduct(id: number, data: ProductType) {
               optionId: variantValues.optionId,
             })
             .from(variantValues)
-            .where(inArray(variantValues.variantId, [...existingVariantIds]));
+            .where(
+              and(
+                eq(variantValues.businessId, businessId),
+                inArray(variantValues.variantId, [...existingVariantIds]),
+              ),
+            );
     const existingOptionsByVariant = new Map<number, number[]>();
     for (const row of existingOptionRows) {
       const optionIds = existingOptionsByVariant.get(row.variantId) ?? [];
@@ -675,16 +720,22 @@ export async function updateProduct(id: number, data: ProductType) {
         trackingType: data.trackingType,
         status: data.status,
       })
-      .where(eq(products.id, id));
+      .where(and(eq(products.id, id), eq(products.businessId, businessId)));
 
     const addedVariants: { id: number; sku: string }[] = [];
     for (const variant of data.variants) {
       const variantId = variant.id;
       if (variantId === undefined) {
-        const sku = variant.sku.trim() || (await generateSku(tx));
-        const createdVariant = await insertVariant(tx, id, variant, sku);
-        await insertVariantOptions(tx, data, variant, createdVariant.id);
-        await insertInventoryStock(tx, createdVariant.id, 0);
+        const sku = variant.sku.trim() || (await generateSku(tx, businessId));
+        const createdVariant = await insertVariant(
+          tx,
+          businessId,
+          id,
+          variant,
+          sku,
+        );
+        await insertVariantOptions(tx, businessId, data, variant, createdVariant.id);
+        await insertInventoryStock(tx, businessId, createdVariant.id, 0);
         addedVariants.push({ id: createdVariant.id, sku });
         continue;
       }
@@ -692,7 +743,7 @@ export async function updateProduct(id: number, data: ProductType) {
       await tx
         .update(productVariants)
         .set({
-          sku: variant.sku.trim() || (await generateSku(tx)),
+          sku: variant.sku.trim() || (await generateSku(tx, businessId)),
           barcode: variant.barcode?.trim() || null,
           sellingPrice: variant.sellingPrice,
           alertQuantity: variant.alertQuantity,
@@ -703,15 +754,22 @@ export async function updateProduct(id: number, data: ProductType) {
           and(
             eq(productVariants.id, variantId),
             eq(productVariants.productId, id),
+            eq(productVariants.businessId, businessId),
           ),
         );
 
       await tx
         .delete(variantValues)
-        .where(eq(variantValues.variantId, variantId));
+        .where(
+          and(
+            eq(variantValues.variantId, variantId),
+            eq(variantValues.businessId, businessId),
+          ),
+        );
       if (data.hasVariants && variant.options?.length) {
         await tx.insert(variantValues).values(
           variant.options.map((option) => ({
+            businessId,
             variantId,
             optionId: option.optionId,
           })),
@@ -722,10 +780,32 @@ export async function updateProduct(id: number, data: ProductType) {
     return { productId: id, addedVariants };
   });
 }
-export async function createCategory(data: AddCategorySchemaType) {
+export async function createCategory(
+  businessId: number,
+  data: AddCategorySchemaType,
+) {
+  // categories.parentId is a plain self-FK, so the parent's ownership must be
+  // verified here — otherwise a category could be nested under another
+  // business's category. Same rule updateCategory enforces for ancestors.
+  if (data.parentCategoryId !== null && data.parentCategoryId !== undefined) {
+    const [parent] = await db
+      .select({ id: categories.id })
+      .from(categories)
+      .where(
+        and(
+          eq(categories.id, data.parentCategoryId),
+          eq(categories.businessId, businessId),
+        ),
+      )
+      .limit(1);
+    if (!parent) {
+      throw new NotFoundError("Parent category does not exist");
+    }
+  }
   const [category] = await db
     .insert(categories)
     .values({
+      businessId,
       name: data.categoryName,
       description: data.description,
       status: data.status,
@@ -741,10 +821,11 @@ export async function createCategory(data: AddCategorySchemaType) {
     });
   return category;
 }
-export async function createBrand(data: BrandSchemaType) {
+export async function createBrand(businessId: number, data: BrandSchemaType) {
   const [brand] = await db
     .insert(brands)
     .values({
+      businessId,
       name: data.brandName,
       status: data.status,
     })
@@ -756,10 +837,11 @@ export async function createBrand(data: BrandSchemaType) {
     });
   return brand;
 }
-export async function createUnit(data: UnitSchemaType) {
+export async function createUnit(businessId: number, data: UnitSchemaType) {
   const [unit] = await db
     .insert(units)
     .values({
+      businessId,
       name: data.unitName,
       abbreviation: data.abbreviation,
     })
@@ -771,20 +853,41 @@ export async function createUnit(data: UnitSchemaType) {
     });
   return unit;
 }
-export async function createVariantType(data: VariantTypeSchemaType) {
+export async function createVariantType(
+  businessId: number,
+  data: VariantTypeSchemaType,
+) {
   const [variantType] = await db
     .insert(variantTypes)
     .values({
+      businessId,
       name: data.variantTypeName,
     })
     .returning();
   return variantType;
 }
-export async function createVariantOption(data: VariantOptionSchemaType) {
+export async function createVariantOption(
+  businessId: number,
+  data: VariantOptionSchemaType,
+) {
   if (data.variantOptionName.length === 0) {
     throw new NotFoundError("Please add at least one variant option");
   }
+  // The parent type is validated to belong to the same business.
+  const [variantType] = await db
+    .select({ id: variantTypes.id })
+    .from(variantTypes)
+    .where(
+      and(
+        eq(variantTypes.id, data.variantTypeId),
+        eq(variantTypes.businessId, businessId),
+      ),
+    );
+  if (!variantType) {
+    throw new NotFoundError("Variant type does not exist");
+  }
   const optionsToInsert = data.variantOptionName.map((optionName) => ({
+    businessId,
     variantTypeId: data.variantTypeId,
     value: optionName,
   }));
@@ -796,6 +899,7 @@ export async function createVariantOption(data: VariantOptionSchemaType) {
 }
 
 export async function updateCategory(
+  businessId: number,
   id: number,
   data: AddCategorySchemaType,
 ) {
@@ -810,7 +914,12 @@ export async function updateCategory(
     const [parent] = await db
       .select({ parentId: categories.parentId })
       .from(categories)
-      .where(eq(categories.id, parentId))
+      .where(
+        and(
+          eq(categories.id, parentId),
+          eq(categories.businessId, businessId),
+        ),
+      )
       .limit(1);
     if (!parent) {
       throw new NotFoundError("Parent category does not exist");
@@ -825,14 +934,14 @@ export async function updateCategory(
       status: data.status,
       parentId: data.parentCategoryId,
     })
-    .where(eq(categories.id, id))
+    .where(and(eq(categories.id, id), eq(categories.businessId, businessId)))
     .returning({
       value: categories.id,
       label: categories.name,
       parentCategoryId: categories.parentId,
       description: categories.description,
       status: sql<string>`COALESCE(${categories.status}, 'active')`,
-      productCount: sql<number>`(SELECT COUNT(*)::int FROM products WHERE category_id = ${categories.id})`,
+      productCount: sql<number>`(SELECT COUNT(*)::int FROM products WHERE category_id = ${categories.id} AND business_id = ${businessId})`,
     });
   if (!category) {
     throw new NotFoundError("Category does not exist");
@@ -840,11 +949,13 @@ export async function updateCategory(
   return category;
 }
 
-export async function deleteCategory(id: number) {
+export async function deleteCategory(businessId: number, id: number) {
   const [product] = await db
     .select({ id: products.id })
     .from(products)
-    .where(eq(products.categoryId, id))
+    .where(
+      and(eq(products.categoryId, id), eq(products.businessId, businessId)),
+    )
     .limit(1);
   if (product) {
     throw new ConflictError("Move or remove products in this category first");
@@ -852,30 +963,36 @@ export async function deleteCategory(id: number) {
   const [child] = await db
     .select({ id: categories.id })
     .from(categories)
-    .where(eq(categories.parentId, id))
+    .where(
+      and(eq(categories.parentId, id), eq(categories.businessId, businessId)),
+    )
     .limit(1);
   if (child) {
     throw new ConflictError("Move or remove subcategories first");
   }
   const [category] = await db
     .delete(categories)
-    .where(eq(categories.id, id))
+    .where(and(eq(categories.id, id), eq(categories.businessId, businessId)))
     .returning({ id: categories.id });
   if (!category) {
     throw new NotFoundError("Category does not exist");
   }
 }
 
-export async function updateBrand(id: number, data: BrandSchemaType) {
+export async function updateBrand(
+  businessId: number,
+  id: number,
+  data: BrandSchemaType,
+) {
   const [brand] = await db
     .update(brands)
     .set({ name: data.brandName, status: data.status })
-    .where(eq(brands.id, id))
+    .where(and(eq(brands.id, id), eq(brands.businessId, businessId)))
     .returning({
       value: brands.id,
       label: brands.name,
       status: sql<string>`COALESCE(${brands.status}, 'active')`,
-      productCount: sql<number>`(SELECT COUNT(*)::int FROM products WHERE brand_id = ${brands.id})`,
+      productCount: sql<number>`(SELECT COUNT(*)::int FROM products WHERE brand_id = ${brands.id} AND business_id = ${businessId})`,
     });
   if (!brand) {
     throw new NotFoundError("Brand does not exist");
@@ -883,34 +1000,38 @@ export async function updateBrand(id: number, data: BrandSchemaType) {
   return brand;
 }
 
-export async function deleteBrand(id: number) {
+export async function deleteBrand(businessId: number, id: number) {
   const [product] = await db
     .select({ id: products.id })
     .from(products)
-    .where(eq(products.brandId, id))
+    .where(and(eq(products.brandId, id), eq(products.businessId, businessId)))
     .limit(1);
   if (product) {
     throw new ConflictError("Remove this brand from its products first");
   }
   const [brand] = await db
     .delete(brands)
-    .where(eq(brands.id, id))
+    .where(and(eq(brands.id, id), eq(brands.businessId, businessId)))
     .returning({ id: brands.id });
   if (!brand) {
     throw new NotFoundError("Brand does not exist");
   }
 }
 
-export async function updateUnit(id: number, data: UnitSchemaType) {
+export async function updateUnit(
+  businessId: number,
+  id: number,
+  data: UnitSchemaType,
+) {
   const [unit] = await db
     .update(units)
     .set({ name: data.unitName, abbreviation: data.abbreviation })
-    .where(eq(units.id, id))
+    .where(and(eq(units.id, id), eq(units.businessId, businessId)))
     .returning({
       value: units.id,
       label: units.name,
       abbreviation: units.abbreviation,
-      productCount: sql<number>`(SELECT COUNT(*)::int FROM products WHERE unit_id = ${units.id})`,
+      productCount: sql<number>`(SELECT COUNT(*)::int FROM products WHERE unit_id = ${units.id} AND business_id = ${businessId})`,
     });
   if (!unit) {
     throw new NotFoundError("Unit does not exist");
@@ -918,18 +1039,18 @@ export async function updateUnit(id: number, data: UnitSchemaType) {
   return unit;
 }
 
-export async function deleteUnit(id: number) {
+export async function deleteUnit(businessId: number, id: number) {
   const [product] = await db
     .select({ id: products.id })
     .from(products)
-    .where(eq(products.unitId, id))
+    .where(and(eq(products.unitId, id), eq(products.businessId, businessId)))
     .limit(1);
   if (product) {
     throw new ConflictError("Move or update products using this unit first");
   }
   const [unit] = await db
     .delete(units)
-    .where(eq(units.id, id))
+    .where(and(eq(units.id, id), eq(units.businessId, businessId)))
     .returning({ id: units.id });
   if (!unit) {
     throw new NotFoundError("Unit does not exist");
@@ -937,13 +1058,14 @@ export async function deleteUnit(id: number) {
 }
 
 export async function updateVariantType(
+  businessId: number,
   id: number,
   data: VariantTypeSchemaType,
 ) {
   const [variantType] = await db
     .update(variantTypes)
     .set({ name: data.variantTypeName })
-    .where(eq(variantTypes.id, id))
+    .where(and(eq(variantTypes.id, id), eq(variantTypes.businessId, businessId)))
     .returning();
   if (!variantType) {
     throw new NotFoundError("Variant type does not exist");
@@ -951,12 +1073,14 @@ export async function updateVariantType(
   return variantType;
 }
 
-export async function deleteVariantType(id: number) {
+export async function deleteVariantType(businessId: number, id: number) {
   await db.transaction(async (tx) => {
     const [variantType] = await tx
       .select({ id: variantTypes.id })
       .from(variantTypes)
-      .where(eq(variantTypes.id, id))
+      .where(
+        and(eq(variantTypes.id, id), eq(variantTypes.businessId, businessId)),
+      )
       .limit(1);
     if (!variantType) {
       throw new NotFoundError("Variant type does not exist");
@@ -965,14 +1089,24 @@ export async function deleteVariantType(id: number) {
     const options = await tx
       .select({ id: variantOptions.id })
       .from(variantOptions)
-      .where(eq(variantOptions.variantTypeId, id));
+      .where(
+        and(
+          eq(variantOptions.variantTypeId, id),
+          eq(variantOptions.businessId, businessId),
+        ),
+      );
     const optionIds = options.map((option) => option.id);
 
     if (optionIds.length > 0) {
       const [usage] = await tx
         .select({ variantId: variantValues.variantId })
         .from(variantValues)
-        .where(inArray(variantValues.optionId, optionIds))
+        .where(
+          and(
+            eq(variantValues.businessId, businessId),
+            inArray(variantValues.optionId, optionIds),
+          ),
+        )
         .limit(1);
       if (usage) {
         throw new ConflictError(
@@ -982,21 +1116,31 @@ export async function deleteVariantType(id: number) {
 
       await tx
         .delete(variantOptions)
-        .where(eq(variantOptions.variantTypeId, id));
+        .where(
+          and(
+            eq(variantOptions.variantTypeId, id),
+            eq(variantOptions.businessId, businessId),
+          ),
+        );
     }
 
-    await tx.delete(variantTypes).where(eq(variantTypes.id, id));
+    await tx
+      .delete(variantTypes)
+      .where(
+        and(eq(variantTypes.id, id), eq(variantTypes.businessId, businessId)),
+      );
   });
 }
 
 export async function updateVariantOption(
+  businessId: number,
   id: number,
   data: { value: string },
 ) {
   const [option] = await db
     .update(variantOptions)
     .set({ value: data.value })
-    .where(eq(variantOptions.id, id))
+    .where(and(eq(variantOptions.id, id), eq(variantOptions.businessId, businessId)))
     .returning();
   if (!option) {
     throw new NotFoundError("Variant option does not exist");
@@ -1004,11 +1148,16 @@ export async function updateVariantOption(
   return option;
 }
 
-export async function deleteVariantOption(id: number) {
+export async function deleteVariantOption(businessId: number, id: number) {
   const [usage] = await db
     .select({ variantId: variantValues.variantId })
     .from(variantValues)
-    .where(eq(variantValues.optionId, id))
+    .where(
+      and(
+        eq(variantValues.optionId, id),
+        eq(variantValues.businessId, businessId),
+      ),
+    )
     .limit(1);
   if (usage) {
     throw new ConflictError(
@@ -1017,7 +1166,7 @@ export async function deleteVariantOption(id: number) {
   }
   const [option] = await db
     .delete(variantOptions)
-    .where(eq(variantOptions.id, id))
+    .where(and(eq(variantOptions.id, id), eq(variantOptions.businessId, businessId)))
     .returning({ id: variantOptions.id });
   if (!option) {
     throw new NotFoundError("Variant option does not exist");

@@ -1,6 +1,11 @@
-import type { NextFunction, Request, Response } from "express";
+import type { Request, Response } from "express";
 import { dateRangeSchema } from "./reports.validation.js";
 import * as reportsService from "./reports.service.js";
+import { getBusinessId } from "../../middleware/business.js";
+
+// Every report handler forwards the server-verified businessId from
+// requireBusinessContext into the service, which injects it into every
+// raw-SQL fragment. No report can aggregate across businesses.
 
 function getValidatedParams(req: Request) {
   const parsed = dateRangeSchema.safeParse(req.query);
@@ -12,255 +17,240 @@ function getValidatedParams(req: Request) {
   return parsed.data;
 }
 
-export async function getSalesSummary(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export async function getSalesSummary(req: Request, res: Response) {
   try {
     const params = getValidatedParams(req);
-    const data = await reportsService.getSalesSummaryReport(params);
+    const data = await reportsService.getSalesSummaryReport(
+      getBusinessId(req),
+      params,
+    );
     res.status(200).json({ success: true, data });
   } catch (err) {
-    next(err);
+    sendSafe(err, res);
   }
 }
 
-export async function getSalesByInvoice(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export async function getSalesByInvoice(req: Request, res: Response) {
   try {
     const params = getValidatedParams(req);
-    const data = await reportsService.getSalesByInvoiceReport(params);
+    const data = await reportsService.getSalesByInvoiceReport(
+      getBusinessId(req),
+      params,
+    );
     res.status(200).json({ success: true, data });
   } catch (err) {
-    next(err);
+    sendSafe(err, res);
   }
 }
 
-export async function getProductSales(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export async function getProductSales(req: Request, res: Response) {
   try {
     const params = getValidatedParams(req);
-    const data = await reportsService.getProductSalesReport(params);
+    const data = await reportsService.getProductSalesReport(
+      getBusinessId(req),
+      params,
+    );
     res.status(200).json({ success: true, data });
   } catch (err) {
-    next(err);
+    sendSafe(err, res);
   }
 }
 
-export async function getCustomerSales(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export async function getCustomerSales(req: Request, res: Response) {
   try {
     const params = getValidatedParams(req);
-    const data = await reportsService.getCustomerSalesReport(params);
+    const data = await reportsService.getCustomerSalesReport(
+      getBusinessId(req),
+      params,
+    );
     res.status(200).json({ success: true, data });
   } catch (err) {
-    next(err);
+    sendSafe(err, res);
   }
 }
 
-export async function getPaymentMethods(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export async function getPaymentMethods(req: Request, res: Response) {
   try {
     const params = getValidatedParams(req);
-    const data = await reportsService.getPaymentMethodReport(params);
+    const data = await reportsService.getPaymentMethodReport(
+      getBusinessId(req),
+      params,
+    );
     res.status(200).json({ success: true, data });
   } catch (err) {
-    next(err);
+    sendSafe(err, res);
   }
 }
 
-export async function getSaleRefunds(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export async function getSaleRefunds(req: Request, res: Response) {
   try {
     const params = getValidatedParams(req);
-    const data = await reportsService.getSaleRefundsReport(params);
+    const data = await reportsService.getSaleRefundsReport(
+      getBusinessId(req),
+      params,
+    );
     res.status(200).json({ success: true, data });
   } catch (err) {
-    next(err);
+    sendSafe(err, res);
   }
 }
 
-export async function getProfit(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export async function getProfit(req: Request, res: Response) {
   try {
     const params = getValidatedParams(req);
-    const data = await reportsService.getProfitReport(params);
+    const data = await reportsService.getProfitReport(
+      getBusinessId(req),
+      params,
+    );
     res.status(200).json({ success: true, data });
   } catch (err) {
-    next(err);
+    sendSafe(err, res);
   }
 }
 
-export async function getExpenses(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export async function getExpenses(req: Request, res: Response) {
   try {
     const params = getValidatedParams(req);
-    const data = await reportsService.getExpenseReport(params);
+    const data = await reportsService.getExpenseReport(
+      getBusinessId(req),
+      params,
+    );
     res.status(200).json({ success: true, data });
   } catch (err) {
-    next(err);
+    sendSafe(err, res);
   }
 }
 
-export async function getCustomerReceivables(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export async function getCustomerReceivables(req: Request, res: Response) {
   try {
     const params = getValidatedParams(req);
-    const data = await reportsService.getCustomerReceivablesReport(params);
+    const data = await reportsService.getCustomerReceivablesReport(
+      getBusinessId(req),
+      params,
+    );
     res.status(200).json({ success: true, data });
   } catch (err) {
-    next(err);
+    sendSafe(err, res);
   }
 }
 
-export async function getStock(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export async function getStock(req: Request, res: Response) {
   try {
     const params = getValidatedParams(req);
-    const data = await reportsService.getStockReport(params);
+    const data = await reportsService.getStockReport(getBusinessId(req), params);
     res.status(200).json({ success: true, data });
   } catch (err) {
-    next(err);
+    sendSafe(err, res);
   }
 }
 
-export async function getStockMovements(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export async function getStockMovements(req: Request, res: Response) {
   try {
     const params = getValidatedParams(req);
-    const data = await reportsService.getStockMovementReport(params);
+    const data = await reportsService.getStockMovementReport(
+      getBusinessId(req),
+      params,
+    );
     res.status(200).json({ success: true, data });
   } catch (err) {
-    next(err);
+    sendSafe(err, res);
   }
 }
 
-export async function getBatchExpiry(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export async function getBatchExpiry(req: Request, res: Response) {
   try {
     const params = getValidatedParams(req);
-    const data = await reportsService.getBatchExpiryReport(params);
+    const data = await reportsService.getBatchExpiryReport(
+      getBusinessId(req),
+      params,
+    );
     res.status(200).json({ success: true, data });
   } catch (err) {
-    next(err);
+    sendSafe(err, res);
   }
 }
 
-export async function getPurchaseSummary(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export async function getPurchaseSummary(req: Request, res: Response) {
   try {
     const params = getValidatedParams(req);
-    const data = await reportsService.getPurchaseSummaryReport(params);
+    const data = await reportsService.getPurchaseSummaryReport(
+      getBusinessId(req),
+      params,
+    );
     res.status(200).json({ success: true, data });
   } catch (err) {
-    next(err);
+    sendSafe(err, res);
   }
 }
 
-export async function getSupplierPayables(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export async function getSupplierPayables(req: Request, res: Response) {
   try {
-    const data = await reportsService.getSupplierPayablesReport();
+    const data = await reportsService.getSupplierPayablesReport(
+      getBusinessId(req),
+    );
     res.status(200).json({ success: true, data });
   } catch (err) {
-    next(err);
+    sendSafe(err, res);
   }
 }
 
-
-
-export async function getHourlySales(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export async function getHourlySales(req: Request, res: Response) {
   try {
     const params = getValidatedParams(req);
-    const data = await reportsService.getHourlySalesReport(params);
+    const data = await reportsService.getHourlySalesReport(
+      getBusinessId(req),
+      params,
+    );
     res.status(200).json({ success: true, data });
   } catch (err) {
-    next(err);
+    sendSafe(err, res);
   }
 }
 
-export async function getTaxReconciliation(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export async function getTaxReconciliation(req: Request, res: Response) {
   try {
     const params = getValidatedParams(req);
-    const data = await reportsService.getTaxReconciliationReport(params);
+    const data = await reportsService.getTaxReconciliationReport(
+      getBusinessId(req),
+      params,
+    );
     res.status(200).json({ success: true, data });
   } catch (err) {
-    next(err);
+    sendSafe(err, res);
   }
 }
 
-export async function getInventoryShrinkage(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export async function getInventoryShrinkage(req: Request, res: Response) {
   try {
     const params = getValidatedParams(req);
-    const data = await reportsService.getInventoryShrinkageReport(params);
+    const data = await reportsService.getInventoryShrinkageReport(
+      getBusinessId(req),
+      params,
+    );
     res.status(200).json({ success: true, data });
   } catch (err) {
-    next(err);
+    sendSafe(err, res);
   }
 }
 
-export async function getRegisterClose(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export async function getRegisterClose(req: Request, res: Response) {
   try {
     const params = getValidatedParams(req);
-    const data = await reportsService.getRegisterCloseReport(params);
+    const data = await reportsService.getRegisterCloseReport(
+      getBusinessId(req),
+      params,
+    );
     res.status(200).json({ success: true, data });
   } catch (err) {
-    next(err);
+    sendSafe(err, res);
   }
+}
+
+// Report errors never leak internals: log server-side, return a generic body.
+function sendSafe(err: unknown, res: Response) {
+  console.error(err);
+  res.status(500).json({
+    success: false,
+    message: "Unable to generate this report right now.",
+  });
 }

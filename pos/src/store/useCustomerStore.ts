@@ -1,6 +1,8 @@
 import axios from "../api/axios.js";
+import { isAxiosError } from "axios";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { toast } from "@/components/ui/toast";
 import type { InputValue, CustomerStore } from "../types/customers.types.js";
 import { createCustomerApi, getCustomersApi } from "../api/customer.api.js";
 const initialCustomerInfo: InputValue = {
@@ -55,19 +57,20 @@ export const useCustomerStore = create<CustomerStore>((set, get) => ({
   handleAddCustomer: async () => {
     const { customerInfo, resetCustomerInfo } = get();
     if (customerInfo.name === "" || customerInfo.phone === "") {
-      window.alert("Please fill all required fields");
-      return;
-    }
-    if (!window.confirm("do you want to add customer")) {
+      toast.add({ description: "Please fill in the customer name and phone." });
       return;
     }
     try {
-      const newCustomer = await get().addCustomer(customerInfo);
+      await get().addCustomer(customerInfo);
       resetCustomerInfo();
-      // setInputValue(newCustomer);
-      console.log("111");
-    } catch (err) {
+      toast.add({ description: "Customer added." });
+    } catch (err: unknown) {
       console.error("Failed to add customer in handleAddCustomer:", err);
+      toast.add({
+        description: isAxiosError(err)
+          ? (err.response?.data?.message ?? "Could not add the customer.")
+          : "Could not add the customer.",
+      });
     }
   },
   getCustomers: async () => {

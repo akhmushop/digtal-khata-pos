@@ -1,7 +1,7 @@
-import type { NextFunction, Request, Response } from "express";
+import type { Request, Response } from "express";
 import * as salesService from "./sales.service.js";
-import { handleError } from "../../utils/handleError.js";
-import type { saleDataInput } from "../../types/sales-types.js";
+import { getBusinessId } from "../../middleware/business.js";
+import { sendSafeError } from "../../utils/safeError.js";
 import {
   createSalePayloadSchema,
   saleRefundRequestSchema,
@@ -18,35 +18,27 @@ function isDashboardPeriod(period: string): period is DashboardPeriod {
 
 export async function getSalesData(req: Request, res: Response) {
   try {
-    const salesData = await salesService.getSalesData();
+    const salesData = await salesService.getSalesData(getBusinessId(req));
     res.status(200).json(salesData);
   } catch (err) {
-    handleError(res, err);
+    sendSafeError(res, err, "Unable to load sales.");
   }
 }
 
-export async function getSaleReceipt(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) {
+export async function getSaleReceipt(req: Request, res: Response) {
   try {
     const id = Number(req.params.id);
     if (!Number.isInteger(id) || id <= 0) {
       return res.status(400).json({ message: "Invalid sale ID" });
     }
-    const receipt = await salesService.getSaleReceipt(id);
+    const receipt = await salesService.getSaleReceipt(getBusinessId(req), id);
     return res.status(200).json(receipt);
   } catch (err: unknown) {
-    next(err);
+    return sendSafeError(res, err, "Unable to load the receipt.");
   }
 }
 
-export async function createSale(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) {
+export async function createSale(req: Request, res: Response) {
   try {
     const result = createSalePayloadSchema.safeParse(req.body);
     if (!result.success) {
@@ -55,12 +47,12 @@ export async function createSale(
         errors: result.error.flatten(),
       });
     }
-    const sale = await salesService.createSale(result.data);
+    const sale = await salesService.createSale(getBusinessId(req), result.data);
     return res
       .status(201)
       .json({ message: "Sale created successfully", data: sale });
   } catch (err: unknown) {
-    next(err);
+    return sendSafeError(res, err, "Unable to create the sale.");
   }
 }
 export async function createSingleRefund(req: Request, res: Response) {
@@ -77,12 +69,13 @@ export async function createSingleRefund(req: Request, res: Response) {
       });
     }
     const { message, refundId } = await salesService.createSingleRefund(
+      getBusinessId(req),
       id,
       result.data,
     );
     res.status(200).json({ message, refundId });
   } catch (err) {
-    handleError(res, err);
+    sendSafeError(res, err, "Unable to create the refund.");
   }
 }
 export async function createMultipleRefunds(req: Request, res: Response) {
@@ -99,12 +92,13 @@ export async function createMultipleRefunds(req: Request, res: Response) {
       });
     }
     const { message, refundId } = await salesService.createMultipleRefunds(
+      getBusinessId(req),
       id,
       result.data,
     );
     res.status(200).json({ message, refundId });
   } catch (err) {
-    handleError(res, err);
+    sendSafeError(res, err, "Unable to create the refund.");
   }
 }
 export async function getDashboardSummary(req: Request, res: Response) {
@@ -143,38 +137,34 @@ export async function getDashboardSummary(req: Request, res: Response) {
       });
     }
     const summary = await salesService.getDashboardSummary(
+      getBusinessId(req),
       selectedPeriod,
       staleDays,
       staleLimit,
     );
     res.status(200).json(summary);
   } catch (err) {
-    handleError(res, err);
+    sendSafeError(res, err, "Unable to load the dashboard summary.");
   }
 }
-export async function getAvailableSerials(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) {
+export async function getAvailableSerials(req: Request, res: Response) {
   try {
     const variantId = Number(req.params.variantId);
     if (isNaN(variantId)) {
       return res.status(400).json({ message: "Invalid Variant ID" });
     }
-    const availableSerials = await salesService.getAvailableSerials(variantId);
+    const availableSerials = await salesService.getAvailableSerials(
+      getBusinessId(req),
+      variantId,
+    );
 
     res.status(200).json(availableSerials);
   } catch (err: unknown) {
-    next(err);
+    return sendSafeError(res, err, "Unable to load available serials.");
   }
 }
 
-export async function updateAvailableSerial(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) {
+export async function updateAvailableSerial(req: Request, res: Response) {
   try {
     const variantId = Number(req.params.variantId);
     if (!Number.isInteger(variantId) || variantId <= 0) {
@@ -190,12 +180,13 @@ export async function updateAvailableSerial(
     }
 
     const serialNumber = await salesService.updateAvailableSerial(
+      getBusinessId(req),
       variantId,
       result.data.currentSerial,
       result.data.serialNumber,
     );
     return res.status(200).json({ serialNumber });
   } catch (err: unknown) {
-    next(err);
+    return sendSafeError(res, err, "Unable to update the serial number.");
   }
 }
