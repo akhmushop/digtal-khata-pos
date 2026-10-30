@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main, code-review]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ezPosBackend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ezpos_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/ezpos_test
+      AUTH_JWT_SECRET: ci-only-secret-not-used-in-production-0123456789
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ezPosBackend/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run db:migrate
+      - name: Tests (unit + integration against the CI ezpos_test)
+        run: INTEGRATION_TESTS=1 npm test
+      - run: npm audit --omit=dev --audit-level=critical
+
+  pos:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pos
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: pos/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm audit --omit=dev --audit-level=critical
+
+  website:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ezPosWebsite
+    env:
+      NEXT_PUBLIC_SITE_URL: http://localhost:3001
+      NEXT_PUBLIC_POS_URL: http://localhost:5173
+      API_BASE_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ezPosWebsite/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm audit --omit=dev --audit-level=critical

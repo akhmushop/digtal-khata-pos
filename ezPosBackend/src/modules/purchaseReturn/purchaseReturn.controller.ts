@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import * as purchaseReturnService from "./purchaseReturn.service.js";
-import { handleError } from "../../utils/handleError.js";
+import { getBusinessId } from "../../middleware/business.js";
+import { sendSafeError } from "../../utils/safeError.js";
 import { createPurchaseReturnSchema } from "./purchaseReturn.schema.js";
 
 export async function createPurchaseReturn(req: Request, res: Response) {
@@ -13,18 +14,22 @@ export async function createPurchaseReturn(req: Request, res: Response) {
         errors: parsedInput.error.flatten(),
       });
     }
-    const result =
-      await purchaseReturnService.createPurchaseReturn(parsedInput.data);
+    const result = await purchaseReturnService.createPurchaseReturn(
+      getBusinessId(req),
+      parsedInput.data,
+    );
     return res.status(201).json(result);
   } catch (err) {
-    handleError(res, err);
+    sendSafeError(res, err, "Unable to process the purchase return.");
   }
 }
 export async function getPurchaseReturnItems(req: Request, res: Response) {
   try {
-    const returnItems = await purchaseReturnService.getPurchaseReturnItems();
+    const returnItems = await purchaseReturnService.getPurchaseReturnItems(
+      getBusinessId(req),
+    );
     res.json(returnItems);
   } catch (err) {
-    handleError(res, err);
+    sendSafeError(res, err, "Unable to load purchase return items.");
   }
 }

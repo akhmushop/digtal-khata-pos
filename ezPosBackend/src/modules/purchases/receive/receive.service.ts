@@ -1,8 +1,7 @@
 import { purchaseItems } from "../../../db/schema/purchaseItems.js";
-import { eq } from "drizzle-orm/pg-core/expressions";
+import { and, eq, sql } from "drizzle-orm";
 import type { DbTransaction } from "../purchase.types.js";
 import { inventoryStock } from "../../../db/schema/inventoryStock.js";
-import { sql } from "drizzle-orm";
 import { inventoryMovements } from "../../../db/schema/inventoryMovements.js";
 import { inventoryBatches } from "../../../db/schema/inventoryBatches.js";
 import type { Items } from "./receive.types.js";
@@ -12,8 +11,12 @@ import { purchases } from "../../../db/schema/purchases.js";
 import { purchasePayments } from "../../../db/schema/purchasePayments.js";
 import { productVariants } from "../../../db/schema/productVariants.js";
 
+// Every function takes the caller's server-verified businessId (from
+// requireBusinessContext) and scopes all reads and writes to it.
+
 export async function updatePurchaseItems(
   tx: DbTransaction,
+  businessId: number,
   purchaseItemId: number,
   newReceivedQuantity: number,
   unitCost: number,
@@ -24,10 +27,16 @@ export async function updatePurchaseItems(
       receivedQuantity: newReceivedQuantity,
       unitCost,
     })
-    .where(eq(purchaseItems.id, purchaseItemId));
+    .where(
+      and(
+        eq(purchaseItems.id, purchaseItemId),
+        eq(purchaseItems.businessId, businessId),
+      ),
+    );
 }
 export async function updateProductVariants(
   tx: DbTransaction,
+  businessId: number,
   sellingPrice: number,
   variantId: number,
 ) {
@@ -36,20 +45,30 @@ export async function updateProductVariants(
     .set({
       sellingPrice,
     })
-    .where(eq(productVariants.id, variantId));
+    .where(
+      and(
+        eq(productVariants.id, variantId),
+        eq(productVariants.businessId, businessId),
+      ),
+    );
 }
 export async function insertInventoryStockOnConflictDoUpdate(
   tx: DbTransaction,
+  businessId: number,
   variantId: number,
   receiveNow: number,
 ) {
   await tx
     .insert(inventoryStock)
     .values({
+      businessId,
       variantId,
       quantity: receiveNow,
     })
     .onConflictDoUpdate({
+      // PENDING POLICY DECISION (user, unresolved): the stock unique key stays
+      // `variant_id` (single-location model). Conflict rows always belong to
+      // this business because variant_id is tenant-unique.
       target: inventoryStock.variantId,
       set: {
         quantity: sql`
@@ -61,11 +80,13 @@ export async function insertInventoryStockOnConflictDoUpdate(
 }
 export async function insertInventoryMovements(
   tx: DbTransaction,
+  businessId: number,
   variantId: number,
   purchaseId: number,
   receiveNow: number,
 ) {
   await tx.insert(inventoryMovements).values({
+    businessId,
     variantId,
     movementType: "purchase",
     referenceType: "purchase",
@@ -75,6 +96,7 @@ export async function insertInventoryMovements(
 }
 export async function insertInventoryBatches(
   tx: DbTransaction,
+  businessId: number,
   receiveItem: Items,
   variantId: number,
   purchaseItemId: number,
@@ -83,6 +105,7 @@ export async function insertInventoryBatches(
 
   if (receiveItem.trackingType === "batch") {
     rows = (receiveItem.batches ?? []).map((batch) => ({
+      businessId,
       variantId,
       purchaseItemId,
       batchNumber: batch.batchNumber,
@@ -103,6 +126,7 @@ export async function insertInventoryBatches(
       quantity > 0
         ? [
             {
+              businessId,
               variantId,
               purchaseItemId,
               batchNumber: `AUTO-${purchaseItemId}-${Date.now()}`, // batchNumber is notNull
@@ -123,6 +147,7 @@ export async function insertInventoryBatches(
 }
 export async function insertSerialNumbers(
   tx: DbTransaction,
+  businessId: number,
   receiveItem: Items,
   variantId: number,
   purchaseItemId: number,
@@ -131,6 +156,7 @@ export async function insertSerialNumbers(
   const serials = receiveItem.serialNumbers ?? [];
 
   const serialNumbersToInsert = serials.map((serialNumber) => ({
+    businessId,
     variantId,
     purchaseItemId,
     serialNumber,
@@ -141,6 +167,7 @@ export async function insertSerialNumbers(
 }
 export async function getAllPurchaseItems(
   tx: DbTransaction,
+  businessId: number,
   purchaseId: number,
 ) {
   return await tx
@@ -150,7 +177,12 @@ export async function getAllPurchaseItems(
       unitCost: purchaseItems.unitCost,
     })
     .from(purchaseItems)
-    .where(eq(purchaseItems.purchaseId, purchaseId));
+    .where(
+      and(
+        eq(purchaseItems.purchaseId, purchaseId),
+        eq(purchaseItems.businessId, businessId),
+      ),
+    );
 }
 type AllPurchaseItems = {
   quantity: number;
@@ -232,6 +264,7 @@ export async function updatePurchase(
   updatedPaidAmount: number,
   updatedDueAmount: number,
   paymentStatus: "paid" | "unpaid" | "partial",
+  businessId: number,
   purchaseId: number,
 ) {
   await tx
@@ -246,16 +279,23 @@ export async function updatePurchase(
 
       updatedAt: new Date(),
     })
-    .where(eq(purchases.id, purchaseId));
+    .where(
+      and(
+        eq(purchases.id, purchaseId),
+        eq(purchases.businessId, businessId),
+      ),
+    );
 }
 export async function insertPurchasePayments(
   tx: DbTransaction,
+  businessId: number,
   purchaseId: number,
   paymentMethod: "cash" | "bank_transfer" | "cheque" | "card" | "other",
   newPaymentAmount: number,
   paymentNotes: string | undefined,
 ) {
   await tx.insert(purchasePayments).values({
+    businessId,
     purchaseId,
     method: paymentMethod,
     amount: newPaymentAmount,

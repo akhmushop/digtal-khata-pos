@@ -1,0 +1,102 @@
+import type { Request, Response } from "express";
+import {
+  createBusinessForUser,
+  getBusinessForMembership,
+  updateBusinessForMembership,
+} from "./businesses.service.js";
+import {
+  createBusinessSchema,
+  updateBusinessSchema,
+} from "./businesses.validation.js";
+import { sendSafeError } from "../../utils/safeError.js";
+
+export async function createBusiness(req: Request, res: Response) {
+  try {
+    if (!req.user) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Authentication required." });
+    }
+    const parsed = createBusinessSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        success: false,
+        message:
+          parsed.error.issues[0]?.message ?? "Invalid business details.",
+      });
+    }
+    const result = await createBusinessForUser(req.user.id, parsed.data);
+    return res.status(201).json({
+      success: true,
+      message: result.trialSkipped
+        ? "Business created. Free-trial activation is pending until the trial plan is configured."
+        : "Business created. Your free trial is active.",
+      ...result,
+    });
+  } catch (err) {
+    return sendSafeError(res, err, "Unable to create the business right now.");
+  }
+}
+
+export async function getBusiness(req: Request, res: Response) {
+  try {
+    if (!req.user || !req.membership) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Authentication required." });
+    }
+    const detail = await getBusinessForMembership(
+      req.user.id,
+      req.membership.businessId,
+    );
+    return res.status(200).json({ success: true, business: detail });
+  } catch (err) {
+    return sendSafeError(res, err, "Unable to load the business right now.");
+  }
+}
+
+export async function updateBusiness(req: Request, res: Response) {
+  try {
+    if (!req.user || !req.membership) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Authentication required." });
+    }
+    const parsed = updateBusinessSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        success: false,
+        message: parsed.error.issues[0]?.message ?? "Invalid business details.",
+      });
+    }
+    const detail = await updateBusinessForMembership(
+      req.user.id,
+      req.membership.businessId,
+      parsed.data,
+    );
+    return res.status(200).json({ success: true, business: detail });
+  } catch (err) {
+    return sendSafeError(res, err, "Unable to update the business right now.");
+  }
+}
+
+export async function getBusinessSubscription(req: Request, res: Response) {
+  try {
+    if (!req.subscriptionAccess) {
+      return res.status(500).json({
+        success: false,
+        message: "Subscription state was not evaluated for this request.",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      subscription: req.subscriptionAccess,
+    });
+  } catch (err) {
+    return sendSafeError(
+      res,
+      err,
+      "Unable to load the subscription state right now.",
+    );
+  }
+}

@@ -17,6 +17,7 @@ import { Units } from "@/features/products/pages/Units";
 import { Suppliers } from "@/features/Contacts/pages/Suppliers";
 import { VariantManager } from "@/features/products/pages/Variants";
 import { StockAdjustment } from "@/features/products/pages/StockAdjustment";
+import { DueManagementPage } from "@/features/due-management/DueManagementPage";
 import ReportsHub from "@/features/reports/pages/ReportsHub";
 
 const router = createBrowserRouter([
@@ -27,6 +28,11 @@ const router = createBrowserRouter([
   {
     element: <AppLayout />,
     children: [
+      {
+        path: "/due-management",
+        element: <DueManagementPage />,
+        
+      },
       {
         path: "/reports",
         element: <ReportsHub />,
