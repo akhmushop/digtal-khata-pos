@@ -19,6 +19,7 @@ import authRouter from "./modules/auth/auth.routes.js";
 import businessesRouter from "./modules/businesses/businesses.routes.js";
 import rolesRouter from "./modules/roles/roles.routes.js";
 import usersRouter from "./modules/users/users.routes.js";
+import locationsRouter from "./modules/locations/locations.routes.js";
 import {
   BadRequestError,
   ConflictError,
@@ -72,6 +73,7 @@ export function buildApp() {
   app.use("/", businessesRouter);
   app.use("/", rolesRouter);
   app.use("/", usersRouter);
+  app.use("/", locationsRouter);
 
   // error handling
   app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {

@@ -10,6 +10,7 @@ export const createStaffUserSchema = z.object({
   email: z.string().trim().toLowerCase().email("A valid email is required").max(255),
   password: passwordSchema,
   roleIds: z.array(z.number().int().positive()).min(1, "Assign at least one role"),
+  locationIds: z.array(z.number().int().positive()).optional(),
 });
 
 export const updateStaffUserSchema = z
@@ -19,9 +20,13 @@ export const updateStaffUserSchema = z
       .array(z.number().int().positive())
       .min(1, "Assign at least one role")
       .optional(),
+    locationIds: z.array(z.number().int().positive()).optional(),
   })
   .refine(
-    (data) => data.isActive !== undefined || data.roleIds !== undefined,
+    (data) =>
+      data.isActive !== undefined ||
+      data.roleIds !== undefined ||
+      data.locationIds !== undefined,
     "Nothing to update.",
   );
 

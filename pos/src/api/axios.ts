@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useSessionStore } from "../auth/sessionStore";
+import { useSessionStore, type SessionLocation } from "../auth/sessionStore";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000/api",
@@ -26,8 +26,11 @@ const WEBSITE_URL =
 
 let accessToken: string | null = null;
 let activeBusinessId: number | null = null;
+let activeLocationId: number | null = null;
 let sessionUser: SessionUser | null = null;
 let bootstrapPromise: Promise<void> | null = null;
+
+const ACTIVE_LOCATION_KEY = "ezpos-active-location";
 
 export interface SessionUser {
   id?: number | undefined;
@@ -45,6 +48,35 @@ export function getActiveBusinessId(): number | null {
   return activeBusinessId;
 }
 
+export function getActiveLocationId(): number | null {
+  return activeLocationId;
+}
+
+/**
+ * Switches the active location: persists the choice for this user/business
+ * pair and reloads the app so every store refetches against the new
+ * location (guaranteed cache invalidation). The backend validates the
+ * selection on every request — this only shapes what we ask for.
+ */
+export function switchLocation(locationId: number): void {
+  const user = getSessionUser();
+  const scope = user?.id != null ? `u${user.id}` : "?";
+  try {
+    localStorage.setItem(
+      ACTIVE_LOCATION_KEY,
+      `${scope}b${activeBusinessId}l${locationId}`,
+    );
+  } catch {
+    // localStorage unavailable — the switch still applies for this session.
+  }
+  activeLocationId = locationId;
+  useSessionStore.getState().setLocationContext(
+    useSessionStore.getState().locations,
+    locationId,
+  );
+  window.location.reload();
+}
+
 export function getSessionUser(): SessionUser | null {
   return sessionUser;
 }
@@ -52,6 +84,7 @@ export function getSessionUser(): SessionUser | null {
 export function clearSession(): void {
   accessToken = null;
   activeBusinessId = null;
+  activeLocationId = null;
   sessionUser = null;
   bootstrapPromise = null;
   useSessionStore.getState().clearSession();
@@ -146,16 +179,82 @@ async function loadSession(): Promise<void> {
       roles: first?.roles ?? [],
       permissions: first?.permissions ?? [],
     });
+
+    // 3. Location context: the server-verified list of accessible locations.
+    //    The persisted selection is a convenience — the backend validates it
+    //    on every request regardless.
+    let locations: SessionLocation[] = [];
+    try {
+      const locsRes = await api.get<{ success: boolean; data: SessionLocation[] }>(
+        "/accessible-locations",
+      );
+      locations = locsRes.data.data ?? [];
+    } catch {
+      // A failed location fetch must not kill the session; location-scoped
+      // endpoints will surface a clear error instead.
+      locations = [];
+    }
+    const persisted = readPersistedLocation(me.data.user?.id, activeBusinessId);
+    const persistedLocation = locations.find((l) => l.id === persisted);
+    const defaultLocation =
+      persistedLocation ??
+      locations.find((l) => l.isDefault) ??
+      locations[0];
+    activeLocationId = defaultLocation?.id ?? null;
+    useSessionStore
+      .getState()
+      .setLocationContext(locations, activeLocationId);
   } catch (err) {
     const status = axios.isAxiosError(err) ? err.response?.status : "network";
     redirectToSignIn(`me_failed_${status}`);
   }
 
-  // 3. Signed in but no business yet — the website dashboard is where
+  // 4. Signed in but no business yet — the website dashboard is where
   //    businesses are created.
   if (activeBusinessId === null) {
     window.location.href = `${WEBSITE_URL}/dashboard`;
     throw new Error("session_redirect: no_active_business");
+  }
+}
+
+/** Restores the persisted location selection for this user/business pair. */
+function readPersistedLocation(
+  userId: number | undefined,
+  businessId: number | null,
+): number | null {
+  try {
+    const raw = localStorage.getItem(ACTIVE_LOCATION_KEY);
+    if (raw === null) return null;
+    const match = /^u(\d+)b(\d+)l(\d+)$/.exec(raw);
+    if (!match) return null;
+    if (Number(match[1]) !== userId || Number(match[2]) !== businessId) {
+      return null;
+    }
+    return Number(match[3]);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Re-fetches the accessible-locations list and refreshes the location
+ * snapshot without a page reload — used after location create/edit/delete.
+ * The active selection is kept when still accessible.
+ */
+export async function refreshLocationContext(): Promise<void> {
+  try {
+    const locsRes = await api.get<{ success: boolean; data: SessionLocation[] }>(
+      "/accessible-locations",
+    );
+    const locations = locsRes.data.data ?? [];
+    const stillThere = locations.find((l) => l.id === activeLocationId);
+    if (!stillThere) {
+      const fallback = locations.find((l) => l.isDefault) ?? locations[0];
+      activeLocationId = fallback?.id ?? null;
+    }
+    useSessionStore.getState().setLocationContext(locations, activeLocationId);
+  } catch {
+    // Non-fatal: the current snapshot stays until the next bootstrap.
   }
 }
 
@@ -184,6 +283,9 @@ api.interceptors.request.use((config) => {
   }
   if (activeBusinessId !== null) {
     config.headers["X-Business-Id"] = String(activeBusinessId);
+  }
+  if (activeLocationId !== null) {
+    config.headers["X-Location-Id"] = String(activeLocationId);
   }
   return config;
 });

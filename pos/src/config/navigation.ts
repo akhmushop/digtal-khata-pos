@@ -2,6 +2,7 @@ import {
   ContactRound,
   CreditCard,
   LayoutDashboard,
+  MapPin,
   Package,
   Tags,
   Users,
@@ -119,6 +120,12 @@ export const navigation = [
       { title: "All Purchases", url: "/purchases", permission: "purchases.create" },
       { title: "Purchases List", url: "/purchases-list", permission: "purchases.view" },
     ],
+  },
+  {
+    title: "Locations",
+    url: "/locations",
+    icon: MapPin,
+    permission: "locations.view",
   },
   {
     title: "Users",

@@ -41,6 +41,7 @@ export async function createPurchaseReturn(
         supplierId: purchases.supplierId,
         paidAmount: purchases.paidAmount,
         dueAmount: purchases.dueAmount,
+        locationId: purchases.locationId,
       })
       .from(purchases)
       .where(
@@ -56,6 +57,13 @@ export async function createPurchaseReturn(
         "A supplier must be assigned to process a purchase return.",
       );
     }
+    // Returns deduct stock where the purchase was received.
+    if (purchase.locationId === null) {
+      throw new BadRequestError(
+        "This purchase has no receiving location recorded and cannot be returned.",
+      );
+    }
+    const locationId: number = purchase.locationId;
 
     const items = await tx
       .select({
@@ -112,6 +120,8 @@ export async function createPurchaseReturn(
     const requestedByItem = new Map(
       changedItems.map((item) => [item.purchaseItemId, item.quantity]),
     );
+    // Purchase returns deduct stock at the RETURN's location (the location
+    // the purchase was received into).
     const stockRows = await tx
       .select({
         variantId: inventoryStock.variantId,
@@ -121,6 +131,7 @@ export async function createPurchaseReturn(
       .where(
         and(
           eq(inventoryStock.businessId, businessId),
+          eq(inventoryStock.locationId, locationId),
           inArray(
             inventoryStock.variantId,
             [...new Set(items.map((item) => item.variantId))],
@@ -294,6 +305,7 @@ export async function createPurchaseReturn(
           and(
             eq(inventoryStock.variantId, variantId),
             eq(inventoryStock.businessId, businessId),
+            eq(inventoryStock.locationId, locationId),
             sql`${inventoryStock.quantity} >= ${quantity}`,
           ),
         )
@@ -308,6 +320,7 @@ export async function createPurchaseReturn(
       await tx.insert(inventoryMovements).values({
         businessId,
         variantId,
+        locationId,
         movementType: "adjustment",
         referenceType: "purchase_return",
         referenceId: purchaseReturn.id,

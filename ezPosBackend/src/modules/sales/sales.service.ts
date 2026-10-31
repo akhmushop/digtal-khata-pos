@@ -178,11 +178,13 @@ export async function calculateSubtotals(
 export async function consumeStockFifo(
   tx: DbTransaction,
   businessId: number,
+  locationId: number,
   variantId: number,
   quantity: number,
 ) {
   // 1. Oldest batches first. .for("update") locks the rows, so two sales
-  //    at the same moment can't take the same stock.
+  //    at the same moment can't take the same stock. FIFO is per-location:
+  //    a sale only consumes batches stocked at its own location.
   const batches = await tx
     .select()
     .from(inventoryBatches)
@@ -190,6 +192,7 @@ export async function consumeStockFifo(
       and(
         eq(inventoryBatches.variantId, variantId),
         eq(inventoryBatches.businessId, businessId),
+        eq(inventoryBatches.locationId, locationId),
         gt(inventoryBatches.quantityRemaining, 0),
       ),
     )
@@ -476,7 +479,11 @@ export async function getSaleReceipt(businessId: number, saleId: number) {
   };
 }
 
-export async function createSale(businessId: number, data: CreateSalePayload) {
+export async function createSale(
+  businessId: number,
+  locationId: number,
+  data: CreateSalePayload,
+) {
   const { customerId, items, discount, vatPercent, payments, saleDate } = data;
 
   const result = await db.transaction(async (tx) => {
@@ -491,7 +498,7 @@ export async function createSale(businessId: number, data: CreateSalePayload) {
     );
 
     // 3. Lock inventory rows and validate stock.
-    await validateStock(tx, businessId, variantIds, items);
+    await validateStock(tx, businessId, locationId, variantIds, items);
 
     // 2. Trusted prices and tracking types come from the database
     const variantMap = new Map(existingVariants.map((v) => [v.id, v]));
@@ -542,6 +549,7 @@ export async function createSale(businessId: number, data: CreateSalePayload) {
       .insert(sales)
       .values({
         businessId,
+        locationId,
         invoiceNumber,
         saleDate,
         customerId,
@@ -589,6 +597,7 @@ export async function createSale(businessId: number, data: CreateSalePayload) {
         cost = await consumeStockFifo(
           tx,
           businessId,
+          locationId,
           item.variantId,
           item.quantity,
         );
@@ -649,6 +658,7 @@ export async function createSale(businessId: number, data: CreateSalePayload) {
           and(
             eq(inventoryStock.variantId, item.variantId),
             eq(inventoryStock.businessId, businessId),
+            eq(inventoryStock.locationId, locationId),
           ),
         )
         .returning({
@@ -663,6 +673,7 @@ export async function createSale(businessId: number, data: CreateSalePayload) {
       await tx.insert(inventoryMovements).values({
         businessId,
         variantId: item.variantId,
+        locationId,
         movementType: "sale",
         quantity: item.quantity,
         referenceType: "sale",
@@ -744,6 +755,7 @@ async function applySaleRefund(
       finalTotal: sales.finalTotal,
       dueAmount: sales.dueAmount,
       paymentStatus: sales.paymentStatus,
+      locationId: sales.locationId,
     })
     .from(sales)
     .where(and(eq(sales.id, saleId), eq(sales.businessId, businessId)))
@@ -859,6 +871,10 @@ async function applySaleRefund(
         and(
           eq(inventoryStock.variantId, item.variantId),
           eq(inventoryStock.businessId, businessId),
+          // Returns restock the sale's own location — never another store's.
+          ...(sale.locationId !== null
+            ? [eq(inventoryStock.locationId, sale.locationId)]
+            : []),
         ),
       )
       .for("update");

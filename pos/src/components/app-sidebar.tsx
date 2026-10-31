@@ -40,6 +40,7 @@ import {
 import { Avatar, AvatarBadge, AvatarFallback } from "./ui/avatar";
 import { getSessionUser, logout } from "@/api/axios";
 import { usePermissions } from "@/hooks/usePermissions";
+import { LocationSwitcher } from "./common/LocationSwitcher";
 
 function initialsOf(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -101,6 +102,7 @@ export function AppSidebar() {
             </span>
           </div>
         </div>
+        <LocationSwitcher />
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>

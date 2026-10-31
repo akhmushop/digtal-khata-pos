@@ -15,6 +15,8 @@ export interface Member {
   createdAt: string | null;
   primaryRole: MemberRole | null;
   roles: MemberRole[];
+  /** Location ids the member can access. */
+  locations: number[];
 }
 
 export async function getUsersApi(): Promise<Member[]> {
@@ -27,6 +29,7 @@ export async function createStaffUserApi(input: {
   email: string;
   password: string;
   roleIds: number[];
+  locationIds?: number[] | undefined;
 }): Promise<Member> {
   const res = await api.post<{ success: boolean; data: Member }>(
     "/users",
@@ -37,7 +40,11 @@ export async function createStaffUserApi(input: {
 
 export async function updateStaffUserApi(
   userId: number,
-  input: { isActive?: boolean; roleIds?: number[] },
+  input: {
+    isActive?: boolean | undefined;
+    roleIds?: number[] | undefined;
+    locationIds?: number[] | undefined;
+  },
 ): Promise<Member> {
   const res = await api.patch<{ success: boolean; data: Member }>(
     `/users/${userId}`,

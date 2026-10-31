@@ -31,12 +31,12 @@ export const inventoryStock = pgTable(
       foreignColumns: [productVariants.id, productVariants.businessId],
       name: "inventory_stock_variant_business_fkey",
     }),
-    // PENDING POLICY DECISION (user, unresolved): `variant_id` stays globally
-    // unique (one stock row per variant — the current single-location model).
-    // The per-location model requires swapping this for
-    // UNIQUE (business_id, variant_id, location_id) with a NOT NULL
-    // location_id and a default location per business. Do not change until
-    // the user confirms.
-    unique("inventory_stock_variant_id_unique").on(table.variantId),
+    // One stock row per (business, variant, location). Legacy rows were
+    // backfilled to the business's default location by migration 0003.
+    unique("inventory_stock_business_variant_location_unique").on(
+      table.businessId,
+      table.variantId,
+      table.locationId,
+    ),
   ],
 );

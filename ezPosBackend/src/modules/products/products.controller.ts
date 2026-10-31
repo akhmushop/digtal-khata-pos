@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import * as productsService from "./products.service.js";
 import { getBusinessId } from "../../middleware/business.js";
+import { getLocationId } from "../../middleware/location.js";
 import { sendSafeError } from "../../utils/safeError.js";
 import { z } from "zod";
 import { callerHasPermission } from "../../middleware/permissions.js";
@@ -21,7 +22,10 @@ const stockAdjustmentSchema = z.object({
 });
 export async function getProducts(req: Request, res: Response) {
   try {
-    const data = await productsService.getAllProducts(getBusinessId(req));
+    const data = await productsService.getAllProducts(
+      getBusinessId(req),
+      getLocationId(req),
+    );
     // Purchase cost is sensitive: callers without products.view_cost never
     // receive cost fields (backend-enforced, not just UI-hidden).
     res.json(
@@ -128,6 +132,7 @@ export async function adjustVariantStock(req: Request, res: Response) {
     }
     const result = await productsService.adjustVariantStock(
       getBusinessId(req),
+      getLocationId(req),
       variantId,
       parsed.data,
     );

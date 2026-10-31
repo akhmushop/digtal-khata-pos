@@ -13,6 +13,7 @@ import {
 import { purchases } from "./purchases.js";
 import { suppliers } from "./suppliers.js";
 import { businesses } from "./businesses.js";
+import { locations } from "./locations.js";
 
 export const purchaseReturns = pgTable(
   "purchase_returns",
@@ -28,6 +29,10 @@ export const purchaseReturns = pgTable(
       .notNull(),
     reason: text(),
     status: varchar({ length: 20 }).default("pending").notNull(),
+    // Owning outlet for this transaction. Nullable for legacy rows; the
+    // application always sets it on new writes. Composite FK guarantees the
+    // location belongs to the same business.
+    locationId: integer("location_id"),
     totalAmount: numeric("total_amount", {
       precision: 12,
       scale: 2,
@@ -38,6 +43,12 @@ export const purchaseReturns = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
+    foreignKey({
+      columns: [table.locationId, table.businessId],
+      foreignColumns: [locations.id, locations.businessId],
+      name: "purchase_returns_location_business_fkey",
+    }),
+    index("purchase_returns_business_location_idx").on(table.businessId, table.locationId),
     index("purchase_returns_business_id_idx").on(table.businessId),
     unique("purchase_returns_id_business_uq").on(table.id, table.businessId),
     foreignKey({

@@ -89,6 +89,10 @@ export const PERMISSION_CATALOG: PermissionDefinition[] = [
   // Settings
   { key: "settings.view", module: "settings", description: "View business settings" },
   { key: "settings.edit", module: "settings", description: "Edit business settings" },
+
+  // Locations
+  { key: "locations.view", module: "settings", description: "View business locations" },
+  { key: "locations.manage", module: "settings", description: "Create, edit and deactivate locations" },
 ];
 
 export const ALL_PERMISSION_KEYS: string[] = PERMISSION_CATALOG.map((p) => p.key);

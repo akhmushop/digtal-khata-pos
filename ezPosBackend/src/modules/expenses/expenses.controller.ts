@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import * as expensesService from "./expenses.service.js";
 import { sendSafeError } from "../../utils/safeError.js";
 import { getBusinessId } from "../../middleware/business.js";
+import { getLocationId } from "../../middleware/location.js";
 import {
   expenseCategorySchema,
   expenseIdSchema,
@@ -19,6 +20,7 @@ export async function createExpense(req: Request, res: Response) {
     }
     const created = await expensesService.createExpense(
       getBusinessId(req),
+      getLocationId(req),
       parsed.data,
     );
     res.status(201).json(created);

@@ -70,6 +70,7 @@ describe("rbac integration", { skip: !runIntegration }, () => {
     businessId: number;
     userId: number;
     email: string;
+    locationId: number;
   }
 
   async function api(
@@ -133,11 +134,26 @@ describe("rbac integration", { skip: !runIntegration }, () => {
     });
     assert.equal(biz.status, 201);
     const bizBody = (await biz.json()) as { business: { id: number } };
+
+    // Location-scoped endpoints require a location (Phase 1 location layer).
+    const loc = await fetch(`${baseUrl}/api/locations`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${loginBody.accessToken}`,
+        "X-Business-Id": String(bizBody.business.id),
+      },
+      body: JSON.stringify({ name: "Main Store" }),
+    });
+    assert.equal(loc.status, 201);
+    const locBody = (await loc.json()) as { data: { id: number } };
+
     return {
       token: loginBody.accessToken,
       businessId: bizBody.business.id,
       userId: loginBody.user.id,
       email,
+      locationId: locBody.data.id,
     };
   }
 
@@ -202,6 +218,9 @@ describe("rbac integration", { skip: !runIntegration }, () => {
         roleIds,
       });
       assert.equal(created.status, 201, JSON.stringify(created.body));
+      await api(owner, "PATCH", `/api/users/${payload<{ data: { userId: number } }>(created).data.userId}`, {
+        locationIds: [owner.locationId],
+      });
       const login = await fetch(`${baseUrl}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -217,6 +236,7 @@ describe("rbac integration", { skip: !runIntegration }, () => {
         businessId: owner.businessId,
         userId: loginBody.user.id,
         email,
+        locationId: owner.locationId,
       };
     }
   });

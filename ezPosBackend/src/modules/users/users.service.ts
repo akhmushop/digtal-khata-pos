@@ -3,6 +3,8 @@ import { db } from "../../db/schema/index.js";
 import { businessMemberships } from "../../db/schema/businessMemberships.js";
 import { roles } from "../../db/schema/roles.js";
 import { userRoles } from "../../db/schema/userRoles.js";
+import { userLocationAssignments } from "../../db/schema/userLocationAssignments.js";
+import { locations } from "../../db/schema/locations.js";
 import { users } from "../../db/schema/users.js";
 import {
   BadRequestError,
@@ -29,6 +31,8 @@ export interface MemberSummary {
   createdAt: Date | null;
   primaryRole: { id: number; name: string; slug: string } | null;
   roles: { id: number; name: string; slug: string }[];
+  /** Location ids the member can access (owners implicitly access all). */
+  locations: number[];
 }
 
 /**
@@ -112,6 +116,17 @@ export async function listMembers(businessId: number): Promise<MemberSummary[]> 
     rolesByUser.set(row.userId, list);
   }
 
+  const locationRows = await db
+    .select({ userId: userLocationAssignments.userId, locationId: userLocationAssignments.locationId })
+    .from(userLocationAssignments)
+    .where(eq(userLocationAssignments.businessId, businessId));
+  const locationsByUser = new Map<number, number[]>();
+  for (const row of locationRows) {
+    const list = locationsByUser.get(row.userId) ?? [];
+    list.push(row.locationId);
+    locationsByUser.set(row.userId, list);
+  }
+
   return memberships.map((m) => ({
     userId: m.userId,
     fullName: m.fullName,
@@ -125,7 +140,49 @@ export async function listMembers(businessId: number): Promise<MemberSummary[]> 
       slug: m.primaryRoleSlug,
     },
     roles: rolesByUser.get(m.userId) ?? [],
+    locations: locationsByUser.get(m.userId) ?? [],
   }));
+}
+
+/**
+ * Replaces a member's location assignments. Location ids must belong to the
+ * business. Separate from permissions by design: what (roles) vs where
+ * (locations).
+ */
+export async function replaceUserLocationAssignments(
+  businessId: number,
+  userId: number,
+  locationIds: number[],
+): Promise<void> {
+  const uniqueIds = [...new Set(locationIds)];
+  if (uniqueIds.length > 0) {
+    const found = await db
+      .select({ id: locations.id })
+      .from(locations)
+      .where(eq(locations.businessId, businessId));
+    const owned = new Set(found.map((row) => row.id));
+    const unknown = uniqueIds.filter((id) => !owned.has(id));
+    if (unknown.length > 0) {
+      throw new BadRequestError(
+        "One or more locations do not belong to this business.",
+      );
+    }
+  }
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(userLocationAssignments)
+      .where(
+        and(
+          eq(userLocationAssignments.businessId, businessId),
+          eq(userLocationAssignments.userId, userId),
+        ),
+      );
+    if (uniqueIds.length > 0) {
+      await tx.insert(userLocationAssignments).values(
+        uniqueIds.map((locationId) => ({ userId, businessId, locationId })),
+      );
+    }
+  });
 }
 
 export async function createStaffUser(
@@ -282,6 +339,14 @@ export async function updateMember(
       .update(users)
       .set({ isActive: input.isActive, updatedAt: new Date() })
       .where(eq(users.id, targetUserId));
+  }
+
+  if (input.locationIds !== undefined) {
+    await replaceUserLocationAssignments(
+      businessId,
+      targetUserId,
+      input.locationIds,
+    );
   }
 
   const members = await listMembers(businessId);

@@ -22,6 +22,7 @@ import ReportsHub from "@/features/reports/pages/ReportsHub";
 import ForbiddenPage from "@/pages/ForbiddenPage";
 import { RequirePermission } from "@/components/common/PermissionGuard";
 import { UsersPage } from "@/features/users/pages/UsersPage";
+import { LocationsPage } from "@/features/locations/pages/LocationsPage";
 import { RolesPage } from "@/features/roles/pages/RolesPage";
 
 const REPORTS_PERMISSIONS = [
@@ -180,6 +181,14 @@ const router = createBrowserRouter([
         element: (
           <RequirePermission permission="purchases.return">
             <PurchaseViewItems />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "/locations",
+        element: (
+          <RequirePermission permission="locations.view">
+            <LocationsPage />
           </RequirePermission>
         ),
       },

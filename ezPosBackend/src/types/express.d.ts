@@ -18,6 +18,12 @@ declare global {
         roleName: string;
         permissions: string[];
       };
+      /** Set by requireLocationAccess after server-side validation. */
+      location?: {
+        locationId: number;
+        name: string;
+        isDefault: boolean;
+      };
       /** Set by requireBusinessAccess; derived from the stored subscription. */
       subscriptionAccess?: {
         accessMode: "full" | "read_only";

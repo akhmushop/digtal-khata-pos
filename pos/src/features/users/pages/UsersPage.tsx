@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSessionStore } from "@/auth/sessionStore";
-import { refreshSessionContext } from "@/api/axios";
+import { refreshSessionContext, refreshLocationContext } from "@/api/axios";
+import { getLocationsApi, type LocationSummary } from "@/features/locations/locations.api";
 import { toast } from "@/components/ui/toast";
 import { createEntityPromiseToast } from "@/lib/toast-utils";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ interface FormState {
   email: string;
   password: string;
   roleIds: number[];
+  locationIds: number[];
 }
 
 const EMPTY_FORM: FormState = {
@@ -56,12 +58,14 @@ const EMPTY_FORM: FormState = {
   email: "",
   password: "",
   roleIds: [],
+  locationIds: [],
 };
 
 export function UsersPage() {
   const version = useSessionStore((state) => state.version);
   const [members, setMembers] = useState<Member[]>([]);
   const [roles, setRoles] = useState<RoleSummary[]>([]);
+  const [locations, setLocations] = useState<LocationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
@@ -74,6 +78,7 @@ export function UsersPage() {
 
   const [editing, setEditing] = useState<Member | null>(null);
   const [editRoleIds, setEditRoleIds] = useState<number[]>([]);
+  const [editLocationIds, setEditLocationIds] = useState<number[]>([]);
   const [resetTarget, setResetTarget] = useState<Member | null>(null);
   const [resetPassword, setResetPassword] = useState("");
 
@@ -84,12 +89,14 @@ export function UsersPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [memberData, roleData] = await Promise.all([
+      const [memberData, roleData, locationData] = await Promise.all([
         getUsersApi(),
         getRolesApi().catch(() => [] as RoleSummary[]),
+        getLocationsApi().catch(() => [] as LocationSummary[]),
       ]);
       setMembers(memberData);
       setRoles(roleData);
+      setLocations(locationData);
     } catch {
       toast.add({
         title: "Unable to load users",
@@ -149,6 +156,7 @@ export function UsersPage() {
           email: form.email.trim().toLowerCase(),
           password: form.password,
           roleIds: form.roleIds,
+          locationIds: form.locationIds,
         },
         apiCall: createStaffUserApi,
         entityName: "user",
@@ -167,6 +175,7 @@ export function UsersPage() {
   function openEdit(member: Member) {
     setEditing(member);
     setEditRoleIds(member.roles.map((role) => role.id));
+    setEditLocationIds(member.locations);
   }
 
   async function handleSaveRoles() {
@@ -179,6 +188,7 @@ export function UsersPage() {
     try {
       const updated = await updateStaffUserApi(editing.userId, {
         roleIds: editRoleIds,
+        locationIds: editLocationIds,
       });
       setMembers((prev) =>
         prev.map((m) => (m.userId === updated.userId ? updated : m)),
@@ -242,6 +252,12 @@ export function UsersPage() {
     return list.includes(roleId)
       ? list.filter((id) => id !== roleId)
       : [...list, roleId];
+  }
+
+  function toggleLocation(list: number[], locationId: number): number[] {
+    return list.includes(locationId)
+      ? list.filter((id) => id !== locationId)
+      : [...list, locationId];
   }
 
   return (
@@ -448,6 +464,41 @@ export function UsersPage() {
                 )}
               </div>
             </div>
+            <div className="grid gap-1.5">
+              <Label>Location access</Label>
+              <div className="grid gap-2 rounded-md border p-3">
+                {locations.length === 0 ? (
+                  <span className="text-sm text-muted-foreground">
+                    No locations yet — create one under Locations.
+                  </span>
+                ) : (
+                  locations.map((location) => (
+                    <label
+                      key={location.id}
+                      className="flex items-center gap-2 text-sm"
+                    >
+                      <Checkbox
+                        checked={form.locationIds.includes(location.id)}
+                        onCheckedChange={() =>
+                          setForm((prev) => ({
+                            ...prev,
+                            locationIds: toggleLocation(
+                              prev.locationIds,
+                              location.id,
+                            ),
+                          }))
+                        }
+                      />
+                      {location.name}
+                    </label>
+                  ))
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Without at least one location the user cannot record sales or
+                inventory.
+              </p>
+            </div>
             {formError ? (
               <p className="text-sm text-destructive">{formError}</p>
             ) : null}
@@ -470,9 +521,10 @@ export function UsersPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Roles for {editing?.fullName}</DialogTitle>
+            <DialogTitle>Edit {editing?.fullName}</DialogTitle>
             <DialogDescription>
-              Effective permissions are the union of all assigned roles.
+              Effective permissions are the union of all assigned roles; the
+              user can only operate in their assigned locations.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-2 rounded-md border p-3">
@@ -488,12 +540,33 @@ export function UsersPage() {
               </label>
             ))}
           </div>
+          <div className="grid gap-1.5">
+            <Label>Location access</Label>
+            <div className="grid gap-2 rounded-md border p-3">
+              {locations.map((location) => (
+                <label
+                  key={location.id}
+                  className="flex items-center gap-2 text-sm"
+                >
+                  <Checkbox
+                    checked={editLocationIds.includes(location.id)}
+                    onCheckedChange={() =>
+                      setEditLocationIds((prev) =>
+                        toggleLocation(prev, location.id),
+                      )
+                    }
+                  />
+                  {location.name}
+                </label>
+              ))}
+            </div>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditing(null)}>
               Cancel
             </Button>
             <Button onClick={() => void handleSaveRoles()} disabled={saving}>
-              {saving ? "Saving…" : "Save roles"}
+              {saving ? "Saving…" : "Save changes"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -9,9 +9,14 @@ type NewExpense = typeof expenses.$inferInsert;
 // Every function takes the caller's server-verified businessId (from
 // requireBusinessContext) and scopes all reads and writes to it.
 
-function toExpenseValues(businessId: number, data: ExpenseWriteInput): NewExpense {
+function toExpenseValues(
+  businessId: number,
+  locationId: number,
+  data: ExpenseWriteInput,
+): NewExpense {
   return {
     businessId,
+    locationId,
     title: data.title,
     expenseDate: data.expense_date,
     amount: data.amount,
@@ -24,11 +29,12 @@ function toExpenseValues(businessId: number, data: ExpenseWriteInput): NewExpens
 
 export async function createExpense(
   businessId: number,
+  locationId: number,
   data: ExpenseWriteInput,
 ) {
   const [expense] = await db
     .insert(expenses)
-    .values(toExpenseValues(businessId, data))
+    .values(toExpenseValues(businessId, locationId, data))
     .returning();
   return expense;
 }
@@ -38,9 +44,19 @@ export async function updateExpense(
   id: number,
   data: ExpenseWriteInput,
 ) {
+  // Expense edits never move an expense between locations — the owning
+  // location stays whatever it was created with.
   const [expense] = await db
     .update(expenses)
-    .set(toExpenseValues(businessId, data))
+    .set({
+      title: data.title,
+      expenseDate: data.expense_date,
+      amount: data.amount,
+      categoryId: data.category_id,
+      paymentMethod: data.payment_method,
+      referenceNo: data.reference_no ?? null,
+      note: data.note ?? null,
+    })
     .where(and(eq(expenses.id, id), eq(expenses.businessId, businessId)))
     .returning();
   if (!expense) {

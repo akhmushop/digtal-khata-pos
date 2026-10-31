@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import * as salesService from "./sales.service.js";
 import { getBusinessId } from "../../middleware/business.js";
+import { getLocationId } from "../../middleware/location.js";
 import { callerHasPermission } from "../../middleware/permissions.js";
 import { sendSafeError } from "../../utils/safeError.js";
 import {
@@ -60,7 +61,11 @@ export async function createSale(req: Request, res: Response) {
         message: "You do not have permission to apply discounts.",
       });
     }
-    const sale = await salesService.createSale(getBusinessId(req), payload);
+    const sale = await salesService.createSale(
+      getBusinessId(req),
+      getLocationId(req),
+      payload,
+    );
     return res
       .status(201)
       .json({ message: "Sale created successfully", data: sale });

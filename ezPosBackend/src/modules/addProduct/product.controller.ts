@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import * as productService from "./product.service.js";
 import { getBusinessId } from "../../middleware/business.js";
+import { getLocationId } from "../../middleware/location.js";
 import { sendSafeError } from "../../utils/safeError.js";
 import { callerHasPermission } from "../../middleware/permissions.js";
 import { stripCostData } from "../../rbac/sanitize.js";
@@ -48,6 +49,7 @@ export async function createProduct(req: Request, res: Response) {
     }
     const product = await productService.createProduct(
       getBusinessId(req),
+      getLocationId(req),
       result.data,
     );
     return res.status(201).json({
@@ -91,6 +93,7 @@ export async function updateProduct(req: Request, res: Response) {
     }
     const product = await productService.updateProduct(
       getBusinessId(req),
+      getLocationId(req),
       id,
       result.data,
     );

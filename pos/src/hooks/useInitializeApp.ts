@@ -3,7 +3,7 @@ import { useCustomerStore } from "../store/useCustomerStore";
 import { useSalesStore } from "../features/pos/stores/useSalesStore";
 import useProductStore from "@/features/products/useProductStore";
 import { usePurchasesStore } from "@/features/purchases/usePurchaseStore";
-import { getActiveBusinessId, getSessionUser } from "@/api/axios";
+import { getActiveBusinessId, getActiveLocationId, getSessionUser } from "@/api/axios";
 import { useHoldCartStore } from "@/features/pos/stores/useCartStore";
 import { useReceiptSettingsStore } from "@/features/pos/stores/useReceiptSettingsStore";
 
@@ -19,7 +19,12 @@ const LAST_SESSION_KEY = "ezpos-last-session";
 function enforceSessionScope(): void {
   const user = getSessionUser();
   const businessId = getActiveBusinessId();
-  const currentScope = user?.id != null ? `u${user.id}` : `b${businessId}`;
+  const locationId = getActiveLocationId();
+  // Held carts are location-specific: switching stores must not leak carts
+  // across locations of the same user.
+  const currentScope =
+    (user?.id != null ? `u${user.id}` : `b${businessId}`) +
+    (locationId !== null ? `l${locationId}` : "");
   let previousScope: string | null = null;
   try {
     previousScope = localStorage.getItem(LAST_SESSION_KEY);
