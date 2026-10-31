@@ -5,9 +5,12 @@ import { users } from "../../db/schema/users.js";
 import { sendEmail } from "./email.service.js";
 import {
   renderPaymentSucceeded,
+  renderRenewalReminder,
+  renderSubscriptionRenewed,
   renderSubscriptionActivated,
   renderSubscriptionCanceled,
-  renderSubscriptionRenewed,
+  renderSubscriptionExpired,
+  renderTrialEndingSoon,
 } from "./email.templates.js";
 
 /**
@@ -109,6 +112,61 @@ export function notifyPaymentSucceeded(
     if (!delivery.ok) {
       console.error(
         `Payment-succeeded email failed for ${target.email}: ${delivery.error}`,
+      );
+    }
+  })();
+}
+
+export function notifyTrialEnding(
+  businessId: number,
+  periodEnd: Date,
+): void {
+  void (async () => {
+    const target = await businessOwnerEmail(businessId);
+    if (!target) return;
+    const rendered = renderTrialEndingSoon(target.businessName, periodEnd);
+    const delivery = await sendEmail({ to: target.email, ...rendered });
+    if (!delivery.ok) {
+      console.error(
+        `Trial-ending email failed for ${target.email}: ${delivery.error}`,
+      );
+    }
+  })();
+}
+
+export function notifyRenewalReminder(
+  businessId: number,
+  planName: string,
+  periodEnd: Date,
+): void {
+  void (async () => {
+    const target = await businessOwnerEmail(businessId);
+    if (!target) return;
+    const rendered = renderRenewalReminder(
+      target.businessName,
+      planName,
+      periodEnd,
+    );
+    const delivery = await sendEmail({ to: target.email, ...rendered });
+    if (!delivery.ok) {
+      console.error(
+        `Renewal-reminder email failed for ${target.email}: ${delivery.error}`,
+      );
+    }
+  })();
+}
+
+export function notifySubscriptionExpired(
+  businessId: number,
+): void {
+  void (async () => {
+    const target = await businessOwnerEmail(businessId);
+    if (!target) return;
+    const rendered = renderSubscriptionExpired(target.businessName);
+    const delivery = await sendEmail({ to: target.email, ...rendered });
+    if (!delivery.ok) {
+      console.error(
+        `Subscription-expired email failed for ${target.email}: ${delivery.error}`,
       );
     }
   })();

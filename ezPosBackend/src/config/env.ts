@@ -88,6 +88,9 @@ export const env = {
   sslcommerzSandbox: process.env.SSLCOMMERZ_SANDBOX?.trim() !== "false",
   /** Public backend origin, used as the IPN callback target. */
   backendUrl: process.env.BACKEND_URL?.trim() || "http://localhost:3000",
+  /** Background sweeps (trial expiry, reminders, grace suspension). */
+  jobsEnabled: process.env.JOBS_ENABLED?.trim() !== "false",
+  jobsIntervalMinutes: optionalInt("JOBS_INTERVAL_MINUTES", 60),
   emailVerificationTokenTtlHours: optionalInt(
     "EMAIL_VERIFICATION_TOKEN_TTL_HOURS",
     24,

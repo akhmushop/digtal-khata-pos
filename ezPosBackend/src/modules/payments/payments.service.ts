@@ -316,7 +316,8 @@ export async function verifyAndActivate(
       .for("update");
     if (
       subscription &&
-      ["trialing", "past_due"].includes(subscription.status)
+      // A suspended customer who pays is back in good standing.
+      ["trialing", "past_due", "suspended"].includes(subscription.status)
     ) {
       await tx
         .update(subscriptions)

@@ -99,6 +99,18 @@ export function renderTrialEndingSoon(
   );
 }
 
+export function renderRenewalReminder(
+  businessName: string,
+  planName: string,
+  periodEnd: Date,
+): RenderedEmail {
+  return render(
+    "Upcoming renewal",
+    `${businessName}: your ${planName} plan renews soon`,
+    `${p(`Your ${planName} subscription renews on ${periodEnd.toDateString()}. The invoice will be issued automatically — no action is needed unless your payment details changed.`)}${button(`${env.appUrl}/account/billing`, "Review billing")}${p("If your payment fails, your account stays fully available during a short grace period while we retry.")}`,
+  );
+}
+
 export function renderSubscriptionActivated(
   businessName: string,
   planName: string,

@@ -13,6 +13,7 @@ const router = express.Router();
 const admin = [requireAuth, requirePlatformAdmin] as const;
 
 router.get("/api/saas/overview", ...admin, adminController.getOverview);
+router.post("/api/saas/jobs/run", ...admin, adminController.runJobs);
 
 router.get("/api/saas/businesses", ...admin, adminController.getBusinesses);
 router.post(

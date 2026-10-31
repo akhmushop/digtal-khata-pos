@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import * as saasAdminService from "./saasAdmin.service.js";
+import { runSubscriptionSweeps } from "../../jobs/subscriptionJobs.js";
 import { sendSafeError } from "../../utils/safeError.js";
 import { z } from "zod";
 
@@ -271,5 +272,22 @@ export async function updateTicketStatus(req: Request, res: Response) {
     res.status(200).json({ success: true, message: "Ticket status updated." });
   } catch (err) {
     sendSafeError(res, err, "Unable to update the ticket right now.");
+  }
+}
+
+/** Manual trigger for the subscription lifecycle sweeps (ops convenience). */
+export async function runJobs(_req: Request, res: Response) {
+  try {
+    const results = await runSubscriptionSweeps();
+    await saasAdminService.audit(
+      { adminUserId: _req.user!.id },
+      "jobs_manual_run",
+      "system",
+      null,
+      results as unknown as Record<string, unknown>,
+    );
+    res.status(200).json({ success: true, data: results });
+  } catch (err) {
+    sendSafeError(res, err, "Unable to run the background jobs right now.");
   }
 }
