@@ -170,22 +170,28 @@ function CustomerPaymentForm({
         notes: values.notes || null,
         paymentDate: values.paymentDate,
       });
-      toast.success(
-        `Payment of ${formatMoney(values.amount)} recorded for ${target.invoiceNumber}.`,
-      );
+      toast.add({
+        type: "success",
+        description: `Payment of ${formatMoney(values.amount)} recorded for ${target.invoiceNumber}.`,
+      });
       onDone();
     } catch (error) {
       setServerError(
-        (error as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ??
-          (error instanceof Error ? error.message : "Could not record payment."),
+        (error as { response?: { data?: { message?: string } } })?.response
+          ?.data?.message ??
+          (error instanceof Error
+            ? error.message
+            : "Could not record payment."),
       );
     }
   }
 
   return (
     <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
-      <OutstandingSummary outstanding={target.outstandingAmount} amount={amount} />
+      <OutstandingSummary
+        outstanding={target.outstandingAmount}
+        amount={amount}
+      />
 
       <Controller
         name="amount"
@@ -202,6 +208,11 @@ function CustomerPaymentForm({
               placeholder="0.00"
               {...field}
               value={field.value ?? ""}
+              onChange={(e) => {
+                const val = e.target.value;
+                const parsed = Number(val);
+                field.onChange(parsed);
+              }}
             />
             <FieldErrorText error={fieldState.error as FormFieldError} />
           </div>
@@ -345,22 +356,28 @@ function SupplierPaymentForm({
         notes: values.notes || null,
         paymentDate: values.paymentDate,
       });
-      toast.success(
-        `Payment of ${formatMoney(values.amount)} recorded for ${target.purchaseInvoice}.`,
-      );
+      toast.add({
+        type: "success",
+        description: `Payment of ${formatMoney(values.amount)} recorded for ${target.purchaseInvoice}.`,
+      });
       onDone();
     } catch (error) {
       setServerError(
-        (error as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ??
-          (error instanceof Error ? error.message : "Could not record payment."),
+        (error as { response?: { data?: { message?: string } } })?.response
+          ?.data?.message ??
+          (error instanceof Error
+            ? error.message
+            : "Could not record payment."),
       );
     }
   }
 
   return (
     <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
-      <OutstandingSummary outstanding={target.outstandingAmount} amount={amount} />
+      <OutstandingSummary
+        outstanding={target.outstandingAmount}
+        amount={amount}
+      />
 
       <Controller
         name="amount"
@@ -377,6 +394,11 @@ function SupplierPaymentForm({
               placeholder="0.00"
               {...field}
               value={field.value ?? ""}
+              onChange={(e) => {
+                const val = e.target.value;
+                const parsed = Number(val);
+                field.onChange(parsed);
+              }}
             />
             <FieldErrorText error={fieldState.error as FormFieldError} />
           </div>
@@ -533,7 +555,8 @@ export function RecordPaymentDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            Record {target.kind === "customer" ? "collection" : "supplier payment"}
+            Record{" "}
+            {target.kind === "customer" ? "collection" : "supplier payment"}
           </DialogTitle>
           <DialogDescription>
             {target.kind === "customer"
