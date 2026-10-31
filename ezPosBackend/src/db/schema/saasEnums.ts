@@ -17,6 +17,8 @@ export const businessStatusEnum = pgEnum("business_status", [
   "suspended",
 ]);
 
+// business_mode lives in commerceEnums.ts (Phase 9).
+
 export const billingIntervalEnum = pgEnum("billing_interval", [
   "monthly",
   "yearly",

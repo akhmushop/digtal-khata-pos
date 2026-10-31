@@ -12,6 +12,11 @@ import {
   unique,
   varchar,
 } from "drizzle-orm/pg-core";
+import {
+  fulfillmentStatusEnum,
+  saleChannelEnum,
+} from "./commerceEnums.js";
+import { integrations } from "./integrations.js";
 import { sql } from "drizzle-orm";
 import { customers } from "./customers.js";
 import { businesses } from "./businesses.js";
@@ -22,6 +27,7 @@ export const paymentStatusEnum = pgEnum("payment_status", [
   "unpaid",
 ]);
 export const saleStatusEnum = pgEnum("sale_status", [
+  "pending",
   "completed",
   "held",
   "cancelled",
@@ -40,6 +46,19 @@ export const sales = pgTable(
       .references(() => businesses.id),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     status: saleStatusEnum("status").default("completed").notNull(),
+    /** Sales channel (Phase 9): unified orders, distinguishable origin. */
+    channel: saleChannelEnum("channel").default("pos").notNull(),
+    integrationId: integer("integration_id").references(
+      () => integrations.id,
+      { onDelete: "set null" },
+    ),
+    externalOrderId: varchar("external_order_id", { length: 100 }),
+    externalOrderNumber: varchar("external_order_number", { length: 100 }),
+    /** Duplicate-submission protection for storefront orders. */
+    idempotencyKey: varchar("idempotency_key", { length: 120 }).unique(),
+    fulfillmentStatus: fulfillmentStatusEnum("fulfillment_status")
+      .default("unfulfilled")
+      .notNull(),
     // Owning outlet for this transaction. Nullable for legacy rows; the
     // application always sets it on new writes. Composite FK guarantees the
     // location belongs to the same business.

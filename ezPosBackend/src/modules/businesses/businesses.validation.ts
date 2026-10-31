@@ -56,6 +56,11 @@ export const updateBusinessSchema = z.object({
         "Use an IANA timezone such as Asia/Dhaka",
       ),
   ),
+  mode: z
+    .enum(["physical_only", "online_only", "omnichannel"], {
+      message: "Invalid business mode.",
+    })
+    .optional(),
 });
 
 export type UpdateBusinessInput = z.infer<typeof updateBusinessSchema>;

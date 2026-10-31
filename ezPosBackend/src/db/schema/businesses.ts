@@ -7,6 +7,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import { businessStatusEnum } from "./saasEnums.js";
+import { businessModeEnum } from "./commerceEnums.js";
 import { users } from "./users.js";
 
 export const businesses = pgTable("businesses", {
@@ -16,6 +17,8 @@ export const businesses = pgTable("businesses", {
   phone: varchar({ length: 20 }),
   email: varchar({ length: 255 }),
   address: text(),
+  /** Operating model (Phase 9): gates product surfaces, not permissions. */
+  mode: businessModeEnum("mode").default("physical_only").notNull(),
   /** Onboarding profile — free-form trade label (retail, grocery, ...). */
   businessType: varchar("business_type", { length: 50 }),
   country: varchar({ length: 50 }),

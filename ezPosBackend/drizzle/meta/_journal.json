@@ -71,6 +71,20 @@
       "when": 1793441574938,
       "tag": "0009_saas_admin_audit",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793449782444,
+      "tag": "0010_commerce_core",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793450670978,
+      "tag": "0011_sale_idempotency_key",
+      "breakpoints": true
     }
   ]
 }
