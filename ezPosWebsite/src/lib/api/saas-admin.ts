@@ -27,19 +27,31 @@ async function request<T>(
   } catch {
     return { ok: false, status: 0, message: SERVER_UNREACHABLE_MESSAGE };
   }
-  const body = (await res.json().catch(() => null)) as
-    | ((T & { success?: boolean; message?: string }) | null)
-    | null;
-  const message =
-    res.status === 0
-      ? SERVER_UNREACHABLE_MESSAGE
-      : (body?.message ??
-        (res.ok ? "Done." : "Something went wrong. Please try again."));
+  const body = (await res.json().catch(() => null)) as Record<string, unknown> | null;
+  // Unwrap `{ success, message?, data }` envelopes; field-style and raw-array
+  // payloads pass through unchanged.
+  let data: unknown = body;
+  let message: string;
+  if (body && typeof body === "object" && "success" in body && "data" in body) {
+    data = body.data;
+    message =
+      res.status === 0
+        ? SERVER_UNREACHABLE_MESSAGE
+        : ((body.message as string | undefined) ??
+          (res.ok ? "Done." : "Something went wrong. Please try again."));
+  } else {
+    message =
+      res.status === 0
+        ? SERVER_UNREACHABLE_MESSAGE
+        : res.ok
+          ? "Done."
+          : "Something went wrong. Please try again.";
+  }
   return {
     ok: res.ok,
     status: res.status,
     message,
-    data: (body ?? undefined) as (T & { message?: string }) | undefined,
+    data: (data ?? undefined) as (T & { message?: string }) | undefined,
   };
 }
 
