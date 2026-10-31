@@ -5,6 +5,8 @@ const planLimitsSchema = z
     maxUsers: z.number().int().min(1).max(100000).optional(),
     maxLocations: z.number().int().min(1).max(10000).optional(),
     maxProducts: z.number().int().min(1).max(1000000).optional(),
+    maxConnectedStores: z.number().int().min(1).max(1000).optional(),
+    maxWebhookEndpoints: z.number().int().min(1).max(1000).optional(),
   })
   .optional();
 
@@ -14,6 +16,11 @@ const planFeaturesSchema = z
     advancedReports: z.boolean().optional(),
     exports: z.boolean().optional(),
     purchaseManagement: z.boolean().optional(),
+    storefrontApi: z.boolean().optional(),
+    woocommerceIntegration: z.boolean().optional(),
+    customStorefront: z.boolean().optional(),
+    multipleOnlineStores: z.boolean().optional(),
+    advancedWebhooks: z.boolean().optional(),
   })
   .optional();
 

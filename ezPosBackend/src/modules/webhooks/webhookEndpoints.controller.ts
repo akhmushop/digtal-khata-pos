@@ -3,6 +3,12 @@ import { z } from "zod";
 import { getBusinessId } from "../../middleware/business.js";
 import { sendSafeError } from "../../utils/safeError.js";
 import {
+  assertFeature,
+  assertWithinWebhookLimit,
+  countWebhookEndpoints,
+  getEntitlements,
+} from "../../services/entitlements.js";
+import {
   WEBHOOK_EVENTS,
   createEndpoint,
   deleteEndpoint,
@@ -41,8 +47,12 @@ export async function createWebhookEndpoint(req: Request, res: Response) {
     });
   }
   try {
+    const businessId = getBusinessId(req);
+    const entitlements = await getEntitlements(businessId);
+    assertFeature(entitlements, "advancedWebhooks");
+    assertWithinWebhookLimit(entitlements, await countWebhookEndpoints(businessId));
     const created = await createEndpoint(
-      getBusinessId(req),
+      businessId,
       parsed.data as { url: string; events: WebhookEvent[] },
     );
     res.status(201).json({

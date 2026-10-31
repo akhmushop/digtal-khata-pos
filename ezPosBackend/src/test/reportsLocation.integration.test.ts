@@ -42,7 +42,7 @@ describe("reports location integration", { skip: !runIntegration }, () => {
        -- feature gates are covered by dedicated plans in
        -- subscriptionCore.integration.test.ts.
        SET limits = NULL,
-           features = '{"multiLocation":true,"advancedReports":true}'::jsonb,
+           features = '{"multiLocation":true,"advancedReports":true,"storefrontApi":true,"woocommerceIntegration":true,"customStorefront":true,"multipleOnlineStores":true,"advancedWebhooks":true}'::jsonb,
            is_active = true`,
     );
     await client.end();

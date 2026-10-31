@@ -9,6 +9,8 @@ import { subscriptions } from "../db/schema/subscriptions.js";
 import { businessMemberships } from "../db/schema/businessMemberships.js";
 import { locations } from "../db/schema/locations.js";
 import { products } from "../db/schema/products.js";
+import { integrations } from "../db/schema/integrations.js";
+import { webhookEndpoints } from "../db/schema/webhooks.js";
 import { ForbiddenError } from "../utils/handleError.js";
 
 /**
@@ -245,4 +247,60 @@ export async function getBusinessUsage(
     locations: locationRows?.count ?? 0,
     products: productRows?.count ?? 0,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Integration entitlements (Phase 9.6)
+// ---------------------------------------------------------------------------
+
+/** Connected (non-disconnected) storefront integrations. */
+export async function countConnectedStores(businessId: number): Promise<number> {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(integrations)
+    .where(
+      and(
+        eq(integrations.businessId, businessId),
+        sql`${integrations.status} <> 'disconnected'`,
+      ),
+    );
+  return row?.count ?? 0;
+}
+
+export async function countWebhookEndpoints(
+  businessId: number,
+): Promise<number> {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(webhookEndpoints)
+    .where(eq(webhookEndpoints.businessId, businessId));
+  return row?.count ?? 0;
+}
+
+export function assertWithinStoreLimit(
+  entitlements: Entitlements,
+  currentCount: number,
+): void {
+  const limit = entitlements.plan?.limits?.maxConnectedStores;
+  if (limit === undefined || limit === null) return;
+  if (currentCount >= limit) {
+    throw new ForbiddenError(
+      `Your plan allows up to ${limit} connected store${limit === 1 ? "" : "s"}. Upgrade your plan to connect more.`,
+      "PLAN_LIMIT_REACHED",
+    );
+  }
+}
+
+export function assertWithinWebhookLimit(
+  entitlements: Entitlements,
+  currentCount: number,
+): void {
+  const limit = entitlements.plan?.limits?.maxWebhookEndpoints;
+  if (limit === undefined || limit === null) return;
+  if (currentCount >= limit) {
+    throw new ForbiddenError(
+      `Your plan allows up to ${limit} webhook endpoint${limit === 1 ? "" : "s"}. Upgrade your plan to add more.`,
+      "PLAN_LIMIT_REACHED",
+    );
+  }
 }

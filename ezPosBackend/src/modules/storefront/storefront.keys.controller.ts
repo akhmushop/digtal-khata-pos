@@ -12,6 +12,7 @@ import {
 } from "../../middleware/storefront.js";
 import { getBusinessId } from "../../middleware/business.js";
 import { ConflictError } from "../../utils/handleError.js";
+import { assertFeature, getEntitlements } from "../../services/entitlements.js";
 import { sendSafeError } from "../../utils/safeError.js";
 
 const createKeySchema = z.object({
@@ -41,6 +42,8 @@ export async function createKey(req: Request, res: Response) {
   }
   try {
     const businessId = getBusinessId(req);
+    const entitlements = await getEntitlements(businessId);
+    assertFeature(entitlements, "storefrontApi");
     const publishableKey = generatePublishableKey();
     const secretKey = generateSecretKey();
 

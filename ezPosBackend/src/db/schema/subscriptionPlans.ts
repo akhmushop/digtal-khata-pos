@@ -24,12 +24,24 @@ export interface PlanFeatures {
   exports?: boolean | undefined;
   /** Purchase management module (reserved; no gate wired yet). */
   purchaseManagement?: boolean | undefined;
+  /** Storefront API keys for custom websites (Phase 9.2). */
+  storefrontApi?: boolean | undefined;
+  /** WooCommerce store connections (Phase 9.3). */
+  woocommerceIntegration?: boolean | undefined;
+  /** More than one connected store of any platform. */
+  multipleOnlineStores?: boolean | undefined;
+  /** Outbound webhook endpoints (Phase 9.4). */
+  advancedWebhooks?: boolean | undefined;
 }
 
 export interface PlanLimits {
   maxUsers?: number | undefined;
   maxLocations?: number | undefined;
   maxProducts?: number | undefined;
+  /** Connected storefront integrations (all platforms). */
+  maxConnectedStores?: number | undefined;
+  /** Registered outbound webhook endpoints. */
+  maxWebhookEndpoints?: number | undefined;
 }
 
 export const subscriptionPlans = pgTable("subscription_plans", {

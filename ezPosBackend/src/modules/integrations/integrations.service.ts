@@ -27,6 +27,13 @@ import {
   createOnlineOrder,
 } from "../commerce/orders.service.js";
 import { NotFoundError, ConflictError } from "../../utils/handleError.js";
+import {
+  assertFeature,
+  assertWithinStoreLimit,
+  countConnectedStores,
+  getEntitlements,
+  planHasFeature,
+} from "../../services/entitlements.js";
 
 /**
  * Integration management + sync engine (Phase 9.3). WooCommerce-specific
@@ -95,6 +102,11 @@ export async function connectWoocommerceStore(
     locationId?: number | null | undefined;
   },
 ): Promise<ConnectResult> {
+  // Plan entitlements: WooCommerce integration + connected-store limit.
+  const entitlements = await getEntitlements(businessId);
+  assertFeature(entitlements, "woocommerceIntegration");
+  assertWithinStoreLimit(entitlements, await countConnectedStores(businessId));
+
   const storeUrl = input.storeUrl.replace(/\/+$/, "");
   const webhookSecret = randomBytes(24).toString("hex");
 
@@ -258,6 +270,18 @@ export async function pushProducts(integrationId: number): Promise<number> {
     .where(eq(integrations.id, integrationId));
   if (!integration) throw new NotFoundError("Integration not found.");
   const businessId = integration.businessId;
+  // Entitlement expiry: skip silently (logged) — historical data and the
+  // billing portal stay reachable, only outbound sync pauses.
+  const entitlements = await getEntitlements(businessId);
+  if (!planHasFeature(entitlements, "woocommerceIntegration")) {
+    await logSync(integrationId, businessId, {
+      jobType: "entitlement",
+      direction: "push",
+      status: "error",
+      message: "Plan no longer includes WooCommerce integration — sync paused.",
+    });
+    return 0;
+  }
   const creds = await credentialsFor(integrationId);
   const client = new WoocommerceClient(creds);
 
@@ -468,6 +492,18 @@ export async function pushStockLevels(integrationId: number): Promise<number> {
     .where(eq(integrations.id, integrationId));
   if (!integration) throw new NotFoundError("Integration not found.");
   const businessId = integration.businessId;
+  // Entitlement expiry: skip silently (logged) — historical data and the
+  // billing portal stay reachable, only outbound sync pauses.
+  const entitlements = await getEntitlements(businessId);
+  if (!planHasFeature(entitlements, "woocommerceIntegration")) {
+    await logSync(integrationId, businessId, {
+      jobType: "entitlement",
+      direction: "push",
+      status: "error",
+      message: "Plan no longer includes WooCommerce integration — sync paused.",
+    });
+    return 0;
+  }
   const creds = await credentialsFor(integrationId);
   const client = new WoocommerceClient(creds);
   const locationId =
