@@ -3,6 +3,7 @@ import * as salesService from "./sales.service.js";
 import { getBusinessId } from "../../middleware/business.js";
 import { getLocationId } from "../../middleware/location.js";
 import { callerHasPermission } from "../../middleware/permissions.js";
+import { resolveOptionalLocationParam } from "../../middleware/location.js";
 import { sendSafeError } from "../../utils/safeError.js";
 import {
   createSalePayloadSchema,
@@ -155,11 +156,15 @@ export async function getDashboardSummary(req: Request, res: Response) {
         message: "Stale stock limit must be 10, 20, 30, 50, or 100",
       });
     }
+    // Optional location scope (?locationId) — validated against the
+    // caller's server-side location assignments (403 when unauthorized).
+    const locationId = await resolveOptionalLocationParam(req);
     const summary = await salesService.getDashboardSummary(
       getBusinessId(req),
       selectedPeriod,
       staleDays,
       staleLimit,
+      locationId,
     );
     res.status(200).json(summary);
   } catch (err) {

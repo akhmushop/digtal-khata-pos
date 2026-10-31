@@ -79,6 +79,77 @@ export function RegisterCloseReport() {
 
       {/* Screen Layout (hidden during print) */}
       <div className="space-y-6 print:hidden">
+        {/* Register session breakdown — actual drawer data per shift */}
+        {data?.sessions && data.sessions.length > 0 ? (
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+              Register Sessions
+            </h3>
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                  <tr>
+                    <th className="px-3 py-2">Register</th>
+                    <th className="px-3 py-2">Location</th>
+                    <th className="px-3 py-2">Cashier</th>
+                    <th className="px-3 py-2 text-right">Opening</th>
+                    <th className="px-3 py-2 text-right">Cash sales</th>
+                    <th className="px-3 py-2 text-right">Non-cash</th>
+                    <th className="px-3 py-2 text-right">Cash in</th>
+                    <th className="px-3 py-2 text-right">Cash out</th>
+                    <th className="px-3 py-2 text-right">Refunds</th>
+                    <th className="px-3 py-2 text-right">Expected</th>
+                    <th className="px-3 py-2 text-right">Counted</th>
+                    <th className="px-3 py-2 text-right">Over/Short</th>
+                    <th className="px-3 py-2">Window</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.sessions.map((session) => (
+                    <tr key={session.sessionId} className="border-t border-slate-100">
+                      <td className="px-3 py-2 font-medium">{session.registerName}</td>
+                      <td className="px-3 py-2">{session.locationName}</td>
+                      <td className="px-3 py-2">{session.cashierName}</td>
+                      <td className="px-3 py-2 text-right">{formatCurrency(session.openingCash)}</td>
+                      <td className="px-3 py-2 text-right">{formatCurrency(session.cashSales)}</td>
+                      <td className="px-3 py-2 text-right">{formatCurrency(session.nonCashSales)}</td>
+                      <td className="px-3 py-2 text-right">{formatCurrency(session.cashIn)}</td>
+                      <td className="px-3 py-2 text-right">{formatCurrency(session.cashOut)}</td>
+                      <td className="px-3 py-2 text-right">{formatCurrency(session.refunds)}</td>
+                      <td className="px-3 py-2 text-right">
+                        {session.status === "closed" ? formatCurrency(session.expectedCash) : "—"}
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        {session.countedCash === null ? "—" : formatCurrency(session.countedCash)}
+                      </td>
+                      <td
+                        className={`px-3 py-2 text-right font-medium ${
+                          session.difference === null
+                            ? "text-slate-400"
+                            : session.difference === 0
+                              ? "text-emerald-600"
+                              : session.difference > 0
+                                ? "text-blue-600"
+                                : "text-rose-600"
+                        }`}
+                      >
+                        {session.difference === null
+                          ? "—"
+                          : `${session.difference > 0 ? "+" : ""}${formatCurrency(session.difference)}`}
+                      </td>
+                      <td className="px-3 py-2 text-xs text-slate-500">
+                        {session.openedAt ? new Date(session.openedAt).toLocaleString() : "—"}
+                        {" → "}
+                        {session.closedAt ? new Date(session.closedAt).toLocaleString() : "open"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : null}
+
         {/* Metric Cards Row */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <ReportMetricCard

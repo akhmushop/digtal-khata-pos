@@ -31,6 +31,7 @@ import {
 } from "recharts";
 import { Link } from "react-router";
 import axios from "../../api/axios.js";
+import { useSessionStore } from "@/auth/sessionStore";
 import type {
   DashboardData,
   LowStockProduct,
@@ -409,6 +410,10 @@ export default function DashboardComponent() {
   const [range, setRange] = useState<DashboardPeriod>("today");
   const [staleDays, setStaleDays] = useState<number>(60);
   const [staleLimit, setStaleLimit] = useState<number>(10);
+  // Location scope: All Locations (undefined) or one accessible location.
+  // The backend validates the selection against assignments on every call.
+  const locations = useSessionStore((state) => state.locations);
+  const [locationId, setLocationId] = useState<number | undefined>(undefined);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const requestId = useRef(0);
   const selectedPeriod =
@@ -421,7 +426,12 @@ export default function DashboardComponent() {
     setError(null);
     try {
       const { data } = await axios.get<SummaryResponse>("/dashboard_summary", {
-        params: { period: range, staleDays, staleLimit },
+        params: {
+          period: range,
+          staleDays,
+          staleLimit,
+          ...(locationId !== undefined ? { locationId } : {}),
+        },
       });
       if (typeof data !== "object" || data === null || Array.isArray(data)) {
         throw new Error("The dashboard response was not in the expected format.");
@@ -439,7 +449,7 @@ export default function DashboardComponent() {
     } finally {
       if (requestId.current === activeRequestId) setLoading(false);
     }
-  }, [range, staleDays, staleLimit]);
+  }, [range, staleDays, staleLimit, locationId]);
 
   useEffect(() => {
     void loadDashboard();
@@ -540,6 +550,32 @@ export default function DashboardComponent() {
             <label htmlFor="dashboard-period" className="sr-only">
               Dashboard date range
             </label>
+            {locations.length > 1 ? (
+              <>
+                <label htmlFor="dashboard-location" className="sr-only">
+                  Location scope
+                </label>
+                <select
+                  id="dashboard-location"
+                  value={locationId ?? "all"}
+                  onChange={(event) =>
+                    setLocationId(
+                      event.target.value === "all"
+                        ? undefined
+                        : Number(event.target.value),
+                    )
+                  }
+                  className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+                >
+                  <option value="all">All Locations</option>
+                  {locations.map((location) => (
+                    <option key={location.id} value={location.id}>
+                      {location.name}
+                    </option>
+                  ))}
+                </select>
+              </>
+            ) : null}
             <select
               id="dashboard-period"
               value={range}

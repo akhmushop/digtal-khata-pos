@@ -2,10 +2,8 @@ import type { Request, Response } from "express";
 import { dateRangeSchema } from "./reports.validation.js";
 import * as reportsService from "./reports.service.js";
 import { getBusinessId } from "../../middleware/business.js";
-import { ForbiddenError } from "../../utils/handleError.js";
 import { sendSafeError } from "../../utils/safeError.js";
-import { listAccessibleLocationIds } from "../locations/locations.service.js";
-import { WILDCARD_PERMISSION } from "../../rbac/permissions.js";
+import { resolveOptionalLocationParam } from "../../middleware/location.js";
 
 // Every report handler forwards the server-verified businessId from
 // requireBusinessContext into the service, which injects it into every
@@ -21,33 +19,7 @@ function getValidatedParams(req: Request) {
   return parsed.data;
 }
 
-/**
- * Optional location scope from the ?locationId query parameter. Absent or
- * "all" = business-wide aggregate. A specific id is validated against the
- * caller's server-side location assignments (owners pass via wildcard) —
- * a report filtered to a location you cannot access is 403, never data.
- */
-async function resolveReportLocation(req: Request): Promise<number | undefined> {
-  const raw = req.query.locationId;
-  if (raw === undefined || raw === "" || raw === "all") return undefined;
-  const locationId = Number(raw);
-  if (!Number.isInteger(locationId) || locationId <= 0) {
-    throw new ForbiddenError("Invalid location filter.");
-  }
-  if (!req.user || !req.membership) {
-    throw new ForbiddenError("Authentication required.");
-  }
-  const callerIsOwner = req.membership.permissions.includes(WILDCARD_PERMISSION);
-  const accessible = await listAccessibleLocationIds(
-    getBusinessId(req),
-    req.user.id,
-    callerIsOwner,
-  );
-  if (!accessible.includes(locationId)) {
-    throw new ForbiddenError("You do not have access to this location.");
-  }
-  return locationId;
-}
+const resolveReportLocation = resolveOptionalLocationParam;
 
 export async function getSalesSummary(req: Request, res: Response) {
   try {

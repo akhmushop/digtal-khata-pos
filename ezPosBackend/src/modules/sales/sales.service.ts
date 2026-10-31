@@ -824,6 +824,9 @@ async function applySaleRefund(
     .insert(saleRefunds)
     .values({
       businessId,
+      // The refund belongs to the sale's location — it must show up in
+      // that location's ledgers, comparison and Z-report.
+      locationId: sale.locationId,
       saleId,
       reason,
       status: options.disposition,
@@ -1116,6 +1119,7 @@ export async function getDashboardSummary(
   period: DashboardPeriod = "today",
   staleDays = 60,
   staleLimit = 10,
+  locationId?: number,
 ) {
   const [
     salesOverview,
@@ -1136,23 +1140,23 @@ export async function getDashboardSummary(
     staleStockSummary,
     topSellingProducts,
   ] = await Promise.all([
-    getSalesOverview(businessId, period),
-    getTopCategories(businessId, period),
-    getProfitByCategory(businessId, period),
-    getTopItemsByGross(businessId, period),
-    getProductsSummary(businessId),
-    getSalesSummary(businessId, period),
-    getSalesActivity(businessId, period),
-    getPaymentBreakdown(businessId, period),
-    getNetProfit(businessId, period),
-    getInvoiceDues(businessId),
-    getExpensesSummary(businessId, period),
-    getPurchasesSummary(businessId, period),
-    getReturnSummary(businessId, period),
-    getRecentSalesSummary(businessId, period),
-    getLowStockSummary(businessId),
-    getStaleStockSummary(businessId, staleDays, staleLimit),
-    getTopSellingProducts(businessId, period),
+    getSalesOverview(businessId, period, locationId),
+    getTopCategories(businessId, period, locationId),
+    getProfitByCategory(businessId, period, locationId),
+    getTopItemsByGross(businessId, period, locationId),
+    getProductsSummary(businessId, locationId),
+    getSalesSummary(businessId, period, locationId),
+    getSalesActivity(businessId, period, locationId),
+    getPaymentBreakdown(businessId, period, locationId),
+    getNetProfit(businessId, period, locationId),
+    getInvoiceDues(businessId, locationId),
+    getExpensesSummary(businessId, period, locationId),
+    getPurchasesSummary(businessId, period, locationId),
+    getReturnSummary(businessId, period, locationId),
+    getRecentSalesSummary(businessId, period, locationId),
+    getLowStockSummary(businessId, locationId),
+    getStaleStockSummary(businessId, staleDays, staleLimit, locationId),
+    getTopSellingProducts(businessId, period, locationId),
   ]);
   return {
     salesOverview: salesOverview.rows,

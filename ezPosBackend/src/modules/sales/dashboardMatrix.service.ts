@@ -40,7 +40,21 @@ function getPreviousPeriodStart(period: DashboardPeriod) {
   return sql`(${getCurrentPeriodStart(period)}) - (${getPeriodDays(period)} * INTERVAL '1 day')`;
 }
 
-export function getSalesOverview(businessId: number, period: DashboardPeriod) {
+/**
+ * Optional location scope for dashboard queries — the same convention as the
+ * reports module: undefined = business-wide, a value narrows to one
+ * location's rows (access is validated in the controller, never here).
+ */
+function locFilter(
+  qualified: string,
+  locationId: number | undefined,
+) {
+  if (locationId === undefined) return sql``;
+  return sql` AND ${sql.raw(qualified)}.location_id = ${locationId}`;
+}
+
+
+export function getSalesOverview(businessId: number, period: DashboardPeriod, locationId?: number) {
   const bucket =
     period === "today" || period === "yesterday"
       ? sql`DATE_TRUNC('hour', created_at)`
@@ -66,7 +80,7 @@ export function getSalesOverview(businessId: number, period: DashboardPeriod) {
         0
       ) AS cash
     FROM sales
-    WHERE business_id = ${businessId}
+    WHERE business_id = ${businessId}${locFilter("sales", locationId)}
       AND status IN ('completed', 'refunded')
       AND created_at >= ${getCurrentPeriodStart(period)}
       AND created_at < ${getCurrentPeriodEnd(period)}
@@ -75,7 +89,8 @@ export function getSalesOverview(businessId: number, period: DashboardPeriod) {
   `);
 }
 
-export function getTopCategories(businessId: number, period: DashboardPeriod) {
+
+export function getTopCategories(businessId: number, period: DashboardPeriod, locationId?: number) {
   return db.execute(sql`
     SELECT
       COALESCE(c.name, 'Uncategorized') AS category,
@@ -85,7 +100,7 @@ export function getTopCategories(businessId: number, period: DashboardPeriod) {
     INNER JOIN product_variants pv ON pv.id = si.variant_id
     INNER JOIN products p ON p.id = pv.product_id
     LEFT JOIN categories c ON c.id = p.category_id
-    WHERE s.business_id = ${businessId}
+    WHERE s.business_id = ${businessId}${locFilter("s", locationId)}
       AND s.status IN ('completed', 'refunded')
       AND s.created_at >= ${getCurrentPeriodStart(period)}
       AND s.created_at < ${getCurrentPeriodEnd(period)}
@@ -95,7 +110,8 @@ export function getTopCategories(businessId: number, period: DashboardPeriod) {
   `);
 }
 
-export function getProfitByCategory(businessId: number, period: DashboardPeriod) {
+
+export function getProfitByCategory(businessId: number, period: DashboardPeriod, locationId?: number) {
   return db.execute(sql`
     SELECT
       COALESCE(c.name, 'Uncategorized') AS category,
@@ -106,7 +122,7 @@ export function getProfitByCategory(businessId: number, period: DashboardPeriod)
     INNER JOIN product_variants pv ON pv.id = si.variant_id
     INNER JOIN products p ON p.id = pv.product_id
     LEFT JOIN categories c ON c.id = p.category_id
-    WHERE s.business_id = ${businessId}
+    WHERE s.business_id = ${businessId}${locFilter("s", locationId)}
       AND s.status IN ('completed', 'refunded')
       AND s.created_at >= ${getCurrentPeriodStart(period)}
       AND s.created_at < ${getCurrentPeriodEnd(period)}
@@ -116,7 +132,8 @@ export function getProfitByCategory(businessId: number, period: DashboardPeriod)
   `);
 }
 
-export function getTopItemsByGross(businessId: number, period: DashboardPeriod) {
+
+export function getTopItemsByGross(businessId: number, period: DashboardPeriod, locationId?: number) {
   return db.execute(sql`
     SELECT
       p.name AS product_name,
@@ -173,7 +190,7 @@ export function getTopItemsByGross(businessId: number, period: DashboardPeriod) 
     INNER JOIN sales s ON s.id = si.sale_id
     INNER JOIN product_variants pv ON pv.id = si.variant_id
     INNER JOIN products p ON p.id = pv.product_id
-    WHERE s.business_id = ${businessId}
+    WHERE s.business_id = ${businessId}${locFilter("s", locationId)}
       AND s.status IN ('completed', 'refunded')
       AND s.created_at >= ${getPreviousPeriodStart(period)}
       AND s.created_at < ${getCurrentPeriodEnd(period)}
@@ -183,7 +200,8 @@ export function getTopItemsByGross(businessId: number, period: DashboardPeriod) 
   `);
 }
 
-export function getProductsSummary(businessId: number) {
+
+export function getProductsSummary(businessId: number, locationId?: number) {
   return db.execute(sql`
     WITH stock_summary AS (
       SELECT
@@ -198,6 +216,7 @@ export function getProductsSummary(businessId: number) {
       FROM product_variants pv
       LEFT JOIN inventory_stock stock ON stock.variant_id = pv.id
         AND stock.business_id = ${businessId}
+        ${locFilter("stock", locationId)}
       WHERE pv.business_id = ${businessId}
     ),
     stock_valuation AS (
@@ -206,7 +225,7 @@ export function getProductsSummary(businessId: number) {
         0
       ) AS total_valuation
       FROM inventory_batches
-      WHERE business_id = ${businessId}
+      WHERE business_id = ${businessId}${locFilter("inventory_batches", locationId)}
     )
     SELECT
       stock_summary.low_stock,
@@ -218,7 +237,8 @@ export function getProductsSummary(businessId: number) {
   `);
 }
 
-export function getSalesSummary(businessId: number, period: DashboardPeriod) {
+
+export function getSalesSummary(businessId: number, period: DashboardPeriod, locationId?: number) {
   return db.execute(sql`
     WITH period_sales AS (
       SELECT
@@ -231,7 +251,7 @@ export function getSalesSummary(businessId: number, period: DashboardPeriod) {
             AND created_at < ${getCurrentPeriodStart(period)}
         ), 0) AS previous_sales
       FROM sales
-      WHERE business_id = ${businessId}
+      WHERE business_id = ${businessId}${locFilter("sales", locationId)}
         AND status IN ('completed', 'refunded')
     ),
     period_refunds AS (
@@ -245,7 +265,7 @@ export function getSalesSummary(businessId: number, period: DashboardPeriod) {
             AND created_at < ${getCurrentPeriodStart(period)}
         ), 0) AS previous_return
       FROM sale_refunds
-      WHERE business_id = ${businessId}
+      WHERE business_id = ${businessId}${locFilter("sale_refunds", locationId)}
     )
     SELECT
       current_sales - current_return AS current_net_sales,
@@ -271,26 +291,35 @@ export function getSalesSummary(businessId: number, period: DashboardPeriod) {
   `);
 }
 
-export function getSalesActivity(businessId: number, period: DashboardPeriod) {
+
+export function getSalesActivity(businessId: number, period: DashboardPeriod, locationId?: number) {
   return db.execute(sql`
     SELECT
       COUNT(*) AS transaction_count,
       COALESCE(AVG(final_total), 0) AS average_sale
     FROM sales
-    WHERE business_id = ${businessId}
+    WHERE business_id = ${businessId}${locFilter("sales", locationId)}
       AND status IN ('completed', 'refunded')
       AND created_at >= ${getCurrentPeriodStart(period)}
       AND created_at < ${getCurrentPeriodEnd(period)}
   `);
 }
 
-export function getPaymentBreakdown(businessId: number, period: DashboardPeriod) {
+
+export function getPaymentBreakdown(businessId: number, period: DashboardPeriod, locationId?: number) {
+  // sale_payments carries no location: when a location scope is requested,
+  // payments are scoped through their sale's location (inner join — payments
+  // always belong to a sale in this business).
+  const paymentsSource =
+    locationId === undefined
+      ? sql`sale_payments`
+      : sql`(SELECT sp.* FROM sale_payments sp INNER JOIN sales s ON s.id = sp.sale_id AND s.business_id = sp.business_id WHERE s.location_id = ${locationId}) sale_payments`;
   return db.execute(sql`
     SELECT
       payment_method AS method,
       COALESCE(SUM(amount), 0) AS amount,
       COUNT(*) AS payment_count
-    FROM sale_payments
+    FROM ${paymentsSource}
     WHERE business_id = ${businessId}
       AND payment_date >= ${getCurrentPeriodStart(period)}
       AND payment_date < ${getCurrentPeriodEnd(period)}
@@ -299,7 +328,8 @@ export function getPaymentBreakdown(businessId: number, period: DashboardPeriod)
   `);
 }
 
-export function getNetProfit(businessId: number, period: DashboardPeriod) {
+
+export function getNetProfit(businessId: number, period: DashboardPeriod, locationId?: number) {
   return db.execute(sql`
     WITH monthly_sales_profit AS (
       SELECT
@@ -321,18 +351,23 @@ export function getNetProfit(businessId: number, period: DashboardPeriod) {
         ), 0) AS previous_profit
       FROM sale_items si
       INNER JOIN sales s ON s.id = si.sale_id
-      WHERE s.business_id = ${businessId}
+      WHERE s.business_id = ${businessId}${locFilter("s", locationId)}
         AND s.status IN ('completed', 'refunded')
         AND s.created_at >= ${getPreviousPeriodStart(period)}
         AND s.created_at < ${getCurrentPeriodEnd(period)}
     ),
     monthly_refund_profit AS (
+      -- Identical definition to the Profit report: subtract the refund
+      -- money actually paid out, add back the COGS of goods that returned
+      -- to inventory (restocked). Non-restocked refunds keep their cost
+      -- consumed (shrinkage), so only the refund money is removed.
       SELECT
         COALESCE(SUM(
           CASE
             WHEN sr.created_at >= ${getCurrentPeriodStart(period)}
               AND sr.created_at < ${getCurrentPeriodEnd(period)}
-            THEN (si.selling_price - si.cost_at_sale) * sri.quantity
+            THEN sri.refund_total - (CASE WHEN sr.status = 'restock'
+              THEN si.cost_at_sale * sri.quantity ELSE 0 END)
             ELSE 0
           END
         ), 0) AS current_refund_profit,
@@ -340,14 +375,15 @@ export function getNetProfit(businessId: number, period: DashboardPeriod) {
           CASE
             WHEN sr.created_at >= ${getPreviousPeriodStart(period)}
               AND sr.created_at < ${getCurrentPeriodStart(period)}
-            THEN (si.selling_price - si.cost_at_sale) * sri.quantity
+            THEN sri.refund_total - (CASE WHEN sr.status = 'restock'
+              THEN si.cost_at_sale * sri.quantity ELSE 0 END)
             ELSE 0
           END
         ), 0) AS previous_refund_profit
       FROM sale_refunds sr
       INNER JOIN sale_refund_items sri ON sri.refund_id = sr.id
       INNER JOIN sale_items si ON si.id = sri.sale_item_id
-      WHERE sr.business_id = ${businessId}
+      WHERE sr.business_id = ${businessId}${locFilter("sr", locationId)}
         AND sr.created_at >= ${getPreviousPeriodStart(period)}
         AND sr.created_at < ${getCurrentPeriodEnd(period)}
     ),
@@ -362,7 +398,7 @@ export function getNetProfit(businessId: number, period: DashboardPeriod) {
             AND expense_date < (${getCurrentPeriodStart(period)})::date
         ), 0) AS previous_expenses
       FROM expenses
-      WHERE business_id = ${businessId}
+      WHERE business_id = ${businessId}${locFilter("expenses", locationId)}
     ),
     net_profit AS (
       SELECT
@@ -387,19 +423,21 @@ export function getNetProfit(businessId: number, period: DashboardPeriod) {
   `);
 }
 
-export function getInvoiceDues(businessId: number) {
+
+export function getInvoiceDues(businessId: number, locationId?: number) {
   return db.execute(sql`
     SELECT
       COALESCE(SUM(due_amount), 0) AS current_due,
       NULL::numeric AS invoice_due_growth_pct
     FROM sales
-    WHERE business_id = ${businessId}
+    WHERE business_id = ${businessId}${locFilter("sales", locationId)}
       AND status = 'completed'
       AND payment_status IN ('unpaid', 'partial')
   `);
 }
 
-export function getExpensesSummary(businessId: number, period: DashboardPeriod) {
+
+export function getExpensesSummary(businessId: number, period: DashboardPeriod, locationId?: number) {
   return db.execute(sql`
     WITH monthly_expenses AS (
       SELECT
@@ -412,7 +450,7 @@ export function getExpensesSummary(businessId: number, period: DashboardPeriod) 
             AND expense_date < (${getCurrentPeriodStart(period)})::date
         ), 0) AS previous_expenses
       FROM expenses
-      WHERE business_id = ${businessId}
+      WHERE business_id = ${businessId}${locFilter("expenses", locationId)}
     )
     SELECT
       current_expenses,
@@ -427,7 +465,8 @@ export function getExpensesSummary(businessId: number, period: DashboardPeriod) 
   `);
 }
 
-export function getPurchasesSummary(businessId: number, period: DashboardPeriod) {
+
+export function getPurchasesSummary(businessId: number, period: DashboardPeriod, locationId?: number) {
   return db.execute(sql`
     WITH monthly_purchases AS (
       SELECT
@@ -440,7 +479,7 @@ export function getPurchasesSummary(businessId: number, period: DashboardPeriod)
             AND created_at < ${getCurrentPeriodStart(period)}
         ), 0) AS previous_purchases
       FROM purchases
-      WHERE business_id = ${businessId}
+      WHERE business_id = ${businessId}${locFilter("purchases", locationId)}
     )
     SELECT
       current_purchases,
@@ -455,7 +494,8 @@ export function getPurchasesSummary(businessId: number, period: DashboardPeriod)
   `);
 }
 
-export function getReturnSummary(businessId: number, period: DashboardPeriod) {
+
+export function getReturnSummary(businessId: number, period: DashboardPeriod, locationId?: number) {
   return db.execute(sql`
     WITH monthly_returns AS (
       SELECT
@@ -468,7 +508,7 @@ export function getReturnSummary(businessId: number, period: DashboardPeriod) {
             AND created_at < ${getCurrentPeriodStart(period)}
         ), 0) AS previous_returns
       FROM purchase_returns
-      WHERE business_id = ${businessId}
+      WHERE business_id = ${businessId}${locFilter("purchase_returns", locationId)}
     )
     SELECT
       current_returns,
@@ -484,7 +524,8 @@ export function getReturnSummary(businessId: number, period: DashboardPeriod) {
   `);
 }
 
-export function getRecentSalesSummary(businessId: number, period: DashboardPeriod) {
+
+export function getRecentSalesSummary(businessId: number, period: DashboardPeriod, locationId?: number) {
   return db.execute(sql`
     SELECT
       s.id,
@@ -497,7 +538,7 @@ export function getRecentSalesSummary(businessId: number, period: DashboardPerio
     FROM sales s
     LEFT JOIN customers c ON c.id = s.customer_id
     LEFT JOIN sale_items si ON si.sale_id = s.id
-    WHERE s.business_id = ${businessId}
+    WHERE s.business_id = ${businessId}${locFilter("s", locationId)}
       AND s.status = 'completed'
       AND s.created_at >= ${getCurrentPeriodStart(period)}
       AND s.created_at < ${getCurrentPeriodEnd(period)}
@@ -507,7 +548,8 @@ export function getRecentSalesSummary(businessId: number, period: DashboardPerio
   `);
 }
 
-export function getLowStockSummary(businessId: number) {
+
+export function getLowStockSummary(businessId: number, locationId?: number) {
   return db.execute(sql`
     SELECT
       pv.id,
@@ -519,6 +561,7 @@ export function getLowStockSummary(businessId: number) {
     INNER JOIN products p ON p.id = pv.product_id
     LEFT JOIN inventory_stock stock ON stock.variant_id = pv.id
       AND stock.business_id = ${businessId}
+      ${locFilter("stock", locationId)}
     WHERE pv.business_id = ${businessId}
       AND COALESCE(stock.quantity, 0) <= COALESCE(pv.alert_quantity, 0)
     ORDER BY COALESCE(stock.quantity, 0) ASC
@@ -526,10 +569,12 @@ export function getLowStockSummary(businessId: number) {
   `);
 }
 
+
 export function getStaleStockSummary(
   businessId: number,
   staleDays: number,
   staleLimit: number,
+  locationId?: number,
 ) {
   return db.execute(sql`
     WITH last_sold AS (
@@ -538,7 +583,7 @@ export function getStaleStockSummary(
         MAX(s.created_at) AS last_sold_at
       FROM sale_items si
       INNER JOIN sales s ON s.id = si.sale_id
-      WHERE s.business_id = ${businessId}
+      WHERE s.business_id = ${businessId}${locFilter("s", locationId)}
         AND s.status = 'completed'
       GROUP BY si.variant_id
     ),
@@ -547,7 +592,7 @@ export function getStaleStockSummary(
         variant_id,
         SUM(quantity_remaining * purchase_price) AS value
       FROM inventory_batches
-      WHERE business_id = ${businessId}
+      WHERE business_id = ${businessId}${locFilter("inventory_batches", locationId)}
       GROUP BY variant_id
     )
     SELECT
@@ -568,6 +613,7 @@ export function getStaleStockSummary(
     INNER JOIN products p ON p.id = pv.product_id
     INNER JOIN inventory_stock stock ON stock.variant_id = pv.id
       AND stock.business_id = ${businessId}
+      ${locFilter("stock", locationId)}
     LEFT JOIN last_sold ON last_sold.variant_id = pv.id
     LEFT JOIN stock_value ON stock_value.variant_id = pv.id
     WHERE pv.business_id = ${businessId}
@@ -581,7 +627,8 @@ export function getStaleStockSummary(
   `);
 }
 
-export function getTopSellingProducts(businessId: number, period: DashboardPeriod) {
+
+export function getTopSellingProducts(businessId: number, period: DashboardPeriod, locationId?: number) {
   return db.execute(sql`
     SELECT
       p.id,
@@ -596,7 +643,7 @@ export function getTopSellingProducts(businessId: number, period: DashboardPerio
     INNER JOIN sales s ON s.id = si.sale_id
     INNER JOIN product_variants pv ON pv.id = si.variant_id
     INNER JOIN products p ON p.id = pv.product_id
-    WHERE s.business_id = ${businessId}
+    WHERE s.business_id = ${businessId}${locFilter("s", locationId)}
       AND s.status IN ('completed', 'refunded')
       AND s.created_at >= ${getCurrentPeriodStart(period)}
       AND s.created_at < ${getCurrentPeriodEnd(period)}

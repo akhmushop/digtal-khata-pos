@@ -115,6 +115,31 @@ export async function getSalesSummaryReport(businessId: number, params: DateRang
         AND s.created_at >= ${start}::timestamp 
         AND s.created_at <= ${end}::timestamp
       GROUP BY si.sale_id
+    ),
+    refund_impact AS (
+      -- Same definition as the Profit report: refund money out, COGS back
+      -- only for restocked goods.
+      SELECT
+        sr.sale_id,
+        COALESCE(SUM(sri.refund_total), 0) AS refund_money,
+        COALESCE(SUM(
+          CASE WHEN sr.status = 'restock'
+            THEN si.cost_at_sale * sri.quantity
+            ELSE 0
+          END
+        ), 0) AS restocked_cost
+      FROM sale_refunds sr
+      INNER JOIN sale_refund_items sri ON sri.refund_id = sr.id
+      INNER JOIN sale_items si ON si.id = sri.sale_item_id
+      WHERE sr.business_id = ${businessId}
+        AND sr.sale_id IN (
+          SELECT id FROM sales
+          WHERE business_id = ${businessId}${locationFilter("sales", locationId)}
+            AND status IN ('completed', 'refunded')
+            AND created_at >= ${start}::timestamp
+            AND created_at <= ${end}::timestamp
+        )
+      GROUP BY sr.sale_id
     )
     SELECT 
       sl.sale_date,
@@ -123,9 +148,10 @@ export async function getSalesSummaryReport(businessId: number, params: DateRang
       COALESCE(SUM(sl.discount), 0)::numeric AS total_discount,
       COALESCE(SUM(sl.refund_total), 0)::numeric AS total_refunds,
       COALESCE(SUM(sl.final_total - sl.refund_total), 0)::numeric AS net_sales,
-      COALESCE(SUM(ic.profit), 0)::numeric AS gross_profit
+      COALESCE(SUM(ic.profit - COALESCE(ri.refund_money, 0) + COALESCE(ri.restocked_cost, 0)), 0)::numeric AS gross_profit
     FROM sale_level sl
     LEFT JOIN items_cost ic ON ic.sale_id = sl.id
+    LEFT JOIN refund_impact ri ON ri.sale_id = sl.id
     GROUP BY sl.sale_date
     ORDER BY sl.sale_date ASC
   `);
@@ -158,6 +184,27 @@ export async function getSalesSummaryReport(businessId: number, params: DateRang
         AND s.business_id = ${businessId}${locationFilter("s", locationId)}
         AND s.created_at >= ${start}::timestamp 
         AND s.created_at <= ${end}::timestamp
+    ),
+    refund_impact AS (
+      SELECT
+        COALESCE(SUM(sri.refund_total), 0) AS refund_money,
+        COALESCE(SUM(
+          CASE WHEN sr.status = 'restock'
+            THEN si.cost_at_sale * sri.quantity
+            ELSE 0
+          END
+        ), 0) AS restocked_cost
+      FROM sale_refunds sr
+      INNER JOIN sale_refund_items sri ON sri.refund_id = sr.id
+      INNER JOIN sale_items si ON si.id = sri.sale_item_id
+      WHERE sr.business_id = ${businessId}
+        AND sr.sale_id IN (
+          SELECT id FROM sales
+          WHERE business_id = ${businessId}${locationFilter("sales", locationId)}
+            AND status IN ('completed', 'refunded')
+            AND created_at >= ${start}::timestamp
+            AND created_at <= ${end}::timestamp
+        )
     )
     SELECT 
       COUNT(sl.id)::int AS total_invoices,
@@ -165,7 +212,7 @@ export async function getSalesSummaryReport(businessId: number, params: DateRang
       COALESCE(SUM(sl.discount), 0)::numeric AS total_discount,
       COALESCE(SUM(sl.refund_total), 0)::numeric AS total_refunds,
       COALESCE(SUM(sl.final_total - sl.refund_total), 0)::numeric AS total_net_sales,
-      COALESCE(MAX(ic.profit), 0)::numeric AS total_gross_profit,
+      COALESCE(MAX(ic.profit), 0) - COALESCE(MAX(ri.refund_money), 0) + COALESCE(MAX(ri.restocked_cost), 0) AS total_gross_profit,
       CASE 
         WHEN COALESCE(SUM(sl.final_total), 0) > 0 
         THEN ROUND((COALESCE(MAX(ic.profit), 0) / SUM(sl.final_total)) * 100, 2)
@@ -173,6 +220,7 @@ export async function getSalesSummaryReport(businessId: number, params: DateRang
       END AS overall_profit_margin
     FROM sale_level sl
     CROSS JOIN items_cost ic
+    CROSS JOIN refund_impact ri
   `);
 
   return {
@@ -438,6 +486,34 @@ export async function getSaleRefundsReport(businessId: number, params: DateRange
 export async function getProfitReport(businessId: number, params: DateRangeQuery, locationId?: number) {
   const { start, end } = getDateBounds(params);
 
+  // Refund accounting (POS-005): profit = item profit − refund money paid
+  // out + the cost of goods that came back to inventory (restocked refunds
+  // return an asset, so their COGS reverses; non-restocked refunds leave
+  // the cost consumed — that loss shows up as shrinkage, not profit).
+  const refundImpact = await db.execute(sql`
+    SELECT
+      COALESCE(SUM(sri.refund_total), 0)::numeric AS "refundMoney",
+      COALESCE(SUM(
+        CASE WHEN sr.status = 'restock'
+          THEN si.cost_at_sale * sri.quantity
+          ELSE 0
+        END
+      ), 0)::numeric AS "restockedCost",
+      COALESCE(cat.name, 'Uncategorized') AS "categoryName"
+    FROM sale_refunds sr
+    INNER JOIN sale_refund_items sri ON sri.refund_id = sr.id
+    INNER JOIN sale_items si ON si.id = sri.sale_item_id
+    INNER JOIN sales s ON s.id = sr.sale_id
+    INNER JOIN product_variants pv ON pv.id = si.variant_id
+    INNER JOIN products p ON p.id = pv.product_id
+    LEFT JOIN categories cat ON cat.id = p.category_id
+    WHERE sr.business_id = ${businessId}
+      AND s.business_id = ${businessId}${locationFilter("s", locationId)}
+      AND s.created_at >= ${start}::timestamp
+      AND s.created_at <= ${end}::timestamp
+    GROUP BY cat.id, cat.name
+  `);
+
   const categoryProfit = await db.execute(sql`
     SELECT 
       COALESCE(cat.name, 'Uncategorized') AS "categoryName",
@@ -462,6 +538,42 @@ export async function getProfitReport(businessId: number, params: DateRangeQuery
     ORDER BY "grossProfit" DESC
   `);
 
+  // Apply the refund impact per category (revenue given back minus COGS
+  // that returned to stock).
+  const impactByCategory = new Map(
+    refundImpact.rows.map((row: Record<string, unknown>) => [
+      String(row.categoryName),
+      {
+        refundMoney: Number(row.refundMoney),
+        restockedCost: Number(row.restockedCost),
+      },
+    ]),
+  );
+  const categories = categoryProfit.rows.map((row: Record<string, unknown>) => {
+    const categoryName = String(row.categoryName);
+    const impact = impactByCategory.get(categoryName) ?? {
+      refundMoney: 0,
+      restockedCost: 0,
+    };
+    const grossProfit = Number(row.grossProfit) - impact.refundMoney + impact.restockedCost;
+    const netSales = Number(row.netSales);
+    return {
+      ...row,
+      grossProfit,
+      profitMargin:
+        netSales > 0 ? Math.round((grossProfit / netSales) * 100 * 100) / 100 : 0,
+    };
+  });
+
+  const totalRefundMoney = [...impactByCategory.values()].reduce(
+    (sum, impact) => sum + impact.refundMoney,
+    0,
+  );
+  const totalRestockedCost = [...impactByCategory.values()].reduce(
+    (sum, impact) => sum + impact.restockedCost,
+    0,
+  );
+
   const totals = await db.execute(sql`
     SELECT 
       COALESCE(SUM(si.line_total), 0)::numeric AS "totalNetSales",
@@ -480,9 +592,25 @@ export async function getProfitReport(businessId: number, params: DateRangeQuery
       AND s.created_at <= ${end}::timestamp
   `);
 
+  const totalsRow = (totals.rows[0] || {}) as Record<string, unknown>;
+  const adjustedGrossProfit =
+    Number(totalsRow.totalGrossProfit ?? 0) - totalRefundMoney + totalRestockedCost;
+  const totalNetSales = Number(totalsRow.totalNetSales ?? 0);
+
   return {
-    categories: categoryProfit.rows,
-    totals: totals.rows[0] || {},
+    categories,
+    totals: {
+      ...totalsRow,
+      totalRefundMoney,
+      totalRestockedCost,
+      // Final gross profit after refund accounting — the number that must
+      // match the dashboard's net-profit definition (minus expenses there).
+      adjustedGrossProfit,
+      overallMargin:
+        totalNetSales > 0
+          ? Math.round((adjustedGrossProfit / totalNetSales) * 100 * 100) / 100
+          : 0,
+    },
   };
 }
 
@@ -1111,50 +1239,117 @@ export async function getInventoryShrinkageReport(businessId: number, params: Da
   };
 }
 
-export async function getRegisterCloseReport(businessId: number, params: DateRangeQuery, locationId?: number) {
+export async function getRegisterCloseReport(
+  businessId: number,
+  params: DateRangeQuery,
+  locationId?: number,
+) {
   const { start, end, startDateOnly, endDateOnly } = getDateBounds(params);
 
-  // Cash collections
+  // Per-session Z-report rows: closed sessions in the window (plus open
+  // ones for live context). Cash figures come from the session's own
+  // transaction ledger — the same source the session's expected cash is
+  // computed from — so the variance math cannot double-count split
+  // payments (only the cash portion is recorded as a `sale` transaction).
+  const sessionsResult = await db.execute(sql`
+    SELECT
+      rs.id AS "sessionId",
+      r.name AS "registerName",
+      l.name AS "locationName",
+      u.full_name AS "cashierName",
+      rs.status,
+      rs.opening_cash::numeric AS "openingCash",
+      COALESCE(SUM(rt.amount) FILTER (WHERE rt.type = 'sale'), 0)::numeric AS "cashSales",
+      COALESCE(SUM(rt.amount) FILTER (WHERE rt.type = 'cash_in'), 0)::numeric AS "cashIn",
+      COALESCE(SUM(rt.amount) FILTER (WHERE rt.type = 'cash_out'), 0)::numeric AS "cashOut",
+      CASE
+        WHEN rs.status = 'closed' THEN rs.expected_cash
+        ELSE rs.opening_cash
+          + COALESCE(SUM(rt.amount) FILTER (WHERE rt.type = 'sale'), 0)
+          + COALESCE(SUM(rt.amount) FILTER (WHERE rt.type = 'cash_in'), 0)
+          - COALESCE(SUM(rt.amount) FILTER (WHERE rt.type = 'cash_out'), 0)
+      END::numeric AS "expectedCash",
+      rs.counted_cash::numeric AS "countedCash",
+      rs.difference::numeric AS "difference",
+      ncs."nonCashSales",
+      rf.refunds,
+      rs.opened_at,
+      rs.closed_at
+    FROM register_sessions rs
+    INNER JOIN registers r ON r.id = rs.register_id
+    INNER JOIN locations l ON l.id = r.location_id
+    INNER JOIN users u ON u.id = rs.user_id
+    LEFT JOIN register_transactions rt ON rt.session_id = rs.id
+    LEFT JOIN LATERAL (
+      SELECT COALESCE(SUM(sp.amount) FILTER (WHERE sp.payment_method <> 'cash'), 0) AS "nonCashSales"
+      FROM sale_payments sp
+      WHERE sp.business_id = rs.business_id
+        AND sp.payment_date >= rs.opened_at
+        AND sp.payment_date <= COALESCE(rs.closed_at, now())
+    ) ncs ON TRUE
+    LEFT JOIN LATERAL (
+      SELECT COALESCE(SUM(sr.refund_total), 0) AS refunds
+      FROM sale_refunds sr
+      WHERE sr.business_id = rs.business_id
+        AND sr.location_id = r.location_id
+        AND sr.created_at >= rs.opened_at
+        AND sr.created_at <= COALESCE(rs.closed_at, now())
+    ) rf ON TRUE
+    WHERE rs.business_id = ${businessId}
+      AND (
+        (rs.status = 'closed' AND rs.closed_at >= ${start}::timestamp AND rs.closed_at <= ${end}::timestamp)
+        OR (rs.status = 'open' AND rs.opened_at <= ${end}::timestamp)
+      )
+      ${locationFilter("l", locationId)}
+    GROUP BY rs.id, r.name, l.name, u.full_name, ncs."nonCashSales", rf.refunds
+    ORDER BY rs.id DESC
+    LIMIT 200
+  `);
+
+  // Period aggregates — the original Z-report contract, preserved. Cash and
+  // digital payment totals are scoped through their sale's location.
   const cashSales = await db.execute(sql`
-    SELECT 
-      COALESCE(SUM(amount), 0)::numeric AS "cashAmount",
-      COUNT(id)::int AS "cashTxCount"
-    FROM sale_payments
-    WHERE payment_method = 'cash'
-      AND business_id = ${businessId}
-      AND payment_date >= ${start}::timestamp 
-      AND payment_date <= ${end}::timestamp
+    SELECT
+      COALESCE(SUM(sp.amount), 0)::numeric AS "cashAmount",
+      COUNT(sp.id)::int AS "cashTxCount"
+    FROM sale_payments sp
+    INNER JOIN sales s ON s.id = sp.sale_id AND s.business_id = sp.business_id
+    WHERE sp.payment_method = 'cash'
+      AND sp.business_id = ${businessId}
+      AND s.created_at >= ${start}::timestamp
+      AND s.created_at <= ${end}::timestamp
+      ${locationFilter("s", locationId)}
   `);
 
-  // Digital and card collections
   const digitalPayments = await db.execute(sql`
-    SELECT 
-      payment_method AS method,
-      COALESCE(SUM(amount), 0)::numeric AS amount,
-      COUNT(id)::int AS "txCount"
-    FROM sale_payments
-    WHERE payment_method != 'cash'
-      AND business_id = ${businessId}
-      AND payment_date >= ${start}::timestamp 
-      AND payment_date <= ${end}::timestamp
-    GROUP BY payment_method
+    SELECT
+      sp.payment_method AS method,
+      COALESCE(SUM(sp.amount), 0)::numeric AS amount,
+      COUNT(sp.id)::int AS "txCount"
+    FROM sale_payments sp
+    INNER JOIN sales s ON s.id = sp.sale_id AND s.business_id = sp.business_id
+    WHERE sp.payment_method != 'cash'
+      AND sp.business_id = ${businessId}
+      AND s.created_at >= ${start}::timestamp
+      AND s.created_at <= ${end}::timestamp
+      ${locationFilter("s", locationId)}
+    GROUP BY sp.payment_method
   `);
 
-  // Cash expenses paid out of drawer
   const cashExpenses = await db.execute(sql`
-    SELECT 
+    SELECT
       COALESCE(SUM(amount), 0)::numeric AS "cashExpenseTotal",
       COUNT(id)::int AS "expenseCount"
     FROM expenses
     WHERE payment_method = 'Cash'
       AND business_id = ${businessId}
-      AND expense_date >= ${startDateOnly}::date 
+      AND expense_date >= ${startDateOnly}::date
       AND expense_date <= ${endDateOnly}::date
+      ${locationFilter("expenses", locationId)}
   `);
 
-  // Overall sales summary during this shift window
   const salesSummary = await db.execute(sql`
-    SELECT 
+    SELECT
       COUNT(id)::int AS "totalInvoices",
       COALESCE(SUM(final_total), 0)::numeric AS "grossRevenue",
       COALESCE(SUM(discount), 0)::numeric AS "totalDiscount",
@@ -1163,22 +1358,58 @@ export async function getRegisterCloseReport(businessId: number, params: DateRan
     FROM sales
     WHERE status IN ('completed', 'refunded')
       AND business_id = ${businessId}
-      AND created_at >= ${start}::timestamp 
+      AND created_at >= ${start}::timestamp
       AND created_at <= ${end}::timestamp
+      ${locationFilter("sales", locationId)}
   `);
 
-  // Refunds issued
   const refunds = await db.execute(sql`
-    SELECT 
+    SELECT
       COUNT(id)::int AS "refundCount",
       COALESCE(SUM(refund_total), 0)::numeric AS "refundTotal"
     FROM sale_refunds
     WHERE business_id = ${businessId}
-    AND created_at >= ${start}::timestamp 
+      AND created_at >= ${start}::timestamp
       AND created_at <= ${end}::timestamp
+      ${locationFilter("sale_refunds", locationId)}
   `);
 
+  const sessions = sessionsResult.rows.map(
+    (row: Record<string, unknown>) => ({
+      sessionId: Number(row.sessionId),
+      registerName: String(row.registerName),
+      locationName: String(row.locationName),
+      cashierName: String(row.cashierName),
+      status: String(row.status),
+      openingCash: Number(row.openingCash),
+      cashSales: Number(row.cashSales),
+      nonCashSales: Number(row.nonCashSales ?? 0),
+      cashIn: Number(row.cashIn),
+      cashOut: Number(row.cashOut),
+      expectedCash: Number(row.expectedCash ?? 0),
+      countedCash: row.countedCash === null ? null : Number(row.countedCash),
+      difference: row.difference === null ? null : Number(row.difference),
+      refunds: Number(row.refunds ?? 0),
+      openedAt: row.opened_at,
+      closedAt: row.closed_at,
+    }),
+  );
+
+  const totals = sessions.reduce(
+    (acc, row) => ({
+      sessionCount: acc.sessionCount + 1,
+      expectedCash:
+        acc.expectedCash + (row.status === "closed" ? row.expectedCash : 0),
+      countedCash: acc.countedCash + (row.countedCash ?? 0),
+      difference: acc.difference + (row.difference ?? 0),
+      cashSales: acc.cashSales + (row.status === "closed" ? row.cashSales : 0),
+    }),
+    { sessionCount: 0, expectedCash: 0, countedCash: 0, difference: 0, cashSales: 0 },
+  );
+
   return {
+    sessions,
+    totals,
     cashSales: cashSales.rows[0] || {},
     digitalPayments: digitalPayments.rows,
     cashExpenses: cashExpenses.rows[0] || {},
@@ -1188,15 +1419,6 @@ export async function getRegisterCloseReport(businessId: number, params: DateRan
   };
 }
 
-// ----------------------------------------------------
-// LOCATION COMPARISON (Phase 5)
-// ----------------------------------------------------
-
-/**
- * Per-location performance over a period: sales, refunds, net and expenses.
- * Locations with no activity still appear (LEFT JOIN), so the comparison
- * covers every outlet of the business. Totals aggregate the whole business.
- */
 export async function getLocationComparisonReport(
   businessId: number,
   params: DateRangeQuery,

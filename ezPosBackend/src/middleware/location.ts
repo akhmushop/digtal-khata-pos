@@ -4,6 +4,7 @@ import { db } from "../db/schema/index.js";
 import { locations } from "../db/schema/locations.js";
 import { userLocationAssignments } from "../db/schema/userLocationAssignments.js";
 import { WILDCARD_PERMISSION } from "../rbac/permissions.js";
+import { listAccessibleLocationIds } from "../modules/locations/locations.service.js";
 import { BadRequestError, ForbiddenError } from "../utils/handleError.js";
 
 const LOCATION_HEADER = "x-location-id";
@@ -176,4 +177,35 @@ export function getLocationId(req: Request): number {
     );
   }
   return req.location.locationId;
+}
+
+/**
+ * Optional ?locationId query parameter shared by the reports and dashboard
+ * endpoints. Absent, empty, or "all" = business-wide aggregate. A specific
+ * id is validated against the caller's server-side location assignments
+ * (owners pass via wildcard) — unauthorized scoping is 403, never data.
+ */
+export async function resolveOptionalLocationParam(
+  req: Request,
+): Promise<number | undefined> {
+  const raw = req.query.locationId;
+  if (raw === undefined || raw === "" || raw === "all") return undefined;
+  const locationId = Number(raw);
+  if (!Number.isInteger(locationId) || locationId <= 0) {
+    throw new BadRequestError("Invalid location filter.");
+  }
+  const membership = req.membership;
+  if (!membership || !req.user) {
+    throw new BadRequestError("Authentication required.");
+  }
+  const callerIsOwner = membership.permissions.includes(WILDCARD_PERMISSION);
+  const accessible = await listAccessibleLocationIds(
+    membership.businessId,
+    req.user.id,
+    callerIsOwner,
+  );
+  if (!accessible.includes(locationId)) {
+    throw new ForbiddenError("You do not have access to this location.");
+  }
+  return locationId;
 }
