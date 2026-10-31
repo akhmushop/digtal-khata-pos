@@ -21,8 +21,14 @@ export const mockProvider: PaymentProvider = {
   async initiateSession(input: GatewaySessionInput): Promise<GatewaySession> {
     const sessionId = `mock-session-${input.tranId}`;
     // The "gateway" page exists only in dev; tests bypass it and call the
-    // verify endpoint directly with a deterministic val_id.
-    const gatewayUrl = `${input.urls.success.split("?")[0]}?mock-gateway=1&tran_id=${encodeURIComponent(input.tranId)}&val_id=${encodeURIComponent("MOCK-VALID-" + input.amount)}`;
+    // verify endpoint directly with a deterministic val_id. The success
+    // URL's own query (paymentId, businessId) is preserved and the val_id
+    // appended, so the redirect lands as a fully working success page.
+    const base = input.urls.success;
+    const sep = base.includes("?") ? "&" : "?";
+    const gatewayUrl = `${base}${sep}mock-gateway=1&tran_id=${encodeURIComponent(
+      input.tranId,
+    )}&val_id=${encodeURIComponent("MOCK-VALID-" + input.amount)}`;
     return { gatewayUrl, sessionId };
   },
 
