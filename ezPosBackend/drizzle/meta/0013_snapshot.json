@@ -1369,7 +1369,7 @@
           "primaryKey": false,
           "notNull": true
         },
-        "cipherText": {
+        "cipher_text": {
           "name": "cipher_text",
           "type": "text",
           "primaryKey": false,

@@ -50,6 +50,10 @@ import { integrations } from "./integrations.js";
 import { inventoryReservations } from "./inventoryReservations.js";
 import { channelInventoryAllocations } from "./channelInventoryAllocations.js";
 import { storefrontApiKeys } from "./storefrontApiKeys.js";
+import {
+  webhookDeliveries,
+  webhookEndpoints,
+} from "./webhooks.js";
 import { passwordResetTokens } from "./passwordResetTokens.js";
 import { businessInvitations } from "./businessInvitations.js";
 import { documentSequences } from "./documentSequences.js";
@@ -397,6 +401,27 @@ export const storefrontApiKeysRelations = relations(
     integration: one(integrations, {
       fields: [storefrontApiKeys.integrationId],
       references: [integrations.id],
+    }),
+  }),
+);
+
+export const webhookEndpointsRelations = relations(
+  webhookEndpoints,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [webhookEndpoints.businessId],
+      references: [businesses.id],
+    }),
+    deliveries: many(webhookDeliveries),
+  }),
+);
+
+export const webhookDeliveriesRelations = relations(
+  webhookDeliveries,
+  ({ one }) => ({
+    endpoint: one(webhookEndpoints, {
+      fields: [webhookDeliveries.endpointId],
+      references: [webhookEndpoints.id],
     }),
   }),
 );

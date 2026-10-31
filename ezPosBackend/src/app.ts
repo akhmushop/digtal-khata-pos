@@ -29,6 +29,7 @@ import paymentsRouter from "./modules/payments/payments.routes.js";
 import saasAdminRouter from "./modules/saasAdmin/saasAdmin.routes.js";
 import storefrontRouter from "./modules/storefront/storefront.routes.js";
 import integrationsRouter from "./modules/integrations/integrations.routes.js";
+import webhooksRouter from "./modules/webhooks/webhookEndpoints.routes.js";
 import {
   BadRequestError,
   ConflictError,
@@ -119,6 +120,7 @@ export function buildApp() {
   app.use("/", saasAdminRouter);
   app.use("/", storefrontRouter);
   app.use("/", integrationsRouter);
+  app.use("/", webhooksRouter);
 
   // error handling
   app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {

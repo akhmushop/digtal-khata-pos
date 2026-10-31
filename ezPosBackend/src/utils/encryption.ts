@@ -27,7 +27,7 @@ export interface EncryptedSecret {
   cipherText: string;
   iv: string;
   authTag: string;
-  keyVersion: 1;
+  keyVersion: number;
 }
 
 export function encryptSecret(plaintext: string): EncryptedSecret {

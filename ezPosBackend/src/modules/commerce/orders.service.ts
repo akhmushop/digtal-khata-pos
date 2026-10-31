@@ -13,6 +13,7 @@ import { locations } from "../../db/schema/locations.js";
 import {
   consumeStockFifo,
 } from "../sales/sales.service.js";
+import { emitWebhookEventInTx } from "../webhooks/webhookDelivery.service.js";
 import {
   confirmReservationsForSaleInTx,
   createReservationsInTx,
@@ -344,7 +345,7 @@ export async function createOnlineOrder(
       ),
     });
 
-    return {
+    const result = {
       saleId: sale.id,
       invoiceNumber: sale.invoiceNumber,
       status: "pending" as const,
@@ -352,6 +353,16 @@ export async function createOnlineOrder(
       currency: "BDT" as const,
       duplicated: false,
     };
+    // Delivery rows commit atomically with the order — no race with the
+    // delivery sweep.
+    await emitWebhookEventInTx(tx, input.businessId, "order.created", {
+      orderId: result.saleId,
+      invoiceNumber: result.invoiceNumber,
+      total: result.total,
+      channel: input.channel,
+      externalOrderId: input.externalOrderId ?? null,
+    });
+    return result;
   });
 }
 
@@ -460,7 +471,7 @@ export async function confirmOnlineOrder(
       })
       .where(eq(sales.id, saleId));
 
-    return {
+    const result = {
       saleId: sale.id,
       invoiceNumber: sale.invoiceNumber,
       status: "completed" as const,
@@ -468,6 +479,12 @@ export async function confirmOnlineOrder(
       currency: "BDT" as const,
       duplicated: false,
     };
+    await emitWebhookEventInTx(tx, businessId, "order.paid", {
+      orderId: result.saleId,
+      invoiceNumber: result.invoiceNumber,
+      total: result.total,
+    });
+    return result;
   });
 }
 
@@ -494,6 +511,10 @@ export async function cancelOnlineOrder(
       .update(sales)
       .set({ status: "cancelled" })
       .where(eq(sales.id, saleId));
+    await emitWebhookEventInTx(tx, businessId, "order.cancelled", {
+      orderId: saleId,
+      reason: reason ?? null,
+    });
     void reason;
   });
 }

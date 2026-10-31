@@ -2,6 +2,7 @@ import { env } from "../config/env.js";
 import { runSubscriptionSweeps } from "./subscriptionJobs.js";
 import { runCommerceSweeps } from "./commerceJobs.js";
 import { runIntegrationSweeps } from "./integrationJobs.js";
+import { processWebhookDeliveries } from "../modules/webhooks/webhookDelivery.service.js";
 
 /**
  * In-process scheduler: sweeps subscription lifecycle jobs on a fixed
@@ -21,8 +22,13 @@ export function startScheduler(): void {
   timer = setInterval(() => {
     if (running) return; // never overlap sweeps
     running = true;
-    void Promise.all([runSubscriptionSweeps(), runCommerceSweeps(), runIntegrationSweeps()])
-      .then(([sub, commerce, integrations]) => {
+    void Promise.all([
+      runSubscriptionSweeps(),
+      runCommerceSweeps(),
+      runIntegrationSweeps(),
+      processWebhookDeliveries(),
+    ])
+      .then(([sub, commerce, integrations, deliveries]) => {
         const total =
           sub.expiredTrials +
           sub.trialReminders +
@@ -30,7 +36,9 @@ export function startScheduler(): void {
           sub.graceSuspensions +
           commerce.reservationsExpired +
           integrations.processedJobs +
-          integrations.stockPushes;
+          integrations.stockPushes +
+          deliveries.delivered +
+          deliveries.failed;
         if (total > 0) {
           console.info("Scheduled sweeps:", { ...sub, ...commerce });
         }
