@@ -208,6 +208,7 @@ export async function createStaffUser(
 
   const passwordHash = await hashPassword(input.password);
 
+  let createdUserId: number | undefined;
   await db.transaction(async (tx) => {
     const [user] = await tx
       .insert(users)
@@ -233,7 +234,19 @@ export async function createStaffUser(
         roleId: role.id,
       })),
     );
+    createdUserId = user.id;
   });
+
+  if (createdUserId === undefined) {
+    throw new Error("Staff user insert did not return the user.");
+  }
+
+  // Location grants for the new member (what vs where are separate checks).
+  await replaceUserLocationAssignments(
+    businessId,
+    createdUserId,
+    input.locationIds ?? [],
+  );
 
   const members = await listMembers(businessId);
   const created = members.find((m) => m.email === input.email);

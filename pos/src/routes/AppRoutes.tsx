@@ -23,6 +23,7 @@ import ForbiddenPage from "@/pages/ForbiddenPage";
 import { RequirePermission } from "@/components/common/PermissionGuard";
 import { UsersPage } from "@/features/users/pages/UsersPage";
 import { LocationsPage } from "@/features/locations/pages/LocationsPage";
+import { StockTransfersPage } from "@/features/stockTransfers/pages/StockTransfersPage";
 import { RolesPage } from "@/features/roles/pages/RolesPage";
 
 const REPORTS_PERMISSIONS = [
@@ -189,6 +190,14 @@ const router = createBrowserRouter([
         element: (
           <RequirePermission permission="locations.view">
             <LocationsPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "/transfers",
+        element: (
+          <RequirePermission permission="inventory.transfer">
+            <StockTransfersPage />
           </RequirePermission>
         ),
       },

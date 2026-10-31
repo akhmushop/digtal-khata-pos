@@ -1,0 +1,606 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "@/components/ui/toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { ArrowRight, Plus, Trash2 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useSessionStore } from "@/auth/sessionStore";
+import {
+  cancelTransferApi,
+  createTransferApi,
+  getTransferApi,
+  getTransfersApi,
+  getVariantOptionsApi,
+  receiveTransferApi,
+  shipTransferApi,
+  type TransferDetail,
+  type TransferListItem,
+  type TransferStatus,
+  type VariantOption,
+} from "../stockTransfers.api";
+
+const STATUS_LABELS: Record<TransferStatus, string> = {
+  draft: "Draft",
+  shipped: "Shipped",
+  partially_received: "Partially received",
+  received: "Received",
+  cancelled: "Cancelled",
+};
+
+function statusVariant(status: TransferStatus): "default" | "secondary" | "outline" | "destructive" {
+  switch (status) {
+    case "received":
+      return "default";
+    case "shipped":
+    case "partially_received":
+      return "secondary";
+    case "cancelled":
+      return "destructive";
+    default:
+      return "outline";
+  }
+}
+
+interface DraftItem {
+  variantId: number | null;
+  quantity: string;
+}
+
+export function StockTransfersPage() {
+  const locations = useSessionStore((state) => state.locations);
+  const [transfers, setTransfers] = useState<TransferListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [createOpen, setCreateOpen] = useState(false);
+  const [fromLocationId, setFromLocationId] = useState<string>("");
+  const [toLocationId, setToLocationId] = useState<string>("");
+  const [notes, setNotes] = useState("");
+  const [items, setItems] = useState<DraftItem[]>([
+    { variantId: null, quantity: "1" },
+  ]);
+  const [variantOptions, setVariantOptions] = useState<VariantOption[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const [detail, setDetail] = useState<TransferDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [receiveQuantities, setReceiveQuantities] = useState<
+    Record<number, string>
+  >({});
+  const [acting, setActing] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await getTransfersApi();
+      setTransfers(data);
+    } catch {
+      toast.add({ title: "Unable to load transfers", type: "error" });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  async function openCreate() {
+    setFormError(null);
+    setNotes("");
+    setItems([{ variantId: null, quantity: "1" }]);
+    setCreateOpen(true);
+    if (variantOptions.length === 0) {
+      try {
+        setVariantOptions(await getVariantOptionsApi());
+      } catch {
+        toast.add({ title: "Unable to load products", type: "error" });
+      }
+    }
+  }
+
+  function extractError(error: unknown, fallback: string): string {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "response" in error &&
+      typeof (error as { response?: { data?: { message?: string } } }).response
+        ?.data?.message === "string"
+    ) {
+      return (error as { response: { data: { message: string } } }).response.data
+        .message;
+    }
+    return fallback;
+  }
+
+  async function handleCreate() {
+    setFormError(null);
+    if (fromLocationId === "" || toLocationId === "") {
+      setFormError("Choose both source and destination locations.");
+      return;
+    }
+    if (fromLocationId === toLocationId) {
+      setFormError("Source and destination must be different locations.");
+      return;
+    }
+    const payloadItems: { variantId: number; quantity: number }[] = [];
+    for (const item of items) {
+      if (item.variantId === null) {
+        setFormError("Select a product for every row.");
+        return;
+      }
+      const quantity = Number(item.quantity);
+      if (!Number.isInteger(quantity) || quantity <= 0) {
+        setFormError("Quantities must be whole numbers of at least 1.");
+        return;
+      }
+      payloadItems.push({ variantId: item.variantId, quantity });
+    }
+    setSaving(true);
+    try {
+      const created = await createTransferApi({
+        fromLocationId: Number(fromLocationId),
+        toLocationId: Number(toLocationId),
+        notes: notes.trim() || undefined,
+        items: payloadItems,
+      });
+      toast.add({
+        title: `Transfer ${created.transferNumber} drafted`,
+        type: "success",
+      });
+      setCreateOpen(false);
+      void load();
+    } catch (error) {
+      setFormError(extractError(error, "Unable to create the transfer."));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function openDetail(id: number) {
+    setDetailLoading(true);
+    try {
+      const data = await getTransferApi(id);
+      setDetail(data);
+      const initial: Record<number, string> = {};
+      for (const item of data.items) {
+        const outstanding = item.quantityShipped - item.quantityReceived;
+        initial[item.id] = String(outstanding);
+      }
+      setReceiveQuantities(initial);
+    } catch {
+      toast.add({ title: "Unable to load the transfer", type: "error" });
+    } finally {
+      setDetailLoading(false);
+    }
+  }
+
+  async function act(
+    action: () => Promise<TransferDetail>,
+    successTitle: string,
+  ) {
+    setActing(true);
+    try {
+      const updated = await action();
+      toast.add({ title: successTitle, type: "success" });
+      setDetail(updated);
+      void load();
+    } catch (error) {
+      toast.add({ title: extractError(error, "Action failed."), type: "error" });
+    } finally {
+      setActing(false);
+    }
+  }
+
+  async function handleReceive() {
+    if (!detail) return;
+    const payload: { itemId: number; quantity: number }[] = [];
+    for (const item of detail.items) {
+      const outstanding = item.quantityShipped - item.quantityReceived;
+      if (outstanding <= 0) continue;
+      const raw = receiveQuantities[item.id] ?? "0";
+      const quantity = Number(raw);
+      if (!Number.isInteger(quantity) || quantity < 0) {
+        toast.add({
+          title: "Received quantities must be whole numbers ≥ 0.",
+          type: "error",
+        });
+        return;
+      }
+      if (quantity > 0) payload.push({ itemId: item.id, quantity });
+    }
+    await act(
+      () => receiveTransferApi(detail.id, payload),
+      "Transfer received",
+    );
+  }
+
+  const activeLocations = useMemo(
+    () => locations.filter((l) => l.status === "active"),
+    [locations],
+  );
+
+  return (
+    <div className="flex flex-1 flex-col gap-4 p-4 lg:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold">Stock Transfers</h1>
+          <p className="text-sm text-muted-foreground">
+            Move stock between locations. Shipped stock is in transit until it
+            is received.
+          </p>
+        </div>
+        <Button onClick={() => void openCreate()}>
+          <Plus /> New transfer
+        </Button>
+      </div>
+
+      <div className="rounded-lg border bg-background">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Number</TableHead>
+              <TableHead>Route</TableHead>
+              <TableHead>Items</TableHead>
+              <TableHead>Qty</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                  Loading transfers…
+                </TableCell>
+              </TableRow>
+            ) : transfers.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                  No transfers yet.
+                </TableCell>
+              </TableRow>
+            ) : (
+              transfers.map((transfer) => (
+                <TableRow key={transfer.id}>
+                  <TableCell className="font-medium">
+                    {transfer.transferNumber}
+                  </TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center gap-1.5 text-sm">
+                      {transfer.fromLocationName}
+                      <ArrowRight className="size-3.5 text-muted-foreground" />
+                      {transfer.toLocationName}
+                    </span>
+                  </TableCell>
+                  <TableCell>{transfer.itemCount}</TableCell>
+                  <TableCell>{transfer.totalQuantity}</TableCell>
+                  <TableCell>
+                    <Badge variant={statusVariant(transfer.status)}>
+                      {STATUS_LABELS[transfer.status]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => void openDetail(transfer.id)}
+                    >
+                      View
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Create dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>New stock transfer</DialogTitle>
+            <DialogDescription>
+              The transfer starts as a draft — stock moves when you ship it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-1.5">
+                <Label>From</Label>
+                <Select
+                  value={fromLocationId || undefined}
+                  onValueChange={(value) => setFromLocationId(value ?? "")}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Source location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeLocations.map((location) => (
+                      <SelectItem key={location.id} value={String(location.id)}>
+                        {location.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-1.5">
+                <Label>To</Label>
+                <Select
+                  value={toLocationId || undefined}
+                  onValueChange={(value) => setToLocationId(value ?? "")}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Destination location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeLocations.map((location) => (
+                      <SelectItem key={location.id} value={String(location.id)}>
+                        {location.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>Items</Label>
+              {items.map((item, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Select
+                    value={item.variantId !== null ? String(item.variantId) : undefined}
+                    onValueChange={(value) =>
+                      setItems((prev) =>
+                        prev.map((entry, i) =>
+                          i === index
+                            ? { ...entry, variantId: Number(value) }
+                            : entry,
+                        ),
+                      )
+                    }
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select product" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {variantOptions.map((option) => (
+                        <SelectItem
+                          key={option.variantId}
+                          value={String(option.variantId)}
+                        >
+                          {option.label}
+                          {option.sku ? ` (${option.sku})` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="number"
+                    min={1}
+                    className="w-24"
+                    value={item.quantity}
+                    onChange={(event) =>
+                      setItems((prev) =>
+                        prev.map((entry, i) =>
+                          i === index
+                            ? { ...entry, quantity: event.target.value }
+                            : entry,
+                        ),
+                      )
+                    }
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() =>
+                      setItems((prev) => prev.filter((_, i) => i !== index))
+                    }
+                    disabled={items.length === 1}
+                  >
+                    <Trash2 />
+                  </Button>
+                </div>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-fit"
+                onClick={() =>
+                  setItems((prev) => [
+                    ...prev,
+                    { variantId: null, quantity: "1" },
+                  ])
+                }
+              >
+                <Plus /> Add row
+              </Button>
+            </div>
+
+            <div className="grid gap-1.5">
+              <Label htmlFor="transfer-notes">Notes (optional)</Label>
+              <Input
+                id="transfer-notes"
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
+              />
+            </div>
+            {formError ? (
+              <p className="text-sm text-destructive">{formError}</p>
+            ) : null}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => void handleCreate()} disabled={saving}>
+              {saving ? "Creating…" : "Create draft"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Detail / workflow dialog */}
+      <Dialog
+        open={detail !== null || detailLoading}
+        onOpenChange={(open) => !open && setDetail(null)}
+      >
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
+          {detail ? (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  {detail.transferNumber}
+                  <Badge variant={statusVariant(detail.status)}>
+                    {STATUS_LABELS[detail.status]}
+                  </Badge>
+                </DialogTitle>
+                <DialogDescription>
+                  {detail.fromLocationName} → {detail.toLocationName}
+                  {detail.notes ? ` · ${detail.notes}` : ""}
+                </DialogDescription>
+              </DialogHeader>
+
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product</TableHead>
+                    <TableHead>Requested</TableHead>
+                    <TableHead>Shipped</TableHead>
+                    {detail.status !== "draft" && detail.status !== "cancelled" ? (
+                      <TableHead>Receive now</TableHead>
+                    ) : null}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {detail.items.map((item) => {
+                    const outstanding =
+                      item.quantityShipped - item.quantityReceived;
+                    return (
+                      <TableRow key={item.id}>
+                        <TableCell>
+                          {item.productName ?? "—"}
+                          {item.sku ? (
+                            <span className="block text-xs text-muted-foreground">
+                              {item.sku}
+                            </span>
+                          ) : null}
+                        </TableCell>
+                        <TableCell>{item.quantity}</TableCell>
+                        <TableCell>
+                          {item.quantityShipped}
+                          {item.quantityReceived > 0 ? (
+                            <span className="block text-xs text-muted-foreground">
+                              {item.quantityReceived} received ·{" "}
+                              {outstanding} in transit
+                            </span>
+                          ) : null}
+                        </TableCell>
+                        {detail.status !== "draft" &&
+                        detail.status !== "cancelled" ? (
+                          <TableCell>
+                            {outstanding > 0 ? (
+                              <Input
+                                type="number"
+                                min={0}
+                                max={outstanding}
+                                className="w-20"
+                                value={receiveQuantities[item.id] ?? "0"}
+                                onChange={(event) =>
+                                  setReceiveQuantities((prev) => ({
+                                    ...prev,
+                                    [item.id]: event.target.value,
+                                  }))
+                                }
+                              />
+                            ) : (
+                              <span className="text-sm text-muted-foreground">
+                                done
+                              </span>
+                            )}
+                          </TableCell>
+                        ) : null}
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+
+              <DialogFooter className="gap-2">
+                {detail.status === "draft" ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      disabled={acting}
+                      onClick={() =>
+                        void act(
+                          () => cancelTransferApi(detail.id),
+                          "Transfer cancelled",
+                        )
+                      }
+                    >
+                      Cancel draft
+                    </Button>
+                    <Button
+                      disabled={acting}
+                      onClick={() =>
+                        void act(
+                          () => shipTransferApi(detail.id),
+                          "Transfer shipped — stock in transit",
+                        )
+                      }
+                    >
+                      {acting ? "Shipping…" : "Ship"}
+                    </Button>
+                  </>
+                ) : null}
+                {detail.status === "shipped" ||
+                detail.status === "partially_received" ? (
+                  <Button
+                    disabled={acting}
+                    onClick={() => void handleReceive()}
+                  >
+                    {acting ? "Receiving…" : "Receive"}
+                  </Button>
+                ) : null}
+                {detail.status === "received" ||
+                detail.status === "cancelled" ? (
+                  <span className="text-sm text-muted-foreground">
+                    Nothing further to do.
+                  </span>
+                ) : null}
+              </DialogFooter>
+            </>
+          ) : (
+            <p className="py-8 text-center text-muted-foreground">Loading…</p>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

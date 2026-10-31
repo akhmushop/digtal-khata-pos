@@ -39,6 +39,7 @@ export const PERMISSION_CATALOG: PermissionDefinition[] = [
 
   { key: "inventory.view", module: "inventory", description: "View stock levels, batches and serials" },
   { key: "inventory.adjust", module: "inventory", description: "Adjust stock quantities" },
+  { key: "inventory.transfer", module: "inventory", description: "Transfer stock between locations" },
 
   { key: "customers.view", module: "customers", description: "View customers" },
   { key: "customers.create", module: "customers", description: "Create customers" },

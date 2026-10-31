@@ -80,7 +80,7 @@ export const navigation = [
   {
     title: "Products",
     icon: Package,
-    anyPermission: ["products.view", "products.create", "products.edit", "products.manage_variants", "inventory.adjust"],
+    anyPermission: ["products.view", "products.create", "products.edit", "products.manage_variants", "inventory.adjust", "inventory.transfer"],
     items: [
       { title: "All Products", url: "/product", permission: "products.view" },
       { title: "Add Product", url: "/product/addproduct", permission: "products.create" },
@@ -89,6 +89,7 @@ export const navigation = [
       { title: "Brands", url: "/brands", permission: "products.view" },
       { title: "Units", url: "/units", permission: "products.view" },
       { title: "Variants", url: "/variants", permission: "products.manage_variants" },
+      { title: "Stock Transfers", url: "/transfers", permission: "inventory.transfer" },
     ],
   },
   {

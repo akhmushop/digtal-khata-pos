@@ -33,6 +33,7 @@ import { users } from "./users.js";
 import { businesses } from "./businesses.js";
 import { businessMemberships } from "./businessMemberships.js";
 import { userRoles } from "./userRoles.js";
+import { stockTransfers, stockTransferItems } from "./stockTransfers.js";
 import { permissions } from "./permissions.js";
 import { roles } from "./roles.js";
 import { rolePermissions } from "./rolePermissions.js";
@@ -381,6 +382,33 @@ export const businessMembershipsRelations = relations(
     }),
   }),
 );
+
+export const stockTransfersRelations = relations(stockTransfers, ({ one, many }) => ({
+  business: one(businesses, {
+    fields: [stockTransfers.businessId],
+    references: [businesses.id],
+  }),
+  fromLocation: one(locations, {
+    fields: [stockTransfers.fromLocationId],
+    references: [locations.id],
+  }),
+  toLocation: one(locations, {
+    fields: [stockTransfers.toLocationId],
+    references: [locations.id],
+  }),
+  items: many(stockTransferItems),
+}));
+
+export const stockTransferItemsRelations = relations(stockTransferItems, ({ one }) => ({
+  transfer: one(stockTransfers, {
+    fields: [stockTransferItems.transferId],
+    references: [stockTransfers.id],
+  }),
+  variant: one(productVariants, {
+    fields: [stockTransferItems.variantId],
+    references: [productVariants.id],
+  }),
+}));
 
 export const userRolesRelations = relations(userRoles, ({ one }) => ({
   user: one(users, {
