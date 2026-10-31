@@ -3,12 +3,20 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CreditCard, LifeBuoy, Receipt, Settings, Store } from "lucide-react";
+import {
+  CreditCard,
+  LayoutDashboard,
+  LifeBuoy,
+  Receipt,
+  Settings,
+  Store,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers/auth-provider";
 
 const NAV = [
   { href: "/account", label: "Overview", icon: Store },
+  { href: "/dashboard", label: "Business dashboard", icon: LayoutDashboard, external: true },
   { href: "/account/subscription", label: "Subscription", icon: CreditCard },
   { href: "/account/billing", label: "Billing", icon: Receipt },
   { href: "/account/settings", label: "Settings", icon: Settings },
@@ -40,9 +48,11 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
             <ul className="flex gap-1 overflow-x-auto lg:flex-col">
               {NAV.map((item) => {
                 const active =
-                  item.href === "/account"
-                    ? pathname === "/account"
-                    : pathname.startsWith(item.href);
+                  "external" in item
+                    ? false
+                    : item.href === "/account"
+                      ? pathname === "/account"
+                      : pathname.startsWith(item.href);
                 return (
                   <li key={item.href}>
                     <Link
