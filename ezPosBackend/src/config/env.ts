@@ -91,6 +91,15 @@ export const env = {
   /** Background sweeps (trial expiry, reminders, grace suspension). */
   jobsEnabled: process.env.JOBS_ENABLED?.trim() !== "false",
   jobsIntervalMinutes: optionalInt("JOBS_INTERVAL_MINUTES", 60),
+  /**
+   * AES-256-GCM master key for integration credentials. Required outside
+   * development; a deterministic dev fallback keeps local testing frictionless.
+   */
+  integrationEncryptionKey:
+    process.env.INTEGRATION_ENCRYPTION_KEY?.trim() ||
+    (process.env.NODE_ENV === "production"
+      ? ""
+      : "ezpos-local-development-integration-encryption-key"),
   /** Storefront API per-key request ceiling per minute. */
   storefrontRateLimitPerMinute: optionalInt("STOREFRONT_RATE_LIMIT_PER_MINUTE", 600),
   emailVerificationTokenTtlHours: optionalInt(

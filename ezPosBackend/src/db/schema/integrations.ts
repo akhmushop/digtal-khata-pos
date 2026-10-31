@@ -37,6 +37,9 @@ export const integrations = pgTable(
       onDelete: "set null",
     }),
     status: integrationStatusEnum("status").default("connected").notNull(),
+    /** Route token embedded in the WooCommerce webhook delivery URL; also
+     * the HMAC secret for signature verification. */
+    webhookSecret: varchar("webhook_secret", { length: 64 }).unique(),
     /** Per-field-group sync direction policy (see architecture doc §7). */
     syncPolicy: jsonb("sync_policy")
       .$type<Record<string, string>>(),

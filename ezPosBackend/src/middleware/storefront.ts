@@ -3,6 +3,7 @@ import type { NextFunction, Request, Response } from "express";
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "../db/schema/index.js";
 import { businesses } from "../db/schema/businesses.js";
+import { getBusinessId } from "./business.js";
 import { storefrontApiKeys } from "../db/schema/storefrontApiKeys.js";
 import { env } from "../config/env.js";
 
@@ -211,5 +212,35 @@ export function requireBusinessMode(
       message:
         "This business is not configured for online sales. Switch the business mode first.",
     });
+  };
+}
+
+/** Portal-side mode gate: reads the verified business's mode from the DB. */
+export function requireBusinessModePortal(
+  ...modes: ("physical_only" | "online_only" | "omnichannel")[]
+) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    void (async () => {
+      try {
+        const [business] = await db
+          .select({ mode: businesses.mode })
+          .from(businesses)
+          .where(eq(businesses.id, getBusinessId(req)));
+        if (business && modes.includes(business.mode)) {
+          next();
+          return;
+        }
+        res.status(403).json({
+          success: false,
+          message:
+            "This business is not configured for online sales. Switch the business mode first.",
+        });
+      } catch (err) {
+        console.error("Business mode check failed:", err);
+        res
+          .status(500)
+          .json({ success: false, message: "Unable to verify the business mode." });
+      }
+    })();
   };
 }
