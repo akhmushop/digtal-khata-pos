@@ -25,6 +25,7 @@ import { useCustomerStore } from "@/store/useCustomerStore.js";
 import type { SaleReceiptData } from "../types/receipt.types.js";
 import { SaleSuccessDialog } from "../components/receipt/SaleSuccessDialog.js";
 import { LocationBadge } from "@/components/common/LocationBadge";
+import { RegisterDialog } from "@/features/cashRegisters/components/RegisterDialog";
 
 function Pos() {
   const { cart, resetCart } = useCartStore();
@@ -100,6 +101,7 @@ function Pos() {
       <div className="mx-auto flex min-h-[calc(100dvh-1.5rem)] max-w-[1800px] flex-col gap-3 sm:min-h-[calc(100dvh-2rem)] lg:grid lg:h-full lg:min-h-0 lg:grid-cols-[minmax(0,1.55fr)_minmax(380px,0.9fr)] lg:gap-4">
         <div className="col-span-full flex items-center justify-between">
           <LocationBadge />
+          <RegisterDialog />
         </div>
         <section className="flex h-[60dvh] min-h-[420px] shrink-0 flex-col overflow-hidden rounded-xl border bg-background shadow-sm lg:h-full lg:min-h-0 lg:shrink">
           <ProductList />

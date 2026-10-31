@@ -64,6 +64,7 @@ export async function createSale(req: Request, res: Response) {
     const sale = await salesService.createSale(
       getBusinessId(req),
       getLocationId(req),
+      req.user!.id,
       payload,
     );
     return res

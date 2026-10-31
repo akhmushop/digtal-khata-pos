@@ -46,6 +46,7 @@ import {
   type Items,
 } from "./sales.validation.js";
 import { roundMoney } from "../../utils/roundMoney.js";
+import { recordCashSaleInTx } from "../cashRegisters/cashRegisters.service.js";
 import { getCartTotals, getLinePricing } from "./utils/cartPricing.js";
 import { inventoryStock } from "../../db/schema/inventoryStock.js";
 import { inventoryMovements } from "../../db/schema/inventoryMovements.js";
@@ -482,6 +483,7 @@ export async function getSaleReceipt(businessId: number, saleId: number) {
 export async function createSale(
   businessId: number,
   locationId: number,
+  cashierUserId: number,
   data: CreateSalePayload,
 ) {
   const { customerId, items, discount, vatPercent, payments, saleDate } = data;
@@ -707,6 +709,20 @@ export async function createSale(
                 payment.method === "cash" ? (payment.tendered ?? null) : null,
             };
           }),
+        );
+
+        // Cash drawer attribution: the cash portion lands in the seller's
+        // open register session (same transaction; no-op without a session).
+        const cashAmount = receivedPayments
+          .filter((payment) => payment.method === "cash")
+          .reduce((sum, payment) => sum + (payment.amount ?? 0), 0);
+        await recordCashSaleInTx(
+          tx,
+          businessId,
+          cashierUserId,
+          locationId,
+          cashAmount,
+          saleId,
         );
       } catch (error: unknown) {
         if (isDuplicatePaymentReferenceError(error)) {
