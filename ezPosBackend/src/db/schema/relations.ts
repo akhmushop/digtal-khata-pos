@@ -43,6 +43,7 @@ import { subscriptions } from "./subscriptions.js";
 import { subscriptionPayments } from "./subscriptionPayments.js";
 import { refreshTokens } from "./refreshTokens.js";
 import { emailVerificationTokens } from "./emailVerificationTokens.js";
+import { supportTickets, supportTicketMessages } from "./supportTickets.js";
 import { passwordResetTokens } from "./passwordResetTokens.js";
 import { businessInvitations } from "./businessInvitations.js";
 import { documentSequences } from "./documentSequences.js";
@@ -320,6 +321,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   emailVerificationTokens: many(emailVerificationTokens),
   passwordResetTokens: many(passwordResetTokens),
   sentInvitations: many(businessInvitations),
+  supportTickets: many(supportTickets),
 }));
 
 export const businessesRelations = relations(businesses, ({ one, many }) => ({
@@ -332,7 +334,33 @@ export const businessesRelations = relations(businesses, ({ one, many }) => ({
   subscriptions: many(subscriptions),
   invitations: many(businessInvitations),
   documentSequences: many(documentSequences),
+  supportTickets: many(supportTickets),
 }));
+
+export const supportTicketsRelations = relations(
+  supportTickets,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [supportTickets.businessId],
+      references: [businesses.id],
+    }),
+    user: one(users, {
+      fields: [supportTickets.userId],
+      references: [users.id],
+    }),
+    messages: many(supportTicketMessages),
+  }),
+);
+
+export const supportTicketMessagesRelations = relations(
+  supportTicketMessages,
+  ({ one }) => ({
+    ticket: one(supportTickets, {
+      fields: [supportTicketMessages.ticketId],
+      references: [supportTickets.id],
+    }),
+  }),
+);
 
 export const permissionsRelations = relations(permissions, ({ many }) => ({
   rolePermissions: many(rolePermissions),

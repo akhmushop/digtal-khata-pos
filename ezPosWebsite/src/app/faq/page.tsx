@@ -18,7 +18,7 @@ const faqs = [
   {
     question: "Is ezPos ready to use today?",
     answer:
-      "The POS application itself is in active development. The core sales, inventory, and purchasing modules are built and being refined daily. User accounts and online billing are the pieces currently being added — this website will announce it when they open.",
+      "Yes — you can create an account, set up your shop, and start a free trial right now. The core sales, inventory, and purchasing modules are built and in daily use. Online subscription payments are the last piece being added before commercial launch.",
   },
   {
     question: "Do I need to install anything?",

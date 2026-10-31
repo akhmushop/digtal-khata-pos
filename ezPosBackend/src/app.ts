@@ -22,6 +22,7 @@ import usersRouter from "./modules/users/users.routes.js";
 import locationsRouter from "./modules/locations/locations.routes.js";
 import stockTransfersRouter from "./modules/stockTransfers/stockTransfers.routes.js";
 import cashRegistersRouter from "./modules/cashRegisters/cashRegisters.routes.js";
+import supportRouter from "./modules/support/support.routes.js";
 import {
   BadRequestError,
   ConflictError,
@@ -78,6 +79,7 @@ export function buildApp() {
   app.use("/", locationsRouter);
   app.use("/", stockTransfersRouter);
   app.use("/", cashRegistersRouter);
+  app.use("/", supportRouter);
 
   // error handling
   app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {

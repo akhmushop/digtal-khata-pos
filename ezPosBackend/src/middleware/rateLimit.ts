@@ -32,3 +32,17 @@ export const refreshRateLimit = rateLimit({
     "Too many session refreshes. Please try again in a few minutes.",
   ),
 });
+
+/**
+ * Public, unauthenticated contact form — kept tight so it cannot be used
+ * as a spam relay into the support inbox. Keyed by IP.
+ */
+export const contactRateLimit = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: jsonMessage(
+    "Too many messages sent. Please try again in an hour.",
+  ),
+});

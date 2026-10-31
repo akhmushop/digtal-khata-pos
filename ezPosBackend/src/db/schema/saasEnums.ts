@@ -36,3 +36,16 @@ export const invitationStatusEnum = pgEnum("invitation_status", [
   "expired",
   "revoked",
 ]);
+
+export const ticketStatusEnum = pgEnum("ticket_status", [
+  "open",
+  "pending",
+  "resolved",
+  "closed",
+]);
+
+export const ticketAuthorEnum = pgEnum("ticket_author", [
+  "customer",
+  "admin",
+  "system",
+]);
