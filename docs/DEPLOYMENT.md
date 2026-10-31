@@ -10,7 +10,9 @@ Target: a single Linux host running Docker Compose with the domain split
 1. **DNS**: A records for `ezpos.com`, `www`, `app`, `api`, `admin` → the host.
 2. **Configure**: `cp .env.production.example .env`, then fill every value
    (`openssl rand -base64 32` for DB password, `-base64 48` for the JWT
-   secret). Production refuses `PAYMENT_PROVIDER=mock`.
+   secret, `-base64 32` for INTEGRATION_ENCRYPTION_KEY — WooCommerce
+   credentials are encrypted with it). Production refuses
+   `PAYMENT_PROVIDER=mock`.
 3. **Build & start**:
    ```bash
    docker compose build

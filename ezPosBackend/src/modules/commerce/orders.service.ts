@@ -273,7 +273,9 @@ export async function createOnlineOrder(
       );
     const variantById = new Map(variants.map((v) => [v.id, v]));
     if (variantById.size !== variantIds.length) {
-      throw new Error("One or more products do not exist for this business.");
+      throw new BadRequestError(
+        "One or more products do not exist for this business.",
+      );
     }
     for (const line of input.lines) {
       const variant = variantById.get(line.variantId)!;

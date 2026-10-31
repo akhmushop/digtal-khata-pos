@@ -68,12 +68,35 @@ gating is UX only.
 | refresh | 60 / 15 min |
 | contact form | 5 / hour |
 
+## Omnichannel / storefront API (Phase 9)
+
+- Storefront API keys: publishable keys are public but catalog-only and
+  optionally domain-restricted; secret keys are SHA-256 hashed, shown once,
+  and required for order submission. Keys are business-scoped at the query
+  level — a catalog never returns another business's products.
+- Order submission computes prices server-side and holds stock
+  transactionally (`FOR UPDATE` on inventory rows) — cross-channel oversell
+  is impossible at the database level.
+- WooCommerce credentials are AES-256-GCM encrypted
+  (`INTEGRATION_ENCRYPTION_KEY`); write-only from the API.
+- Inbound WooCommerce webhooks: HMAC-SHA256 signature over the raw body +
+  URL token routing + replay protection via order mappings.
+- Outbound webhooks: signed `X-Ezpos-Signature` headers, per-endpoint
+  secrets, retry with backoff, dead-letter visible in the portal.
+- Integration entitlements (`storefrontApi`, `woocommerceIntegration`,
+  `advancedWebhooks`, store/webhook limits) are enforced at every entry
+  point; expired entitlements pause sync without hiding historical data.
+
 ## Known limitations (tracked, not hidden)
 
 - In-memory rate limiting and the in-process scheduler assume a single
   backend instance. Both are documented; fix before scaling horizontally.
 - No file uploads exist yet, so there is no upload surface to secure; the
   business logo field in the original spec is intentionally unimplemented.
+- Storefront rate limiting is also in-memory (per backend instance).
+- Physical POS can oversell reserved online stock (the counter is master);
+  the affected online order fails confirmation and surfaces for manual
+  resolution — documented trade-off from Phase 9.1.
 - Refund processing through the gateway is not implemented; refunds are a
   Phase-8 reconciliation item.
 - SSLCommerz integration follows the documented sandbox API but must be
