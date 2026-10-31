@@ -46,6 +46,14 @@ import { emailVerificationTokens } from "./emailVerificationTokens.js";
 import { supportTickets, supportTicketMessages } from "./supportTickets.js";
 import { subscriptionEvents } from "./subscriptionEvents.js";
 import { saasInvoices } from "./saasInvoices.js";
+import { integrations } from "./integrations.js";
+import { inventoryReservations } from "./inventoryReservations.js";
+import { channelInventoryAllocations } from "./channelInventoryAllocations.js";
+import { storefrontApiKeys } from "./storefrontApiKeys.js";
+import {
+  webhookDeliveries,
+  webhookEndpoints,
+} from "./webhooks.js";
 import { passwordResetTokens } from "./passwordResetTokens.js";
 import { businessInvitations } from "./businessInvitations.js";
 import { documentSequences } from "./documentSequences.js";
@@ -338,6 +346,85 @@ export const businessesRelations = relations(businesses, ({ one, many }) => ({
   documentSequences: many(documentSequences),
   supportTickets: many(supportTickets),
 }));
+
+export const integrationsRelations = relations(integrations, ({ one, many }) => ({
+  business: one(businesses, {
+    fields: [integrations.businessId],
+    references: [businesses.id],
+  }),
+  location: one(locations, {
+    fields: [integrations.locationId],
+    references: [locations.id],
+  }),
+  reservations: many(inventoryReservations),
+}));
+
+export const inventoryReservationsRelations = relations(
+  inventoryReservations,
+  ({ one }) => ({
+    business: one(businesses, {
+      fields: [inventoryReservations.businessId],
+      references: [businesses.id],
+    }),
+    sale: one(sales, {
+      fields: [inventoryReservations.saleId],
+      references: [sales.id],
+    }),
+    integration: one(integrations, {
+      fields: [inventoryReservations.integrationId],
+      references: [integrations.id],
+    }),
+  }),
+);
+
+export const channelInventoryAllocationsRelations = relations(
+  channelInventoryAllocations,
+  ({ one }) => ({
+    business: one(businesses, {
+      fields: [channelInventoryAllocations.businessId],
+      references: [businesses.id],
+    }),
+    integration: one(integrations, {
+      fields: [channelInventoryAllocations.integrationId],
+      references: [integrations.id],
+    }),
+  }),
+);
+
+export const storefrontApiKeysRelations = relations(
+  storefrontApiKeys,
+  ({ one }) => ({
+    business: one(businesses, {
+      fields: [storefrontApiKeys.businessId],
+      references: [businesses.id],
+    }),
+    integration: one(integrations, {
+      fields: [storefrontApiKeys.integrationId],
+      references: [integrations.id],
+    }),
+  }),
+);
+
+export const webhookEndpointsRelations = relations(
+  webhookEndpoints,
+  ({ one, many }) => ({
+    business: one(businesses, {
+      fields: [webhookEndpoints.businessId],
+      references: [businesses.id],
+    }),
+    deliveries: many(webhookDeliveries),
+  }),
+);
+
+export const webhookDeliveriesRelations = relations(
+  webhookDeliveries,
+  ({ one }) => ({
+    endpoint: one(webhookEndpoints, {
+      fields: [webhookDeliveries.endpointId],
+      references: [webhookEndpoints.id],
+    }),
+  }),
+);
 
 export const supportTicketsRelations = relations(
   supportTickets,

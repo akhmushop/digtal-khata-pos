@@ -19,8 +19,8 @@
 INSERT INTO subscription_plans (name, slug, interval, price, currency, limits, features, trial_days, is_active)
 VALUES (
   'Free trial', 'free-trial', 'monthly', 0, 'BDT',
-  '{"maxUsers":3,"maxLocations":1,"maxProducts":100}'::jsonb,
-  '{}'::jsonb,
+  '{"maxUsers":3,"maxLocations":1,"maxProducts":100,"maxConnectedStores":1,"maxWebhookEndpoints":1}'::jsonb,
+  '{"storefrontApi":true,"woocommerceIntegration":true,"customStorefront":true,"multipleOnlineStores":false,"advancedWebhooks":true}'::jsonb,
   14,
   true
 )

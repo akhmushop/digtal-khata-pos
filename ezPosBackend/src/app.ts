@@ -27,6 +27,10 @@ import supportPortalRouter from "./modules/support/supportPortal.routes.js";
 import subscriptionsPortalRouter from "./modules/subscriptions/subscriptions.routes.js";
 import paymentsRouter from "./modules/payments/payments.routes.js";
 import saasAdminRouter from "./modules/saasAdmin/saasAdmin.routes.js";
+import storefrontRouter from "./modules/storefront/storefront.routes.js";
+import integrationsRouter from "./modules/integrations/integrations.routes.js";
+import webhooksRouter from "./modules/webhooks/webhookEndpoints.routes.js";
+import ordersAdminRouter from "./modules/commerce/ordersAdmin.routes.js";
 import {
   BadRequestError,
   ConflictError,
@@ -52,7 +56,22 @@ export function buildApp() {
       credentials: true,
     }),
   );
-  app.use(express.json());
+  app.use(
+    express.json({
+      // WooCommerce webhooks sign the EXACT bytes they send — capture the
+      // raw body (only for that path) before JSON parsing consumes it.
+      verify: (req: Request & { originalUrl?: string }, _res, buf) => {
+        if (
+          req.originalUrl?.startsWith(
+            "/api/integrations/woocommerce/webhook/",
+          )
+        ) {
+          (req as Request & { __rawBody?: string }).__rawBody =
+            buf.toString("utf8");
+        }
+      },
+    }),
+  );
   // Gateway IPNs (SSLCommerz) post form-urlencoded payloads.
   app.use(express.urlencoded({ extended: false }));
 
@@ -100,6 +119,10 @@ export function buildApp() {
   app.use("/", subscriptionsPortalRouter);
   app.use("/", paymentsRouter);
   app.use("/", saasAdminRouter);
+  app.use("/", storefrontRouter);
+  app.use("/", integrationsRouter);
+  app.use("/", webhooksRouter);
+  app.use("/", ordersAdminRouter);
 
   // error handling
   app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {

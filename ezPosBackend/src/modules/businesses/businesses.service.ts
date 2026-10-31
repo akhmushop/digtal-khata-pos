@@ -1,6 +1,8 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray , sql } from "drizzle-orm";
 import { db } from "../../db/schema/index.js";
 import { businesses } from "../../db/schema/businesses.js";
+import { integrations } from "../../db/schema/integrations.js";
+import { locations } from "../../db/schema/locations.js";
 import { businessMemberships } from "../../db/schema/businessMemberships.js";
 import { roles } from "../../db/schema/roles.js";
 import { userRoles } from "../../db/schema/userRoles.js";
@@ -9,7 +11,7 @@ import { subscriptions } from "../../db/schema/subscriptions.js";
 import { users } from "../../db/schema/users.js";
 import { env } from "../../config/env.js";
 import { addDays, slugifyBusinessName } from "../../utils/subscription.js";
-import { BadRequestError, NotFoundError } from "../../utils/handleError.js";
+import { BadRequestError, ConflictError, NotFoundError } from "../../utils/handleError.js";
 import { computeSubscriptionState, type SubscriptionState } from "../../utils/subscription.js";
 import { createRoleWithPermissionsInTx, ensureDefaultRolesInTx } from "../roles/roles.service.js";
 import { recordEvent } from "../subscriptions/subscription.service.js";
@@ -257,6 +259,7 @@ export interface BusinessDetail {
   country: string | null;
   currency: string;
   timezone: string;
+  mode: "physical_only" | "online_only" | "omnichannel";
   createdAt: Date | null;
   subscription: SubscriptionState;
   roleSlug: string;
@@ -279,6 +282,7 @@ export async function getBusinessForMembership(
       country: businesses.country,
       currency: businesses.currency,
       timezone: businesses.timezone,
+      mode: businesses.mode,
       createdAt: businesses.createdAt,
       roleSlug: roles.slug,
     })
@@ -343,5 +347,65 @@ export async function updateBusinessForMembership(
     })
     .where(eq(businesses.id, businessId));
 
+  if (input.mode !== undefined) {
+    await changeBusinessMode(businessId, input.mode);
+  }
+
   return getBusinessForMembership(userId, businessId);
+}
+
+/**
+ * Operating-model change (Phase 9). Rules:
+ * - Downgrading to physical_only is blocked while integrations are
+ *   connected (they must be disconnected first).
+ * - Moving to online_only/omnichannel without any location auto-creates a
+ *   default "Online Store" location — online inventory must live somewhere.
+ */
+async function changeBusinessMode(
+  businessId: number,
+  mode: "physical_only" | "online_only" | "omnichannel",
+): Promise<void> {
+  const [current] = await db
+    .select({ mode: businesses.mode })
+    .from(businesses)
+    .where(eq(businesses.id, businessId));
+  if (!current || current.mode === mode) return;
+
+  if (mode === "physical_only") {
+    const [connected] = await db
+      .select({ id: integrations.id })
+      .from(integrations)
+      .where(
+        and(
+          eq(integrations.businessId, businessId),
+          sql`${integrations.status} <> 'disconnected'`,
+        ),
+      )
+      .limit(1);
+    if (connected) {
+      throw new ConflictError(
+        "Disconnect all storefront integrations before switching to physical-only.",
+      );
+    }
+  }
+
+  await db
+    .update(businesses)
+    .set({ mode, updatedAt: new Date() })
+    .where(eq(businesses.id, businessId));
+
+  if (mode !== "physical_only") {
+    const [anyLocation] = await db
+      .select({ id: locations.id })
+      .from(locations)
+      .where(eq(locations.businessId, businessId))
+      .limit(1);
+    if (!anyLocation) {
+      await db.insert(locations).values({
+        businessId,
+        name: "Online Store",
+        isDefault: true,
+      });
+    }
+  }
 }
