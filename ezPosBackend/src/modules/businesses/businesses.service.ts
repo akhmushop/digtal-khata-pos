@@ -3,6 +3,7 @@ import { db } from "../../db/schema/index.js";
 import { businesses } from "../../db/schema/businesses.js";
 import { businessMemberships } from "../../db/schema/businessMemberships.js";
 import { roles } from "../../db/schema/roles.js";
+import { userRoles } from "../../db/schema/userRoles.js";
 import { subscriptionPlans } from "../../db/schema/subscriptionPlans.js";
 import { subscriptions } from "../../db/schema/subscriptions.js";
 import { users } from "../../db/schema/users.js";
@@ -10,6 +11,8 @@ import { env } from "../../config/env.js";
 import { addDays, slugifyBusinessName } from "../../utils/subscription.js";
 import { BadRequestError, NotFoundError } from "../../utils/handleError.js";
 import { computeSubscriptionState, type SubscriptionState } from "../../utils/subscription.js";
+import { createRoleWithPermissionsInTx, ensureDefaultRolesInTx } from "../roles/roles.service.js";
+import { DEFAULT_ROLE_PERMISSIONS } from "../../rbac/permissions.js";
 import type { CreateBusinessInput, UpdateBusinessInput } from "./businesses.validation.js";
 
 const OPEN_SUBSCRIPTION_STATUSES = ["trialing", "active", "past_due"] as const;
@@ -186,24 +189,28 @@ export async function createBusinessForUser(
       throw new Error("Business insert returned no row.");
     }
 
-    const [ownerRole] = await tx
-      .insert(roles)
-      .values({
-        businessId: business.id,
-        name: "Owner",
-        slug: "owner",
-        isSystem: false,
-      })
-      .returning({ id: roles.id, slug: roles.slug });
-    if (!ownerRole) {
-      throw new Error("Owner role insert returned no row.");
-    }
+    // Owner role (wildcard permissions) + the three default staff roles,
+    // each with its default permission template.
+    const ownerRole = await createRoleWithPermissionsInTx(
+      tx,
+      business.id,
+      "Owner",
+      "owner",
+      true,
+      DEFAULT_ROLE_PERMISSIONS.owner,
+    );
+    await ensureDefaultRolesInTx(tx, business.id);
 
     await tx.insert(businessMemberships).values({
       userId,
       businessId: business.id,
       roleId: ownerRole.id,
       status: "active",
+    });
+    await tx.insert(userRoles).values({
+      userId,
+      businessId: business.id,
+      roleId: ownerRole.id,
     });
 
     const trial = userAlreadyUsedTrial

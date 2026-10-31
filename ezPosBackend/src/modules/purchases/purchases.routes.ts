@@ -5,21 +5,34 @@ import {
   requireBusinessContext,
   requireFullAccess,
 } from "../../middleware/business.js";
+import { requirePermission } from "../../middleware/permissions.js";
 
 const router = express.Router();
 const read = [requireAuth, requireBusinessContext()] as const;
 const write = [...read, requireFullAccess] as const;
 
-router.post("/api/purchases", ...write, purchasesController.createPurchase);
+router.post(
+  "/api/purchases",
+  ...write,
+  requirePermission("purchases.create"),
+  purchasesController.createPurchase,
+);
 router.get(
   "/api/purchases",
   ...read,
+  requirePermission("purchases.view"),
   purchasesController.getPurchasesSummary,
 );
-router.get("/api/purchases/items", ...read, purchasesController.getPurchasesItems);
+router.get(
+  "/api/purchases/items",
+  ...read,
+  requirePermission("purchases.view"),
+  purchasesController.getPurchasesItems,
+);
 router.post(
   "/api/purchases/receive",
   ...write,
+  requirePermission("purchases.receive"),
   purchasesController.createReceivePurchase,
 );
 export default router;

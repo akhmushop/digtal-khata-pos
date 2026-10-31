@@ -32,6 +32,7 @@ import { purchasePayments } from "./purchasePayments.js";
 import { users } from "./users.js";
 import { businesses } from "./businesses.js";
 import { businessMemberships } from "./businessMemberships.js";
+import { userRoles } from "./userRoles.js";
 import { permissions } from "./permissions.js";
 import { roles } from "./roles.js";
 import { rolePermissions } from "./rolePermissions.js";
@@ -380,6 +381,21 @@ export const businessMembershipsRelations = relations(
     }),
   }),
 );
+
+export const userRolesRelations = relations(userRoles, ({ one }) => ({
+  user: one(users, {
+    fields: [userRoles.userId],
+    references: [users.id],
+  }),
+  business: one(businesses, {
+    fields: [userRoles.businessId],
+    references: [businesses.id],
+  }),
+  role: one(roles, {
+    fields: [userRoles.roleId],
+    references: [roles.id],
+  }),
+}));
 
 export const subscriptionPlansRelations = relations(
   subscriptionPlans,

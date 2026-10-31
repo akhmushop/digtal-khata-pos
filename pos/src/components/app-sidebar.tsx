@@ -39,6 +39,7 @@ import {
 } from "./ui/dropdown-menu";
 import { Avatar, AvatarBadge, AvatarFallback } from "./ui/avatar";
 import { getSessionUser, logout } from "@/api/axios";
+import { usePermissions } from "@/hooks/usePermissions";
 
 function initialsOf(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -53,6 +54,37 @@ export function AppSidebar() {
   const location = useLocation();
   const user = getSessionUser();
   const displayName = user?.fullName?.trim() || user?.email || "Signed in";
+  const { hasPermission, hasAnyPermission } = usePermissions();
+
+  // Hide nav entries the active role set cannot open. Backend permissions
+  // remain the real gate — this only shapes the interface.
+  const visibleNavigation = navigation.filter((item) => {
+    if (item.permission && !hasPermission(item.permission)) return false;
+    if (item.anyPermission && !hasAnyPermission(item.anyPermission)) {
+      return false;
+    }
+    if (item.items) {
+      const visibleItems = item.items.filter((subItem) => {
+        if (
+          "permission" in subItem &&
+          subItem.permission &&
+          !hasPermission(subItem.permission)
+        ) {
+          return false;
+        }
+        if (
+          "anyPermission" in subItem &&
+          subItem.anyPermission &&
+          !hasAnyPermission(subItem.anyPermission)
+        ) {
+          return false;
+        }
+        return true;
+      });
+      return visibleItems.length > 0;
+    }
+    return true;
+  });
   return (
     <Sidebar variant="inset">
       <SidebarHeader className="bg-sidebar-accent border-b border-sidebar-border rounded mb-2">
@@ -72,7 +104,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
-          {navigation.map((item) => {
+          {visibleNavigation.map((item) => {
             if (!item) return null;
             const Icon = item.icon;
             if (!item.items) {
@@ -115,7 +147,25 @@ export function AppSidebar() {
 
                   <CollapsibleContent>
                     <SidebarMenuSub>
-                      {item.items.map((subItem) => (
+                      {item.items
+                        .filter((subItem) => {
+                          if (
+                            "permission" in subItem &&
+                            subItem.permission &&
+                            !hasPermission(subItem.permission)
+                          ) {
+                            return false;
+                          }
+                          if (
+                            "anyPermission" in subItem &&
+                            subItem.anyPermission &&
+                            !hasAnyPermission(subItem.anyPermission)
+                          ) {
+                            return false;
+                          }
+                          return true;
+                        })
+                        .map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton
                             isActive={location.pathname === subItem.url}

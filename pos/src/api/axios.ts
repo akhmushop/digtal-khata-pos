@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useSessionStore } from "../auth/sessionStore";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000/api",
@@ -53,6 +54,18 @@ export function clearSession(): void {
   activeBusinessId = null;
   sessionUser = null;
   bootstrapPromise = null;
+  useSessionStore.getState().clearSession();
+}
+
+/**
+ * Re-fetches /auth/me and refreshes the in-memory session + permission
+ * snapshot without a full page reload. Called after role or permission
+ * changes so the UI reflects the new access immediately (the backend
+ * already enforces it per request).
+ */
+export async function refreshSessionContext(): Promise<void> {
+  bootstrapPromise = loadSession();
+  await bootstrapPromise;
 }
 
 /**
@@ -106,6 +119,8 @@ async function loadSession(): Promise<void> {
         businessId: number;
         roleSlug?: string;
         roleName?: string;
+        roles?: { id: number; name: string; slug: string }[];
+        permissions?: string[];
       }[];
     }>("/auth/me");
     const first = me.data.businesses?.[0];
@@ -117,6 +132,20 @@ async function loadSession(): Promise<void> {
       roleSlug: first?.roleSlug,
       roleName: first?.roleName,
     };
+    // Publish the permission snapshot for the UI (route guards, sidebar,
+    // PermissionGuard). Authorization itself stays backend-enforced.
+    useSessionStore.getState().setSession({
+      user: {
+        id: me.data.user?.id,
+        fullName: me.data.user?.fullName,
+        email: me.data.user?.email,
+      },
+      businessId: first?.businessId ?? null,
+      roleSlug: first?.roleSlug ?? null,
+      roleName: first?.roleName ?? null,
+      roles: first?.roles ?? [],
+      permissions: first?.permissions ?? [],
+    });
   } catch (err) {
     const status = axios.isAxiosError(err) ? err.response?.status : "network";
     redirectToSignIn(`me_failed_${status}`);

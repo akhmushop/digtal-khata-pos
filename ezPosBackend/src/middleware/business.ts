@@ -5,7 +5,11 @@ import { businessMemberships } from "../db/schema/businessMemberships.js";
 import { businesses } from "../db/schema/businesses.js";
 import { roles } from "../db/schema/roles.js";
 import { subscriptions } from "../db/schema/subscriptions.js";
+import { userRoles } from "../db/schema/userRoles.js";
+import { rolePermissions } from "../db/schema/rolePermissions.js";
+import { permissions } from "../db/schema/permissions.js";
 import { computeSubscriptionState } from "../utils/subscription.js";
+import { WILDCARD_PERMISSION } from "../rbac/permissions.js";
 
 const OPEN_SUBSCRIPTION_STATUSES = ["trialing", "active", "past_due"] as const;
 
@@ -18,13 +22,19 @@ function unauthorized(res: Response) {
 }
 
 /**
- * Loads the caller's ACTIVE OWNER membership in `businessId` and the
- * business's subscription state, attaching both to the request.
+ * Loads the caller's ACTIVE membership in `businessId` and the business's
+ * subscription state, attaching both — plus the caller's effective
+ * permission set — to the request.
  *
  * The client-supplied business selector is a HINT, never proof of access:
- * every value attached here is derived from the database. For the owner-only
- * launch the membership row must carry the per-business "owner" role; when
- * staff roles are introduced this predicate is replaced by a permission check.
+ * every value attached here is derived from the database. Effective
+ * permissions are the union of every role the user holds in this business
+ * (user_roles). The Owner holds the wildcard ("*") so the account can never
+ * be locked out by a bad permission edit — a documented bootstrap safety,
+ * separate from business logic which always checks specific keys.
+ *
+ * Permissions are re-read from the database on EVERY request, so role and
+ * permission changes take effect immediately for logged-in users.
  *
  * Returns null (response already sent) when the caller has no qualifying
  * membership — indistinguishable from the business not existing, so another
@@ -39,6 +49,7 @@ async function resolveBusinessContext(
   const [membership] = await db
     .select({
       membershipId: businessMemberships.id,
+      roleId: businessMemberships.roleId,
       roleSlug: roles.slug,
       roleName: roles.name,
     })
@@ -61,6 +72,37 @@ async function resolveBusinessContext(
     return false;
   }
 
+  let effectivePermissions: string[];
+  if (membership.roleSlug === "owner") {
+    effectivePermissions = [WILDCARD_PERMISSION];
+  } else {
+    const assignments = await db
+      .select({ roleId: userRoles.roleId })
+      .from(userRoles)
+      .where(
+        and(
+          eq(userRoles.userId, req.user!.id),
+          eq(userRoles.businessId, businessId),
+        ),
+      );
+    const roleIds = [
+      ...new Set(assignments.map((a) => a.roleId).concat(membership.roleId)),
+    ];
+    effectivePermissions =
+      roleIds.length === 0
+        ? []
+        : (
+            await db
+              .selectDistinct({ key: permissions.key })
+              .from(rolePermissions)
+              .innerJoin(
+                permissions,
+                eq(permissions.id, rolePermissions.permissionId),
+              )
+              .where(inArray(rolePermissions.roleId, roleIds))
+          ).map((row) => row.key);
+  }
+
   const [subscription] = await db
     .select({
       status: subscriptions.status,
@@ -79,6 +121,7 @@ async function resolveBusinessContext(
     businessId,
     roleSlug: membership.roleSlug,
     roleName: membership.roleName,
+    permissions: effectivePermissions,
   };
   req.subscriptionAccess = computeSubscriptionState(subscription ?? null);
   return true;
@@ -107,7 +150,9 @@ export function getBusinessId(req: Request): number {
 /**
  * Tenant context from the `X-Business-Id` header (the POS route transport).
  * The header is a selector, never proof of access: membership is always
- * verified. Owner-only for the launch.
+ * verified. Any ACTIVE member qualifies; endpoint-level access is enforced
+ * by the requirePermission/requireAnyPermission middleware that follows this
+ * in each route chain (the membership carries the effective permissions).
  */
 export function requireBusinessContext() {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -130,7 +175,7 @@ export function requireBusinessContext() {
     }
 
     try {
-      const ok = await resolveBusinessContext(req, res, businessId, "owner");
+      const ok = await resolveBusinessContext(req, res, businessId, null);
       if (ok) next();
     } catch (err) {
       console.error("Business context check failed:", err);

@@ -3,8 +3,15 @@
 import "./config/env.js";
 import { buildApp } from "./app.js";
 import { pool } from "./config/db.js";
+import { ensureRbacSeed } from "./rbac/seed.js";
 
 const app = buildApp();
+
+// Seeds the permission catalog (idempotent) so role creation can reference
+// permission rows at any time. Failures are logged; the server still starts.
+ensureRbacSeed().catch((err) => {
+  console.error("RBAC permission seed failed:", err);
+});
 
 // Configurable for local development so the website (3001), POS frontend,
 // and a second backend instance can run alongside the default port.

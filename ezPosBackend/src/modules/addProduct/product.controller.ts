@@ -2,6 +2,8 @@ import type { Request, Response } from "express";
 import * as productService from "./product.service.js";
 import { getBusinessId } from "../../middleware/business.js";
 import { sendSafeError } from "../../utils/safeError.js";
+import { callerHasPermission } from "../../middleware/permissions.js";
+import { stripCostData } from "../../rbac/sanitize.js";
 import { productSchema } from "./schemas/product.schema.js";
 import { addCategorySchema } from "./schemas/category.schema.js";
 import { brandSchema } from "./schemas/brand.schema.js";
@@ -63,7 +65,12 @@ export async function getProductForEdit(req: Request, res: Response) {
   }
 
   try {
-    return res.json(await productService.getProductForEdit(getBusinessId(req), id));
+    const data = await productService.getProductForEdit(getBusinessId(req), id);
+    return res.json(
+      callerHasPermission(req, "products.view_cost")
+        ? data
+        : stripCostData(data),
+    );
   } catch (err: unknown) {
     return sendSafeError(res, err, "Unable to load the product.");
   }

@@ -3,6 +3,8 @@ import * as productsService from "./products.service.js";
 import { getBusinessId } from "../../middleware/business.js";
 import { sendSafeError } from "../../utils/safeError.js";
 import { z } from "zod";
+import { callerHasPermission } from "../../middleware/permissions.js";
+import { stripCostData } from "../../rbac/sanitize.js";
 
 const stockAdjustmentSchema = z.object({
   newQuantity: z.number().int().min(0),
@@ -19,7 +21,14 @@ const stockAdjustmentSchema = z.object({
 });
 export async function getProducts(req: Request, res: Response) {
   try {
-    res.json(await productsService.getAllProducts(getBusinessId(req)));
+    const data = await productsService.getAllProducts(getBusinessId(req));
+    // Purchase cost is sensitive: callers without products.view_cost never
+    // receive cost fields (backend-enforced, not just UI-hidden).
+    res.json(
+      callerHasPermission(req, "products.view_cost")
+        ? data
+        : stripCostData(data),
+    );
   } catch (err) {
     sendSafeError(res, err, "Unable to load products.");
   }
