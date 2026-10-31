@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { db } from "../../db/schema/index.js";
 import { customers } from "../../db/schema/customers.js";
 import { inventoryMovements } from "../../db/schema/inventoryMovements.js";
@@ -8,6 +8,11 @@ import { productVariants } from "../../db/schema/productVariants.js";
 import { saleItems } from "../../db/schema/saleItems.js";
 import { sales } from "../../db/schema/sales.js";
 import { businesses } from "../../db/schema/businesses.js";
+import {
+  BadRequestError,
+  ConflictError,
+  NotFoundError,
+} from "../../utils/handleError.js";
 import { integrations } from "../../db/schema/integrations.js";
 import { locations } from "../../db/schema/locations.js";
 import {
@@ -516,5 +521,279 @@ export async function cancelOnlineOrder(
       reason: reason ?? null,
     });
     void reason;
+  });
+}
+
+
+// ---------------------------------------------------------------------------
+// Unified order management (Phase 9.5) — all channels, one view
+// ---------------------------------------------------------------------------
+
+export interface UnifiedOrderRow {
+  id: number;
+  invoiceNumber: string;
+  channel: "pos" | "woocommerce" | "custom_storefront";
+  status: "pending" | "completed" | "held" | "cancelled" | "refunded";
+  paymentStatus: "paid" | "unpaid" | "partial";
+  fulfillmentStatus: "unfulfilled" | "processing" | "shipped" | "delivered";
+  finalTotal: number | null;
+  externalOrderNumber: string | null;
+  customerName: string | null;
+  locationName: string | null;
+  createdAt: Date | null;
+}
+
+export interface UnifiedOrderFilters {
+  channel?: "pos" | "woocommerce" | "custom_storefront" | undefined;
+  status?: string | undefined;
+  fulfillmentStatus?: string | undefined;
+  search?: string | undefined;
+  page?: number | undefined;
+  pageSize?: number | undefined;
+}
+
+export async function listUnifiedOrders(
+  businessId: number,
+  filters: UnifiedOrderFilters,
+): Promise<{ orders: UnifiedOrderRow[]; total: number; page: number; pageSize: number }> {
+  const page = Math.max(1, filters.page ?? 1);
+  const pageSize = Math.min(100, Math.max(1, filters.pageSize ?? 25));
+
+  const conditions = [eq(sales.businessId, businessId)];
+  if (filters.channel) {
+    conditions.push(eq(sales.channel, filters.channel));
+  }
+  if (
+    filters.status &&
+    ["pending", "completed", "held", "cancelled", "refunded"].includes(
+      filters.status,
+    )
+  ) {
+    conditions.push(
+      eq(
+        sales.status,
+        filters.status as "pending" | "completed" | "held" | "cancelled" | "refunded",
+      ),
+    );
+  }
+  if (
+    filters.fulfillmentStatus &&
+    ["unfulfilled", "processing", "shipped", "delivered"].includes(
+      filters.fulfillmentStatus,
+    )
+  ) {
+    conditions.push(
+      eq(
+        sales.fulfillmentStatus,
+        filters.fulfillmentStatus as
+          | "unfulfilled"
+          | "processing"
+          | "shipped"
+          | "delivered",
+      ),
+    );
+  }
+  if (filters.search) {
+    conditions.push(
+      or(
+        ilike(sales.invoiceNumber, `%${filters.search}%`),
+        ilike(sales.externalOrderNumber, `%${filters.search}%`),
+        ilike(sales.externalOrderId, `%${filters.search}%`),
+      )!,
+    );
+  }
+
+  const rows = await db
+    .select({
+      id: sales.id,
+      invoiceNumber: sales.invoiceNumber,
+      channel: sales.channel,
+      status: sales.status,
+      paymentStatus: sales.paymentStatus,
+      fulfillmentStatus: sales.fulfillmentStatus,
+      finalTotal: sales.finalTotal,
+      externalOrderNumber: sales.externalOrderNumber,
+      customerName: customers.name,
+      locationName: locations.name,
+      createdAt: sales.createdAt,
+    })
+    .from(sales)
+    .leftJoin(customers, eq(customers.id, sales.customerId))
+    .leftJoin(locations, eq(locations.id, sales.locationId))
+    .where(and(...conditions))
+    .orderBy(desc(sales.id))
+    .limit(pageSize)
+    .offset((page - 1) * pageSize);
+
+  const [totalRow] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(sales)
+    .where(and(...conditions));
+
+  return {
+    orders: rows,
+    total: totalRow?.n ?? 0,
+    page,
+    pageSize,
+  };
+}
+
+export interface OrderDetail {
+  id: number;
+  invoiceNumber: string;
+  channel: string;
+  status: string;
+  paymentStatus: string;
+  fulfillmentStatus: string;
+  subtotal: number | null;
+  discount: number | null;
+  vat: number | null;
+  finalTotal: number | null;
+  dueAmount: number | null;
+  note: string | null;
+  externalOrderId: string | null;
+  externalOrderNumber: string | null;
+  customerName: string | null;
+  customerPhone: string | null;
+  customerEmail: string | null;
+  locationName: string | null;
+  createdAt: Date | null;
+  items: {
+    id: number;
+    variantId: number;
+    sku: string;
+    productName: string;
+    quantity: number;
+    sellingPrice: number;
+    lineTotal: number;
+  }[];
+}
+
+export async function getOrderDetail(
+  businessId: number,
+  orderId: number,
+): Promise<OrderDetail> {
+  const [order] = await db
+    .select({
+      id: sales.id,
+      invoiceNumber: sales.invoiceNumber,
+      channel: sales.channel,
+      status: sales.status,
+      paymentStatus: sales.paymentStatus,
+      fulfillmentStatus: sales.fulfillmentStatus,
+      subtotal: sales.subtotal,
+      discount: sales.discount,
+      vat: sales.vat,
+      finalTotal: sales.finalTotal,
+      dueAmount: sales.dueAmount,
+      note: sales.note,
+      externalOrderId: sales.externalOrderId,
+      externalOrderNumber: sales.externalOrderNumber,
+      customerName: customers.name,
+      customerPhone: customers.phone,
+      customerEmail: customers.email,
+      locationName: locations.name,
+      createdAt: sales.createdAt,
+    })
+    .from(sales)
+    .leftJoin(customers, eq(customers.id, sales.customerId))
+    .leftJoin(locations, eq(locations.id, sales.locationId))
+    .where(and(eq(sales.id, orderId), eq(sales.businessId, businessId)));
+  if (!order) throw new NotFoundError("Order not found.");
+
+  const items = await db
+    .select({
+      id: saleItems.id,
+      variantId: saleItems.variantId,
+      sku: productVariants.sku,
+      productName: products.name,
+      quantity: saleItems.quantity,
+      sellingPrice: saleItems.sellingPrice,
+      lineTotal: saleItems.lineTotal,
+    })
+    .from(saleItems)
+    .innerJoin(
+      productVariants,
+      eq(productVariants.id, saleItems.variantId),
+    )
+    .innerJoin(products, eq(products.id, productVariants.productId))
+    .where(eq(saleItems.saleId, orderId));
+
+  return { ...order, items };
+}
+
+const FULFILLMENT_TRANSITIONS: Record<
+  string,
+  ("processing" | "shipped" | "delivered")[]
+> = {
+  unfulfilled: ["processing", "shipped", "delivered"],
+  processing: ["shipped", "delivered"],
+  shipped: ["delivered"],
+  delivered: [],
+};
+
+/** COD / unpaid online orders: record payment and confirm the order. */
+export async function markOnlineOrderPaid(
+  businessId: number,
+  orderId: number,
+): Promise<void> {
+  const [sale] = await db
+    .select({
+      id: sales.id,
+      status: sales.status,
+      channel: sales.channel,
+    })
+    .from(sales)
+    .where(and(eq(sales.id, orderId), eq(sales.businessId, businessId)))
+    .for("update");
+  if (!sale) throw new NotFoundError("Order not found.");
+  if (sale.channel === "pos") {
+    throw new BadRequestError("POS sales are paid at the counter.");
+  }
+  if (sale.status !== "pending") {
+    throw new ConflictError(
+      `Only pending orders can be marked paid (order is ${sale.status}).`,
+    );
+  }
+  await confirmOnlineOrder(businessId, orderId);
+}
+
+export async function updateFulfillmentStatus(
+  businessId: number,
+  orderId: number,
+  next: "processing" | "shipped" | "delivered",
+): Promise<void> {
+  return db.transaction(async (tx) => {
+    const [sale] = await tx
+      .select({
+        id: sales.id,
+        status: sales.status,
+        fulfillmentStatus: sales.fulfillmentStatus,
+        channel: sales.channel,
+      })
+      .from(sales)
+      .where(and(eq(sales.id, orderId), eq(sales.businessId, businessId)))
+      .for("update");
+    if (!sale) throw new NotFoundError("Order not found.");
+    if (sale.channel === "pos") {
+      throw new BadRequestError(
+        "POS sales are fulfilled at the counter; fulfillment tracking is for online orders.",
+      );
+    }
+    if (sale.status !== "completed") {
+      throw new ConflictError(
+        "Only completed orders can be fulfilled.",
+      );
+    }
+    const allowed = FULFILLMENT_TRANSITIONS[sale.fulfillmentStatus] ?? [];
+    if (!allowed.includes(next)) {
+      throw new ConflictError(
+        `Cannot move fulfillment from ${sale.fulfillmentStatus} to ${next}.`,
+      );
+    }
+    await tx
+      .update(sales)
+      .set({ fulfillmentStatus: next })
+      .where(eq(sales.id, orderId));
   });
 }

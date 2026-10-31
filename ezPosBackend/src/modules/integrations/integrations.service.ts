@@ -617,6 +617,18 @@ export async function processSyncJobs(now: Date = new Date()): Promise<{
         }
       } else if (job.jobType === "stock_push") {
         await pushStockLevels(job.integrationId);
+      } else if (job.jobType === "refund_sync") {
+        const saleId = Number(job.payload?.saleId);
+        const refundedTotal = Number(job.payload?.refundedTotal ?? 0);
+        const orderTotal = job.payload?.orderTotal
+          ? Number(job.payload.orderTotal)
+          : null;
+        await pushRefundToWoocommerce(
+          job.businessId,
+          saleId,
+          refundedTotal,
+          orderTotal,
+        );
       }
       await db
         .update(integrationSyncJobs)
@@ -893,9 +905,8 @@ export async function processOrderWebhook(
       });
 
       // 'processing'/'completed' mean paid → confirm immediately (stock is
-      // consumed; COD stays pending per the documented policy — WC marks
-      // COD orders processing on placement, so map explicitly below).
-      if (wcStatus === "completed") {
+      // consumed). COD orders stay pending until marked paid in the portal.
+      if (wcStatus === "processing" || wcStatus === "completed") {
         await confirmOnlineOrder(businessId, created.saleId);
         return { action: "confirmed", saleId: created.saleId };
       }
@@ -971,4 +982,107 @@ function envBackendUrl(): string {
   // Late import avoided; env is already a static import above via config.
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   return process.env.BACKEND_URL?.trim() || "http://localhost:3000";
+}
+
+/**
+ * Refund sync (Phase 9.5, outbound): when an ezPos sale with a WooCommerce
+ * origin is refunded, push the refunded status to the store. Full refunds
+ * set the WC order status to 'refunded'; partial refunds add an order note
+ * instead (WC has no partial-status concept).
+ */
+export async function pushRefundToWoocommerce(
+  businessId: number,
+  saleId: number,
+  refundedTotal: number,
+  orderTotal: number | null,
+): Promise<void> {
+  const [mapping] = await db
+    .select({
+      integrationId: integrationOrderMappings.integrationId,
+      externalOrderId: integrationOrderMappings.externalOrderId,
+      platform: integrations.platform,
+      status: integrations.status,
+    })
+    .from(integrationOrderMappings)
+    .innerJoin(integrations, eq(integrations.id, integrationOrderMappings.integrationId))
+    .where(
+      and(
+        eq(integrationOrderMappings.saleId, saleId),
+        eq(integrationOrderMappings.businessId, businessId),
+      ),
+    )
+    .limit(1);
+  if (!mapping || mapping.platform !== "woocommerce" || mapping.status !== "connected") {
+    return;
+  }
+
+  try {
+    const creds = await credentialsFor(mapping.integrationId);
+    const client = new WoocommerceClient(creds);
+    const full = orderTotal !== null && refundedTotal >= Number(orderTotal);
+    if (full) {
+      await client.request("PUT", `/orders/${mapping.externalOrderId}`, {
+        status: "refunded",
+      });
+    } else {
+      await client.request("POST", `/orders/${mapping.externalOrderId}/notes`, {
+        note: `ezPos partial refund: ${refundedTotal} of ${orderTotal ?? "?"}.`,
+      });
+    }
+    await logSync(mapping.integrationId, businessId, {
+      jobType: "refund_sync",
+      direction: "push",
+      entityType: "sale",
+      entityId: saleId,
+      status: "success",
+      message: full
+        ? "Refund pushed — WooCommerce order marked refunded."
+        : `Partial refund note added (${refundedTotal}).`,
+    });
+  } catch (err) {
+    await logSync(mapping.integrationId, businessId, {
+      jobType: "refund_sync",
+      direction: "push",
+      entityType: "sale",
+      entityId: saleId,
+      status: "error",
+      message: (err as Error).message,
+    });
+    await enqueueJob(businessId, mapping.integrationId, "refund_sync", {
+      saleId,
+      refundedTotal,
+      orderTotal,
+    });
+  }
+}
+
+/**
+ * Fire-safe post-refund hook: resolves the refunded total from the sale and
+ * pushes the refund status to WooCommerce when the sale originated there.
+ * Never throws — refund creation must not fail because of sync.
+ */
+export async function pushRefundStatusAfterCommit(
+  businessId: number,
+  saleId: number,
+): Promise<void> {
+  void (async () => {
+    try {
+      const [sale] = await db
+        .select({ finalTotal: sales.finalTotal })
+        .from(sales)
+        .where(eq(sales.id, saleId));
+      await pushRefundToWoocommerce(
+        businessId,
+        saleId,
+        sale?.finalTotal !== null && sale?.finalTotal !== undefined
+          ? Number(sale.finalTotal)
+          : 0,
+        sale?.finalTotal !== null && sale?.finalTotal !== undefined
+          ? Number(sale.finalTotal)
+          : null,
+      );
+    } catch (err) {
+      console.error(`Refund sync failed for sale ${saleId}:`, err);
+    }
+  })();
 }
