@@ -4,6 +4,7 @@ import { businesses } from "../../db/schema/businesses.js";
 import { users } from "../../db/schema/users.js";
 import { sendEmail } from "./email.service.js";
 import {
+  renderPaymentSucceeded,
   renderSubscriptionActivated,
   renderSubscriptionCanceled,
   renderSubscriptionRenewed,
@@ -86,6 +87,28 @@ export function notifySubscriptionCanceled(
     if (!delivery.ok) {
       console.error(
         `Subscription-canceled email failed for ${target.email}: ${delivery.error}`,
+      );
+    }
+  })();
+}
+
+export function notifyPaymentSucceeded(
+  businessId: number,
+  amountLabel: string,
+  invoiceNumber: string,
+): void {
+  void (async () => {
+    const target = await businessOwnerEmail(businessId);
+    if (!target) return;
+    const rendered = renderPaymentSucceeded(
+      target.businessName,
+      amountLabel,
+      invoiceNumber,
+    );
+    const delivery = await sendEmail({ to: target.email, ...rendered });
+    if (!delivery.ok) {
+      console.error(
+        `Payment-succeeded email failed for ${target.email}: ${delivery.error}`,
       );
     }
   })();

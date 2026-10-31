@@ -25,6 +25,7 @@ import cashRegistersRouter from "./modules/cashRegisters/cashRegisters.routes.js
 import supportRouter from "./modules/support/support.routes.js";
 import supportPortalRouter from "./modules/support/supportPortal.routes.js";
 import subscriptionsPortalRouter from "./modules/subscriptions/subscriptions.routes.js";
+import paymentsRouter from "./modules/payments/payments.routes.js";
 import {
   BadRequestError,
   ConflictError,
@@ -51,6 +52,8 @@ export function buildApp() {
     }),
   );
   app.use(express.json());
+  // Gateway IPNs (SSLCommerz) post form-urlencoded payloads.
+  app.use(express.urlencoded({ extended: false }));
 
   // Liveness/readiness probe for load balancers and container runtimes.
   app.get("/healthz", async (_req: Request, res: Response) => {
@@ -84,6 +87,7 @@ export function buildApp() {
   app.use("/", supportRouter);
   app.use("/", supportPortalRouter);
   app.use("/", subscriptionsPortalRouter);
+  app.use("/", paymentsRouter);
 
   // error handling
   app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {

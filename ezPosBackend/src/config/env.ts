@@ -65,6 +65,29 @@ export const env = {
   /** Public website origin used for links inside emails. */
   appUrl: process.env.APP_URL?.trim() || "http://localhost:3001",
   passwordResetTokenTtlHours: optionalInt("PASSWORD_RESET_TOKEN_TTL_HOURS", 2),
+  /**
+   * Payment gateway. "mock" issues deterministic dev/test sessions and is
+   * REFUSED in production; "sslcommerz" is the real gateway.
+   */
+  paymentProvider: ((): "mock" | "sslcommerz" => {
+    const raw = process.env.PAYMENT_PROVIDER?.trim() || "mock";
+    if (raw !== "mock" && raw !== "sslcommerz") {
+      throw new Error(
+        `PAYMENT_PROVIDER must be "mock" or "sslcommerz", got "${raw}".`,
+      );
+    }
+    if (raw === "mock" && process.env.NODE_ENV === "production") {
+      throw new Error(
+        'PAYMENT_PROVIDER=mock is not allowed in production — simulated payments must never be treated as real ones. Set PAYMENT_PROVIDER=sslcommerz.',
+      );
+    }
+    return raw;
+  })(),
+  sslcommerzStoreId: process.env.SSLCOMMERZ_STORE_ID?.trim() || "",
+  sslcommerzStorePassword: process.env.SSLCOMMERZ_STORE_PASSWORD?.trim() || "",
+  sslcommerzSandbox: process.env.SSLCOMMERZ_SANDBOX?.trim() !== "false",
+  /** Public backend origin, used as the IPN callback target. */
+  backendUrl: process.env.BACKEND_URL?.trim() || "http://localhost:3000",
   emailVerificationTokenTtlHours: optionalInt(
     "EMAIL_VERIFICATION_TOKEN_TTL_HOURS",
     24,

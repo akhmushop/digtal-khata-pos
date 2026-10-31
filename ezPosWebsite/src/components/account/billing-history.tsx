@@ -6,6 +6,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import {
   fetchInvoices,
   fetchPayments,
+  initiatePayment,
   type InvoiceSummary,
   type PaymentSummary,
 } from "@/lib/api/portal";
@@ -22,6 +23,22 @@ export function BillingHistory() {
   const businessId = businesses[0]?.businessId ?? null;
   const [invoices, setInvoices] = useState<InvoiceSummary[] | null>(null);
   const [payments, setPayments] = useState<PaymentSummary[] | null>(null);
+  const [payingId, setPayingId] = useState<number | null>(null);
+  const [payError, setPayError] = useState<string | null>(null);
+
+  async function payNow(invoiceId: number) {
+    if (!businessId) return;
+    setPayError(null);
+    setPayingId(invoiceId);
+    const result = await initiatePayment(businessId, invoiceId);
+    setPayingId(null);
+    if (!result.ok || !result.data) {
+      setPayError(result.message);
+      return;
+    }
+    // Off to the gateway — the /payment/success page handles verification.
+    window.location.assign(result.data.gatewayUrl);
+  }
 
   useEffect(() => {
     if (!businessId) return;
@@ -57,6 +74,12 @@ export function BillingHistory() {
           mobile-wallet payments arrive with the payment integration.
         </p>
       </div>
+
+      {payError ? (
+        <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900" role="alert">
+          {payError}
+        </p>
+      ) : null}
 
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <h2 className="border-b border-slate-100 px-6 py-4 text-sm font-semibold text-slate-900">
@@ -103,6 +126,16 @@ export function BillingHistory() {
                     </span>
                   </td>
                   <td className="px-6 py-3 text-right">
+                    {invoice.status === "pending" ? (
+                      <button
+                        type="button"
+                        className="mr-3 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+                        disabled={payingId === invoice.id}
+                        onClick={() => payNow(invoice.id)}
+                      >
+                        {payingId === invoice.id ? "Opening…" : "Pay now"}
+                      </button>
+                    ) : null}
                     <Link
                       href={`/account/invoices/${invoice.id}`}
                       className="font-medium text-indigo-700 hover:underline"

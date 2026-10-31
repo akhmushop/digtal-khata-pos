@@ -184,6 +184,67 @@ export async function fetchPayments(
 }
 
 // ---------------------------------------------------------------------------
+// Payments (Phase 5)
+// ---------------------------------------------------------------------------
+
+export interface InitiatedPayment {
+  paymentId: number;
+  idempotencyKey: string;
+  amount: number;
+  currency: string;
+  gatewayUrl: string;
+}
+
+/** Creates a gateway checkout session for a pending invoice. */
+export async function initiatePayment(
+  businessId: number,
+  invoiceId: number,
+): Promise<ApiResult<InitiatedPayment>> {
+  return request("/api/businesses/" + businessId + "/payments/initiate", {
+    method: "POST",
+    businessId,
+    body: JSON.stringify({ invoiceId }),
+  });
+}
+
+export interface PaymentVerificationOutcome {
+  verified: boolean;
+  alreadyVerified: boolean;
+  paymentId: number;
+  invoiceId: number | null;
+  invoiceStatus: string | null;
+  subscriptionStatus: string | null;
+  reason?: string;
+}
+
+/**
+ * Server-side verification after the gateway success redirect — the
+ * backend validates val_id against the gateway; the redirect itself
+ * proves nothing.
+ */
+export async function verifyPayment(
+  businessId: number,
+  paymentId: number,
+  valId: string,
+): Promise<ApiResult<PaymentVerificationOutcome>> {
+  return request(
+    `/api/businesses/${businessId}/payments/${paymentId}/verify`,
+    { method: "POST", businessId, body: JSON.stringify({ valId }) },
+  );
+}
+
+export async function reportPaymentOutcome(
+  businessId: number,
+  paymentId: number,
+  outcome: "failed" | "canceled",
+): Promise<ApiResult<unknown>> {
+  return request(
+    `/api/businesses/${businessId}/payments/${paymentId}/outcome`,
+    { method: "POST", businessId, body: JSON.stringify({ outcome }) },
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Public plan catalog (for the change-plan grid)
 // ---------------------------------------------------------------------------
 
