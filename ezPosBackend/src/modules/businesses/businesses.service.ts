@@ -12,6 +12,7 @@ import { addDays, slugifyBusinessName } from "../../utils/subscription.js";
 import { BadRequestError, NotFoundError } from "../../utils/handleError.js";
 import { computeSubscriptionState, type SubscriptionState } from "../../utils/subscription.js";
 import { createRoleWithPermissionsInTx, ensureDefaultRolesInTx } from "../roles/roles.service.js";
+import { recordEvent } from "../subscriptions/subscription.service.js";
 import { DEFAULT_ROLE_PERMISSIONS } from "../../rbac/permissions.js";
 import type { CreateBusinessInput, UpdateBusinessInput } from "./businesses.validation.js";
 
@@ -110,12 +111,21 @@ async function activateTrialInTx(
       currentPeriodEnd: addDays(now, env.trialDays),
     })
     .returning({
+      id: subscriptions.id,
       status: subscriptions.status,
       currentPeriodEnd: subscriptions.currentPeriodEnd,
     });
   if (!subscription) {
     throw new Error("Subscription insert returned no row.");
   }
+  await recordEvent(tx, {
+    subscriptionId: subscription.id,
+    eventType: "trial_started",
+    fromStatus: null,
+    toStatus: "trialing",
+    actor: { type: "system" },
+    metadata: { planId: plan.id, trialDays: env.trialDays },
+  });
 
   const state = computeSubscriptionState(subscription);
   return { ...state, trialSkipped: false };

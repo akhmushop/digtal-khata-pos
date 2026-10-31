@@ -26,8 +26,15 @@ export const subscriptionStatusEnum = pgEnum("subscription_status", [
   "trialing",
   "active",
   "past_due",
+  "suspended",
   "canceled",
   "expired",
+]);
+
+export const subscriptionActorEnum = pgEnum("subscription_actor", [
+  "customer",
+  "admin",
+  "system",
 ]);
 
 export const invitationStatusEnum = pgEnum("invitation_status", [

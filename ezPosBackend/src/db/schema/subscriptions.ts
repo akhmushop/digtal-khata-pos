@@ -31,6 +31,12 @@ export const subscriptions = pgTable(
     }).notNull(),
     cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false).notNull(),
     canceledAt: timestamp("canceled_at", { withTimezone: true }),
+    /** Scheduled downgrade/cycle change — applied at renewal time. */
+    pendingPlanId: integer("pending_plan_id").references(
+      () => subscriptionPlans.id,
+      { onDelete: "set null" },
+    ),
+    suspendedAt: timestamp("suspended_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   },

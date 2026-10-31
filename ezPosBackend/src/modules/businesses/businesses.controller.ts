@@ -9,6 +9,8 @@ import {
   updateBusinessSchema,
 } from "./businesses.validation.js";
 import { sendSafeError } from "../../utils/safeError.js";
+import { getEntitlements, getBusinessUsage } from "../../services/entitlements.js";
+import { getSubscriptionHistory } from "../subscriptions/subscription.service.js";
 
 export async function createBusiness(req: Request, res: Response) {
   try {
@@ -82,15 +84,31 @@ export async function updateBusiness(req: Request, res: Response) {
 
 export async function getBusinessSubscription(req: Request, res: Response) {
   try {
+    if (!req.user || !req.membership) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Authentication required." });
+    }
     if (!req.subscriptionAccess) {
       return res.status(500).json({
         success: false,
         message: "Subscription state was not evaluated for this request.",
       });
     }
+    const businessId = req.membership.businessId;
+    // Portal-ready payload: access state plus the plan's entitlements, the
+    // business's usage against plan limits, and the lifecycle audit trail.
+    const [entitlements, usage, history] = await Promise.all([
+      getEntitlements(businessId),
+      getBusinessUsage(businessId),
+      getSubscriptionHistory(businessId),
+    ]);
     return res.status(200).json({
       success: true,
       subscription: req.subscriptionAccess,
+      plan: entitlements.plan,
+      usage,
+      events: history,
     });
   } catch (err) {
     return sendSafeError(

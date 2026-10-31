@@ -44,6 +44,9 @@ export const env = {
   trialPlanSlug: process.env.TRIAL_PLAN_SLUG?.trim() || "free-trial",
   accessTokenTtlMinutes: optionalInt("ACCESS_TOKEN_TTL_MINUTES", 15),
   refreshTokenTtlDays: optionalInt("REFRESH_TOKEN_TTL_DAYS", 7),
+  /** Ops-tunable rate-limit ceilings (requests per 15-minute window). */
+  authRateLimitMax: optionalInt("AUTH_RATE_LIMIT_MAX", 20),
+  refreshRateLimitMax: optionalInt("REFRESH_RATE_LIMIT_MAX", 60),
   emailVerificationTokenTtlHours: optionalInt(
     "EMAIL_VERIFICATION_TOKEN_TTL_HOURS",
     24,

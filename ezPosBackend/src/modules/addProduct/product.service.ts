@@ -26,6 +26,7 @@ import { inventoryBatches } from "../../db/schema/inventoryBatches.js";
 import type { PgTransaction } from "drizzle-orm/pg-core";
 import type { NodePgQueryResultHKT } from "drizzle-orm/node-postgres";
 import { inventoryStock } from "../../db/schema/inventoryStock.js";
+import { assertWithinProductLimit } from "../../services/entitlements.js";
 import type { AddCategorySchemaType } from "./schemas/category.schema.js";
 import type { BrandSchemaType } from "./schemas/brand.schema.js";
 import type { UnitSchemaType } from "./schemas/unit.schema.js";
@@ -445,6 +446,9 @@ export async function createProduct(
     // Propagate the transaction result so the API response can carry the new
     // product's id (the controller exposes it as data.productId).
     return await db.transaction(async (tx) => {
+      // Plan limit: active products vs the subscription plan's maxProducts,
+      // checked inside the insert transaction (advisory-locked).
+      await assertWithinProductLimit(businessId, tx);
       await validateProductReferences(tx, businessId, data);
 
       validateProductRules(data);

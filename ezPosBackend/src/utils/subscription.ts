@@ -20,14 +20,24 @@ export type SubscriptionStatusValue =
   | "trialing"
   | "active"
   | "past_due"
+  | "suspended"
   | "canceled"
   | "expired";
+
+/**
+ * How long a `past_due` subscription keeps full access while the customer
+ * completes payment (the dunning grace period). After it lapses the account
+ * drops to read-only until the subscription is renewed.
+ */
+export const PAST_DUE_GRACE_DAYS = 7;
 
 export interface SubscriptionState {
   status: SubscriptionStatusValue;
   accessMode: SubscriptionAccessMode;
   trial: boolean;
   currentPeriodEnd: Date | null;
+  /** Set when status is past_due: when the grace period ends. */
+  graceEndsAt: Date | null;
 }
 
 /**
@@ -35,12 +45,14 @@ export interface SubscriptionState {
  * stored period end — never client-supplied values or the browser clock.
  *
  - `trialing` within its period or an `active` subscription → full access.
- - Anything else (expired trial, past_due, canceled, or no subscription)
+ - `past_due` → full access for PAST_DUE_GRACE_DAYS after the period end,
+   then read-only.
+ - Anything else (expired trial, suspended, canceled, or no subscription)
    → read-only until a valid paid/active subscription is verified.
  */
 export function computeSubscriptionState(
   subscription: {
-    status: "trialing" | "active" | "past_due" | "canceled" | "expired";
+    status: "trialing" | "active" | "past_due" | "suspended" | "canceled" | "expired";
     currentPeriodEnd: Date;
   } | null,
   now: Date = new Date(),
@@ -51,11 +63,11 @@ export function computeSubscriptionState(
       accessMode: "read_only",
       trial: false,
       currentPeriodEnd: null,
+      graceEndsAt: null,
     };
   }
 
-  const periodValid =
-    now.getTime() <= subscription.currentPeriodEnd.getTime();
+  const periodValid = now.getTime() <= subscription.currentPeriodEnd.getTime();
 
   if (subscription.status === "trialing") {
     return periodValid
@@ -64,12 +76,14 @@ export function computeSubscriptionState(
           accessMode: "full",
           trial: true,
           currentPeriodEnd: subscription.currentPeriodEnd,
+          graceEndsAt: null,
         }
       : {
           status: "expired",
           accessMode: "read_only",
           trial: true,
           currentPeriodEnd: subscription.currentPeriodEnd,
+          graceEndsAt: null,
         };
   }
 
@@ -79,6 +93,22 @@ export function computeSubscriptionState(
       accessMode: "full",
       trial: false,
       currentPeriodEnd: subscription.currentPeriodEnd,
+      graceEndsAt: null,
+    };
+  }
+
+  if (subscription.status === "past_due") {
+    const graceEndsAt = addDays(
+      subscription.currentPeriodEnd,
+      PAST_DUE_GRACE_DAYS,
+    );
+    const graceValid = now.getTime() <= graceEndsAt.getTime();
+    return {
+      status: "past_due",
+      accessMode: graceValid ? "full" : "read_only",
+      trial: false,
+      currentPeriodEnd: subscription.currentPeriodEnd,
+      graceEndsAt,
     };
   }
 
@@ -87,9 +117,33 @@ export function computeSubscriptionState(
     accessMode: "read_only",
     trial: false,
     currentPeriodEnd: subscription.currentPeriodEnd,
+    graceEndsAt: null,
   };
 }
 
 export function addDays(date: Date, days: number): Date {
   return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
+}
+
+/**
+ * Proration for an immediate plan upgrade: the price difference applied to
+ * the REMAINING fraction of the current period. Never negative — a downgrade
+ * of unused time is not credited (it is scheduled for period end instead).
+ * Works in integer cents to avoid float drift; result is a decimal amount.
+ */
+export function computeUpgradeCharge(
+  currentPrice: number,
+  newPrice: number,
+  periodStart: Date,
+  periodEnd: Date,
+  now: Date,
+): number {
+  const totalMs = Math.max(0, periodEnd.getTime() - periodStart.getTime());
+  const remainingMs = Math.max(0, periodEnd.getTime() - now.getTime());
+  if (totalMs === 0 || remainingMs === 0) return 0;
+  const currentCents = Math.round(currentPrice * 100);
+  const newCents = Math.round(newPrice * 100);
+  const diffCents = Math.max(0, newCents - currentCents);
+  const chargeCents = Math.round((diffCents * remainingMs) / totalMs);
+  return chargeCents / 100;
 }

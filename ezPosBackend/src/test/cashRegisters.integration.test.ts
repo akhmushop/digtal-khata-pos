@@ -37,7 +37,14 @@ describe("cash registers integration", { skip: !runIntegration }, () => {
     await client.query(
       `INSERT INTO subscription_plans (name, slug, interval, price, currency, is_active)
        VALUES ('Free trial', 'free-trial', 'monthly', 0, 'BDT', true)
-       ON CONFLICT (slug) DO NOTHING`,
+       ON CONFLICT (slug) DO UPDATE
+       -- Test-env normalization: the shared trial plan is unlimited and
+       -- full-featured so POS suites exercise POS logic. Plan-limit and
+       -- feature gates are covered by dedicated plans in
+       -- subscriptionCore.integration.test.ts.
+       SET limits = NULL,
+           features = '{"multiLocation":true,"advancedReports":true}'::jsonb,
+           is_active = true`,
     );
     await client.end();
 

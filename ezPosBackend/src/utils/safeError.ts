@@ -36,9 +36,11 @@ export function sendSafeError(
       .json({ success: false, message: err.message });
   }
   if (err instanceof ForbiddenError) {
-    return res
-      .status(403)
-      .json({ success: false, message: err.message });
+    return res.status(403).json({
+      success: false,
+      message: err.message,
+      ...(err.code ? { code: err.code } : {}),
+    });
   }
   if (err instanceof ConflictError) {
     return res

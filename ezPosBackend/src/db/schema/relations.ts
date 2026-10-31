@@ -44,6 +44,8 @@ import { subscriptionPayments } from "./subscriptionPayments.js";
 import { refreshTokens } from "./refreshTokens.js";
 import { emailVerificationTokens } from "./emailVerificationTokens.js";
 import { supportTickets, supportTicketMessages } from "./supportTickets.js";
+import { subscriptionEvents } from "./subscriptionEvents.js";
+import { saasInvoices } from "./saasInvoices.js";
 import { passwordResetTokens } from "./passwordResetTokens.js";
 import { businessInvitations } from "./businessInvitations.js";
 import { documentSequences } from "./documentSequences.js";
@@ -493,6 +495,9 @@ export const subscriptionPlansRelations = relations(
   subscriptionPlans,
   ({ many }) => ({
     subscriptions: many(subscriptions),
+    pendingPlanSubscriptions: many(subscriptions, {
+      relationName: "subscriptions_pending_plan",
+    }),
   }),
 );
 
@@ -507,7 +512,14 @@ export const subscriptionsRelations = relations(
       fields: [subscriptions.planId],
       references: [subscriptionPlans.id],
     }),
+    pendingPlan: one(subscriptionPlans, {
+      fields: [subscriptions.pendingPlanId],
+      references: [subscriptionPlans.id],
+      relationName: "subscriptions_pending_plan",
+    }),
     payments: many(subscriptionPayments),
+    events: many(subscriptionEvents),
+    invoices: many(saasInvoices),
   }),
 );
 

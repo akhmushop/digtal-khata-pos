@@ -14,6 +14,7 @@ import {
   NotFoundError,
 } from "../../utils/handleError.js";
 import type { CreateLocationInput, UpdateLocationInput } from "./locations.validation.js";
+import { assertWithinLocationLimit } from "../../services/entitlements.js";
 
 export interface LocationSummary {
   id: number;
@@ -94,6 +95,9 @@ export async function createLocation(
   const makeDefault = isFirstLocation || input.isDefault === true;
 
   return db.transaction(async (tx) => {
+    // Plan limit: location count vs the subscription plan's maxLocations,
+    // checked inside the insert transaction (advisory-locked).
+    await assertWithinLocationLimit(businessId, tx);
     if (makeDefault && !isFirstLocation) {
       await tx
         .update(locations)

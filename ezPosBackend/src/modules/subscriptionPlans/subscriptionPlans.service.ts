@@ -13,12 +13,17 @@ export async function getPublicSubscriptionPlans() {
       id: subscriptionPlans.id,
       name: subscriptionPlans.name,
       slug: subscriptionPlans.slug,
+      description: subscriptionPlans.description,
       interval: subscriptionPlans.interval,
       price: subscriptionPlans.price,
       currency: subscriptionPlans.currency,
       limits: subscriptionPlans.limits,
+      features: subscriptionPlans.features,
+      trialDays: subscriptionPlans.trialDays,
+      isPopular: subscriptionPlans.isPopular,
+      supportLevel: subscriptionPlans.supportLevel,
     })
     .from(subscriptionPlans)
     .where(eq(subscriptionPlans.isActive, true))
-    .orderBy(asc(subscriptionPlans.price));
+    .orderBy(asc(subscriptionPlans.sortOrder), asc(subscriptionPlans.price));
 }

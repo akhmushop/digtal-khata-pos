@@ -98,7 +98,11 @@ export function buildApp() {
     }
 
     if (err instanceof ForbiddenError) {
-      return res.status(403).json({ success: false, message: err.message });
+      return res.status(403).json({
+        success: false,
+        message: err.message,
+        ...(err.code ? { code: err.code } : {}),
+      });
     }
 
     // Malformed JSON bodies surface as SyntaxError from express.json().
