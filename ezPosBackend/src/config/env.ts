@@ -91,6 +91,8 @@ export const env = {
   /** Background sweeps (trial expiry, reminders, grace suspension). */
   jobsEnabled: process.env.JOBS_ENABLED?.trim() !== "false",
   jobsIntervalMinutes: optionalInt("JOBS_INTERVAL_MINUTES", 60),
+  /** Storefront API per-key request ceiling per minute. */
+  storefrontRateLimitPerMinute: optionalInt("STOREFRONT_RATE_LIMIT_PER_MINUTE", 600),
   emailVerificationTokenTtlHours: optionalInt(
     "EMAIL_VERIFICATION_TOKEN_TTL_HOURS",
     24,

@@ -27,6 +27,7 @@ import supportPortalRouter from "./modules/support/supportPortal.routes.js";
 import subscriptionsPortalRouter from "./modules/subscriptions/subscriptions.routes.js";
 import paymentsRouter from "./modules/payments/payments.routes.js";
 import saasAdminRouter from "./modules/saasAdmin/saasAdmin.routes.js";
+import storefrontRouter from "./modules/storefront/storefront.routes.js";
 import {
   BadRequestError,
   ConflictError,
@@ -100,6 +101,7 @@ export function buildApp() {
   app.use("/", subscriptionsPortalRouter);
   app.use("/", paymentsRouter);
   app.use("/", saasAdminRouter);
+  app.use("/", storefrontRouter);
 
   // error handling
   app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {

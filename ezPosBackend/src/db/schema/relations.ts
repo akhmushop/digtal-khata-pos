@@ -49,6 +49,7 @@ import { saasInvoices } from "./saasInvoices.js";
 import { integrations } from "./integrations.js";
 import { inventoryReservations } from "./inventoryReservations.js";
 import { channelInventoryAllocations } from "./channelInventoryAllocations.js";
+import { storefrontApiKeys } from "./storefrontApiKeys.js";
 import { passwordResetTokens } from "./passwordResetTokens.js";
 import { businessInvitations } from "./businessInvitations.js";
 import { documentSequences } from "./documentSequences.js";
@@ -381,6 +382,20 @@ export const channelInventoryAllocationsRelations = relations(
     }),
     integration: one(integrations, {
       fields: [channelInventoryAllocations.integrationId],
+      references: [integrations.id],
+    }),
+  }),
+);
+
+export const storefrontApiKeysRelations = relations(
+  storefrontApiKeys,
+  ({ one }) => ({
+    business: one(businesses, {
+      fields: [storefrontApiKeys.businessId],
+      references: [businesses.id],
+    }),
+    integration: one(integrations, {
+      fields: [storefrontApiKeys.integrationId],
       references: [integrations.id],
     }),
   }),

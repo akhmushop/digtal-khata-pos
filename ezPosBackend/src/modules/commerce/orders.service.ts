@@ -45,9 +45,9 @@ export interface OnlineOrderLineInput {
 
 export interface OnlineOrderCustomerInput {
   name: string;
-  phone?: string | null;
-  email?: string | null;
-  address?: string | null;
+  phone?: string | null | undefined;
+  email?: string | null | undefined;
+  address?: string | null | undefined;
 }
 
 export interface CreateOnlineOrderInput {
