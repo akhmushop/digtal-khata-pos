@@ -785,3 +785,98 @@ export async function listPayments(
     .orderBy(desc(subscriptionPayments.id))
     .limit(100);
 }
+
+/**
+ * Admin override: extend the current period by N days without touching the
+ * plan or issuing an invoice (goodwill / support adjustments).
+ */
+export async function extendSubscription(
+  subscriptionId: number,
+  days: number,
+  actor: Actor,
+): Promise<Date> {
+  return db.transaction(async (tx) => {
+    const [subscription] = await tx
+      .select({
+        id: subscriptions.id,
+        status: subscriptions.status,
+        currentPeriodEnd: subscriptions.currentPeriodEnd,
+      })
+      .from(subscriptions)
+      .where(eq(subscriptions.id, subscriptionId))
+      .for("update");
+    if (!subscription) {
+      throw new NotFoundError("Subscription not found.");
+    }
+    if (subscription.status === "canceled") {
+      throw new BadRequestError("Cannot extend a canceled subscription.");
+    }
+    const newEnd = addDays(subscription.currentPeriodEnd, days);
+    await tx
+      .update(subscriptions)
+      .set({ currentPeriodEnd: newEnd, updatedAt: new Date() })
+      .where(eq(subscriptions.id, subscriptionId));
+    await recordEvent(tx, {
+      subscriptionId,
+      eventType: "extended",
+      fromStatus: subscription.status,
+      toStatus: subscription.status,
+      actor,
+      metadata: { days, newPeriodEnd: newEnd.toISOString() },
+    });
+    return newEnd;
+  });
+}
+
+/**
+ * Admin override: grant a fresh trial to a business with NO open
+ * subscription (marketing / support goodwill).
+ */
+export async function grantTrial(
+  businessId: number,
+  days: number,
+  actor: Actor,
+): Promise<OpenSubscription> {
+  return db.transaction(async (tx) => {
+    const existing = await getOpenSubscription(businessId, tx);
+    if (existing) {
+      throw new ConflictError(
+        "This business already has an open subscription.",
+      );
+    }
+    const [trialPlan] = await tx
+      .select({ id: subscriptionPlans.id })
+      .from(subscriptionPlans)
+      .where(eq(subscriptionPlans.slug, "free-trial"));
+    if (!trialPlan) {
+      throw new NotFoundError(
+        'No "free-trial" plan row exists — seed it before granting trials.',
+      );
+    }
+    const now = new Date();
+    const [created] = await tx
+      .insert(subscriptions)
+      .values({
+        businessId,
+        planId: trialPlan.id,
+        status: "trialing",
+        startsAt: now,
+        currentPeriodStart: now,
+        currentPeriodEnd: addDays(now, days),
+      })
+      .returning({ id: subscriptions.id });
+    if (!created) {
+      throw new Error("Subscription insert returned no row.");
+    }
+    await recordEvent(tx, {
+      subscriptionId: created.id,
+      eventType: "trial_granted",
+      fromStatus: null,
+      toStatus: "trialing",
+      actor,
+      metadata: { days },
+    });
+    const subscription = await getOpenSubscription(businessId, tx);
+    return subscription!;
+  });
+}
