@@ -1,0 +1,81 @@
+# ezPos SaaS production stack. Copy .env.production.example to .env first.
+# TLS is terminated by the nginx edge (see nginx/ezpos.conf + certbot).
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ezpos}
+      POSTGRES_USER: ${POSTGRES_USER:-ezpos}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ezpos}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./ezPosBackend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-ezpos}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ezpos}
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?set AUTH_JWT_SECRET in .env}
+      NODE_ENV: production
+      TRUST_PROXY: "1"
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://ezpos.com,https://app.ezpos.com}
+      APP_URL: ${APP_URL:-https://ezpos.com}
+      BACKEND_URL: ${BACKEND_URL:-https://api.ezpos.com}
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-sslcommerz}
+      SSLCOMMERZ_STORE_ID: ${SSLCOMMERZ_STORE_ID:-}
+      SSLCOMMERZ_STORE_PASSWORD: ${SSLCOMMERZ_STORE_PASSWORD:-}
+      SSLCOMMERZ_SANDBOX: ${SSLCOMMERZ_SANDBOX:-true}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-resend}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      JOBS_ENABLED: ${JOBS_ENABLED:-true}
+    # Migrations run once via: docker compose run --rm backend npm run db:migrate
+
+  website:
+    build:
+      context: ./ezPosWebsite
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${API_ORIGIN:-https://api.ezpos.com}
+        NEXT_PUBLIC_POS_URL: ${POS_ORIGIN:-https://app.ezpos.com}
+        NEXT_PUBLIC_SITE_URL: ${SITE_ORIGIN:-https://ezpos.com}
+        API_BASE_URL: http://backend:3000
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  pos:
+    build:
+      context: ./pos
+      args:
+        VITE_API_URL: ${API_ORIGIN:-https://api.ezpos.com}/api
+        VITE_WEBSITE_URL: ${SITE_ORIGIN:-https://ezpos.com}
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/ezpos.conf:/etc/nginx/conf.d/default.conf:ro
+      - certbot-webroot:/var/www/certbot:ro
+      - certbot-certs:/etc/letsencrypt:ro
+    depends_on:
+      - website
+      - pos
+      - backend
+
+volumes:
+  pgdata:
+  certbot-webroot:
+  certbot-certs:

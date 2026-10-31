@@ -56,6 +56,16 @@ export function buildApp() {
   // Gateway IPNs (SSLCommerz) post form-urlencoded payloads.
   app.use(express.urlencoded({ extended: false }));
 
+  // Baseline security headers (kept dependency-free; a CSP belongs to the
+  // frontends, which serve the HTML).
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    void req;
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    next();
+  });
+
   // Liveness/readiness probe for load balancers and container runtimes.
   app.get("/healthz", async (_req: Request, res: Response) => {
     try {
