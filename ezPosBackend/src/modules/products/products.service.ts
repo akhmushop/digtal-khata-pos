@@ -40,6 +40,7 @@ type StockAdjustment = {
 
 export async function adjustVariantStock(
   businessId: number,
+  locationId: number,
   variantId: number,
   adjustment: StockAdjustment,
 ) {
@@ -63,6 +64,7 @@ export async function adjustVariantStock(
       throw new NotFoundError("Product variant not found.");
     }
 
+    // Adjustments are location-scoped: the caller's verified location.
     const [stock] = await tx
       .select()
       .from(inventoryStock)
@@ -70,6 +72,7 @@ export async function adjustVariantStock(
         and(
           eq(inventoryStock.variantId, variantId),
           eq(inventoryStock.businessId, businessId),
+          eq(inventoryStock.locationId, locationId),
         ),
       )
       .for("update");
@@ -331,6 +334,7 @@ export async function adjustVariantStock(
         and(
           eq(inventoryStock.variantId, variantId),
           eq(inventoryStock.businessId, businessId),
+          eq(inventoryStock.locationId, locationId),
         ),
       )
       .returning({ quantity: inventoryStock.quantity });
@@ -356,7 +360,7 @@ export async function adjustVariantStock(
   });
 }
 
-export async function getAllProducts(businessId: number) {
+export async function getAllProducts(businessId: number, locationId: number) {
   return db
     .select({
       ...getTableColumns(products),
@@ -406,7 +410,17 @@ export async function getAllProducts(businessId: number) {
     })
     .from(products)
     .leftJoin(productVariants, eq(productVariants.productId, products.id))
-    .leftJoin(inventoryStock, eq(inventoryStock.variantId, productVariants.id))
+    // Stock shown is the ACTIVE LOCATION's stock — the catalog is shared,
+    // quantities are not. Transfer-created rows for other locations are
+    // excluded here.
+    .leftJoin(
+      inventoryStock,
+      and(
+        eq(inventoryStock.variantId, productVariants.id),
+        eq(inventoryStock.businessId, businessId),
+        eq(inventoryStock.locationId, locationId),
+      ),
+    )
     .where(eq(products.businessId, businessId))
     .groupBy(products.id);
 }

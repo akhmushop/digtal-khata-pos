@@ -19,93 +19,225 @@ import { VariantManager } from "@/features/products/pages/Variants";
 import { StockAdjustment } from "@/features/products/pages/StockAdjustment";
 import { DueManagementPage } from "@/features/due-management/DueManagementPage";
 import ReportsHub from "@/features/reports/pages/ReportsHub";
+import ForbiddenPage from "@/pages/ForbiddenPage";
+import { RequirePermission } from "@/components/common/PermissionGuard";
+import { UsersPage } from "@/features/users/pages/UsersPage";
+import { LocationsPage } from "@/features/locations/pages/LocationsPage";
+import { StockTransfersPage } from "@/features/stockTransfers/pages/StockTransfersPage";
+import { RolesPage } from "@/features/roles/pages/RolesPage";
+
+const REPORTS_PERMISSIONS = [
+  "reports.sales.view",
+  "reports.purchase.view",
+  "reports.profit.view",
+  "reports.expense.view",
+  "reports.inventory.view",
+  "reports.financial.view",
+];
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Pos />,
+    element: (
+      <RequirePermission permission="pos.view">
+        <Pos />
+      </RequirePermission>
+    ),
   },
   {
     element: <AppLayout />,
     children: [
       {
         path: "/due-management",
-        element: <DueManagementPage />,
-        
+        element: (
+          <RequirePermission
+            anyPermission={["customers.view_ledger", "suppliers.view_ledger"]}
+          >
+            <DueManagementPage />
+          </RequirePermission>
+        ),
       },
       {
         path: "/reports",
-        element: <ReportsHub />,
+        element: (
+          <RequirePermission anyPermission={REPORTS_PERMISSIONS}>
+            <ReportsHub />
+          </RequirePermission>
+        ),
       },
       {
         path: "/product",
-        element: <Products />,
+        element: (
+          <RequirePermission permission="products.view">
+            <Products />
+          </RequirePermission>
+        ),
       },
       {
         path: "/product/stock-adjustment",
-        element: <StockAdjustment />,
+        element: (
+          <RequirePermission permission="inventory.adjust">
+            <StockAdjustment />
+          </RequirePermission>
+        ),
       },
       {
         path: "/categories",
-        element: <Categories />,
+        element: (
+          <RequirePermission permission="products.view">
+            <Categories />
+          </RequirePermission>
+        ),
       },
       {
         path: "/brands",
-        element: <Brands />,
+        element: (
+          <RequirePermission permission="products.view">
+            <Brands />
+          </RequirePermission>
+        ),
       },
       {
         path: "/units",
-        element: <Units />,
+        element: (
+          <RequirePermission permission="products.view">
+            <Units />
+          </RequirePermission>
+        ),
       },
       {
         path: "/variants",
-        element: <VariantManager />,
+        element: (
+          <RequirePermission permission="products.manage_variants">
+            <VariantManager />
+          </RequirePermission>
+        ),
       },
       {
         path: "/suppliers",
-        element: <Suppliers />,
+        element: (
+          <RequirePermission permission="suppliers.view">
+            <Suppliers />
+          </RequirePermission>
+        ),
       },
       {
         path: "/dashboard",
-        element: <DashboardComponent />,
+        element: (
+          <RequirePermission permission="dashboard.view">
+            <DashboardComponent />
+          </RequirePermission>
+        ),
       },
       {
         path: "/sales",
-        element: <Sales />,
+        element: (
+          <RequirePermission permission="sales.view">
+            <Sales />
+          </RequirePermission>
+        ),
       },
       {
         path: "/expense",
-        element: <Expense />,
+        element: (
+          <RequirePermission permission="expenses.view">
+            <Expense />
+          </RequirePermission>
+        ),
       },
       {
         path: "/purchases",
-        element: <PurchasesOrder />,
+        element: (
+          <RequirePermission permission="purchases.create">
+            <PurchasesOrder />
+          </RequirePermission>
+        ),
       },
       {
         path: "/purchases-list",
-        element: <PurchasesList />,
+        element: (
+          <RequirePermission permission="purchases.view">
+            <PurchasesList />
+          </RequirePermission>
+        ),
       },
       {
         path: "/customer",
-        element: <CustomersPage />,
+        element: (
+          <RequirePermission permission="customers.view">
+            <CustomersPage />
+          </RequirePermission>
+        ),
       },
       {
         path: "/receive-items/:id",
-        element: <ReceiveItems />,
+        element: (
+          <RequirePermission permission="purchases.receive">
+            <ReceiveItems />
+          </RequirePermission>
+        ),
       },
       {
         path: "/purchase-return/:id",
-        element: <PurchaseViewItems />,
+        element: (
+          <RequirePermission permission="purchases.return">
+            <PurchaseViewItems />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "/locations",
+        element: (
+          <RequirePermission permission="locations.view">
+            <LocationsPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "/transfers",
+        element: (
+          <RequirePermission permission="inventory.transfer">
+            <StockTransfersPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "/users",
+        element: (
+          <RequirePermission permission="users.view">
+            <UsersPage />
+          </RequirePermission>
+        ),
+      },
+      {
+        path: "/roles",
+        element: (
+          <RequirePermission permission="roles.view">
+            <RolesPage />
+          </RequirePermission>
+        ),
       },
     ],
   },
   {
     path: "/product/addproduct",
-    element: <ProductStockForm />,
+    element: (
+      <RequirePermission permission="products.create">
+        <ProductStockForm />
+      </RequirePermission>
+    ),
   },
   {
     path: "/product/:id/edit",
-    element: <ProductStockForm />,
+    element: (
+      <RequirePermission permission="products.edit">
+        <ProductStockForm />
+      </RequirePermission>
+    ),
+  },
+  {
+    path: "/403",
+    element: <ForbiddenPage />,
   },
 ]);
 

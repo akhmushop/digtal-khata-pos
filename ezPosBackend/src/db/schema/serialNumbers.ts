@@ -14,6 +14,7 @@ import { inventoryBatches } from "./inventoryBatches.js";
 import { purchaseItems } from "./purchaseItems.js";
 import { saleItems } from "./saleItems.js";
 import { businesses } from "./businesses.js";
+import { locations } from "./locations.js";
 export const serialStatusEnum = pgEnum("serial_status", [
   "in_stock", // 1. Sitting on the shelf, available to be sold.
   "reserved", // 2. Held for a specific customer order or quote (not available for normal sale).
@@ -37,8 +38,18 @@ export const serialNumbers = pgTable(
     purchaseItemId: integer("purchase_item_id"),
     saleItemId: integer("sale_item_id"),
     soldAt: timestamp("sold_at", { withTimezone: true }),
+    // Owning outlet for this transaction. Nullable for legacy rows; the
+    // application always sets it on new writes. Composite FK guarantees the
+    // location belongs to the same business.
+    locationId: integer("location_id"),
   },
   (table) => [
+    foreignKey({
+      columns: [table.locationId, table.businessId],
+      foreignColumns: [locations.id, locations.businessId],
+      name: "serial_numbers_location_business_fkey",
+    }),
+    index("serial_numbers_business_location_idx").on(table.businessId, table.locationId),
     index("serial_numbers_business_id_idx").on(table.businessId),
     // Per-business uniqueness — the same physical serial may legitimately
     // appear in two businesses (e.g. resale). Was globally unique.

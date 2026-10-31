@@ -1,19 +1,21 @@
 import {
+  foreignKey,
   index,
   integer,
   numeric,
+  pgEnum,
+  pgSequence,
   pgTable,
   serial,
   text,
   timestamp,
   unique,
   varchar,
-  pgSequence,
-  pgEnum,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { customers } from "./customers.js";
 import { businesses } from "./businesses.js";
+import { locations } from "./locations.js";
 export const paymentStatusEnum = pgEnum("payment_status", [
   "paid",
   "partial",
@@ -38,6 +40,10 @@ export const sales = pgTable(
       .references(() => businesses.id),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     status: saleStatusEnum("status").default("completed").notNull(),
+    // Owning outlet for this transaction. Nullable for legacy rows; the
+    // application always sets it on new writes. Composite FK guarantees the
+    // location belongs to the same business.
+    locationId: integer("location_id"),
     invoiceNumber: varchar("invoice_number", { length: 50 })
       .notNull()
       .default(
@@ -63,6 +69,12 @@ export const sales = pgTable(
     customerId: integer("customer_id").references(() => customers.id),
   },
   (table) => [
+    foreignKey({
+      columns: [table.locationId, table.businessId],
+      foreignColumns: [locations.id, locations.businessId],
+      name: "sales_location_business_fkey",
+    }),
+    index("sales_business_location_idx").on(table.businessId, table.locationId),
     index("sales_business_id_idx").on(table.businessId),
     // Candidate key for composite FKs from sale_items / sale_payments /
     // sale_refunds / serial_numbers.

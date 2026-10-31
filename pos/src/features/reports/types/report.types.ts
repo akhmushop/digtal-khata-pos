@@ -16,6 +16,9 @@ export interface DateRange {
 export interface ReportFilters {
   period: ReportPeriod;
   dateRange?: DateRange;
+  /** Undefined = all accessible locations; a value filters server-side
+   *  after access validation (never trusted blindly). */
+  locationId?: number;
   customerId?: number;
   supplierId?: number;
   categoryId?: number;
@@ -369,7 +372,34 @@ export interface ShrinkageReportData {
 }
 
 // 4. Shift & Register Close (Z-Report)
+export interface RegisterSessionZRow {
+  sessionId: number;
+  registerName: string;
+  locationName: string;
+  cashierName: string;
+  status: string;
+  openingCash: number;
+  cashSales: number;
+  nonCashSales: number;
+  cashIn: number;
+  cashOut: number;
+  expectedCash: number;
+  countedCash: number | null;
+  difference: number | null;
+  refunds: number;
+  openedAt: string | null;
+  closedAt: string | null;
+}
+
 export interface RegisterCloseData {
+  sessions: RegisterSessionZRow[];
+  totals: {
+    sessionCount: number;
+    expectedCash: number;
+    countedCash: number;
+    difference: number;
+    cashSales: number;
+  };
   cashSales: {
     cashAmount: number;
     cashTxCount: number;

@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import * as purchasesService from "./purchases.service.js";
 import { getBusinessId } from "../../middleware/business.js";
+import { getLocationId } from "../../middleware/location.js";
 import { sendSafeError } from "../../utils/safeError.js";
 import { createPurchaseSchema } from "./schemas/purchase.schema.js";
 import { receiveItemsFormSchema } from "./schemas/receiveItem.schema.js";
@@ -36,7 +37,10 @@ export async function getPurchasesSummary(req: Request, res: Response) {
 }
 export async function getPurchasesItems(req: Request, res: Response) {
   try {
-    const result = await purchasesService.getPurchasesItems(getBusinessId(req));
+    const result = await purchasesService.getPurchasesItems(
+      getBusinessId(req),
+      getLocationId(req),
+    );
     res.status(200).json(result);
   } catch (err) {
     sendSafeError(res, err, "Unable to load purchase items.");
@@ -53,6 +57,7 @@ export async function createReceivePurchase(req: Request, res: Response) {
     }
     const receivedItems = await purchasesService.createReceivePurchase(
       getBusinessId(req),
+      getLocationId(req),
       result.data,
     );
     res.status(201).json({

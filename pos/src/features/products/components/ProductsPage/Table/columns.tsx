@@ -11,6 +11,7 @@ import { ProductType } from "@/features/products/product.schema";
 import { getProductStockState } from "../../../utils/getProductStockState";
 import axios from "../../../../../api/axios";
 import { ViewSerialsDialog } from "./data-table";
+import { hasPermission } from "@/auth/sessionStore";
 
 const columnHelper = createColumnHelper<DataTableFeatures, ProductType>();
 const currencyFormatter = new Intl.NumberFormat("en-BD", {
@@ -141,20 +142,26 @@ export const columns = columnHelper.columns([
       );
     },
   }),
-  columnHelper.accessor("variants", {
-    id: "cost",
-    header: () => <div className="text-right">Cost</div>,
-    cell: ({ row }) => (
-      <div className="text-right font-medium">
-        {formatPriceRange(
-          row.original.variants.map(
-            (variant) =>
-              variant.purchaseCost ?? variant.purchasePrice ?? 0,
+  // Purchase cost is permission-gated (products.view_cost) and already
+  // stripped server-side; the column is simply not registered without it.
+  ...(hasPermission("products.view_cost")
+    ? [
+        columnHelper.accessor("variants", {
+          id: "cost",
+          header: () => <div className="text-right">Cost</div>,
+          cell: ({ row }) => (
+            <div className="text-right font-medium">
+              {formatPriceRange(
+                row.original.variants.map(
+                  (variant) =>
+                    variant.purchaseCost ?? variant.purchasePrice ?? 0,
+                ),
+              )}
+            </div>
           ),
-        )}
-      </div>
-    ),
-  }),
+        }),
+      ]
+    : []),
   columnHelper.accessor("variants", {
     id: "price",
     header: () => <div className="text-right">Price</div>,

@@ -2,6 +2,10 @@ import { SignJWT, jwtVerify } from "jose";
 import { and, desc, eq, gt, inArray, isNull } from "drizzle-orm";
 import { db } from "../../db/schema/index.js";
 import { users } from "../../db/schema/users.js";
+import { userRoles } from "../../db/schema/userRoles.js";
+import { rolePermissions } from "../../db/schema/rolePermissions.js";
+import { permissions } from "../../db/schema/permissions.js";
+import { WILDCARD_PERMISSION } from "../../rbac/permissions.js";
 import { refreshTokens } from "../../db/schema/refreshTokens.js";
 import { emailVerificationTokens } from "../../db/schema/emailVerificationTokens.js";
 import { env } from "../../config/env.js";
@@ -110,6 +114,10 @@ export interface BusinessContextSummary {
   businessSlug: string;
   roleSlug: string;
   roleName: string;
+  /** All roles the user holds in this business. */
+  roles: { id: number; name: string; slug: string }[];
+  /** Effective permission keys (the owner holds the "*" wildcard). */
+  permissions: string[];
   subscription: SubscriptionState;
 }
 
@@ -383,6 +391,7 @@ export async function getCurrentUserContext(
       businessId: businesses.id,
       businessName: businesses.name,
       businessSlug: businesses.slug,
+      roleId: businessMemberships.roleId,
       roleSlug: roles.slug,
       roleName: roles.name,
     })
@@ -424,12 +433,113 @@ export async function getCurrentUserContext(
     openSubscriptions.map((sub) => [sub.businessId, sub]),
   );
 
+  // Roles and effective permissions per business. The owner holds the
+  // wildcard ("*") so the account can never be locked out; everyone else
+  // gets the union of their assigned roles' permissions.
+  const assignments: {
+    userId: number;
+    businessId: number;
+    roleId: number;
+    roleName: string;
+    roleSlug: string;
+  }[] =
+    memberships.length === 0
+      ? []
+      : await db
+          .select({
+            userId: userRoles.userId,
+            businessId: userRoles.businessId,
+            roleId: userRoles.roleId,
+            roleName: roles.name,
+            roleSlug: roles.slug,
+          })
+          .from(userRoles)
+          .innerJoin(roles, eq(roles.id, userRoles.roleId))
+          .where(
+            inArray(
+              userRoles.businessId,
+              memberships.map((m) => m.businessId),
+            ),
+          );
+
+  // Permissions must cover EVERY assigned role (union across roles), not
+  // just each membership's primary role.
+  const allRoleIds = [
+    ...new Set([
+      ...assignments.map((a) => a.roleId),
+      ...memberships.map((m) => m.roleId),
+    ]),
+  ];
+  const permissionRows: { roleId: number; key: string }[] =
+    allRoleIds.length === 0
+      ? []
+      : await db
+          .select({ roleId: rolePermissions.roleId, key: permissions.key })
+          .from(rolePermissions)
+          .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
+          .where(inArray(rolePermissions.roleId, allRoleIds));
+
+  const rolesByBusiness = new Map<number, { id: number; name: string; slug: string }[]>();
+  for (const m of memberships) {
+    rolesByBusiness.set(m.businessId, []);
+  }
+  for (const assignment of assignments) {
+    if (assignment.userId !== userId) continue;
+    const list = rolesByBusiness.get(assignment.businessId);
+    if (list && !list.some((r) => r.id === assignment.roleId)) {
+      list.push({
+        id: assignment.roleId,
+        name: assignment.roleName,
+        slug: assignment.roleSlug,
+      });
+    }
+  }
+  const permissionKeysByRole = new Map<number, Set<string>>();
+  for (const row of permissionRows) {
+    const set = permissionKeysByRole.get(row.roleId) ?? new Set<string>();
+    set.add(row.key);
+    permissionKeysByRole.set(row.roleId, set);
+  }
+
   return {
     user: toSafeUser(user),
     businesses: memberships.map((membership) => {
       const sub = subscriptionByBusiness.get(membership.businessId);
+      const permissionsList: string[] =
+        membership.roleSlug === "owner"
+          ? [WILDCARD_PERMISSION]
+          : [
+              ...new Set(
+                assignments
+                  .filter(
+                    (a) =>
+                      a.userId === userId &&
+                      a.businessId === membership.businessId,
+                  )
+                  .flatMap((a) => [
+                    ...(permissionKeysByRole.get(a.roleId) ?? []),
+                  ]),
+              ),
+            ];
+      // Defensive: the membership's primary role is always part of the
+      // effective set even if its user_roles row is somehow missing.
+      if (
+        membership.roleSlug !== "owner" &&
+        permissionsList.length === 0 &&
+        !assignments.some(
+          (a) => a.userId === userId && a.businessId === membership.businessId,
+        )
+      ) {
+        permissionsList.push(
+          ...(permissionKeysByRole.get(membership.roleId) ?? []),
+        );
+      }
+      const { roleId: _primaryRoleId, ...membershipFields } = membership;
+      void _primaryRoleId;
       return {
-        ...membership,
+        ...membershipFields,
+        roles: rolesByBusiness.get(membership.businessId) ?? [],
+        permissions: permissionsList,
         subscription: computeSubscriptionState(sub ?? null),
       };
     }),

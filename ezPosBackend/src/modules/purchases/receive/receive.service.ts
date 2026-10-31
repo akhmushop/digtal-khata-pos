@@ -55,21 +55,26 @@ export async function updateProductVariants(
 export async function insertInventoryStockOnConflictDoUpdate(
   tx: DbTransaction,
   businessId: number,
+  locationId: number,
   variantId: number,
   receiveNow: number,
 ) {
+  // One stock row per (business, variant, location): receiving into one
+  // store never touches another store's stock.
   await tx
     .insert(inventoryStock)
     .values({
       businessId,
+      locationId,
       variantId,
       quantity: receiveNow,
     })
     .onConflictDoUpdate({
-      // PENDING POLICY DECISION (user, unresolved): the stock unique key stays
-      // `variant_id` (single-location model). Conflict rows always belong to
-      // this business because variant_id is tenant-unique.
-      target: inventoryStock.variantId,
+      target: [
+        inventoryStock.businessId,
+        inventoryStock.variantId,
+        inventoryStock.locationId,
+      ],
       set: {
         quantity: sql`
               ${inventoryStock.quantity}
@@ -81,6 +86,7 @@ export async function insertInventoryStockOnConflictDoUpdate(
 export async function insertInventoryMovements(
   tx: DbTransaction,
   businessId: number,
+  locationId: number,
   variantId: number,
   purchaseId: number,
   receiveNow: number,
@@ -88,6 +94,7 @@ export async function insertInventoryMovements(
   await tx.insert(inventoryMovements).values({
     businessId,
     variantId,
+    locationId,
     movementType: "purchase",
     referenceType: "purchase",
     referenceId: purchaseId,
@@ -97,6 +104,7 @@ export async function insertInventoryMovements(
 export async function insertInventoryBatches(
   tx: DbTransaction,
   businessId: number,
+  locationId: number,
   receiveItem: Items,
   variantId: number,
   purchaseItemId: number,
@@ -106,6 +114,7 @@ export async function insertInventoryBatches(
   if (receiveItem.trackingType === "batch") {
     rows = (receiveItem.batches ?? []).map((batch) => ({
       businessId,
+      locationId,
       variantId,
       purchaseItemId,
       batchNumber: batch.batchNumber,
@@ -127,6 +136,7 @@ export async function insertInventoryBatches(
         ? [
             {
               businessId,
+              locationId,
               variantId,
               purchaseItemId,
               batchNumber: `AUTO-${purchaseItemId}-${Date.now()}`, // batchNumber is notNull
@@ -148,6 +158,7 @@ export async function insertInventoryBatches(
 export async function insertSerialNumbers(
   tx: DbTransaction,
   businessId: number,
+  locationId: number,
   receiveItem: Items,
   variantId: number,
   purchaseItemId: number,
@@ -157,6 +168,7 @@ export async function insertSerialNumbers(
 
   const serialNumbersToInsert = serials.map((serialNumber) => ({
     businessId,
+    locationId,
     variantId,
     purchaseItemId,
     serialNumber,

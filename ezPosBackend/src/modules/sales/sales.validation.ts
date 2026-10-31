@@ -80,6 +80,7 @@ export async function validateVariants(
 export async function validateStock(
   tx: DbTransaction,
   businessId: number,
+  locationId: number,
   variantIds: number[],
   items: Items[],
 ) {
@@ -93,6 +94,7 @@ export async function validateStock(
       and(
         inArray(inventoryStock.variantId, variantIds),
         eq(inventoryStock.businessId, businessId),
+        eq(inventoryStock.locationId, locationId),
       ),
     )
     .for("update");

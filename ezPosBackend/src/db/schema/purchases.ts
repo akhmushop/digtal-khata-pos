@@ -15,6 +15,7 @@ import { sql } from "drizzle-orm";
 import { paymentStatusEnum, statusEnum } from "./enums.js";
 import { suppliers } from "./suppliers.js";
 import { businesses } from "./businesses.js";
+import { locations } from "./locations.js";
 // 1. purchaseInvoice Sequence
 export const purchaseOrderSeq = pgSequence("purchase_order_seq", {
   startWith: 1,
@@ -69,10 +70,20 @@ export const purchases = pgTable(
       .default("unpaid")
       .notNull(),
     notes: text(),
+    // Owning outlet for this transaction. Nullable for legacy rows; the
+    // application always sets it on new writes. Composite FK guarantees the
+    // location belongs to the same business.
+    locationId: integer("location_id"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (table) => [
+    foreignKey({
+      columns: [table.locationId, table.businessId],
+      foreignColumns: [locations.id, locations.businessId],
+      name: "purchases_location_business_fkey",
+    }),
+    index("purchases_business_location_idx").on(table.businessId, table.locationId),
     index("purchases_business_id_idx").on(table.businessId),
     unique("purchases_id_business_uq").on(table.id, table.businessId),
     unique("purchases_business_po_unique").on(

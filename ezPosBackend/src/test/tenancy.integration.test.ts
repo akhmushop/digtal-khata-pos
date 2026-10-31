@@ -105,6 +105,20 @@ describe("multi-tenancy integration", { skip: !runIntegration }, () => {
     const bizBody = (await biz.json()) as {
       business: { id: number };
     };
+
+    // Every business fixture gets a default location: location-scoped
+    // endpoints refuse to operate otherwise (Phase 1 location layer).
+    const loc = await fetch(`${baseUrl}/api/locations`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        "X-Business-Id": String(bizBody.business.id),
+      },
+      body: JSON.stringify({ name: "Main Store" }),
+    });
+    assert.equal(loc.status, 201);
+
     return { token, businessId: bizBody.business.id };
   }
 

@@ -15,6 +15,7 @@ import {
 import { sql } from "drizzle-orm";
 import { expenseCategories } from "./expenseCategories.js";
 import { businesses } from "./businesses.js";
+import { locations } from "./locations.js";
 
 export const expenses = pgTable(
   "expenses",
@@ -27,6 +28,10 @@ export const expenses = pgTable(
     amount: numeric({ precision: 10, scale: 2, mode: "number" }).notNull(),
     categoryId: integer("category_id"),
     paymentMethod: varchar("payment_method", { length: 50 }),
+    // Owning outlet for this transaction. Nullable for legacy rows; the
+    // application always sets it on new writes. Composite FK guarantees the
+    // location belongs to the same business.
+    locationId: integer("location_id"),
     referenceNo: varchar("reference_no", { length: 100 }),
     note: text(),
     expenseDate: date("expense_date").notNull(),
@@ -38,6 +43,12 @@ export const expenses = pgTable(
     ),
   },
   (table) => [
+    foreignKey({
+      columns: [table.locationId, table.businessId],
+      foreignColumns: [locations.id, locations.businessId],
+      name: "expenses_location_business_fkey",
+    }),
+    index("expenses_business_location_idx").on(table.businessId, table.locationId),
     index("expenses_business_id_idx").on(table.businessId),
     foreignKey({
       columns: [table.categoryId, table.businessId],

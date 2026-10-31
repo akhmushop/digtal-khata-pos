@@ -3,7 +3,10 @@ import { purchaseItems } from "../../db/schema/purchaseItems.js";
 import { purchases } from "../../db/schema/purchases.js";
 import { and, eq, getTableColumns, inArray } from "drizzle-orm";
 import { products } from "../../db/schema/products.js";
-import { NotFoundError } from "../../utils/handleError.js";
+import {
+  ConflictError,
+  NotFoundError,
+} from "../../utils/handleError.js";
 import type { CreatePurchaseInput } from "./schemas/purchase.schema.js";
 import { suppliers } from "../../db/schema/suppliers.js";
 import { productVariants } from "../../db/schema/productVariants.js";
@@ -219,7 +222,10 @@ export async function getPurchasesSummary(businessId: number) {
     completedPurchase,
   };
 }
-export async function getPurchasesItems(businessId: number) {
+export async function getPurchasesItems(
+  businessId: number,
+  locationId: number,
+) {
   return (
     db
       .select({
@@ -246,7 +252,11 @@ export async function getPurchasesItems(businessId: number) {
       .leftJoin(units, eq(units.id, products.unitId))
       .leftJoin(
         inventoryStock,
-        eq(inventoryStock.variantId, productVariants.id),
+        and(
+          eq(inventoryStock.variantId, productVariants.id),
+          eq(inventoryStock.businessId, businessId),
+          eq(inventoryStock.locationId, locationId),
+        ),
       )
       .where(eq(purchaseItems.businessId, businessId))
   ); // leftJoin is safer in case a product has no unit
@@ -254,6 +264,7 @@ export async function getPurchasesItems(businessId: number) {
 
 export async function createReceivePurchase(
   businessId: number,
+  locationId: number,
   data: ReceiveItemsFormValues,
 ) {
   const { purchaseId, items, paymentAmount, paymentMethod, paymentNotes } =
@@ -262,6 +273,19 @@ export async function createReceivePurchase(
   return db.transaction(async (tx) => {
     const itemIds = basicRequestValidation(items);
     const purchase = await purchaseValidation(tx, businessId, purchaseId);
+
+    // Stamp the receiving location on the purchase header (first receive
+    // wins; later partial receives must go to the same location).
+    if (purchase.locationId === null) {
+      await tx
+        .update(purchases)
+        .set({ locationId })
+        .where(and(eq(purchases.id, purchaseId), eq(purchases.businessId, businessId)));
+    } else if (purchase.locationId !== locationId) {
+      throw new ConflictError(
+        "This purchase is already being received at another location.",
+      );
+    }
 
     const existingItems = await purchaseItemsValidation(
       tx,
@@ -317,6 +341,7 @@ export async function createReceivePurchase(
       await insertInventoryStockOnConflictDoUpdate(
         tx,
         businessId,
+        locationId,
         purchaseItem.variantId,
         receiveItem.receiveNow,
       );
@@ -324,6 +349,7 @@ export async function createReceivePurchase(
       await insertInventoryMovements(
         tx,
         businessId,
+        locationId,
         purchaseItem.variantId,
         purchaseId,
         receiveItem.receiveNow,
@@ -332,6 +358,7 @@ export async function createReceivePurchase(
       const insertedBatches = await insertInventoryBatches(
         tx,
         businessId,
+        locationId,
         receiveItem,
         purchaseItem.variantId,
         purchaseItem.id,
@@ -349,6 +376,7 @@ export async function createReceivePurchase(
         await insertSerialNumbers(
           tx,
           businessId,
+          locationId,
           receiveItem,
           purchaseItem.variantId,
           purchaseItem.id,

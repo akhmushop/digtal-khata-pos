@@ -372,6 +372,7 @@ async function insertVariantOptions(
 async function insertBatch(
   tx: Tx,
   businessId: number,
+  locationId: number,
   variant: VariantType,
   variantId: number,
 ) {
@@ -380,7 +381,7 @@ async function insertBatch(
     .values({
       businessId,
       variantId,
-      locationId: null,
+      locationId,
       purchaseItemId: null,
       batchNumber: variant.batchNumber ?? null,
       purchasePrice: variant.purchasePrice,
@@ -397,6 +398,7 @@ async function insertBatch(
 async function insertSerialNumber(
   tx: Tx,
   businessId: number,
+  locationId: number,
   variant: VariantType,
   variantId: number,
   batchId: number,
@@ -407,6 +409,7 @@ async function insertSerialNumber(
   for (const serialNumber of variant.serialNumbers) {
     await tx.insert(serialNumbers).values({
       businessId,
+      locationId,
       variantId,
       serialNumber: serialNumber.serial,
       batchId,
@@ -416,11 +419,13 @@ async function insertSerialNumber(
 async function insertInventoryStock(
   tx: Tx,
   businessId: number,
+  locationId: number,
   variantId: number,
   quantity: number,
 ) {
   await tx.insert(inventoryStock).values({
     businessId,
+    locationId,
     variantId,
     quantity,
   });
@@ -431,7 +436,11 @@ async function generateSku(tx: Tx, businessId: number) {
   const number = await nextDocumentNumber(tx, businessId, "product_sku");
   return formatProductSku(number);
 }
-export async function createProduct(businessId: number, data: ProductType) {
+export async function createProduct(
+  businessId: number,
+  locationId: number,
+  data: ProductType,
+) {
   try {
     // Propagate the transaction result so the API response can carry the new
     // product's id (the controller exposes it as data.productId).
@@ -464,15 +473,17 @@ export async function createProduct(businessId: number, data: ProductType) {
         await insertInventoryStock(
           tx,
           businessId,
+          locationId,
           createdVariant.id,
           variant.quantity,
         );
         if (data.source === "opening") {
-          const batch = await insertBatch(tx, businessId, variant, createdVariant.id);
+          const batch = await insertBatch(tx, businessId, locationId, variant, createdVariant.id);
           if (data.trackingType === "serial") {
             await insertSerialNumber(
               tx,
               businessId,
+              locationId,
               variant,
               createdVariant.id,
               batch.id,
@@ -589,6 +600,7 @@ export async function getProductForEdit(businessId: number, id: number) {
 }
 export async function updateProduct(
   businessId: number,
+  locationId: number,
   id: number,
   data: ProductType,
 ) {
@@ -735,7 +747,7 @@ export async function updateProduct(
           sku,
         );
         await insertVariantOptions(tx, businessId, data, variant, createdVariant.id);
-        await insertInventoryStock(tx, businessId, createdVariant.id, 0);
+        await insertInventoryStock(tx, businessId, locationId, createdVariant.id, 0);
         addedVariants.push({ id: createdVariant.id, sku });
         continue;
       }

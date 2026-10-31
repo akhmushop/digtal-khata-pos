@@ -2,6 +2,7 @@ import express from "express";
 import * as reportsController from "./reports.controller.js";
 import { requireAuth } from "../../middleware/auth.js";
 import { requireBusinessContext } from "../../middleware/business.js";
+import { requirePermission } from "../../middleware/permissions.js";
 
 const router = express.Router();
 
@@ -11,57 +12,127 @@ const router = express.Router();
 const read = [requireAuth, requireBusinessContext()] as const;
 
 // Sales Reports
-router.get("/api/reports/sales/summary", ...read, reportsController.getSalesSummary);
-router.get("/api/reports/sales/hourly", ...read, reportsController.getHourlySales);
-router.get("/api/reports/sales/invoices", ...read, reportsController.getSalesByInvoice);
-router.get("/api/reports/sales/products", ...read, reportsController.getProductSales);
-router.get("/api/reports/sales/customers", ...read, reportsController.getCustomerSales);
-router.get("/api/reports/sales/payments", ...read, reportsController.getPaymentMethods);
-router.get("/api/reports/sales/refunds", ...read, reportsController.getSaleRefunds);
+router.get(
+  "/api/reports/sales/summary",
+  ...read,
+  requirePermission("reports.sales.view"),
+  reportsController.getSalesSummary,
+);
+router.get(
+  "/api/reports/sales/hourly",
+  ...read,
+  requirePermission("reports.sales.view"),
+  reportsController.getHourlySales,
+);
+router.get(
+  "/api/reports/sales/invoices",
+  ...read,
+  requirePermission("reports.sales.view"),
+  reportsController.getSalesByInvoice,
+);
+router.get(
+  "/api/reports/sales/products",
+  ...read,
+  requirePermission("reports.sales.view"),
+  reportsController.getProductSales,
+);
+router.get(
+  "/api/reports/sales/customers",
+  ...read,
+  requirePermission("reports.sales.view"),
+  reportsController.getCustomerSales,
+);
+router.get(
+  "/api/reports/sales/payments",
+  ...read,
+  requirePermission("reports.sales.view"),
+  reportsController.getPaymentMethods,
+);
+router.get(
+  "/api/reports/sales/refunds",
+  ...read,
+  requirePermission("reports.sales.view"),
+  reportsController.getSaleRefunds,
+);
 
 // Financial Reports
-router.get("/api/reports/financial/profit", ...read, reportsController.getProfit);
-router.get("/api/reports/financial/expenses", ...read, reportsController.getExpenses);
+router.get(
+  "/api/reports/financial/profit",
+  ...read,
+  requirePermission("reports.profit.view"),
+  reportsController.getProfit,
+);
+router.get(
+  "/api/reports/financial/expenses",
+  ...read,
+  requirePermission("reports.expense.view"),
+  reportsController.getExpenses,
+);
 router.get(
   "/api/reports/financial/receivables",
   ...read,
-  reportsController.getCustomerReceivables
+  requirePermission("reports.financial.view"),
+  reportsController.getCustomerReceivables,
 );
 router.get(
   "/api/reports/financial/tax",
   ...read,
-  reportsController.getTaxReconciliation
+  requirePermission("reports.financial.view"),
+  reportsController.getTaxReconciliation,
 );
 router.get(
   "/api/reports/financial/register-close",
   ...read,
-  reportsController.getRegisterClose
+  requirePermission("reports.sales.view"),
+  reportsController.getRegisterClose,
 );
 
 // Inventory Reports
-router.get("/api/reports/inventory/stock", ...read, reportsController.getStock);
+router.get(
+  "/api/reports/inventory/stock",
+  ...read,
+  requirePermission("reports.inventory.view"),
+  reportsController.getStock,
+);
 router.get(
   "/api/reports/inventory/movements",
   ...read,
-  reportsController.getStockMovements
+  requirePermission("reports.inventory.view"),
+  reportsController.getStockMovements,
 );
-router.get("/api/reports/inventory/batches", ...read, reportsController.getBatchExpiry);
+router.get(
+  "/api/reports/inventory/batches",
+  ...read,
+  requirePermission("reports.inventory.view"),
+  reportsController.getBatchExpiry,
+);
 router.get(
   "/api/reports/inventory/shrinkage",
   ...read,
-  reportsController.getInventoryShrinkage
+  requirePermission("reports.inventory.view"),
+  reportsController.getInventoryShrinkage,
+);
+
+// Location comparison spans every location — financial scope required.
+router.get(
+  "/api/reports/locations/comparison",
+  ...read,
+  requirePermission("reports.financial.view"),
+  reportsController.getLocationComparison
 );
 
 // Purchase Reports
 router.get(
   "/api/reports/purchases/summary",
   ...read,
-  reportsController.getPurchaseSummary
+  requirePermission("reports.purchase.view"),
+  reportsController.getPurchaseSummary,
 );
 router.get(
   "/api/reports/purchases/payables",
   ...read,
-  reportsController.getSupplierPayables
+  requirePermission("reports.purchase.view"),
+  reportsController.getSupplierPayables,
 );
 
 export default router;
