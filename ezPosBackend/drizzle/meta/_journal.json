@@ -57,6 +57,13 @@
       "when": 1793435758384,
       "tag": "0007_saas_subscription_core",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793437512007,
+      "tag": "0008_business_profile",
+      "breakpoints": true
     }
   ]
 }

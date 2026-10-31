@@ -47,6 +47,24 @@ export const env = {
   /** Ops-tunable rate-limit ceilings (requests per 15-minute window). */
   authRateLimitMax: optionalInt("AUTH_RATE_LIMIT_MAX", 20),
   refreshRateLimitMax: optionalInt("REFRESH_RATE_LIMIT_MAX", 60),
+  /**
+   * Email delivery. "console" (default) logs messages instead of pretending
+   * to send; "resend" posts to the Resend HTTP API; "none" discards.
+   */
+  emailProvider: ((): "console" | "resend" | "none" => {
+    const raw = process.env.EMAIL_PROVIDER?.trim() || "console";
+    if (raw !== "console" && raw !== "resend" && raw !== "none") {
+      throw new Error(
+        `EMAIL_PROVIDER must be "console", "resend", or "none", got "${raw}".`,
+      );
+    }
+    return raw;
+  })(),
+  resendApiKey: process.env.RESEND_API_KEY?.trim() || "",
+  emailFrom: process.env.EMAIL_FROM?.trim() || "",
+  /** Public website origin used for links inside emails. */
+  appUrl: process.env.APP_URL?.trim() || "http://localhost:3001",
+  passwordResetTokenTtlHours: optionalInt("PASSWORD_RESET_TOKEN_TTL_HOURS", 2),
   emailVerificationTokenTtlHours: optionalInt(
     "EMAIL_VERIFICATION_TOKEN_TTL_HOURS",
     24,

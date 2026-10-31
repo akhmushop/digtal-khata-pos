@@ -53,3 +53,23 @@ export const verifyEmailSchema = z.object({
 });
 
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
+
+export const forgotPasswordSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .pipe(z.email("Enter a valid email address")),
+});
+
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z.object({
+  token: z.string().trim().min(10).max(200),
+  password: z
+    .string()
+    .min(8, "Use at least 8 characters")
+    .max(128, "Password is too long"),
+});
+
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

@@ -26,6 +26,8 @@ export const createBusinessSchema = z.object({
   ),
   email: optionalTextField(z.email("Enter a valid email address").max(255)),
   address: optionalTextField(z.string().max(500, "Address is too long")),
+  businessType: optionalTextField(z.string().max(50, "Business type is too long")),
+  country: optionalTextField(z.string().max(50, "Country is too long")),
 });
 
 export type CreateBusinessInput = z.infer<typeof createBusinessSchema>;
@@ -37,6 +39,23 @@ export const updateBusinessSchema = z.object({
   ),
   email: optionalTextField(z.email("Enter a valid email address").max(255)),
   address: optionalTextField(z.string().max(500, "Address is too long")),
+  businessType: optionalTextField(z.string().max(50, "Business type is too long")),
+  country: optionalTextField(z.string().max(50, "Country is too long")),
+  currency: optionalTextField(
+    z
+      .string()
+      .transform((value) => value.toUpperCase())
+      .pipe(z.string().length(3, "Use a 3-letter currency code such as BDT")),
+  ),
+  timezone: optionalTextField(
+    z
+      .string()
+      .max(64, "Timezone is too long")
+      .regex(
+        /^[A-Za-z_]+\/[A-Za-z_]+(?:\/[A-Za-z_]+)?$/,
+        "Use an IANA timezone such as Asia/Dhaka",
+      ),
+  ),
 });
 
 export type UpdateBusinessInput = z.infer<typeof updateBusinessSchema>;

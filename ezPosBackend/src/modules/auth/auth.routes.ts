@@ -38,4 +38,31 @@ router.get("/api/auth/me", requireAuth, authController.me);
 // 200 -> { success } | 400 invalid/expired token
 router.get("/api/auth/verify-email", authController.verifyEmail);
 
+// POST /api/auth/resend-verification   (Authorization: Bearer <accessToken>)
+// Issues a fresh verification email; throttled to one per minute.
+router.post(
+  "/api/auth/resend-verification",
+  requireAuth,
+  authRateLimit,
+  authController.resendVerification,
+);
+
+// POST /api/auth/forgot-password
+// Body: { email } — always 200 with identical wording (no account
+// enumeration). Creates a single-use reset token and emails the link.
+router.post(
+  "/api/auth/forgot-password",
+  authRateLimit,
+  authController.forgotPassword,
+);
+
+// POST /api/auth/reset-password
+// Body: { token, password } — consumes the token, sets the new password,
+// revokes all sessions. 400 for unknown/used/expired tokens.
+router.post(
+  "/api/auth/reset-password",
+  authRateLimit,
+  authController.resetPasswordHandler,
+);
+
 export default router;

@@ -3,13 +3,18 @@ import {
   getCurrentUserContext,
   loginUser,
   registerUser,
+  requestPasswordReset,
+  resetPassword,
+  resendVerificationEmail,
   revokeRefreshToken,
   rotateRefreshToken,
   verifyEmailToken,
 } from "./auth.service.js";
 import {
+  forgotPasswordSchema,
   loginSchema,
   registerSchema,
+  resetPasswordSchema,
   verifyEmailSchema,
 } from "./auth.validation.js";
 import { env } from "../../config/env.js";
@@ -175,5 +180,93 @@ export async function verifyEmail(req: Request, res: Response) {
       .json({ success: true, message: "Email verified. Thank you!" });
   } catch (err) {
     return sendSafeError(res, err, "Unable to verify the email right now.");
+  }
+}
+
+export async function resendVerification(req: Request, res: Response) {
+  try {
+    if (!req.user) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Authentication required." });
+    }
+    const { throttled } = await resendVerificationEmail(req.user.id);
+    if (throttled) {
+      return res.status(429).json({
+        success: false,
+        message:
+          "A verification email was just sent. Please wait a minute before requesting another.",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: "Verification email sent. Check your inbox.",
+    });
+  } catch (err) {
+    return sendSafeError(
+      res,
+      err,
+      "Unable to send the verification email right now.",
+    );
+  }
+}
+
+/**
+ * Always responds 200 with identical wording — whether or not the email
+ * belongs to an account — so the endpoint cannot be used to enumerate
+ * accounts.
+ */
+export async function forgotPassword(req: Request, res: Response) {
+  const parsed = forgotPasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      message: parsed.error.issues[0]?.message ?? "Enter a valid email address.",
+    });
+  }
+  try {
+    await requestPasswordReset(parsed.data.email);
+    return res.status(200).json({
+      success: true,
+      message:
+        "If an account exists for that email, a password-reset link is on its way.",
+    });
+  } catch (err) {
+    // Same generic success shape on failure — never leak account existence.
+    console.error("Password-reset request failed:", err);
+    return res.status(200).json({
+      success: true,
+      message:
+        "If an account exists for that email, a password-reset link is on its way.",
+    });
+  }
+}
+
+export async function resetPasswordHandler(req: Request, res: Response) {
+  const parsed = resetPasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      message: parsed.error.issues[0]?.message ?? "Invalid reset data.",
+    });
+  }
+  try {
+    const ok = await resetPassword(parsed.data.token, parsed.data.password);
+    if (!ok) {
+      return res.status(400).json({
+        success: false,
+        message: "This reset link is invalid or has expired.",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: "Password updated. Sign in with your new password.",
+    });
+  } catch (err) {
+    return sendSafeError(
+      res,
+      err,
+      "Unable to reset the password right now.",
+    );
   }
 }

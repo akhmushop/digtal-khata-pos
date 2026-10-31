@@ -10,6 +10,7 @@ import { Button, ButtonLink } from "@/components/ui/button";
 import { TextField } from "@/components/forms/text-field";
 import { useAuth } from "@/components/providers/auth-provider";
 import { createBusiness } from "@/lib/api/auth";
+import { resendVerificationEmail } from "@/lib/api/account";
 
 const POS_URL = process.env.NEXT_PUBLIC_POS_URL ?? "http://localhost:5173";
 
@@ -26,13 +27,14 @@ function subscriptionLabel(status: string, trial: boolean): string {
 function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { status, user, businesses, refresh, onSignedOut } = useAuth();
+  const { status, user, businesses, onSignedOut } = useAuth();
   const [businessName, setBusinessName] = useState(
     () => searchParams.get("create") ?? "",
   );
   const [creating, setCreating] = useState(false);
   const [createMessage, setCreateMessage] = useState<string | null>(null);
   const [createError, setCreateError] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
 
   // Anonymous visitors never see dashboard content.
   useEffect(() => {
@@ -61,12 +63,13 @@ function DashboardContent() {
     setCreateMessage(null);
     const result = await createBusiness({ name: businessName.trim() });
     setCreating(false);
+    if (result.ok && result.businessId) {
+      // Straight into the setup wizard — steps are skippable.
+      router.push(`/onboarding?business=${result.businessId}`);
+      return;
+    }
     setCreateMessage(result.message);
     setCreateError(!result.ok);
-    if (result.ok) {
-      setBusinessName("");
-      await refresh();
-    }
   };
 
   return (
@@ -79,8 +82,31 @@ function DashboardContent() {
             </h1>
             <p className="mt-2 text-sm text-slate-600">
               Signed in as {user.email}
-              {user.emailVerified ? "" : " (email verification coming soon)"}
             </p>
+            {!user.emailVerified ? (
+              <div className="mt-3">
+                <Alert tone="warning" title="Email not verified">
+                  {verificationSent ? (
+                    "Verification email sent — check your inbox."
+                  ) : (
+                    <>
+                      Verify your email to secure your account.{" "}
+                      <button
+                        type="button"
+                        className="font-semibold underline underline-offset-2"
+                        onClick={() => {
+                          void resendVerificationEmail().then(() =>
+                            setVerificationSent(true),
+                          );
+                        }}
+                      >
+                        Send verification email
+                      </button>
+                    </>
+                  )}
+                </Alert>
+              </div>
+            ) : null}
           </div>
           <Button
             variant="outline"
@@ -133,10 +159,19 @@ function DashboardContent() {
                             : ""}
                         </p>
                       </div>
-                      <ButtonLink href={POS_URL} target="_blank" size="sm">
-                        <ExternalLink className="size-4" aria-hidden="true" />
-                        Open POS
-                      </ButtonLink>
+                      <div className="flex gap-2">
+                        <ButtonLink
+                          href={`/onboarding?business=${business.businessId}`}
+                          variant="outline"
+                          size="sm"
+                        >
+                          Settings
+                        </ButtonLink>
+                        <ButtonLink href={POS_URL} target="_blank" size="sm">
+                          <ExternalLink className="size-4" aria-hidden="true" />
+                          Open POS
+                        </ButtonLink>
+                      </div>
                     </div>
                   </li>
                 ))}

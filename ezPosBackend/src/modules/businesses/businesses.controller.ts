@@ -9,8 +9,11 @@ import {
   updateBusinessSchema,
 } from "./businesses.validation.js";
 import { sendSafeError } from "../../utils/safeError.js";
+import { env } from "../../config/env.js";
 import { getEntitlements, getBusinessUsage } from "../../services/entitlements.js";
 import { getSubscriptionHistory } from "../subscriptions/subscription.service.js";
+import { sendEmail } from "../../services/email/email.service.js";
+import { renderWelcome, renderTrialStarted } from "../../services/email/email.templates.js";
 
 export async function createBusiness(req: Request, res: Response) {
   try {
@@ -28,6 +31,37 @@ export async function createBusiness(req: Request, res: Response) {
       });
     }
     const result = await createBusinessForUser(req.user.id, parsed.data);
+
+    // Best-effort onboarding emails — never fail the creation itself.
+    if (req.user.email) {
+      void sendEmail({
+        to: req.user.email,
+        ...renderWelcome(req.user.fullName),
+      }).then((delivery) => {
+        if (!delivery.ok) {
+          console.error(
+            `Welcome email failed for ${req.user?.email}: ${delivery.error}`,
+          );
+        }
+      });
+      if (result.subscription?.currentPeriodEnd && !result.trialSkipped) {
+        void sendEmail({
+          to: req.user.email,
+          ...renderTrialStarted(
+            result.business.name,
+            env.trialDays,
+            result.subscription.currentPeriodEnd,
+          ),
+        }).then((delivery) => {
+          if (!delivery.ok) {
+            console.error(
+              `Trial-started email failed for ${req.user?.email}: ${delivery.error}`,
+            );
+          }
+        });
+      }
+    }
+
     return res.status(201).json({
       success: true,
       message: result.trialSkipped

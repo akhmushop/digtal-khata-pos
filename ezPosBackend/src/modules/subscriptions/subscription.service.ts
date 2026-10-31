@@ -13,6 +13,11 @@ import {
   NotFoundError,
 } from "../../utils/handleError.js";
 import { addDays, computeUpgradeCharge } from "../../utils/subscription.js";
+import {
+  notifySubscriptionActivated,
+  notifySubscriptionCanceled,
+  notifySubscriptionRenewed,
+} from "../../services/email/email.hooks.js";
 
 /**
  * THE centralized subscription service. Every lifecycle transition — plan
@@ -359,6 +364,7 @@ export async function cancelSubscription(
         actor,
         metadata: { immediate: true },
       });
+      notifySubscriptionCanceled(businessId, current.planName);
       return { outcome: "canceled" as const };
     }
 
@@ -466,6 +472,7 @@ export async function activateSubscription(
       });
     }
     const subscription = await getOpenSubscription(businessId, tx);
+    notifySubscriptionActivated(businessId, plan.name);
     return subscription!;
   });
 }
@@ -548,6 +555,7 @@ export async function renewSubscription(
     });
 
     const subscription = await getOpenSubscription(businessId, tx);
+    notifySubscriptionRenewed(businessId, planName, periodEnd);
     return subscription!;
   });
 }

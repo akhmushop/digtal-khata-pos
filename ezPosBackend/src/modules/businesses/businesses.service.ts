@@ -253,6 +253,10 @@ export interface BusinessDetail {
   phone: string | null;
   email: string | null;
   address: string | null;
+  businessType: string | null;
+  country: string | null;
+  currency: string;
+  timezone: string;
   createdAt: Date | null;
   subscription: SubscriptionState;
   roleSlug: string;
@@ -271,6 +275,10 @@ export async function getBusinessForMembership(
       phone: businesses.phone,
       email: businesses.email,
       address: businesses.address,
+      businessType: businesses.businessType,
+      country: businesses.country,
+      currency: businesses.currency,
+      timezone: businesses.timezone,
       createdAt: businesses.createdAt,
       roleSlug: roles.slug,
     })
@@ -325,6 +333,12 @@ export async function updateBusinessForMembership(
       ...(input.phone !== undefined ? { phone: input.phone } : {}),
       ...(input.email !== undefined ? { email: input.email } : {}),
       ...(input.address !== undefined ? { address: input.address } : {}),
+      ...(input.businessType !== undefined
+        ? { businessType: input.businessType }
+        : {}),
+      ...(input.country !== undefined ? { country: input.country } : {}),
+      ...(input.currency !== undefined ? { currency: input.currency } : {}),
+      ...(input.timezone !== undefined ? { timezone: input.timezone } : {}),
       updatedAt: new Date(),
     })
     .where(eq(businesses.id, businessId));
