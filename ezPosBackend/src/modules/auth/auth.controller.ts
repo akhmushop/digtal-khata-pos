@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import {
+  changePassword,
   getCurrentUserContext,
   loginUser,
   registerUser,
@@ -8,13 +9,16 @@ import {
   resendVerificationEmail,
   revokeRefreshToken,
   rotateRefreshToken,
+  updateProfile,
   verifyEmailToken,
 } from "./auth.service.js";
 import {
+  changePasswordSchema,
   forgotPasswordSchema,
   loginSchema,
   registerSchema,
   resetPasswordSchema,
+  updateProfileSchema,
   verifyEmailSchema,
 } from "./auth.validation.js";
 import { env } from "../../config/env.js";
@@ -242,8 +246,7 @@ export async function forgotPassword(req: Request, res: Response) {
   }
 }
 
-export async function resetPasswordHandler(req: Request, res: Response) {
-  const parsed = resetPasswordSchema.safeParse(req.body);
+export async function resetPasswordHandler(req: Request, res: Response) {  const parsed = resetPasswordSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({
       success: false,
@@ -268,5 +271,51 @@ export async function resetPasswordHandler(req: Request, res: Response) {
       err,
       "Unable to reset the password right now.",
     );
+  }
+}
+
+export async function updateMe(req: Request, res: Response) {
+  const parsed = updateProfileSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      message: parsed.error.issues[0]?.message ?? "Invalid profile data.",
+    });
+  }
+  try {
+    const user = await updateProfile(req.user!.id, parsed.data);
+    res.status(200).json({ success: true, message: "Profile updated.", user });
+  } catch (err) {
+    return sendSafeError(res, err, "Unable to update your profile right now.");
+  }
+}
+
+export async function changeMyPassword(req: Request, res: Response) {
+  const parsed = changePasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      success: false,
+      message: parsed.error.issues[0]?.message ?? "Invalid password data.",
+    });
+  }
+  try {
+    const ok = await changePassword(
+      req.user!.id,
+      parsed.data.currentPassword,
+      parsed.data.newPassword,
+    );
+    if (!ok) {
+      return res.status(400).json({
+        success: false,
+        message: "Your current password is incorrect.",
+      });
+    }
+    res.status(200).json({
+      success: true,
+      message:
+        "Password changed. For your security you have been signed out — sign in again with the new password.",
+    });
+  } catch (err) {
+    return sendSafeError(res, err, "Unable to change the password right now.");
   }
 }

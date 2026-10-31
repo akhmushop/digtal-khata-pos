@@ -697,6 +697,76 @@ export async function getCurrentUserContext(
 }
 
 /**
+ * Updates the signed-in user's own profile fields. Email is deliberately
+ * not editable here (it is the account identifier and verification anchor).
+ */
+export async function updateProfile(
+  userId: number,
+  input: { fullName?: string | undefined; phone?: string | undefined },
+): Promise<SafeUser> {
+  const [updated] = await db
+    .update(users)
+    .set({
+      ...(input.fullName !== undefined ? { fullName: input.fullName } : {}),
+      ...(input.phone !== undefined ? { phone: input.phone } : {}),
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId))
+    .returning({
+      id: users.id,
+      email: users.email,
+      fullName: users.fullName,
+      phone: users.phone,
+      platformRole: users.platformRole,
+      emailVerifiedAt: users.emailVerifiedAt,
+    });
+  if (!updated) {
+    throw new UnauthorizedError("Your session is invalid or has expired.");
+  }
+  return toSafeUser(updated);
+}
+
+/**
+ * Changes the password after verifying the current one, then revokes every
+ * refresh token — the caller is signed out everywhere and must sign in
+ * again with the new password (their current access token keeps working
+ * until it expires, at most 15 minutes).
+ * Returns false when the current password is wrong.
+ */
+export async function changePassword(
+  userId: number,
+  currentPassword: string,
+  newPassword: string,
+): Promise<boolean> {
+  const [user] = await db
+    .select({ passwordHash: users.passwordHash, isActive: users.isActive })
+    .from(users)
+    .where(eq(users.id, userId));
+  if (!user || !user.isActive) return false;
+
+  const currentOk = await verifyPassword(user.passwordHash, currentPassword);
+  if (!currentOk) return false;
+
+  const passwordHash = await hashPassword(newPassword);
+  await db.transaction(async (tx) => {
+    await tx
+      .update(users)
+      .set({ passwordHash, updatedAt: new Date() })
+      .where(eq(users.id, userId));
+    await tx
+      .update(refreshTokens)
+      .set({ revokedAt: new Date() })
+      .where(
+        and(
+          eq(refreshTokens.userId, userId),
+          isNull(refreshTokens.revokedAt),
+        ),
+      );
+  });
+  return true;
+}
+
+/**
  * Marks an email-verification token used and stamps the user's
  * emailVerifiedAt, in one transaction. Returns false for unknown, used, or
  * expired tokens.

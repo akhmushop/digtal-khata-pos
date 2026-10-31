@@ -7,6 +7,7 @@ import {
 } from "../../db/schema/subscriptionPlans.js";
 import { subscriptionEvents } from "../../db/schema/subscriptionEvents.js";
 import { subscriptions } from "../../db/schema/subscriptions.js";
+import { subscriptionPayments } from "../../db/schema/subscriptionPayments.js";
 import {
   BadRequestError,
   ConflictError,
@@ -656,4 +657,131 @@ export async function getSubscriptionHistory(
     .orderBy(desc(subscriptionEvents.id))
     .limit(100);
   return rows;
+}
+
+export interface InvoiceSummary {
+  id: number;
+  invoiceNumber: string;
+  status: string;
+  total: number;
+  currency: string;
+  periodStart: Date | null;
+  periodEnd: Date | null;
+  issuedAt: Date;
+  dueAt: Date | null;
+  paidAt: Date | null;
+}
+
+/** Invoices for the billing portal — visible even in read-only mode. */
+export async function listInvoices(
+  businessId: number,
+): Promise<InvoiceSummary[]> {
+  return db
+    .select({
+      id: saasInvoices.id,
+      invoiceNumber: saasInvoices.invoiceNumber,
+      status: saasInvoices.status,
+      total: saasInvoices.total,
+      currency: saasInvoices.currency,
+      periodStart: saasInvoices.periodStart,
+      periodEnd: saasInvoices.periodEnd,
+      issuedAt: saasInvoices.issuedAt,
+      dueAt: saasInvoices.dueAt,
+      paidAt: saasInvoices.paidAt,
+    })
+    .from(saasInvoices)
+    .where(eq(saasInvoices.businessId, businessId))
+    .orderBy(desc(saasInvoices.id))
+    .limit(100);
+}
+
+export interface InvoiceDetail extends InvoiceSummary {
+  subtotal: number;
+  discount: number;
+  vatAmount: number;
+  planName: string | null;
+  subscriptionStatus: string | null;
+}
+
+export async function getInvoice(
+  businessId: number,
+  invoiceId: number,
+): Promise<InvoiceDetail | null> {
+  const [row] = await db
+    .select({
+      id: saasInvoices.id,
+      invoiceNumber: saasInvoices.invoiceNumber,
+      status: saasInvoices.status,
+      total: saasInvoices.total,
+      currency: saasInvoices.currency,
+      subtotal: saasInvoices.subtotal,
+      discount: saasInvoices.discount,
+      vatAmount: saasInvoices.vatAmount,
+      periodStart: saasInvoices.periodStart,
+      periodEnd: saasInvoices.periodEnd,
+      issuedAt: saasInvoices.issuedAt,
+      dueAt: saasInvoices.dueAt,
+      paidAt: saasInvoices.paidAt,
+      planName: subscriptionPlans.name,
+      subscriptionStatus: subscriptions.status,
+    })
+    .from(saasInvoices)
+    .leftJoin(
+      subscriptions,
+      eq(subscriptions.id, saasInvoices.subscriptionId),
+    )
+    .leftJoin(
+      subscriptionPlans,
+      eq(subscriptionPlans.id, subscriptions.planId),
+    )
+    .where(
+      and(
+        eq(saasInvoices.id, invoiceId),
+        eq(saasInvoices.businessId, businessId),
+      ),
+    )
+    .limit(1);
+  return row ?? null;
+}
+
+export interface PaymentSummary {
+  id: number;
+  amount: number;
+  currency: string;
+  status: string;
+  provider: string | null;
+  providerReference: string | null;
+  failureReason: string | null;
+  paidAt: Date | null;
+  createdAt: Date | null;
+  invoiceNumber: string | null;
+}
+
+export async function listPayments(
+  businessId: number,
+): Promise<PaymentSummary[]> {
+  // Real gateway payment records (populated from Phase 5 onward); invoices
+  // remain the billing-portal source of truth until then.
+  return db
+    .select({
+      id: subscriptionPayments.id,
+      amount: subscriptionPayments.amount,
+      currency: subscriptionPayments.currency,
+      status: subscriptionPayments.status,
+      provider: subscriptionPayments.provider,
+      providerReference: subscriptionPayments.providerReference,
+      failureReason: subscriptionPayments.failureReason,
+      paidAt: subscriptionPayments.paidAt,
+      createdAt: subscriptionPayments.createdAt,
+      invoiceNumber: saasInvoices.invoiceNumber,
+    })
+    .from(subscriptionPayments)
+    .innerJoin(
+      subscriptions,
+      eq(subscriptions.id, subscriptionPayments.subscriptionId),
+    )
+    .leftJoin(saasInvoices, eq(saasInvoices.id, subscriptionPayments.invoiceId))
+    .where(eq(subscriptions.businessId, businessId))
+    .orderBy(desc(subscriptionPayments.id))
+    .limit(100);
 }

@@ -95,6 +95,14 @@ export interface SubscriptionPayload {
     features: Record<string, boolean> | null;
   } | null;
   usage: { users: number; locations: number; products: number };
+  events?: {
+    id: number;
+    eventType: string;
+    fromStatus: string | null;
+    toStatus: string | null;
+    actorType: string;
+    createdAt: string;
+  }[];
 }
 
 export async function fetchSubscription(

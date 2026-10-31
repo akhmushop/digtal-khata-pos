@@ -56,6 +56,20 @@ router.post(
   authController.forgotPassword,
 );
 
+// PATCH /api/auth/me   (Authorization: Bearer <accessToken>)
+// Body: { fullName?, phone? } — updates the signed-in user's own profile.
+router.patch("/api/auth/me", requireAuth, authController.updateMe);
+
+// POST /api/auth/change-password   (Authorization: Bearer <accessToken>)
+// Body: { currentPassword, newPassword } — verifies the current password,
+// then revokes all sessions (sign-in required with the new password).
+router.post(
+  "/api/auth/change-password",
+  requireAuth,
+  authRateLimit,
+  authController.changeMyPassword,
+);
+
 // POST /api/auth/reset-password
 // Body: { token, password } — consumes the token, sets the new password,
 // revokes all sessions. 400 for unknown/used/expired tokens.

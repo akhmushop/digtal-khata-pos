@@ -65,13 +65,13 @@ export function SiteHeader() {
           {status === "loading" ? null : authenticated ? (
             <>
               <Link
-                href="/dashboard"
+                href="/account"
                 className={cn(
                   buttonClasses({ variant: "ghost" }),
-                  pathname.startsWith("/dashboard") && "text-indigo-700",
+                  pathname.startsWith("/account") && "text-indigo-700",
                 )}
               >
-                Dashboard
+                Account
               </Link>
               <Link
                 href="/"
