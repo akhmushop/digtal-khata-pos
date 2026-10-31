@@ -4,6 +4,7 @@ import { getLocationId } from "../../middleware/location.js";
 import { callerHasPermission } from "../../middleware/permissions.js";
 import { sendSafeError } from "../../utils/safeError.js";
 import { WILDCARD_PERMISSION } from "../../rbac/permissions.js";
+import { getRegisterSessionReport } from "./cashRegisters.service.js";
 import {
   addCashMovement,
   closeSession,
@@ -15,6 +16,7 @@ import {
   updateRegister,
 } from "./cashRegisters.service.js";
 import { z } from "zod";
+import { dateRangeSchema } from "../reports/reports.validation.js";
 
 function actor(req: Request): { userId: number; callerIsOwner: boolean } {
   if (!req.user || !req.membership) {
@@ -216,3 +218,27 @@ export async function postCloseSession(req: Request, res: Response) {
   }
 }
 
+/** Register shift summaries for the reports hub (financial scope). */
+export async function getRegisterSessionReportHandler(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const parsed = dateRangeSchema.safeParse(req.query);
+    if (!parsed.success) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date range.",
+        errors: parsed.error.flatten(),
+      });
+    }
+    const data = await getRegisterSessionReport(
+      getBusinessId(req),
+      parsed.data.startDate ?? new Date().toISOString().slice(0, 10),
+      parsed.data.endDate ?? new Date().toISOString().slice(0, 10),
+    );
+    return res.status(200).json({ success: true, data });
+  } catch (err: unknown) {
+    return sendSafeError(res, err, "Unable to load register summaries.");
+  }
+}

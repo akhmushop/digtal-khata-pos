@@ -638,3 +638,114 @@ export async function recordCashSaleInTx(
     referenceId: saleId,
   });
 }
+
+// ----------------------------------------------------
+// REGISTER SESSION REPORT (Phase 5)
+// ----------------------------------------------------
+
+export interface RegisterSessionReportRow {
+  sessionId: number;
+  registerName: string;
+  locationName: string;
+  userName: string;
+  status: string;
+  openingCash: number;
+  expectedCash: number;
+  countedCash: number | null;
+  difference: number | null;
+  cashSales: number;
+  cashIn: number;
+  cashOut: number;
+  openedAt: Date | null;
+  closedAt: Date | null;
+}
+
+/**
+ * Register shift summaries for a period (closed sessions by close date, plus
+ * still-open sessions for live views). Totals aggregate the variance — the
+ * over/short money the business cares about.
+ */
+export async function getRegisterSessionReport(
+  businessId: number,
+  from: string,
+  to: string,
+): Promise<{
+  rows: RegisterSessionReportRow[];
+  totals: {
+    sessionCount: number;
+    expectedCash: number;
+    countedCash: number;
+    difference: number;
+    cashSales: number;
+  };
+}> {
+  const rows = await sessionBaseQuery()
+    .where(
+      and(
+        eq(registerSessions.businessId, businessId),
+        sql`(
+          (${registerSessions.status} = 'closed' AND ${registerSessions.closedAt} >= ${`${from} 00:00:00`}::timestamp
+            AND ${registerSessions.closedAt} <= ${`${to} 23:59:59.999`}::timestamp)
+          OR ${registerSessions.status} = 'open'
+        )`,
+      ),
+    )
+    .orderBy(desc(registerSessions.id))
+    .limit(500);
+
+  const movementTotals = await db
+    .select({
+      sessionId: registerTransactions.sessionId,
+      type: registerTransactions.type,
+      total: sql<string>`COALESCE(SUM(${registerTransactions.amount}), 0)`,
+    })
+    .from(registerTransactions)
+    .where(eq(registerTransactions.businessId, businessId))
+    .groupBy(registerTransactions.sessionId, registerTransactions.type);
+  const movementsBySession = new Map<number, { sales: number; cashIn: number; cashOut: number }>();
+  for (const row of movementTotals) {
+    const entry =
+      movementsBySession.get(row.sessionId) ?? { sales: 0, cashIn: 0, cashOut: 0 };
+    if (row.type === "sale") entry.sales = Number(row.total);
+    else if (row.type === "cash_in") entry.cashIn = Number(row.total);
+    else entry.cashOut = Number(row.total);
+    movementsBySession.set(row.sessionId, entry);
+  }
+
+  const reportRows: RegisterSessionReportRow[] = rows.map((row) => {
+    const movements = movementsBySession.get(row.id) ?? {
+      sales: 0,
+      cashIn: 0,
+      cashOut: 0,
+    };
+    return {
+      sessionId: row.id,
+      registerName: row.registerName,
+      locationName: row.locationName,
+      userName: row.userName,
+      status: row.status,
+      openingCash: Number(row.openingCash),
+      expectedCash: Number(row.expectedCash ?? 0),
+      countedCash: row.countedCash === null ? null : Number(row.countedCash),
+      difference: row.difference === null ? null : Number(row.difference),
+      cashSales: movements.sales,
+      cashIn: movements.cashIn,
+      cashOut: movements.cashOut,
+      openedAt: row.openedAt,
+      closedAt: row.closedAt,
+    };
+  });
+
+  const totals = reportRows.reduce(
+    (acc, row) => ({
+      sessionCount: acc.sessionCount + 1,
+      expectedCash: acc.expectedCash + (row.status === "closed" ? row.expectedCash : 0),
+      countedCash: acc.countedCash + (row.countedCash ?? 0),
+      difference: acc.difference + (row.difference ?? 0),
+      cashSales: acc.cashSales + (row.status === "closed" ? row.cashSales : 0),
+    }),
+    { sessionCount: 0, expectedCash: 0, countedCash: 0, difference: 0, cashSales: 0 },
+  );
+
+  return { rows: reportRows, totals };
+}

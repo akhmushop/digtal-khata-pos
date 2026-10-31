@@ -113,6 +113,14 @@ router.get(
   reportsController.getInventoryShrinkage,
 );
 
+// Location comparison spans every location — financial scope required.
+router.get(
+  "/api/reports/locations/comparison",
+  ...read,
+  requirePermission("reports.financial.view"),
+  reportsController.getLocationComparison
+);
+
 // Purchase Reports
 router.get(
   "/api/reports/purchases/summary",

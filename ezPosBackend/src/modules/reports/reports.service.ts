@@ -67,11 +67,21 @@ function getDateBounds(params: DateRangeQuery) {
   };
 }
 
+/**
+ * Optional location scope for report queries. Undefined = business-wide
+ * aggregate (the caller's access was verified in the controller); a value
+ * narrows the report to one location's rows.
+ */
+function locationFilter(alias: string, locationId: number | undefined) {
+  if (locationId === undefined) return sql``;
+  return sql` AND ${sql.raw(alias)}.location_id = ${locationId}`;
+}
+
 // ----------------------------------------------------
 // 1. SALES REPORTS
 // ----------------------------------------------------
 
-export async function getSalesSummaryReport(businessId: number, params: DateRangeQuery) {
+export async function getSalesSummaryReport(businessId: number, params: DateRangeQuery, locationId?: number) {
   const { start, end } = getDateBounds(params);
 
   const dailyResult = await db.execute(sql`
@@ -90,7 +100,7 @@ export async function getSalesSummaryReport(businessId: number, params: DateRang
         GROUP BY sale_id
       ) sr ON sr.sale_id = s.id
       WHERE s.status IN ('completed', 'refunded')
-        AND s.business_id = ${businessId}
+        AND s.business_id = ${businessId}${locationFilter("s", locationId)}
         AND s.created_at >= ${start}::timestamp 
         AND s.created_at <= ${end}::timestamp
     ),
@@ -101,7 +111,7 @@ export async function getSalesSummaryReport(businessId: number, params: DateRang
       FROM sale_items si
       INNER JOIN sales s ON s.id = si.sale_id
       WHERE s.status IN ('completed', 'refunded')
-        AND s.business_id = ${businessId}
+        AND s.business_id = ${businessId}${locationFilter("s", locationId)}
         AND s.created_at >= ${start}::timestamp 
         AND s.created_at <= ${end}::timestamp
       GROUP BY si.sale_id
@@ -135,7 +145,7 @@ export async function getSalesSummaryReport(businessId: number, params: DateRang
         GROUP BY sale_id
       ) sr ON sr.sale_id = s.id
       WHERE s.status IN ('completed', 'refunded')
-        AND s.business_id = ${businessId}
+        AND s.business_id = ${businessId}${locationFilter("s", locationId)}
         AND s.created_at >= ${start}::timestamp 
         AND s.created_at <= ${end}::timestamp
     ),
@@ -145,7 +155,7 @@ export async function getSalesSummaryReport(businessId: number, params: DateRang
       FROM sale_items si
       INNER JOIN sales s ON s.id = si.sale_id
       WHERE s.status IN ('completed', 'refunded')
-        AND s.business_id = ${businessId}
+        AND s.business_id = ${businessId}${locationFilter("s", locationId)}
         AND s.created_at >= ${start}::timestamp 
         AND s.created_at <= ${end}::timestamp
     )
@@ -172,7 +182,7 @@ export async function getSalesSummaryReport(businessId: number, params: DateRang
   };
 }
 
-export async function getSalesByInvoiceReport(businessId: number, params: DateRangeQuery) {
+export async function getSalesByInvoiceReport(businessId: number, params: DateRangeQuery, locationId?: number) {
   const { start, end } = getDateBounds(params);
   const page = params.page || 1;
   const limit = params.limit || 50;
@@ -184,7 +194,7 @@ export async function getSalesByInvoiceReport(businessId: number, params: DateRa
     SELECT COUNT(DISTINCT s.id)::int AS total
     FROM sales s
     LEFT JOIN customers c ON c.id = s.customer_id
-    WHERE s.business_id = ${businessId}
+    WHERE s.business_id = ${businessId}${locationFilter("s", locationId)}
     AND s.created_at >= ${start}::timestamp 
       AND s.created_at <= ${end}::timestamp
       ${params.paymentStatus ? sql`AND s.payment_status = ${params.paymentStatus}` : sql``}
@@ -221,7 +231,7 @@ export async function getSalesByInvoiceReport(businessId: number, params: DateRa
       WHERE business_id = ${businessId}
       GROUP BY sale_id
     ) sr ON sr.sale_id = s.id
-    WHERE s.business_id = ${businessId}
+    WHERE s.business_id = ${businessId}${locationFilter("s", locationId)}
     AND s.created_at >= ${start}::timestamp 
       AND s.created_at <= ${end}::timestamp
       ${params.paymentStatus ? sql`AND s.payment_status = ${params.paymentStatus}` : sql``}
@@ -244,7 +254,7 @@ export async function getSalesByInvoiceReport(businessId: number, params: DateRa
   };
 }
 
-export async function getProductSalesReport(businessId: number, params: DateRangeQuery) {
+export async function getProductSalesReport(businessId: number, params: DateRangeQuery, locationId?: number) {
   const { start, end } = getDateBounds(params);
   const page = params.page || 1;
   const limit = params.limit || 50;
@@ -261,7 +271,7 @@ export async function getProductSalesReport(businessId: number, params: DateRang
     LEFT JOIN categories cat ON cat.id = p.category_id
     LEFT JOIN brands b ON b.id = p.brand_id
     WHERE s.status IN ('completed', 'refunded')
-      AND s.business_id = ${businessId}
+      AND s.business_id = ${businessId}${locationFilter("s", locationId)}
       AND s.created_at >= ${start}::timestamp 
       AND s.created_at <= ${end}::timestamp
       ${params.categoryId ? sql`AND p.category_id = ${params.categoryId}` : sql``}
@@ -294,7 +304,7 @@ export async function getProductSalesReport(businessId: number, params: DateRang
     LEFT JOIN categories cat ON cat.id = p.category_id
     LEFT JOIN brands b ON b.id = p.brand_id
     WHERE s.status IN ('completed', 'refunded')
-      AND s.business_id = ${businessId}
+      AND s.business_id = ${businessId}${locationFilter("s", locationId)}
       AND s.created_at >= ${start}::timestamp 
       AND s.created_at <= ${end}::timestamp
       ${params.categoryId ? sql`AND p.category_id = ${params.categoryId}` : sql``}
@@ -313,7 +323,7 @@ export async function getProductSalesReport(businessId: number, params: DateRang
   };
 }
 
-export async function getCustomerSalesReport(businessId: number, params: DateRangeQuery) {
+export async function getCustomerSalesReport(businessId: number, params: DateRangeQuery, locationId?: number) {
   const { start, end } = getDateBounds(params);
   const page = params.page || 1;
   const limit = params.limit || 50;
@@ -326,7 +336,7 @@ export async function getCustomerSalesReport(businessId: number, params: DateRan
     FROM sales s
     LEFT JOIN customers c ON c.id = s.customer_id
     WHERE s.status IN ('completed', 'refunded')
-      AND s.business_id = ${businessId}
+      AND s.business_id = ${businessId}${locationFilter("s", locationId)}
       AND s.created_at >= ${start}::timestamp 
       AND s.created_at <= ${end}::timestamp
       ${searchFilter ? sql`AND (c.name ILIKE ${searchFilter} OR c.phone ILIKE ${searchFilter})` : sql``}
@@ -344,7 +354,7 @@ export async function getCustomerSalesReport(businessId: number, params: DateRan
     FROM sales s
     LEFT JOIN customers c ON c.id = s.customer_id
     WHERE s.status IN ('completed', 'refunded')
-      AND s.business_id = ${businessId}
+      AND s.business_id = ${businessId}${locationFilter("s", locationId)}
       AND s.created_at >= ${start}::timestamp 
       AND s.created_at <= ${end}::timestamp
       ${searchFilter ? sql`AND (c.name ILIKE ${searchFilter} OR c.phone ILIKE ${searchFilter})` : sql``}
@@ -361,7 +371,7 @@ export async function getCustomerSalesReport(businessId: number, params: DateRan
   };
 }
 
-export async function getPaymentMethodReport(businessId: number, params: DateRangeQuery) {
+export async function getPaymentMethodReport(businessId: number, params: DateRangeQuery, locationId?: number) {
   const { start, end } = getDateBounds(params);
 
   const result = await db.execute(sql`
@@ -370,7 +380,7 @@ export async function getPaymentMethodReport(businessId: number, params: DateRan
       COUNT(*)::int AS "paymentCount",
       COALESCE(SUM(sp.amount), 0)::numeric AS "totalAmount"
     FROM sale_payments sp
-    WHERE sp.business_id = ${businessId}
+    WHERE sp.business_id = ${businessId}${locationFilter("sp", locationId)}${locationFilter("p", locationId)}
       AND sp.payment_date >= ${start}::timestamp
       AND sp.payment_date <= ${end}::timestamp
     GROUP BY sp.payment_method
@@ -380,7 +390,7 @@ export async function getPaymentMethodReport(businessId: number, params: DateRan
   return result.rows;
 }
 
-export async function getSaleRefundsReport(businessId: number, params: DateRangeQuery) {
+export async function getSaleRefundsReport(businessId: number, params: DateRangeQuery, locationId?: number) {
   const { start, end } = getDateBounds(params);
   const page = params.page || 1;
   const limit = params.limit || 50;
@@ -389,7 +399,7 @@ export async function getSaleRefundsReport(businessId: number, params: DateRange
   const countQuery = await db.execute(sql`
     SELECT COUNT(sr.id)::int AS total
     FROM sale_refunds sr
-    WHERE sr.business_id = ${businessId}
+    WHERE sr.business_id = ${businessId}${locationFilter("sr", locationId)}
     AND sr.created_at >= ${start}::timestamp 
       AND sr.created_at <= ${end}::timestamp
   `);
@@ -406,7 +416,7 @@ export async function getSaleRefundsReport(businessId: number, params: DateRange
     FROM sale_refunds sr
     INNER JOIN sales s ON s.id = sr.sale_id
     LEFT JOIN customers c ON c.id = s.customer_id
-    WHERE sr.business_id = ${businessId}
+    WHERE sr.business_id = ${businessId}${locationFilter("sr", locationId)}
     AND sr.created_at >= ${start}::timestamp 
       AND sr.created_at <= ${end}::timestamp
     ORDER BY sr.created_at DESC
@@ -425,7 +435,7 @@ export async function getSaleRefundsReport(businessId: number, params: DateRange
 // 2. FINANCIAL & PROFITABILITY REPORTS
 // ----------------------------------------------------
 
-export async function getProfitReport(businessId: number, params: DateRangeQuery) {
+export async function getProfitReport(businessId: number, params: DateRangeQuery, locationId?: number) {
   const { start, end } = getDateBounds(params);
 
   const categoryProfit = await db.execute(sql`
@@ -445,7 +455,7 @@ export async function getProfitReport(businessId: number, params: DateRangeQuery
     INNER JOIN products p ON p.id = pv.product_id
     LEFT JOIN categories cat ON cat.id = p.category_id
     WHERE s.status IN ('completed', 'refunded')
-      AND s.business_id = ${businessId}
+      AND s.business_id = ${businessId}${locationFilter("s", locationId)}
       AND s.created_at >= ${start}::timestamp 
       AND s.created_at <= ${end}::timestamp
     GROUP BY cat.id, cat.name
@@ -465,7 +475,7 @@ export async function getProfitReport(businessId: number, params: DateRangeQuery
     FROM sale_items si
     INNER JOIN sales s ON s.id = si.sale_id
     WHERE s.status IN ('completed', 'refunded')
-      AND s.business_id = ${businessId}
+      AND s.business_id = ${businessId}${locationFilter("s", locationId)}
       AND s.created_at >= ${start}::timestamp 
       AND s.created_at <= ${end}::timestamp
   `);
@@ -476,7 +486,7 @@ export async function getProfitReport(businessId: number, params: DateRangeQuery
   };
 }
 
-export async function getExpenseReport(businessId: number, params: DateRangeQuery) {
+export async function getExpenseReport(businessId: number, params: DateRangeQuery, locationId?: number) {
   const { startDateOnly, endDateOnly } = getDateBounds(params);
   const page = params.page || 1;
   const limit = params.limit || 50;
@@ -485,7 +495,7 @@ export async function getExpenseReport(businessId: number, params: DateRangeQuer
   const countQuery = await db.execute(sql`
     SELECT COUNT(e.id)::int AS total
     FROM expenses e
-    WHERE e.business_id = ${businessId}
+    WHERE e.business_id = ${businessId}${locationFilter("e", locationId)}
       AND e.expense_date >= ${startDateOnly}::date
       AND e.expense_date <= ${endDateOnly}::date
   `);
@@ -502,7 +512,7 @@ export async function getExpenseReport(businessId: number, params: DateRangeQuer
       e.note
     FROM expenses e
     LEFT JOIN expense_categories ec ON ec.id = e.category_id
-    WHERE e.business_id = ${businessId}
+    WHERE e.business_id = ${businessId}${locationFilter("e", locationId)}
       AND e.expense_date >= ${startDateOnly}::date
       AND e.expense_date <= ${endDateOnly}::date
     ORDER BY e.expense_date DESC, e.id DESC
@@ -516,7 +526,7 @@ export async function getExpenseReport(businessId: number, params: DateRangeQuer
       COALESCE(SUM(e.amount), 0)::numeric AS "totalAmount"
     FROM expenses e
     LEFT JOIN expense_categories ec ON ec.id = e.category_id
-    WHERE e.business_id = ${businessId}
+    WHERE e.business_id = ${businessId}${locationFilter("e", locationId)}
       AND e.expense_date >= ${startDateOnly}::date
       AND e.expense_date <= ${endDateOnly}::date
     GROUP BY ec.category_name
@@ -528,7 +538,7 @@ export async function getExpenseReport(businessId: number, params: DateRangeQuer
       COUNT(e.id)::int AS "totalCount",
       COALESCE(SUM(e.amount), 0)::numeric AS "grandTotal"
     FROM expenses e
-    WHERE e.business_id = ${businessId}
+    WHERE e.business_id = ${businessId}${locationFilter("e", locationId)}
       AND e.expense_date >= ${startDateOnly}::date
       AND e.expense_date <= ${endDateOnly}::date
   `);
@@ -543,7 +553,7 @@ export async function getExpenseReport(businessId: number, params: DateRangeQuer
   };
 }
 
-export async function getCustomerReceivablesReport(businessId: number, params: DateRangeQuery) {
+export async function getCustomerReceivablesReport(businessId: number, params: DateRangeQuery, locationId?: number) {
   const searchFilter = params.search ? `%${params.search}%` : null;
 
   const result = await db.execute(sql`
@@ -558,7 +568,7 @@ export async function getCustomerReceivablesReport(businessId: number, params: D
     FROM customers c
     INNER JOIN sales s ON s.customer_id = c.id
     WHERE s.status = 'completed' 
-      AND s.business_id = ${businessId}
+      AND s.business_id = ${businessId}${locationFilter("s", locationId)}
       AND s.payment_status IN ('unpaid', 'partial')
       ${searchFilter ? sql`AND (c.name ILIKE ${searchFilter} OR c.phone ILIKE ${searchFilter})` : sql``}
     GROUP BY c.id, c.name, c.phone, c.address
@@ -573,7 +583,7 @@ export async function getCustomerReceivablesReport(businessId: number, params: D
     FROM customers c
     INNER JOIN sales s ON s.customer_id = c.id
     WHERE s.status = 'completed' 
-      AND s.business_id = ${businessId}
+      AND s.business_id = ${businessId}${locationFilter("s", locationId)}
       AND s.payment_status IN ('unpaid', 'partial')
   `);
 
@@ -587,7 +597,7 @@ export async function getCustomerReceivablesReport(businessId: number, params: D
 // 3. INVENTORY REPORTS
 // ----------------------------------------------------
 
-export async function getStockReport(businessId: number, params: DateRangeQuery) {
+export async function getStockReport(businessId: number, params: DateRangeQuery, locationId?: number) {
   const page = params.page || 1;
   const limit = params.limit || 50;
   const offset = (page - 1) * limit;
@@ -598,7 +608,7 @@ export async function getStockReport(businessId: number, params: DateRangeQuery)
     SELECT COUNT(pv.id)::int AS total
     FROM product_variants pv
     INNER JOIN products p ON p.id = pv.product_id
-    WHERE p.business_id = ${businessId}
+    WHERE p.business_id = ${businessId}${locationFilter("p", locationId)}
       AND (p.status != 'deleted' OR p.status IS NULL)
       ${params.categoryId ? sql`AND p.category_id = ${params.categoryId}` : sql``}
       ${params.brandId ? sql`AND p.brand_id = ${params.brandId}` : sql``}
@@ -629,10 +639,10 @@ export async function getStockReport(businessId: number, params: DateRangeQuery)
     LEFT JOIN categories cat ON cat.id = p.category_id
     LEFT JOIN brands b ON b.id = p.brand_id
     LEFT JOIN inventory_stock ist ON ist.variant_id = pv.id
-      AND ist.business_id = ${businessId}
+      AND ist.business_id = ${businessId}${locationFilter("ist", locationId)}
     LEFT JOIN inventory_batches ib ON ib.variant_id = pv.id
-      AND ib.business_id = ${businessId}
-    WHERE p.business_id = ${businessId}
+      AND ib.business_id = ${businessId}${locationFilter("ib", locationId)}
+    WHERE p.business_id = ${businessId}${locationFilter("p", locationId)}
       AND (p.status != 'deleted' OR p.status IS NULL)
       ${params.categoryId ? sql`AND p.category_id = ${params.categoryId}` : sql``}
       ${params.brandId ? sql`AND p.brand_id = ${params.brandId}` : sql``}
@@ -659,7 +669,7 @@ export async function getStockReport(businessId: number, params: DateRangeQuery)
   };
 }
 
-export async function getStockMovementReport(businessId: number, params: DateRangeQuery) {
+export async function getStockMovementReport(businessId: number, params: DateRangeQuery, locationId?: number) {
   const { start, end } = getDateBounds(params);
   const page = params.page || 1;
   const limit = params.limit || 50;
@@ -668,7 +678,7 @@ export async function getStockMovementReport(businessId: number, params: DateRan
   const countQuery = await db.execute(sql`
     SELECT COUNT(im.id)::int AS total
     FROM inventory_movements im
-    WHERE im.business_id = ${businessId}
+    WHERE im.business_id = ${businessId}${locationFilter("im", locationId)}
       AND im.created_at >= ${start}::timestamp
       AND im.created_at <= ${end}::timestamp
   `);
@@ -686,7 +696,7 @@ export async function getStockMovementReport(businessId: number, params: DateRan
     FROM inventory_movements im
     INNER JOIN product_variants pv ON pv.id = im.variant_id
     INNER JOIN products p ON p.id = pv.product_id
-    WHERE im.business_id = ${businessId}
+    WHERE im.business_id = ${businessId}${locationFilter("im", locationId)}
       AND im.created_at >= ${start}::timestamp
       AND im.created_at <= ${end}::timestamp
     ORDER BY im.created_at DESC
@@ -701,7 +711,7 @@ export async function getStockMovementReport(businessId: number, params: DateRan
   };
 }
 
-export async function getBatchExpiryReport(businessId: number, params: DateRangeQuery) {
+export async function getBatchExpiryReport(businessId: number, params: DateRangeQuery, locationId?: number) {
   const page = params.page || 1;
   const limit = params.limit || 50;
   const offset = (page - 1) * limit;
@@ -709,7 +719,7 @@ export async function getBatchExpiryReport(businessId: number, params: DateRange
   const countQuery = await db.execute(sql`
     SELECT COUNT(ib.id)::int AS total
     FROM inventory_batches ib
-    WHERE ib.business_id = ${businessId}
+    WHERE ib.business_id = ${businessId}${locationFilter("ib", locationId)}
       AND ib.quantity_remaining > 0
   `);
 
@@ -733,7 +743,7 @@ export async function getBatchExpiryReport(businessId: number, params: DateRange
     FROM inventory_batches ib
     INNER JOIN product_variants pv ON pv.id = ib.variant_id
     INNER JOIN products p ON p.id = pv.product_id
-    WHERE ib.business_id = ${businessId}
+    WHERE ib.business_id = ${businessId}${locationFilter("ib", locationId)}
       AND ib.quantity_remaining > 0
     ORDER BY ib.expiry_date ASC NULLS LAST
     LIMIT ${limit} OFFSET ${offset}
@@ -751,7 +761,7 @@ export async function getBatchExpiryReport(businessId: number, params: DateRange
 // 4. PURCHASE REPORTS
 // ----------------------------------------------------
 
-export async function getPurchaseSummaryReport(businessId: number, params: DateRangeQuery) {
+export async function getPurchaseSummaryReport(businessId: number, params: DateRangeQuery, locationId?: number) {
   const { start, end } = getDateBounds(params);
   const page = params.page || 1;
   const limit = params.limit || 50;
@@ -760,7 +770,7 @@ export async function getPurchaseSummaryReport(businessId: number, params: DateR
   const countQuery = await db.execute(sql`
     SELECT COUNT(p.id)::int AS total
     FROM purchases p
-    WHERE p.business_id = ${businessId}
+    WHERE p.business_id = ${businessId}${locationFilter("p", locationId)}
       AND p.created_at >= ${start}::timestamp
       AND p.created_at <= ${end}::timestamp
       ${params.supplierId ? sql`AND p.supplier_id = ${params.supplierId}` : sql``}
@@ -780,7 +790,7 @@ export async function getPurchaseSummaryReport(businessId: number, params: DateR
       p.payment_status AS "paymentStatus"
     FROM purchases p
     LEFT JOIN suppliers s ON s.id = p.supplier_id
-    WHERE p.business_id = ${businessId}
+    WHERE p.business_id = ${businessId}${locationFilter("p", locationId)}
       AND p.created_at >= ${start}::timestamp
       AND p.created_at <= ${end}::timestamp
       ${params.supplierId ? sql`AND p.supplier_id = ${params.supplierId}` : sql``}
@@ -795,7 +805,7 @@ export async function getPurchaseSummaryReport(businessId: number, params: DateR
       COALESCE(SUM(p.paid_amount), 0)::numeric AS "grandPaidAmount",
       COALESCE(SUM(p.due_amount), 0)::numeric AS "grandDueAmount"
     FROM purchases p
-    WHERE p.business_id = ${businessId}
+    WHERE p.business_id = ${businessId}${locationFilter("p", locationId)}
       AND p.created_at >= ${start}::timestamp
       AND p.created_at <= ${end}::timestamp
       ${params.supplierId ? sql`AND p.supplier_id = ${params.supplierId}` : sql``}
@@ -810,7 +820,7 @@ export async function getPurchaseSummaryReport(businessId: number, params: DateR
   };
 }
 
-export async function getSupplierPayablesReport(businessId: number) {
+export async function getSupplierPayablesReport(businessId: number, locationId?: number) {
   const result = await db.execute(sql`
     SELECT 
       s.id,
@@ -823,8 +833,8 @@ export async function getSupplierPayablesReport(businessId: number) {
       COALESCE(SUM(p.due_amount), 0)::numeric AS "outstandingDue"
     FROM suppliers s
     INNER JOIN purchases p ON p.supplier_id = s.id
-    WHERE s.business_id = ${businessId}
-      AND p.business_id = ${businessId}
+    WHERE s.business_id = ${businessId}${locationFilter("s", locationId)}
+      AND p.business_id = ${businessId}${locationFilter("p", locationId)}
       AND p.payment_status IN ('unpaid', 'partial')
     GROUP BY s.id, s.name, s.phone, s.email
     HAVING SUM(p.due_amount) > 0
@@ -837,8 +847,8 @@ export async function getSupplierPayablesReport(businessId: number) {
       COALESCE(SUM(p.due_amount), 0)::numeric AS "totalPayable"
     FROM suppliers s
     INNER JOIN purchases p ON p.supplier_id = s.id
-    WHERE s.business_id = ${businessId}
-      AND p.business_id = ${businessId}
+    WHERE s.business_id = ${businessId}${locationFilter("s", locationId)}
+      AND p.business_id = ${businessId}${locationFilter("p", locationId)}
       AND p.payment_status IN ('unpaid', 'partial')
   `);
 
@@ -854,7 +864,7 @@ export async function getSupplierPayablesReport(businessId: number) {
 // 5. COMMERCIAL ADDITIONS: HOURLY, TAX, SHRINKAGE, REGISTER CLOSE
 // ----------------------------------------------------
 
-export async function getHourlySalesReport(businessId: number, params: DateRangeQuery) {
+export async function getHourlySalesReport(businessId: number, params: DateRangeQuery, locationId?: number) {
   const { start, end } = getDateBounds(params);
 
   const hourlyData = await db.execute(sql`
@@ -870,7 +880,7 @@ export async function getHourlySalesReport(businessId: number, params: DateRange
       FROM sales s
       LEFT JOIN sale_items si ON si.sale_id = s.id
       WHERE s.status IN ('completed', 'refunded')
-        AND s.business_id = ${businessId}
+        AND s.business_id = ${businessId}${locationFilter("s", locationId)}
         AND s.created_at >= ${start}::timestamp 
         AND s.created_at <= ${end}::timestamp
       GROUP BY EXTRACT(HOUR FROM s.created_at)
@@ -904,7 +914,7 @@ export async function getHourlySalesReport(businessId: number, params: DateRange
     FROM sales s
     LEFT JOIN sale_items si ON si.sale_id = s.id
     WHERE s.status IN ('completed', 'refunded')
-      AND s.business_id = ${businessId}
+      AND s.business_id = ${businessId}${locationFilter("s", locationId)}
       AND s.created_at >= ${start}::timestamp 
       AND s.created_at <= ${end}::timestamp
   `);
@@ -915,7 +925,7 @@ export async function getHourlySalesReport(businessId: number, params: DateRange
   };
 }
 
-export async function getTaxReconciliationReport(businessId: number, params: DateRangeQuery) {
+export async function getTaxReconciliationReport(businessId: number, params: DateRangeQuery, locationId?: number) {
   const { start, end } = getDateBounds(params);
 
   const salesTax = await db.execute(sql`
@@ -991,7 +1001,7 @@ export async function getTaxReconciliationReport(businessId: number, params: Dat
   };
 }
 
-export async function getInventoryShrinkageReport(businessId: number, params: DateRangeQuery) {
+export async function getInventoryShrinkageReport(businessId: number, params: DateRangeQuery, locationId?: number) {
   const { start, end } = getDateBounds(params);
   const page = params.page || 1;
   const limit = params.limit || 50;
@@ -1002,7 +1012,7 @@ export async function getInventoryShrinkageReport(businessId: number, params: Da
     FROM inventory_movements im
     WHERE im.movement_type = 'adjustment'
       AND im.quantity < 0
-      AND im.business_id = ${businessId}
+      AND im.business_id = ${businessId}${locationFilter("im", locationId)}
       AND im.created_at >= ${start}::timestamp 
       AND im.created_at <= ${end}::timestamp
   `);
@@ -1036,7 +1046,7 @@ export async function getInventoryShrinkageReport(businessId: number, params: Da
     ) ib ON ib.variant_id = pv.id
     WHERE im.movement_type = 'adjustment'
       AND im.quantity < 0
-      AND im.business_id = ${businessId}
+      AND im.business_id = ${businessId}${locationFilter("im", locationId)}
       AND im.created_at >= ${start}::timestamp 
       AND im.created_at <= ${end}::timestamp
     ORDER BY im.created_at DESC
@@ -1059,7 +1069,7 @@ export async function getInventoryShrinkageReport(businessId: number, params: Da
     ) ib ON ib.variant_id = pv.id
     WHERE im.movement_type = 'adjustment'
       AND im.quantity < 0
-      AND im.business_id = ${businessId}
+      AND im.business_id = ${businessId}${locationFilter("im", locationId)}
       AND im.created_at >= ${start}::timestamp 
       AND im.created_at <= ${end}::timestamp
   `);
@@ -1084,7 +1094,7 @@ export async function getInventoryShrinkageReport(businessId: number, params: Da
     ) ib ON ib.variant_id = pv.id
     WHERE im.movement_type = 'adjustment'
       AND im.quantity < 0
-      AND im.business_id = ${businessId}
+      AND im.business_id = ${businessId}${locationFilter("im", locationId)}
       AND im.created_at >= ${start}::timestamp 
       AND im.created_at <= ${end}::timestamp
     GROUP BY reason
@@ -1101,7 +1111,7 @@ export async function getInventoryShrinkageReport(businessId: number, params: Da
   };
 }
 
-export async function getRegisterCloseReport(businessId: number, params: DateRangeQuery) {
+export async function getRegisterCloseReport(businessId: number, params: DateRangeQuery, locationId?: number) {
   const { start, end, startDateOnly, endDateOnly } = getDateBounds(params);
 
   // Cash collections
@@ -1176,4 +1186,98 @@ export async function getRegisterCloseReport(businessId: number, params: DateRan
     refunds: refunds.rows[0] || {},
     periodBounds: { start, end, startDateOnly, endDateOnly },
   };
+}
+
+// ----------------------------------------------------
+// LOCATION COMPARISON (Phase 5)
+// ----------------------------------------------------
+
+/**
+ * Per-location performance over a period: sales, refunds, net and expenses.
+ * Locations with no activity still appear (LEFT JOIN), so the comparison
+ * covers every outlet of the business. Totals aggregate the whole business.
+ */
+export async function getLocationComparisonReport(
+  businessId: number,
+  params: DateRangeQuery,
+) {
+  const { start, end } = getDateBounds(params);
+
+  const result = await db.execute(sql`
+    WITH sales_by_location AS (
+      SELECT
+        s.location_id,
+        COUNT(s.id)::int AS "invoiceCount",
+        COALESCE(SUM(s.final_total), 0)::numeric AS gross,
+        COALESCE(SUM(s.discount), 0)::numeric AS discount
+      FROM sales s
+      WHERE s.status IN ('completed', 'refunded')
+        AND s.business_id = ${businessId}
+        AND s.created_at >= ${start}::timestamp
+        AND s.created_at <= ${end}::timestamp
+      GROUP BY s.location_id
+    ),
+    refunds_by_location AS (
+      SELECT
+        sr.location_id,
+        COALESCE(SUM(sr.refund_total), 0)::numeric AS refunds
+      FROM sale_refunds sr
+      WHERE sr.business_id = ${businessId}
+        AND sr.created_at >= ${start}::timestamp
+        AND sr.created_at <= ${end}::timestamp
+      GROUP BY sr.location_id
+    ),
+    expenses_by_location AS (
+      SELECT
+        e.location_id,
+        COALESCE(SUM(e.amount), 0)::numeric AS expenses
+      FROM expenses e
+      WHERE e.business_id = ${businessId}
+        AND e.expense_date >= ${start}::date
+        AND e.expense_date <= ${end}::date
+      GROUP BY e.location_id
+    )
+    SELECT
+      l.id AS "locationId",
+      l.name AS "locationName",
+      l.location_type AS "locationType",
+      COALESCE(sl."invoiceCount", 0)::int AS "invoiceCount",
+      COALESCE(sl.gross, 0)::numeric AS gross,
+      COALESCE(sl.discount, 0)::numeric AS discount,
+      COALESCE(sr.refunds, 0)::numeric AS refunds,
+      COALESCE(sl.gross, 0) - COALESCE(sr.refunds, 0) AS net,
+      COALESCE(e.expenses, 0)::numeric AS expenses
+    FROM locations l
+    LEFT JOIN sales_by_location sl ON sl.location_id = l.id
+    LEFT JOIN refunds_by_location sr ON sr.location_id = l.id
+    LEFT JOIN expenses_by_location e ON e.location_id = l.id
+    WHERE l.business_id = ${businessId}
+    ORDER BY l.id
+  `);
+
+  const rows = result.rows.map((row: Record<string, unknown>) => ({
+    locationId: Number(row.locationId),
+    locationName: String(row.locationName),
+    locationType: String(row.locationType),
+    invoiceCount: Number(row.invoiceCount),
+    gross: Number(row.gross),
+    discount: Number(row.discount),
+    refunds: Number(row.refunds),
+    net: Number(row.net),
+    expenses: Number(row.expenses),
+  }));
+
+  const totals = rows.reduce(
+    (acc, row) => ({
+      invoiceCount: acc.invoiceCount + Number(row.invoiceCount),
+      gross: acc.gross + Number(row.gross),
+      discounts: acc.discounts + Number(row.discount),
+      refunds: acc.refunds + Number(row.refunds),
+      net: acc.net + Number(row.net),
+      expenses: acc.expenses + Number(row.expenses),
+    }),
+    { invoiceCount: 0, gross: 0, discounts: 0, refunds: 0, net: 0, expenses: 0 },
+  );
+
+  return { rows, totals, periodBounds: { start, end } };
 }

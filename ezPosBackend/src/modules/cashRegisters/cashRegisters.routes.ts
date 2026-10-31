@@ -34,6 +34,13 @@ const sessionRead = [requireAuth, requireBusinessContext()] as const;
 const sessionWrite = [...sessionRead, requireFullAccess] as const;
 
 router.get("/api/sessions/current", ...sessionRead, cashRegistersController.getCurrentSessionHandler);
+// Register summaries feed the reports hub — financial report scope.
+router.get(
+  "/api/reports/registers",
+  ...sessionRead,
+  requirePermission("reports.financial.view"),
+  cashRegistersController.getRegisterSessionReportHandler,
+);
 router.get("/api/sessions/:sessionId", ...sessionRead, cashRegistersController.getSessionHandler);
 router.post("/api/sessions/:sessionId/cash-movement", ...sessionWrite, cashRegistersController.postCashMovement);
 router.post("/api/sessions/:sessionId/close", ...sessionWrite, cashRegistersController.postCloseSession);

@@ -16,6 +16,9 @@ export interface DateRange {
 export interface ReportFilters {
   period: ReportPeriod;
   dateRange?: DateRange;
+  /** Undefined = all accessible locations; a value filters server-side
+   *  after access validation (never trusted blindly). */
+  locationId?: number;
   customerId?: number;
   supplierId?: number;
   categoryId?: number;

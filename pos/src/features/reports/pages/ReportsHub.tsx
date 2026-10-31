@@ -1,24 +1,26 @@
 import React from "react";
 import { useSearchParams } from "react-router";
 import {
-  BarChart3,
-  DollarSign,
-  Package,
-  ShoppingCart,
-  FileText,
-  Users,
-  CreditCard,
-  RotateCcw,
-  TrendingUp,
-  Receipt,
   AlertCircle,
-  Truck,
-  Layers,
+  AlertOctagon,
+  BarChart3,
+  Calculator,
   Calendar,
   Clock,
+  CreditCard,
+  DollarSign,
+  FileText,
+  GitCompare,
   Landmark,
-  AlertOctagon,
-  Calculator,
+  Layers,
+  Package,
+  Receipt,
+  RotateCcw,
+  ShoppingCart,
+  TrendingUp,
+  Truck,
+  Users,
+  Wallet,
 } from "lucide-react";
 import { SalesSummaryReport } from "./SalesSummaryReport";
 import { SalesByInvoiceReport } from "./SalesByInvoiceReport";
@@ -38,6 +40,8 @@ import { BatchExpiryReport } from "./BatchExpiryReport";
 import { InventoryShrinkageReport } from "./InventoryShrinkageReport";
 import { PurchaseSummaryReport } from "./PurchaseSummaryReport";
 import { SupplierPayablesReport } from "./SupplierPayablesReport";
+import { LocationComparisonReport } from "./LocationComparisonReport";
+import { RegisterSessionsReport } from "./RegisterSessionsReport";
 
 type ReportTabId =
   // Sales
@@ -49,6 +53,8 @@ type ReportTabId =
   | "sales-payments"
   | "sales-refunds"
   // Financial
+  | "location-comparison"
+  | "register-sessions"
   | "profit"
   | "expenses"
   | "receivables"
@@ -132,6 +138,18 @@ const REPORT_GROUPS: ReportGroup[] = [
         label: "Shift Close (Z-Report)",
         icon: Calculator,
         description: "Drawer balancing, cash over/short, and printable slip",
+      },
+      {
+        id: "register-sessions",
+        label: "Register Sessions",
+        icon: Wallet,
+        description: "Cashier shifts: expected vs counted cash, over/short",
+      },
+      {
+        id: "location-comparison",
+        label: "Location Comparison",
+        icon: GitCompare,
+        description: "Sales, refunds, net and expenses per location",
       },
       {
         id: "profit",
@@ -236,6 +254,10 @@ export default function ReportsHub() {
         return <SaleRefundsReport />;
       case "register-close":
         return <RegisterCloseReport />;
+      case "register-sessions":
+        return <RegisterSessionsReport />;
+      case "location-comparison":
+        return <LocationComparisonReport />;
       case "profit":
         return <ProfitReport />;
       case "expenses":

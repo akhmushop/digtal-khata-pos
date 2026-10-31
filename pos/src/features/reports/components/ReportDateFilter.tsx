@@ -8,6 +8,8 @@ import type {
 } from "../types/report.types";
 import { periodOptions, getPeriodDateRange } from "../utils/reportUtils";
 import { Input } from "@/components/ui/input";
+import { MapPin } from "lucide-react";
+import { useSessionStore } from "@/auth/sessionStore";
 
 interface ReportDateFilterProps {
   filters: ReportFilters;
@@ -15,6 +17,7 @@ interface ReportDateFilterProps {
   showSearch?: boolean;
   searchPlaceholder?: string;
   showPaymentStatus?: boolean;
+  showLocationFilter?: boolean;
   extraFilters?: React.ReactNode;
   className?: string;
 }
@@ -25,15 +28,27 @@ export function ReportDateFilter({
   showSearch = false,
   searchPlaceholder = "Search...",
   showPaymentStatus = false,
+  showLocationFilter = true,
   extraFilters,
   className = "",
 }: ReportDateFilterProps) {
+  const locations = useSessionStore((state) => state.locations);
   const [customStart, setCustomStart] = useState(
     filters.dateRange?.startDate || format(new Date(), "yyyy-MM-01")
   );
   const [customEnd, setCustomEnd] = useState(
     filters.dateRange?.endDate || format(new Date(), "yyyy-MM-dd")
   );
+
+  const handleLocationChange = (value: string) => {
+    const next: ReportFilters = { ...filters, page: 1 };
+    if (value === "all") {
+      delete next.locationId;
+    } else {
+      next.locationId = Number(value);
+    }
+    onFiltersChange(next);
+  };
 
   const handlePeriodChange = (period: ReportPeriod) => {
     if (period === "custom") {
@@ -79,6 +94,25 @@ export function ReportDateFilter({
     <div
       className={`flex flex-wrap items-center gap-2.5 rounded-xl border border-slate-200/90 bg-white p-3 shadow-xs ${className}`}
     >
+      {/* Location Scope (all accessible locations + consolidated) */}
+      {showLocationFilter && locations.length > 1 ? (
+        <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50/50 px-2.5 py-1">
+          <MapPin className="size-4 text-slate-400" />
+          <select
+            value={filters.locationId ?? "all"}
+            onChange={(e) => handleLocationChange(e.target.value)}
+            className="h-7 cursor-pointer bg-transparent text-sm font-medium text-slate-700 outline-none"
+          >
+            <option value="all">All Locations</option>
+            {locations.map((location) => (
+              <option key={location.id} value={location.id}>
+                {location.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
+
       {/* Period Selection */}
       <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50/50 px-2.5 py-1">
         <Calendar className="size-4 text-slate-400" />

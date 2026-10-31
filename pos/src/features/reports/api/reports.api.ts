@@ -25,6 +25,7 @@ import type {
 function buildParams(filters: Partial<ReportFilters>) {
   const params: Record<string, string | number | undefined> = {};
   if (filters.period) params.period = filters.period;
+  if (filters.locationId !== undefined) params.locationId = filters.locationId;
   if (filters.dateRange?.startDate) params.startDate = filters.dateRange.startDate;
   if (filters.dateRange?.endDate) params.endDate = filters.dateRange.endDate;
   if (filters.customerId) params.customerId = filters.customerId;
@@ -41,7 +42,72 @@ function buildParams(filters: Partial<ReportFilters>) {
   return params;
 }
 
+export interface LocationComparisonRow {
+  locationId: number;
+  locationName: string;
+  locationType: string;
+  invoiceCount: number;
+  gross: number;
+  discount: number;
+  refunds: number;
+  net: number;
+  expenses: number;
+}
+
+export interface LocationComparisonData {
+  rows: LocationComparisonRow[];
+  totals: {
+    invoiceCount: number;
+    gross: number;
+    discounts: number;
+    refunds: number;
+    net: number;
+    expenses: number;
+  };
+  periodBounds: { start: string; end: string };
+}
+
+export interface RegisterSessionRow {
+  sessionId: number;
+  registerName: string;
+  locationName: string;
+  userName: string;
+  status: string;
+  openingCash: number;
+  expectedCash: number;
+  countedCash: number | null;
+  difference: number | null;
+  cashSales: number;
+  cashIn: number;
+  cashOut: number;
+  openedAt: string | null;
+  closedAt: string | null;
+}
+
+export interface RegisterSessionReportData {
+  rows: RegisterSessionRow[];
+  totals: {
+    sessionCount: number;
+    expectedCash: number;
+    countedCash: number;
+    difference: number;
+    cashSales: number;
+  };
+}
+
 export const reportsApi = {
+  getLocationComparison: (filters: Partial<ReportFilters> = {}) =>
+    api.get<{ success: boolean; data: LocationComparisonData }>(
+      "/reports/locations/comparison",
+      { params: buildParams(filters) },
+    ),
+
+  getRegisterSessions: (filters: Partial<ReportFilters> = {}) =>
+    api.get<{ success: boolean; data: RegisterSessionReportData }>(
+      "/reports/registers",
+      { params: buildParams(filters) },
+    ),
+
   // Sales
   getSalesSummary: (filters: Partial<ReportFilters> = {}) =>
     api.get<{ success: boolean; data: SalesSummaryReportData }>("/reports/sales/summary", {
