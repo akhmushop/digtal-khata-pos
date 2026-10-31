@@ -153,7 +153,7 @@ export function AppSidebar() {
                 <ChevronsUpDown className="ml-auto" />
               </DropdownMenuTrigger>
               <DropdownMenuContent side="top" align="start">
-                <DropdownMenuItem onSelect={() => void logout()}>
+                <DropdownMenuItem onClick={() => void logout()}>
                   <LogOut />
                   Sign out
                 </DropdownMenuItem>
