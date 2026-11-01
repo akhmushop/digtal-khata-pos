@@ -91,10 +91,17 @@ function OnboardingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { status, businesses } = useAuth();
+  // Active business from localStorage (business switcher) as fallback.
   const businessParam = Number(searchParams.get("business"));
+  const storedBusinessId = (() => {
+    if (typeof window === "undefined") return null;
+    const parsed = Number(window.localStorage.getItem("ezpos-active-business"));
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+  })();
+  const activeBusinessId = storedBusinessId;
   const businessId = Number.isInteger(businessParam) && businessParam > 0
     ? businessParam
-    : (businesses[0]?.businessId ?? null);
+    : (activeBusinessId ?? null);
 
   const [step, setStep] = useState<Step>(0);
   const [error, setError] = useState<string | null>(null);

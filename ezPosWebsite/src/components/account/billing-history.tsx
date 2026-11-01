@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useActiveBusiness } from "@/hooks/useActiveBusiness";
 import {
   fetchInvoices,
   fetchPayments,
@@ -19,8 +20,7 @@ function money(amount: number, currency: string): string {
 }
 
 export function BillingHistory() {
-  const { businesses } = useAuth();
-  const businessId = businesses[0]?.businessId ?? null;
+  const { businessId } = useActiveBusiness();
   const [invoices, setInvoices] = useState<InvoiceSummary[] | null>(null);
   const [payments, setPayments] = useState<PaymentSummary[] | null>(null);
   const [payingId, setPayingId] = useState<number | null>(null);

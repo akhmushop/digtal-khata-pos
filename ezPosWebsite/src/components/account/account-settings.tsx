@@ -5,6 +5,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/forms/text-field";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useActiveBusiness } from "@/hooks/useActiveBusiness";
 import { updateBusiness } from "@/lib/api/account";
 import { changePassword, updateProfile } from "@/lib/api/portal";
 
@@ -39,9 +40,8 @@ function Card({
 }
 
 export function AccountSettings() {
-  const { businesses, user, refresh, onSignedOut } = useAuth();
-  const membership = businesses[0];
-  const businessId = membership?.businessId ?? null;
+  const { user, refresh, onSignedOut } = useAuth();
+  const { businessId, business: membership } = useActiveBusiness();
 
   // Business settings
   const [bizName, setBizName] = useState(membership?.businessName ?? "");

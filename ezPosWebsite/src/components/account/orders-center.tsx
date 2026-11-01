@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useActiveBusiness } from "@/hooks/useActiveBusiness";
 import {
   fetchOrderDetail,
   fetchOrders,
@@ -42,8 +43,7 @@ function detailRow(label: string, value: string) {
 }
 
 export function OrdersCenter() {
-  const { businesses } = useAuth();
-  const businessId = businesses[0]?.businessId ?? null;
+  const { businessId } = useActiveBusiness();
 
   const [channel, setChannel] = useState("");
   const [status, setStatus] = useState("");

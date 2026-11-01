@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  Building2,
   CreditCard,
   LayoutDashboard,
   LifeBuoy,
@@ -13,6 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useActiveBusiness } from "@/hooks/useActiveBusiness";
 
 const NAV = [
   { href: "/account", label: "Overview", icon: Store },
@@ -27,6 +29,7 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { status } = useAuth();
+  const { businesses, businessId, switchBusiness } = useActiveBusiness();
 
   useEffect(() => {
     if (status === "anonymous") router.replace("/sign-in");
@@ -43,6 +46,29 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="py-10 sm:py-14">
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
+        {businesses.length > 1 ? (
+          <div className="mb-6 flex items-center gap-2 text-sm">
+            <Building2
+              className="size-4 shrink-0 text-slate-400"
+              aria-hidden="true"
+            />
+            <label htmlFor="business-switcher" className="text-slate-500">
+              Business:
+            </label>
+            <select
+              id="business-switcher"
+              value={businessId ?? ""}
+              onChange={(event) => switchBusiness(Number(event.target.value))}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-900 shadow-sm"
+            >
+              {businesses.map((b) => (
+                <option key={b.businessId} value={b.businessId}>
+                  {b.businessName}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
         <div className="grid gap-8 lg:grid-cols-[220px_1fr]">
           <nav aria-label="Account navigation">
             <ul className="flex gap-1 overflow-x-auto lg:flex-col">
