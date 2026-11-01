@@ -12,6 +12,39 @@ import {
   type PaymentSummary,
 } from "@/lib/api/portal";
 
+function Pager({
+  page,
+  onPage,
+  hasMore,
+}: {
+  page: number;
+  onPage: (next: number) => void;
+  hasMore: boolean;
+}) {
+  if (page === 1 && !hasMore) return null;
+  return (
+    <div className="flex items-center gap-3 px-6 py-3 text-sm">
+      <button
+        type="button"
+        disabled={page === 1}
+        onClick={() => onPage(page - 1)}
+        className="rounded-lg border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 disabled:opacity-40"
+      >
+        ← Previous
+      </button>
+      <span className="text-xs text-slate-500">Page {page}</span>
+      <button
+        type="button"
+        disabled={!hasMore}
+        onClick={() => onPage(page + 1)}
+        className="rounded-lg border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 disabled:opacity-40"
+      >
+        Next →
+      </button>
+    </div>
+  );
+}
+
 function money(amount: number, currency: string): string {
   return `${currency} ${amount.toLocaleString(undefined, {
     minimumFractionDigits: 0,
@@ -21,6 +54,8 @@ function money(amount: number, currency: string): string {
 
 export function BillingHistory() {
   const { businessId } = useActiveBusiness();
+  const [invoicePage, setInvoicePage] = useState(1);
+  const [paymentPage, setPaymentPage] = useState(1);
   const [invoices, setInvoices] = useState<InvoiceSummary[] | null>(null);
   const [payments, setPayments] = useState<PaymentSummary[] | null>(null);
   const [payingId, setPayingId] = useState<number | null>(null);
@@ -44,13 +79,13 @@ export function BillingHistory() {
     if (!businessId) return;
     void (async () => {
       const [invoiceRes, paymentRes] = await Promise.all([
-        fetchInvoices(businessId),
-        fetchPayments(businessId),
+        fetchInvoices(businessId, invoicePage),
+        fetchPayments(businessId, paymentPage),
       ]);
       setInvoices(invoiceRes.data ?? []);
       setPayments(paymentRes.data ?? []);
     })();
-  }, [businessId]);
+  }, [businessId, invoicePage, paymentPage]);
 
   if (!businessId) {
     return <p className="text-sm text-slate-500">No business yet.</p>;
@@ -80,6 +115,12 @@ export function BillingHistory() {
           {payError}
         </p>
       ) : null}
+
+      <Pager
+        page={invoicePage}
+        onPage={setInvoicePage}
+        hasMore={(invoices?.length ?? 0) >= 25}
+      />
 
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <h2 className="border-b border-slate-100 px-6 py-4 text-sm font-semibold text-slate-900">
@@ -149,6 +190,12 @@ export function BillingHistory() {
           </table>
         )}
       </div>
+
+      <Pager
+        page={paymentPage}
+        onPage={setPaymentPage}
+        hasMore={(payments?.length ?? 0) >= 25}
+      />
 
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <h2 className="border-b border-slate-100 px-6 py-4 text-sm font-semibold text-slate-900">

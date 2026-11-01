@@ -47,6 +47,8 @@ export function OrdersCenter() {
 
   const [channel, setChannel] = useState("");
   const [status, setStatus] = useState("");
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [orders, setOrders] = useState<UnifiedOrder[] | null>(null);
   const [detail, setDetail] = useState<OrderDetail | null>(null);
   const [busy, setBusy] = useState(false);
@@ -55,14 +57,15 @@ export function OrdersCenter() {
   const reload = useCallback(
     async (selectId?: number) => {
       if (!businessId) return;
-      const result = await fetchOrders(businessId, { channel, status });
+      const result = await fetchOrders(businessId, { channel, status, page });
       setOrders(result.data?.orders ?? []);
+      setHasMore((result.data?.orders?.length ?? 0) >= 25);
       if (selectId) {
         const d = await fetchOrderDetail(businessId, selectId);
         setDetail(d.ok && d.data ? d.data : null);
       }
     },
-    [businessId, channel, status],
+    [businessId, channel, status, page],
   );
 
   useEffect(() => {
@@ -109,7 +112,10 @@ export function OrdersCenter() {
                 ? "rounded-full bg-indigo-600 px-3 py-1 text-xs font-medium text-white"
                 : "rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 hover:border-slate-400"
             }
-            onClick={() => setChannel(c.value)}
+            onClick={() => {
+              setChannel(c.value);
+              setPage(1);
+            }}
           >
             {c.label}
           </button>
@@ -124,7 +130,10 @@ export function OrdersCenter() {
                 ? "rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white"
                 : "rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 hover:border-slate-400"
             }
-            onClick={() => setStatus(s)}
+            onClick={() => {
+              setStatus(s);
+              setPage(1);
+            }}
           >
             {s || "any status"}
           </button>
@@ -196,6 +205,7 @@ export function OrdersCenter() {
             </tbody>
           </table>
         )}
+        <Pager page={page} hasMore={hasMore} onPage={setPage} />
       </div>
 
       {detail ? (
@@ -312,6 +322,39 @@ export function OrdersCenter() {
           </div>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function Pager({
+  page,
+  hasMore,
+  onPage,
+}: {
+  page: number;
+  hasMore: boolean;
+  onPage: (next: number) => void;
+}) {
+  if (page === 1 && !hasMore) return null;
+  return (
+    <div className="flex items-center gap-3 px-5 py-3 text-sm">
+      <button
+        type="button"
+        disabled={page === 1}
+        onClick={() => onPage(page - 1)}
+        className="rounded-lg border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 disabled:opacity-40"
+      >
+        ← Previous
+      </button>
+      <span className="text-xs text-slate-500">Page {page}</span>
+      <button
+        type="button"
+        disabled={!hasMore}
+        onClick={() => onPage(page + 1)}
+        className="rounded-lg border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 disabled:opacity-40"
+      >
+        Next →
+      </button>
     </div>
   );
 }

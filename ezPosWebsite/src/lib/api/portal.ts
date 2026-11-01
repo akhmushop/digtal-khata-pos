@@ -176,8 +176,9 @@ export interface PaymentSummary {
 
 export async function fetchInvoices(
   businessId: number,
+  page = 1,
 ): Promise<ApiResult<InvoiceSummary[]>> {
-  return request("/api/businesses/" + businessId + "/invoices", {
+  return request(`/api/businesses/${businessId}/invoices?page=${page}`, {
     method: "GET",
     businessId,
   });
@@ -195,8 +196,9 @@ export async function fetchInvoice(
 
 export async function fetchPayments(
   businessId: number,
+  page = 1,
 ): Promise<ApiResult<PaymentSummary[]>> {
-  return request("/api/businesses/" + businessId + "/payments", {
+  return request(`/api/businesses/${businessId}/payments?page=${page}`, {
     method: "GET",
     businessId,
   });
