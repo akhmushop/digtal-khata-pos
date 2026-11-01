@@ -22,6 +22,15 @@ import usersRouter from "./modules/users/users.routes.js";
 import locationsRouter from "./modules/locations/locations.routes.js";
 import stockTransfersRouter from "./modules/stockTransfers/stockTransfers.routes.js";
 import cashRegistersRouter from "./modules/cashRegisters/cashRegisters.routes.js";
+import supportRouter from "./modules/support/support.routes.js";
+import supportPortalRouter from "./modules/support/supportPortal.routes.js";
+import subscriptionsPortalRouter from "./modules/subscriptions/subscriptions.routes.js";
+import paymentsRouter from "./modules/payments/payments.routes.js";
+import saasAdminRouter from "./modules/saasAdmin/saasAdmin.routes.js";
+import storefrontRouter from "./modules/storefront/storefront.routes.js";
+import integrationsRouter from "./modules/integrations/integrations.routes.js";
+import webhooksRouter from "./modules/webhooks/webhookEndpoints.routes.js";
+import ordersAdminRouter from "./modules/commerce/ordersAdmin.routes.js";
 import {
   BadRequestError,
   ConflictError,
@@ -47,7 +56,34 @@ export function buildApp() {
       credentials: true,
     }),
   );
-  app.use(express.json());
+  app.use(
+    express.json({
+      // WooCommerce webhooks sign the EXACT bytes they send — capture the
+      // raw body (only for that path) before JSON parsing consumes it.
+      verify: (req: Request & { originalUrl?: string }, _res, buf) => {
+        if (
+          req.originalUrl?.startsWith(
+            "/api/integrations/woocommerce/webhook/",
+          )
+        ) {
+          (req as Request & { __rawBody?: string }).__rawBody =
+            buf.toString("utf8");
+        }
+      },
+    }),
+  );
+  // Gateway IPNs (SSLCommerz) post form-urlencoded payloads.
+  app.use(express.urlencoded({ extended: false }));
+
+  // Baseline security headers (kept dependency-free; a CSP belongs to the
+  // frontends, which serve the HTML).
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    void req;
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    next();
+  });
 
   // Liveness/readiness probe for load balancers and container runtimes.
   app.get("/healthz", async (_req: Request, res: Response) => {
@@ -78,6 +114,15 @@ export function buildApp() {
   app.use("/", locationsRouter);
   app.use("/", stockTransfersRouter);
   app.use("/", cashRegistersRouter);
+  app.use("/", supportRouter);
+  app.use("/", supportPortalRouter);
+  app.use("/", subscriptionsPortalRouter);
+  app.use("/", paymentsRouter);
+  app.use("/", saasAdminRouter);
+  app.use("/", storefrontRouter);
+  app.use("/", integrationsRouter);
+  app.use("/", webhooksRouter);
+  app.use("/", ordersAdminRouter);
 
   // error handling
   app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
@@ -96,7 +141,11 @@ export function buildApp() {
     }
 
     if (err instanceof ForbiddenError) {
-      return res.status(403).json({ success: false, message: err.message });
+      return res.status(403).json({
+        success: false,
+        message: err.message,
+        ...(err.code ? { code: err.code } : {}),
+      });
     }
 
     // Malformed JSON bodies surface as SyntaxError from express.json().

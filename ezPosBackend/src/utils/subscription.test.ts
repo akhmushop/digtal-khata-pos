@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  PAST_DUE_GRACE_DAYS,
   addDays,
   computeSubscriptionState,
+  computeUpgradeCharge,
   slugifyBusinessName,
 } from "./subscription.js";
 
@@ -80,13 +82,40 @@ describe("computeSubscriptionState", () => {
     assert.equal(state.accessMode, "full");
   });
 
-  it("past_due is read-only until payment is verified", () => {
+  it("past_due keeps full access during the grace period", () => {
     const state = computeSubscriptionState(
-      { status: "past_due", currentPeriodEnd: addDays(now, 10) },
+      { status: "past_due", currentPeriodEnd: addDays(now, -1) },
+      now,
+    );
+    assert.equal(state.accessMode, "full");
+    assert.equal(state.status, "past_due");
+    assert.ok(state.graceEndsAt !== null);
+  });
+
+  it("past_due drops to read-only once the grace period lapses", () => {
+    const state = computeSubscriptionState(
+      {
+        status: "past_due",
+        currentPeriodEnd: addDays(now, -(PAST_DUE_GRACE_DAYS + 1)),
+      },
       now,
     );
     assert.equal(state.accessMode, "read_only");
-    assert.equal(state.trial, false);
+  });
+
+  it("past_due at the grace deadline boundary is still full (inclusive end)", () => {
+    const periodEnd = addDays(now, -PAST_DUE_GRACE_DAYS);
+    const state = computeSubscriptionState({ status: "past_due", currentPeriodEnd: periodEnd }, now);
+    assert.equal(state.accessMode, "full");
+  });
+
+  it("suspended subscriptions are read-only", () => {
+    const state = computeSubscriptionState(
+      { status: "suspended", currentPeriodEnd: addDays(now, 10) },
+      now,
+    );
+    assert.equal(state.accessMode, "read_only");
+    assert.equal(state.status, "suspended");
   });
 
   it("canceled and expired subscriptions are read-only", () => {
@@ -97,6 +126,34 @@ describe("computeSubscriptionState", () => {
       );
       assert.equal(state.accessMode, "read_only", status);
     }
+  });
+});
+
+describe("computeUpgradeCharge", () => {
+  const periodStart = new Date("2026-10-01T00:00:00.000Z");
+  const periodEnd = new Date("2026-11-01T00:00:00.000Z"); // 31 days
+
+  it("charges the price difference prorated over the remaining period", () => {
+    // 2026-10-16 → 16 of 31 days remain (Oct 16 → Nov 1), difference 1000.
+    const now = new Date("2026-10-16T00:00:00.000Z");
+    const charge = computeUpgradeCharge(500, 1500, periodStart, periodEnd, now);
+    assert.equal(charge, 516.13); // round(100000 * 16/31)/100
+  });
+
+  it("never charges for a downgrade (min 0)", () => {
+    const now = new Date("2026-10-16T00:00:00.000Z");
+    const charge = computeUpgradeCharge(1500, 500, periodStart, periodEnd, now);
+    assert.equal(charge, 0);
+  });
+
+  it("charges 0 at the period end (nothing remains)", () => {
+    const charge = computeUpgradeCharge(500, 1500, periodStart, periodEnd, periodEnd);
+    assert.equal(charge, 0);
+  });
+
+  it("charges the full difference on day one", () => {
+    const charge = computeUpgradeCharge(500, 1500, periodStart, periodEnd, periodStart);
+    assert.equal(charge, 1000);
   });
 });
 

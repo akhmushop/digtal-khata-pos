@@ -18,6 +18,7 @@ export const customers = pgTable(
       .references(() => businesses.id),
     name: varchar({ length: 255 }).notNull(),
     phone: varchar({ length: 20 }),
+    email: varchar({ length: 255 }),
     address: text(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },

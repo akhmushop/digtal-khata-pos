@@ -44,6 +44,64 @@ export const env = {
   trialPlanSlug: process.env.TRIAL_PLAN_SLUG?.trim() || "free-trial",
   accessTokenTtlMinutes: optionalInt("ACCESS_TOKEN_TTL_MINUTES", 15),
   refreshTokenTtlDays: optionalInt("REFRESH_TOKEN_TTL_DAYS", 7),
+  /** Ops-tunable rate-limit ceilings (requests per 15-minute window). */
+  authRateLimitMax: optionalInt("AUTH_RATE_LIMIT_MAX", 20),
+  refreshRateLimitMax: optionalInt("REFRESH_RATE_LIMIT_MAX", 60),
+  /**
+   * Email delivery. "console" (default) logs messages instead of pretending
+   * to send; "resend" posts to the Resend HTTP API; "none" discards.
+   */
+  emailProvider: ((): "console" | "resend" | "none" => {
+    const raw = process.env.EMAIL_PROVIDER?.trim() || "console";
+    if (raw !== "console" && raw !== "resend" && raw !== "none") {
+      throw new Error(
+        `EMAIL_PROVIDER must be "console", "resend", or "none", got "${raw}".`,
+      );
+    }
+    return raw;
+  })(),
+  resendApiKey: process.env.RESEND_API_KEY?.trim() || "",
+  emailFrom: process.env.EMAIL_FROM?.trim() || "",
+  /** Public website origin used for links inside emails. */
+  appUrl: process.env.APP_URL?.trim() || "http://localhost:3001",
+  passwordResetTokenTtlHours: optionalInt("PASSWORD_RESET_TOKEN_TTL_HOURS", 2),
+  /**
+   * Payment gateway. "mock" issues deterministic dev/test sessions and is
+   * REFUSED in production; "sslcommerz" is the real gateway.
+   */
+  paymentProvider: ((): "mock" | "sslcommerz" => {
+    const raw = process.env.PAYMENT_PROVIDER?.trim() || "mock";
+    if (raw !== "mock" && raw !== "sslcommerz") {
+      throw new Error(
+        `PAYMENT_PROVIDER must be "mock" or "sslcommerz", got "${raw}".`,
+      );
+    }
+    if (raw === "mock" && process.env.NODE_ENV === "production") {
+      throw new Error(
+        'PAYMENT_PROVIDER=mock is not allowed in production — simulated payments must never be treated as real ones. Set PAYMENT_PROVIDER=sslcommerz.',
+      );
+    }
+    return raw;
+  })(),
+  sslcommerzStoreId: process.env.SSLCOMMERZ_STORE_ID?.trim() || "",
+  sslcommerzStorePassword: process.env.SSLCOMMERZ_STORE_PASSWORD?.trim() || "",
+  sslcommerzSandbox: process.env.SSLCOMMERZ_SANDBOX?.trim() !== "false",
+  /** Public backend origin, used as the IPN callback target. */
+  backendUrl: process.env.BACKEND_URL?.trim() || "http://localhost:3000",
+  /** Background sweeps (trial expiry, reminders, grace suspension). */
+  jobsEnabled: process.env.JOBS_ENABLED?.trim() !== "false",
+  jobsIntervalMinutes: optionalInt("JOBS_INTERVAL_MINUTES", 60),
+  /**
+   * AES-256-GCM master key for integration credentials. Required outside
+   * development; a deterministic dev fallback keeps local testing frictionless.
+   */
+  integrationEncryptionKey:
+    process.env.INTEGRATION_ENCRYPTION_KEY?.trim() ||
+    (process.env.NODE_ENV === "production"
+      ? ""
+      : "ezpos-local-development-integration-encryption-key"),
+  /** Storefront API per-key request ceiling per minute. */
+  storefrontRateLimitPerMinute: optionalInt("STOREFRONT_RATE_LIMIT_PER_MINUTE", 600),
   emailVerificationTokenTtlHours: optionalInt(
     "EMAIL_VERIFICATION_TOKEN_TTL_HOURS",
     24,

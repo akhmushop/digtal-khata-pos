@@ -1,0 +1,78 @@
+import { and, eq, lt, sql } from "drizzle-orm";
+import { db } from "../db/schema/index.js";
+import { inventoryReservations } from "../db/schema/inventoryReservations.js";
+import { inventoryStock } from "../db/schema/inventoryStock.js";
+import { sales } from "../db/schema/sales.js";
+
+/**
+ * Commerce sweeps (Phase 9.1): expire stale online-order reservations.
+ *
+ * An expired reservation releases its stock hold and cancels the still-
+ * pending sale. Lock ordering matches confirmOnlineOrder (sale row first,
+ * then reservations) so the two paths cannot deadlock.
+ */
+export async function sweepExpiredReservations(
+  now: Date = new Date(),
+): Promise<number> {
+  return db.transaction(async (tx) => {
+    const due = await tx
+      .select({
+        id: inventoryReservations.id,
+        saleId: inventoryReservations.saleId,
+        stockId: inventoryReservations.stockId,
+        quantity: inventoryReservations.quantity,
+      })
+      .from(inventoryReservations)
+      .where(
+        and(
+          eq(inventoryReservations.status, "active"),
+          lt(inventoryReservations.expiresAt, now),
+        ),
+      )
+      .for("update", { skipLocked: true });
+
+    let expired = 0;
+    for (const reservation of due) {
+      if (reservation.saleId) {
+        // Lock the sale first (same order as confirmation) and cancel it
+        // only if it is still pending — a confirmed/paid sale owns its
+        // reservation as 'confirmed', which this sweep never selects.
+        const [sale] = await tx
+          .select({ id: sales.id, status: sales.status })
+          .from(sales)
+          .where(eq(sales.id, reservation.saleId))
+          .for("update");
+        if (sale && sale.status === "pending") {
+          await tx
+            .update(sales)
+            .set({ status: "cancelled" })
+            .where(eq(sales.id, sale.id));
+        }
+      }
+      await tx
+        .update(inventoryReservations)
+        .set({ status: "expired" })
+        .where(eq(inventoryReservations.id, reservation.id));
+      await tx
+        .update(inventoryStock)
+        .set({
+          reservedQuantity: sql`greatest(0, ${inventoryStock.reservedQuantity} - ${reservation.quantity})`,
+        })
+        .where(eq(inventoryStock.id, reservation.stockId));
+      expired += 1;
+    }
+    return expired;
+  });
+}
+
+export async function runCommerceSweeps(
+  now: Date = new Date(),
+): Promise<{ reservationsExpired: number }> {
+  const results = { reservationsExpired: 0 };
+  try {
+    results.reservationsExpired = await sweepExpiredReservations(now);
+  } catch (err) {
+    console.error("Reservation expiry sweep failed:", err);
+  }
+  return results;
+}

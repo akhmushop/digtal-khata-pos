@@ -53,3 +53,50 @@ export const verifyEmailSchema = z.object({
 });
 
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
+
+export const forgotPasswordSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .pipe(z.email("Enter a valid email address")),
+});
+
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z.object({
+  token: z.string().trim().min(10).max(200),
+  password: z
+    .string()
+    .min(8, "Use at least 8 characters")
+    .max(128, "Password is too long"),
+});
+
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+export const updateProfileSchema = z.object({
+  fullName: z
+    .string()
+    .trim()
+    .min(2, "Enter your full name")
+    .max(100, "Name is too long")
+    .optional(),
+  phone: z
+    .preprocess((value) => {
+      if (typeof value !== "string") return value;
+      const trimmed = value.trim();
+      return trimmed === "" ? undefined : trimmed;
+    }, z.string().regex(/^\+?[0-9\s-]{6,20}$/, "Enter a valid phone number").optional()),
+});
+
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Enter your current password").max(128),
+  newPassword: z
+    .string()
+    .min(8, "Use at least 8 characters")
+    .max(128, "Password is too long"),
+});
+
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

@@ -11,7 +11,9 @@ import { useAuth } from "@/components/providers/auth-provider";
 const NAV_LINKS = [
   { href: "/features", label: "Features" },
   { href: "/pricing", label: "Pricing" },
+  { href: "/industries", label: "Industries" },
   { href: "/faq", label: "FAQ" },
+  { href: "/contact", label: "Contact" },
 ] as const;
 
 export function SiteHeader() {
@@ -70,6 +72,15 @@ export function SiteHeader() {
                 )}
               >
                 Dashboard
+              </Link>
+              <Link
+                href="/account"
+                className={cn(
+                  buttonClasses({ variant: "ghost" }),
+                  pathname.startsWith("/account") && "text-indigo-700",
+                )}
+              >
+                Account
               </Link>
               <Link
                 href="/"

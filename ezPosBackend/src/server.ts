@@ -4,6 +4,7 @@ import "./config/env.js";
 import { buildApp } from "./app.js";
 import { pool } from "./config/db.js";
 import { ensureRbacSeed } from "./rbac/seed.js";
+import { startScheduler, stopScheduler } from "./jobs/scheduler.js";
 
 const app = buildApp();
 
@@ -12,6 +13,10 @@ const app = buildApp();
 ensureRbacSeed().catch((err) => {
   console.error("RBAC permission seed failed:", err);
 });
+
+// Subscription lifecycle sweeps (trial expiry, reminders, grace suspension)
+// on a fixed interval — disabled with JOBS_ENABLED=false.
+startScheduler();
 
 // Configurable for local development so the website (3001), POS frontend,
 // and a second backend instance can run alongside the default port.
@@ -34,6 +39,7 @@ const server = app.listen(PORT, () =>
 // their database transactions) finish, then close the connection pool.
 async function shutdown(signal: string) {
   console.log(`${signal} received — shutting down gracefully.`);
+  stopScheduler();
   server.close(async () => {
     try {
       await pool.end();

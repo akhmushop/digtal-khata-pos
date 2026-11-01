@@ -9,6 +9,11 @@ import {
   updateBusinessSchema,
 } from "./businesses.validation.js";
 import { sendSafeError } from "../../utils/safeError.js";
+import { env } from "../../config/env.js";
+import { getEntitlements, getBusinessUsage } from "../../services/entitlements.js";
+import { getSubscriptionHistory } from "../subscriptions/subscription.service.js";
+import { sendEmail } from "../../services/email/email.service.js";
+import { renderWelcome, renderTrialStarted } from "../../services/email/email.templates.js";
 
 export async function createBusiness(req: Request, res: Response) {
   try {
@@ -26,6 +31,37 @@ export async function createBusiness(req: Request, res: Response) {
       });
     }
     const result = await createBusinessForUser(req.user.id, parsed.data);
+
+    // Best-effort onboarding emails — never fail the creation itself.
+    if (req.user.email) {
+      void sendEmail({
+        to: req.user.email,
+        ...renderWelcome(req.user.fullName),
+      }).then((delivery) => {
+        if (!delivery.ok) {
+          console.error(
+            `Welcome email failed for ${req.user?.email}: ${delivery.error}`,
+          );
+        }
+      });
+      if (result.subscription?.currentPeriodEnd && !result.trialSkipped) {
+        void sendEmail({
+          to: req.user.email,
+          ...renderTrialStarted(
+            result.business.name,
+            env.trialDays,
+            result.subscription.currentPeriodEnd,
+          ),
+        }).then((delivery) => {
+          if (!delivery.ok) {
+            console.error(
+              `Trial-started email failed for ${req.user?.email}: ${delivery.error}`,
+            );
+          }
+        });
+      }
+    }
+
     return res.status(201).json({
       success: true,
       message: result.trialSkipped
@@ -82,15 +118,31 @@ export async function updateBusiness(req: Request, res: Response) {
 
 export async function getBusinessSubscription(req: Request, res: Response) {
   try {
+    if (!req.user || !req.membership) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Authentication required." });
+    }
     if (!req.subscriptionAccess) {
       return res.status(500).json({
         success: false,
         message: "Subscription state was not evaluated for this request.",
       });
     }
+    const businessId = req.membership.businessId;
+    // Portal-ready payload: access state plus the plan's entitlements, the
+    // business's usage against plan limits, and the lifecycle audit trail.
+    const [entitlements, usage, history] = await Promise.all([
+      getEntitlements(businessId),
+      getBusinessUsage(businessId),
+      getSubscriptionHistory(businessId),
+    ]);
     return res.status(200).json({
       success: true,
       subscription: req.subscriptionAccess,
+      plan: entitlements.plan,
+      usage,
+      events: history,
     });
   } catch (err) {
     return sendSafeError(

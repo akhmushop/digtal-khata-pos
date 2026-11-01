@@ -1,4 +1,5 @@
 import { rateLimit } from "express-rate-limit";
+import { env } from "../config/env.js";
 
 const jsonMessage = (message: string) => ({
   success: false,
@@ -11,7 +12,7 @@ const jsonMessage = (message: string) => ({
  */
 export const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 20,
+  limit: env.authRateLimitMax,
   standardHeaders: true,
   legacyHeaders: false,
   message: jsonMessage(
@@ -25,10 +26,24 @@ export const authRateLimit = rateLimit({
  */
 export const refreshRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 60,
+  limit: env.refreshRateLimitMax,
   standardHeaders: true,
   legacyHeaders: false,
   message: jsonMessage(
     "Too many session refreshes. Please try again in a few minutes.",
+  ),
+});
+
+/**
+ * Public, unauthenticated contact form — kept tight so it cannot be used
+ * as a spam relay into the support inbox. Keyed by IP.
+ */
+export const contactRateLimit = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: jsonMessage(
+    "Too many messages sent. Please try again in an hour.",
   ),
 });

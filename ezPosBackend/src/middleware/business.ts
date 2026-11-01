@@ -52,9 +52,11 @@ async function resolveBusinessContext(
       roleId: businessMemberships.roleId,
       roleSlug: roles.slug,
       roleName: roles.name,
+      businessStatus: businesses.status,
     })
     .from(businessMemberships)
     .innerJoin(roles, eq(roles.id, businessMemberships.roleId))
+    .innerJoin(businesses, eq(businesses.id, businessMemberships.businessId))
     .where(
       and(
         eq(businessMemberships.userId, req.user!.id),
@@ -68,6 +70,18 @@ async function resolveBusinessContext(
     res.status(403).json({
       success: false,
       message: "You do not have access to this business.",
+    });
+    return false;
+  }
+
+  // Platform-level suspension blocks ALL access to the business —
+  // stricter than subscription expiry (which keeps read-only + billing).
+  if (membership.businessStatus === "suspended") {
+    res.status(403).json({
+      success: false,
+      code: "BUSINESS_SUSPENDED",
+      message:
+        "This business account is suspended. Contact ezPos support to restore access.",
     });
     return false;
   }

@@ -16,9 +16,12 @@ export class BadRequestError extends Error {
 }
 //3. For permissions (HTTP 403)
 export class ForbiddenError extends Error {
-  constructor(message: string) {
+  /** Optional machine-readable code (e.g. PLAN_LIMIT_REACHED) for clients. */
+  code: string | undefined;
+  constructor(message: string, code?: string) {
     super(message);
     this.name = "ForbiddenError";
+    this.code = code;
   }
 }
 //4. for database conflicts, like duplicate emails or barcode (HTTP 409)

@@ -14,8 +14,16 @@
 -- ============================================================================
 
 -- 1. The trial plan (matches what activateTrialInTx looks up by slug).
-INSERT INTO subscription_plans (name, slug, interval, price, currency, is_active)
-VALUES ('Free trial', 'free-trial', 'monthly', 0, 'BDT', true)
+-- Limits match migration 0007's seed: 3 users / 1 location / 100 products.
+-- Features stay empty — the trial covers core POS only.
+INSERT INTO subscription_plans (name, slug, interval, price, currency, limits, features, trial_days, is_active)
+VALUES (
+  'Free trial', 'free-trial', 'monthly', 0, 'BDT',
+  '{"maxUsers":3,"maxLocations":1,"maxProducts":100,"maxConnectedStores":1,"maxWebhookEndpoints":1}'::jsonb,
+  '{"storefrontApi":true,"woocommerceIntegration":true,"customStorefront":true,"multipleOnlineStores":false,"advancedWebhooks":true}'::jsonb,
+  14,
+  true
+)
 ON CONFLICT (slug) DO NOTHING;
 
 -- 2. Backfill: 14-day trial for every business without an open subscription.

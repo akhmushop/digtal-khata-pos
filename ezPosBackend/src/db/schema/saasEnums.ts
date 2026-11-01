@@ -17,6 +17,8 @@ export const businessStatusEnum = pgEnum("business_status", [
   "suspended",
 ]);
 
+// business_mode lives in commerceEnums.ts (Phase 9).
+
 export const billingIntervalEnum = pgEnum("billing_interval", [
   "monthly",
   "yearly",
@@ -26,8 +28,15 @@ export const subscriptionStatusEnum = pgEnum("subscription_status", [
   "trialing",
   "active",
   "past_due",
+  "suspended",
   "canceled",
   "expired",
+]);
+
+export const subscriptionActorEnum = pgEnum("subscription_actor", [
+  "customer",
+  "admin",
+  "system",
 ]);
 
 export const invitationStatusEnum = pgEnum("invitation_status", [
@@ -35,4 +44,17 @@ export const invitationStatusEnum = pgEnum("invitation_status", [
   "accepted",
   "expired",
   "revoked",
+]);
+
+export const ticketStatusEnum = pgEnum("ticket_status", [
+  "open",
+  "pending",
+  "resolved",
+  "closed",
+]);
+
+export const ticketAuthorEnum = pgEnum("ticket_author", [
+  "customer",
+  "admin",
+  "system",
 ]);

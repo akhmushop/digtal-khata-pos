@@ -3,6 +3,7 @@ import * as reportsController from "./reports.controller.js";
 import { requireAuth } from "../../middleware/auth.js";
 import { requireBusinessContext } from "../../middleware/business.js";
 import { requirePermission } from "../../middleware/permissions.js";
+import { requireFeature } from "../../middleware/entitlements.js";
 
 const router = express.Router();
 
@@ -10,6 +11,14 @@ const router = express.Router();
 // context. They remain available after trial expiry per the subscription
 // policy. Every report query is scoped to req.membership.businessId.
 const read = [requireAuth, requireBusinessContext()] as const;
+
+// Advanced financial reports require the plan's advancedReports
+// entitlement: profit, tax reconciliation, and cross-location comparison.
+const advanced = [
+  ...read,
+  requirePermission("reports.financial.view"),
+  requireFeature("advancedReports"),
+] as const;
 
 // Sales Reports
 router.get(
@@ -58,8 +67,7 @@ router.get(
 // Financial Reports
 router.get(
   "/api/reports/financial/profit",
-  ...read,
-  requirePermission("reports.profit.view"),
+  ...advanced,
   reportsController.getProfit,
 );
 router.get(
@@ -76,8 +84,7 @@ router.get(
 );
 router.get(
   "/api/reports/financial/tax",
-  ...read,
-  requirePermission("reports.financial.view"),
+  ...advanced,
   reportsController.getTaxReconciliation,
 );
 router.get(
@@ -116,8 +123,7 @@ router.get(
 // Location comparison spans every location — financial scope required.
 router.get(
   "/api/reports/locations/comparison",
-  ...read,
-  requirePermission("reports.financial.view"),
+  ...advanced,
   reportsController.getLocationComparison
 );
 

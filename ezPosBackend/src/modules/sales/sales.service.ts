@@ -49,6 +49,7 @@ import { roundMoney } from "../../utils/roundMoney.js";
 import { recordCashSaleInTx } from "../cashRegisters/cashRegisters.service.js";
 import { getCartTotals, getLinePricing } from "./utils/cartPricing.js";
 import { inventoryStock } from "../../db/schema/inventoryStock.js";
+import { pushRefundStatusAfterCommit } from "../../modules/integrations/integrations.service.js";
 import { inventoryMovements } from "../../db/schema/inventoryMovements.js";
 import type { DbTransaction } from "../purchases/purchase.types.js";
 import { inventoryBatches } from "../../db/schema/inventoryBatches.js";
@@ -1053,6 +1054,7 @@ export async function createSingleRefund(
       [saleItem],
       options,
     );
+    await pushRefundStatusAfterCommit(businessId, saleItem.saleId);
     return { message: "Refund created successfully", refundId };
   });
 }
@@ -1111,6 +1113,7 @@ export async function createMultipleRefunds(
       refundableItems,
       options,
     );
+    await pushRefundStatusAfterCommit(businessId, id);
     return { message: "Refund created successfully", refundId };
   });
 }

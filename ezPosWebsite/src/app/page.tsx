@@ -2,8 +2,10 @@ import Link from "next/link";
 import {
   BarChart3,
   Check,
+  MapPin,
   Package,
   ReceiptText,
+  ShieldCheck,
   Truck,
   Users,
   Wallet,
@@ -60,6 +62,18 @@ const overviewFeatures = [
     title: "Reports and insights",
     description:
       "Filter sales, purchase, and profit reports by period, category, brand, customer, or payment status.",
+  },
+  {
+    icon: MapPin,
+    title: "Multi-store management",
+    description:
+      "Run several outlets from one account — separate stock per location, inter-location transfers, and side-by-side comparison reports.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "User roles and permissions",
+    description:
+      "Give each staff member their own login with exactly the access they need, from counter-only cashiers to store managers.",
   },
 ] as const;
 
@@ -171,15 +185,15 @@ export default async function HomePage() {
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <ButtonLink href="/sign-up" size="lg">
-                Create your account
+                Start free trial
               </ButtonLink>
               <ButtonLink href="/pricing" size="lg" variant="outline">
                 View pricing
               </ButtonLink>
             </div>
             <p className="mt-4 text-sm text-slate-500">
-              Accounts and billing are in active development — you can explore
-              the product pages in the meantime.
+              Every account starts with a free trial — no charge during the
+              trial, cancel anytime.
             </p>
           </div>
           <PosPreview />

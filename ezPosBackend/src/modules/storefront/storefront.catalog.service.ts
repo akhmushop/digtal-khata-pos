@@ -1,0 +1,249 @@
+import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { db } from "../../db/schema/index.js";
+import { brands } from "../../db/schema/brands.js";
+import { categories } from "../../db/schema/categories.js";
+import { locations } from "../../db/schema/locations.js";
+import { productImages } from "../../db/schema/productImages.js";
+import { productVariants } from "../../db/schema/productVariants.js";
+import { products } from "../../db/schema/products.js";
+import { integrations } from "../../db/schema/integrations.js";
+import { getOnlineAvailability } from "../commerce/reservations.service.js";
+import type { StorefrontContext } from "../../middleware/storefront.js";
+
+/**
+ * Storefront catalog reads (Phase 9.2). SECURITY CONTRACT: only fields
+ * intended for public storefronts are selected — never purchase cost,
+ * supplier data, or internal flags. Prices come from the variant table;
+ * availability comes from the reservation engine (allocation-aware).
+ */
+
+export interface StorefrontVariant {
+  id: number;
+  sku: string;
+  price: number;
+  isDefault: boolean;
+  availability: number;
+}
+
+export interface StorefrontProduct {
+  id: number;
+  name: string;
+  description: string | null;
+  categoryId: number | null;
+  categoryName: string | null;
+  brandId: number | null;
+  brandName: string | null;
+  hasVariants: boolean;
+  images: string[];
+  variants: StorefrontVariant[];
+}
+
+/** The fulfillment location for a key: its integration's, else the default. */
+export async function resolveKeyLocation(
+  businessId: number,
+  integrationId: number | null,
+): Promise<number | null> {
+  if (integrationId) {
+    const [integration] = await db
+      .select({ locationId: integrations.locationId })
+      .from(integrations)
+      .where(eq(integrations.id, integrationId));
+    if (integration?.locationId) return integration.locationId;
+  }
+  const [location] = await db
+    .select({ id: locations.id })
+    .from(locations)
+    .where(
+      and(
+        eq(locations.businessId, businessId),
+        eq(locations.isDefault, true),
+      ),
+    );
+  return location?.id ?? null;
+}
+
+async function loadProducts(
+  ctx: StorefrontContext,
+  where: ReturnType<typeof and>,
+  orderBy: ReturnType<typeof asc> | ReturnType<typeof desc>,
+  limit?: number,
+  offset?: number,
+): Promise<StorefrontProduct[]> {
+  const rows = await db
+    .select({
+      productId: products.id,
+      name: products.name,
+      description: products.description,
+      hasVariants: products.hasVariants,
+      categoryId: products.categoryId,
+      categoryName: categories.name,
+      brandId: products.brandId,
+      brandName: brands.name,
+      variantId: productVariants.id,
+      sku: productVariants.sku,
+      price: productVariants.sellingPrice,
+      isDefault: productVariants.isDefault,
+      imageUrl: productImages.imageUrl,
+      imageSort: productImages.sortOrder,
+    })
+    .from(products)
+    .leftJoin(categories, eq(categories.id, products.categoryId))
+    .leftJoin(brands, eq(brands.id, products.brandId))
+    .leftJoin(
+      productVariants,
+      and(
+        eq(productVariants.productId, products.id),
+        eq(productVariants.status, "active"),
+      ),
+    )
+    .leftJoin(productImages, eq(productImages.productId, products.id))
+    .where(where)
+    .orderBy(orderBy, asc(products.id), asc(productVariants.id), asc(productImages.sortOrder))
+    .limit(limit ?? 500)
+    .offset(offset ?? 0);
+
+  const productsMap = new Map<number, StorefrontProduct>();
+  const variantIds: number[] = [];
+  for (const row of rows) {
+    let product: StorefrontProduct | undefined = productsMap.get(row.productId);
+    if (!product) {
+      product = {
+        id: row.productId,
+        name: row.name,
+        description: row.description,
+        categoryId: row.categoryId,
+        categoryName: row.categoryName,
+        brandId: row.brandId,
+        brandName: row.brandName,
+        hasVariants: row.hasVariants === true,
+        images: [],
+        variants: [],
+      };
+      productsMap.set(row.productId, product);
+    }
+    if (row.variantId && !product.variants.some((v) => v.id === row.variantId)) {
+      product.variants.push({
+        id: row.variantId,
+        sku: row.sku ?? "",
+        price: Number(row.price ?? 0),
+        isDefault: row.isDefault === true,
+        availability: 0,
+      });
+      variantIds.push(row.variantId);
+    }
+    if (row.imageUrl && !product.images.includes(row.imageUrl)) {
+      product.images.push(row.imageUrl);
+    }
+  }
+
+  // Availability per variant, allocation-aware via the reservation engine.
+  const locationId = await resolveKeyLocation(ctx.businessId, ctx.integrationId);
+  const availability = locationId
+    ? await getOnlineAvailability(
+        ctx.businessId,
+        locationId,
+        ctx.integrationId,
+        variantIds,
+      )
+    : new Map<number, number>();
+  for (const product of productsMap.values()) {
+    for (const variant of product.variants) {
+      variant.availability = availability.get(variant.id) ?? 0;
+    }
+  }
+  return [...productsMap.values()];
+}
+
+export async function listStorefrontProducts(
+  ctx: StorefrontContext,
+  options: {
+    search?: string | undefined;
+    categoryId?: number | undefined;
+    brandId?: number | undefined;
+    sort?: "newest" | "price_asc" | "price_desc" | "name" | undefined;
+    page?: number | undefined;
+    pageSize?: number | undefined;
+  } = {},
+): Promise<{
+  products: StorefrontProduct[];
+  total: number;
+  page: number;
+  pageSize: number;
+}> {
+  const page = Math.max(1, options.page ?? 1);
+  const pageSize = Math.min(50, Math.max(1, options.pageSize ?? 20));
+
+  const filters = [
+    eq(products.businessId, ctx.businessId),
+    eq(products.status, "active"),
+  ];
+  if (options.search) {
+    filters.push(
+      or(
+        ilike(products.name, `%${options.search}%`),
+        ilike(products.description, `%${options.search}%`),
+      )!,
+    );
+  }
+  if (options.categoryId) {
+    filters.push(eq(products.categoryId, options.categoryId));
+  }
+  if (options.brandId) {
+    filters.push(eq(products.brandId, options.brandId));
+  }
+
+  const [productsPage, totalRow] = await Promise.all([
+    loadProducts(
+      ctx,
+      and(...filters),
+      options.sort === "name"
+        ? asc(products.name)
+        : options.sort === "price_asc" || options.sort === "price_desc"
+          ? asc(productVariants.sellingPrice)
+          : desc(products.id),
+      pageSize,
+      (page - 1) * pageSize,
+    ),
+    db
+      .select({ n: sql<number>`count(DISTINCT ${products.id})::int` })
+      .from(products)
+      .where(and(...filters)),
+  ]);
+
+  return {
+    products: productsPage,
+    total: totalRow[0]?.n ?? 0,
+    page,
+    pageSize,
+  };
+}
+
+export async function getStorefrontProduct(
+  ctx: StorefrontContext,
+  productId: number,
+): Promise<StorefrontProduct | null> {
+  const found = await loadProducts(
+    ctx,
+    and(eq(products.businessId, ctx.businessId), eq(products.id, productId)),
+    asc(products.id),
+  );
+  return found[0] ?? null;
+}
+
+export async function listStorefrontCategories(businessId: number) {
+  return db
+    .select({ id: categories.id, name: categories.name })
+    .from(categories)
+    .where(
+      and(eq(categories.businessId, businessId), eq(categories.status, "active")),
+    )
+    .orderBy(asc(categories.name));
+}
+
+export async function listStorefrontBrands(businessId: number) {
+  return db
+    .select({ id: brands.id, name: brands.name })
+    .from(brands)
+    .where(and(eq(brands.businessId, businessId), eq(brands.status, "active")))
+    .orderBy(asc(brands.name));
+}

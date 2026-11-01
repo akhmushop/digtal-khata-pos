@@ -5,12 +5,21 @@ import { Container } from "@/components/ui/container";
 const productLinks = [
   { href: "/features", label: "Features" },
   { href: "/pricing", label: "Pricing" },
+  { href: "/industries", label: "Industries" },
   { href: "/faq", label: "FAQ" },
 ] as const;
 
-const accountLinks = [
+const companyLinks = [
+  { href: "/about", label: "About us" },
+  { href: "/contact", label: "Contact" },
   { href: "/sign-in", label: "Sign in" },
   { href: "/sign-up", label: "Create account" },
+] as const;
+
+const legalLinks = [
+  { href: "/terms", label: "Terms and Conditions" },
+  { href: "/privacy", label: "Privacy Policy" },
+  { href: "/refund-policy", label: "Refund Policy" },
 ] as const;
 
 // Evaluated once at build/startup — calling new Date() during render breaks
@@ -21,7 +30,7 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-slate-200 bg-slate-50">
       <Container className="py-12">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
           <div className="lg:col-span-2">
             <p className="flex items-center gap-2 text-lg font-semibold tracking-tight">
               <span className="flex size-8 items-center justify-center rounded-lg bg-indigo-600 text-white">
@@ -51,10 +60,26 @@ export function SiteFooter() {
             </ul>
           </nav>
 
-          <nav aria-label="Account">
-            <h2 className="text-sm font-semibold text-slate-900">Account</h2>
+          <nav aria-label="Company">
+            <h2 className="text-sm font-semibold text-slate-900">Company</h2>
             <ul className="mt-3 space-y-2">
-              {accountLinks.map((link) => (
+              {companyLinks.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="text-sm text-slate-600 hover:text-indigo-700"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <nav aria-label="Legal">
+            <h2 className="text-sm font-semibold text-slate-900">Legal</h2>
+            <ul className="mt-3 space-y-2">
+              {legalLinks.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}

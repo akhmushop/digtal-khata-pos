@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import "@fontsource-variable/inter";
 import "./globals.css";
 import { SiteHeader } from "@/components/layout/site-header";
@@ -36,7 +37,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           >
             Skip to content
           </a>
-          <SiteHeader />
+          {/* The header reads usePathname(); dynamic routes prerender their
+              shell, so URL data must sit behind a Suspense boundary. */}
+          <Suspense fallback={null}>
+            <SiteHeader />
+          </Suspense>
           <main id="main-content" className="flex-1">
             {children}
           </main>

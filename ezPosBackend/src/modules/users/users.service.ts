@@ -15,6 +15,7 @@ import {
 import { hashPassword } from "../../utils/password.js";
 import { WILDCARD_PERMISSION } from "../../rbac/permissions.js";
 import { ensureDefaultRoles } from "../roles/roles.service.js";
+import { assertWithinUserLimit } from "../../services/entitlements.js";
 import type {
   CreateStaffUserInput,
   UpdateStaffUserInput,
@@ -210,6 +211,10 @@ export async function createStaffUser(
 
   let createdUserId: number | undefined;
   await db.transaction(async (tx) => {
+    // Plan limit: active memberships vs the subscription plan's maxUsers,
+    // checked inside the insert transaction (advisory-locked) so concurrent
+    // invitations cannot exceed the cap.
+    await assertWithinUserLimit(businessId, tx);
     const [user] = await tx
       .insert(users)
       .values({
