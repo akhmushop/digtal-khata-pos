@@ -17,7 +17,7 @@ export default function RefundPolicyPage() {
         {
           heading: "Cancelling a subscription",
           paragraphs: [
-            "You can cancel a paid subscription at any time from your account settings. Cancelling stops the next renewal; you keep full access until the end of the period you have already paid for.",
+            "You can cancel a paid subscription at any time from Account → Subscription in your ezPos account. Cancelling stops the next renewal; you keep full access until the end of the period you have already paid for.",
             "We do not charge cancellation fees.",
           ],
         },

@@ -48,7 +48,7 @@ const faqs = [
   {
     question: "Can developers integrate with ezPos?",
     answer:
-      "Yes — a public API is planned so developers and businesses can connect their own applications to ezPos. Details will be published at launch.",
+      "Yes. The Storefront API lets your own website sell from ezPos products and stock, and WooCommerce stores connect directly. See the developer documentation for keys, endpoints, and webhooks.",
   },
 ] as const;
 

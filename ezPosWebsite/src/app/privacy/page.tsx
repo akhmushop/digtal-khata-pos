@@ -62,7 +62,7 @@ export default function PrivacyPage() {
         {
           heading: "Your choices",
           paragraphs: [
-            "You can access and correct your account information in your account settings, request an export of your business data, or request deletion of your account by contacting us.",
+            "You can access and correct your account information in your account settings, and request an export of your business data or deletion of your account by contacting us — we will provide it in a machine-readable format.",
             "If you have questions about this policy or how your data is handled, contact us through the contact page.",
           ],
         },

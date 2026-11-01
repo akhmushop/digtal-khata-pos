@@ -170,8 +170,8 @@ export async function POST(request: Request) {
 
         <Section title="6. Webhooks">
           <p>
-            Register an endpoint under <strong>Account → Integrations →
-            Webhooks</strong> to receive <code>order.created</code>,{" "}
+            Register an endpoint under <strong>Account → Webhooks</strong> to
+            receive <code>order.created</code>,{" "}
             <code>order.paid</code>, and <code>order.cancelled</code> events.
             Deliveries are signed with your endpoint secret:
           </p>
