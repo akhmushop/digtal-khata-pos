@@ -61,6 +61,16 @@ export const updateBusinessSchema = z.object({
       message: "Invalid business mode.",
     })
     .optional(),
+  // Logo as a data URL — avoids a file-upload surface entirely; images are
+  // size-capped (~250KB encoded) and format-checked.
+  logoDataUrl: z
+    .string()
+    .max(350_000, "Logo is too large — use an image under 250KB")
+    .regex(
+      /^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$/,
+      "Logo must be a PNG, JPEG, or WebP image",
+    )
+    .nullish(),
 });
 
 export type UpdateBusinessInput = z.infer<typeof updateBusinessSchema>;

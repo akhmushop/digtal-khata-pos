@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/forms/text-field";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useActiveBusiness } from "@/hooks/useActiveBusiness";
-import { updateBusiness } from "@/lib/api/account";
+import { exportBusinessData, updateBusiness } from "@/lib/api/account";
 import { changePassword, updateProfile } from "@/lib/api/portal";
 
 const BUSINESS_TYPES = [
@@ -49,6 +49,8 @@ export function AccountSettings() {
   const [bizAddress, setBizAddress] = useState("");
   const [bizType, setBizType] = useState<string>(BUSINESS_TYPES[0]);
   const [bizCurrency, setBizCurrency] = useState<string>("BDT");
+  const [bizLogo, setBizLogo] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
   const [bizLoaded, setBizLoaded] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
   const [bizMessage, setBizMessage] = useState<string | null>(null);
@@ -92,6 +94,7 @@ export function AccountSettings() {
             address: string | null;
             businessType: string | null;
             currency: string;
+            logoUrl: string | null;
           };
         };
         setBizName(body.business.name);
@@ -99,6 +102,7 @@ export function AccountSettings() {
         setBizAddress(body.business.address ?? "");
         if (body.business.businessType) setBizType(body.business.businessType);
         setBizCurrency(body.business.currency);
+        setBizLogo(body.business.logoUrl);
       }
       setBizLoaded(true);
     })();
@@ -112,6 +116,7 @@ export function AccountSettings() {
       address: bizAddress.trim() || undefined,
       businessType: bizType,
       currency: bizCurrency,
+      logoDataUrl: bizLogo,
     });
     setBizOk(result.ok);
     setBizMessage(result.message);
@@ -244,6 +249,46 @@ export function AccountSettings() {
             </select>
           </div>
         </div>
+        <div className="mt-4">
+          <span className="block text-sm font-medium text-slate-700">Logo</span>
+          <div className="mt-2 flex items-center gap-4">
+            {bizLogo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={bizLogo}
+                alt="Business logo preview"
+                className="size-16 rounded-lg border border-slate-200 object-contain"
+              />
+            ) : (
+              <div className="flex size-16 items-center justify-center rounded-lg border border-dashed border-slate-300 text-xs text-slate-400">
+                None
+              </div>
+            )}
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                if (file.size > 180_000) {
+                  setBizMessage("Logo is too large — use an image under 180KB.");
+                  setBizOk(false);
+                  return;
+                }
+                const reader = new FileReader();
+                reader.onload = () => setBizLogo(reader.result as string | null);
+                reader.readAsDataURL(file);
+              }}
+            />
+            {bizLogo ? (
+              <Button size="sm" variant="ghost" onClick={() => setBizLogo(null)}>
+                Remove
+              </Button>
+            ) : null}
+          </div>
+        </div>
+
         <div className="mt-4 flex items-center gap-3">
           <Button onClick={saveBusiness} disabled={!businessId}>
             Save business settings
@@ -259,6 +304,26 @@ export function AccountSettings() {
             </p>
           ) : null}
         </div>
+      </Card>
+
+      <Card
+        title="Export your data"
+        description="Download your products, customers, sales, and stock as JSON. Available even in read-only mode."
+      >
+        <Button
+          variant="outline"
+          disabled={!businessId || exporting}
+          onClick={() => {
+            setExporting(true);
+            try {
+              void exportBusinessData(businessId!);
+            } finally {
+              setExporting(false);
+            }
+          }}
+        >
+          {exporting ? "Preparing…" : "Export business data (JSON)"}
+        </Button>
       </Card>
 
       <Card title="Your profile" description="How your name appears in ezPos.">

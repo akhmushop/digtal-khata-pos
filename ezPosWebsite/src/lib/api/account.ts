@@ -56,6 +56,7 @@ export interface UpdateBusinessInput {
   currency?: string;
   timezone?: string;
   mode?: "physical_only" | "online_only" | "omnichannel";
+  logoDataUrl?: string | null;
 }
 
 export async function updateBusiness(
@@ -144,4 +145,26 @@ export async function resetPassword(
     method: "POST",
     body: JSON.stringify({ token, password }),
   });
+}
+
+// ---------------------------------------------------------------------------
+// Business data export (self-serve, works in read-only mode)
+// ---------------------------------------------------------------------------
+
+export async function exportBusinessData(businessId: number): Promise<void> {
+  const token = getAccessToken();
+  const res = await fetch(
+    `${API_BASE}/api/businesses/${businessId}/export`,
+    { headers: { Authorization: `Bearer ${token ?? ""}` } },
+  );
+  if (!res.ok) throw new Error(`Export failed (${res.status})`);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `ezpos-export-${businessId}-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
 }

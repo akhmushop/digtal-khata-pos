@@ -24,6 +24,8 @@ export const businesses = pgTable("businesses", {
   country: varchar({ length: 50 }),
   /** Invoice/display currency and the business's IANA timezone. */
   currency: varchar({ length: 3 }).default("BDT").notNull(),
+  /** Business logo as a data URL (small images only, validated at write). */
+  logoUrl: text("logo_url"),
   timezone: varchar("timezone", { length: 64 }).default("Asia/Dhaka").notNull(),
   status: businessStatusEnum("status").default("active").notNull(),
   createdByUserId: integer("created_by_user_id")

@@ -260,6 +260,7 @@ export interface BusinessDetail {
   currency: string;
   timezone: string;
   mode: "physical_only" | "online_only" | "omnichannel";
+  logoUrl: string | null;
   createdAt: Date | null;
   subscription: SubscriptionState;
   roleSlug: string;
@@ -283,6 +284,7 @@ export async function getBusinessForMembership(
       currency: businesses.currency,
       timezone: businesses.timezone,
       mode: businesses.mode,
+      logoUrl: businesses.logoUrl,
       createdAt: businesses.createdAt,
       roleSlug: roles.slug,
     })
@@ -343,6 +345,9 @@ export async function updateBusinessForMembership(
       ...(input.country !== undefined ? { country: input.country } : {}),
       ...(input.currency !== undefined ? { currency: input.currency } : {}),
       ...(input.timezone !== undefined ? { timezone: input.timezone } : {}),
+      ...(input.logoDataUrl !== undefined
+        ? { logoUrl: input.logoDataUrl }
+        : {}),
       updatedAt: new Date(),
     })
     .where(eq(businesses.id, businessId));
