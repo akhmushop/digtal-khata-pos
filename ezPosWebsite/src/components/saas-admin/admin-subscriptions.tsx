@@ -3,7 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { fetchAllPlans, fetchSubscriptions, adminChangePlan, adminExtend, adminSubscriptionAction, type AdminSubscription } from "@/lib/api/saas-admin";
+import {
+  adminChangePlan,
+  adminExtend,
+  adminGrantTrial,
+  adminSubscriptionAction,
+  fetchAllPlans,
+  fetchSubscriptions,
+  type AdminSubscription,
+} from "@/lib/api/saas-admin";
 
 const STATUS_FILTERS = ["", "active", "trialing", "past_due", "suspended", "canceled"] as const;
 
@@ -143,6 +151,20 @@ export function AdminSubscriptions() {
                       >
                         +7d
                       </Button>
+                      {sub.status === "trialing" ? null : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={busyId === sub.id}
+                          onClick={() =>
+                            void run(sub.id, () =>
+                              adminGrantTrial(sub.businessId, 14),
+                            )
+                          }
+                        >
+                          Grant trial
+                        </Button>
+                      )}
                       {sub.status === "suspended" ? (
                         <Button
                           size="sm"

@@ -1,26 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { fetchAdminPayments, fetchAdminInvoices, type AdminInvoice, type AdminPayment } from "@/lib/api/saas-admin";
 
 function money(amount: number, currency: string): string {
   return `${currency} ${Number(amount).toLocaleString()}`;
 }
 
+const STATUS_FILTERS = ["", "succeeded", "initiated", "failed", "verification_failed", "canceled"] as const;
+
 export function AdminPayments() {
+  const [statusFilter, setStatusFilter] = useState<string>("");
   const [payments, setPayments] = useState<AdminPayment[] | null>(null);
   const [invoices, setInvoices] = useState<AdminInvoice[] | null>(null);
 
-  useEffect(() => {
-    void (async () => {
-      const [paymentRes, invoiceRes] = await Promise.all([
-        fetchAdminPayments(),
-        fetchAdminInvoices(),
-      ]);
-      setPayments(paymentRes.data ?? []);
-      setInvoices(invoiceRes.data ?? []);
-    })();
+  const reload = useCallback(async (status: string) => {
+    const [paymentRes, invoiceRes] = await Promise.all([
+      fetchAdminPayments(status ? { status } : undefined),
+      fetchAdminInvoices(),
+    ]);
+    setPayments(paymentRes.data ?? []);
+    setInvoices(invoiceRes.data ?? []);
   }, []);
+
+  useEffect(() => {
+    void reload(statusFilter);
+  }, [reload, statusFilter]);
 
   return (
     <div className="space-y-8">
@@ -32,6 +37,23 @@ export function AdminPayments() {
           Every gateway transaction and invoice across all businesses.
           Refund processing arrives with payment reconciliation.
         </p>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {STATUS_FILTERS.map((status) => (
+          <button
+            key={status || "all"}
+            type="button"
+            className={
+              statusFilter === status
+                ? "rounded-full bg-indigo-600 px-3 py-1 text-xs font-medium text-white"
+                : "rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 hover:border-slate-400"
+            }
+            onClick={() => setStatusFilter(status)}
+          >
+            {status || "all"}
+          </button>
+        ))}
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">

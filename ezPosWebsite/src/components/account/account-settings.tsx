@@ -50,6 +50,7 @@ export function AccountSettings() {
   const [bizType, setBizType] = useState<string>(BUSINESS_TYPES[0]);
   const [bizCurrency, setBizCurrency] = useState<string>("BDT");
   const [bizLoaded, setBizLoaded] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
   const [bizMessage, setBizMessage] = useState<string | null>(null);
   const [bizOk, setBizOk] = useState(false);
 
@@ -153,7 +154,29 @@ export function AccountSettings() {
 
       {user && !user.emailVerified ? (
         <Alert tone="warning" title="Email not verified">
-          Check your inbox for the verification link, or resend it below.
+          {verificationSent ? (
+            "Verification email sent — check your inbox."
+          ) : (
+            <>
+              Check your inbox for the verification link, or{" "}
+              <button
+                type="button"
+                className="font-semibold underline underline-offset-2"
+                onClick={() => {
+                  void (async () => {
+                    const { resendVerificationEmail } = await import(
+                      "@/lib/api/account"
+                    );
+                    const result = await resendVerificationEmail();
+                    if (result.ok) setVerificationSent(true);
+                  })();
+                }}
+              >
+                resend it
+              </button>
+              .
+            </>
+          )}
         </Alert>
       ) : null}
 
