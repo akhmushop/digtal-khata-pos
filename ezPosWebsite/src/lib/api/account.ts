@@ -55,6 +55,7 @@ export interface UpdateBusinessInput {
   country?: string;
   currency?: string;
   timezone?: string;
+  mode?: "physical_only" | "online_only" | "omnichannel";
 }
 
 export async function updateBusiness(
