@@ -1,10 +1,11 @@
-import type { Metadata } from "next";
 import { LegalPage } from "@/components/legal/legal-page";
+import { publicMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Cookie Policy",
-  description: "How ezPos uses cookies and similar technologies.",
-};
+export const metadata = publicMetadata(
+  "/cookie-policy",
+  "Cookie Policy",
+  "How ezPos uses cookies and similar technologies.",
+);
 
 export default function CookiePolicyPage() {
   return (

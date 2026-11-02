@@ -2,12 +2,32 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { fetchAdminPayments, fetchAdminInvoices, type AdminInvoice, type AdminPayment } from "@/lib/api/saas-admin";
+import { downloadCsv, toCsv } from "@/lib/csv";
 
 function money(amount: number, currency: string): string {
   return `${currency} ${Number(amount).toLocaleString()}`;
 }
 
 const STATUS_FILTERS = ["", "succeeded", "initiated", "failed", "verification_failed", "canceled"] as const;
+
+function exportPaymentsCsv(payments: AdminPayment[]) {
+  const csv = toCsv(
+    ["Business", "Invoice", "Currency", "Amount", "Provider", "Provider reference", "Status", "Failure reason", "Paid at", "Created at"],
+    payments.map((payment) => [
+      payment.businessName,
+      payment.invoiceNumber,
+      payment.currency,
+      payment.amount,
+      payment.provider,
+      payment.providerReference,
+      payment.status,
+      payment.failureReason,
+      payment.paidAt,
+      payment.createdAt,
+    ]),
+  );
+  downloadCsv("ezpos-admin-payments.csv", csv);
+}
 
 export function AdminPayments() {
   const [statusFilter, setStatusFilter] = useState<string>("");
@@ -59,9 +79,18 @@ export function AdminPayments() {
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <h3 className="border-b border-slate-100 px-5 py-3 text-sm font-semibold text-slate-900">
-          Payments
-        </h3>
+        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+          <h3 className="text-sm font-semibold text-slate-900">Payments</h3>
+          {payments !== null && payments.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => exportPaymentsCsv(payments)}
+              className="rounded-lg border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+            >
+              Export CSV
+            </button>
+          ) : null}
+        </div>
         {payments === null ? (
           <p className="px-5 py-6 text-sm text-slate-500">Loading…</p>
         ) : payments.length === 0 ? (

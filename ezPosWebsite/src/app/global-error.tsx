@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
@@ -37,12 +38,12 @@ export default function GlobalError({
             ) : null}
             <div className="mt-8 flex justify-center gap-3">
               <Button onClick={reset}>Try again</Button>
-              <a
+              <Link
                 href="/"
                 className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
               >
                 Back to home
-              </a>
+              </Link>
             </div>
             <div className="mt-6 flex justify-center">
               <Alert tone="info" title="Tip">

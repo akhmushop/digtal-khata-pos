@@ -1,11 +1,11 @@
-import type { Metadata } from "next";
 import { LegalPage } from "@/components/legal/legal-page";
+import { publicMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Subscription and Billing Policy",
-  description:
-    "How ezPos subscriptions are billed: plan changes, proration, renewals, failed payments, and suspensions.",
-};
+export const metadata = publicMetadata(
+  "/subscription-billing-policy",
+  "Subscription and Billing Policy",
+  "How ezPos subscriptions are billed: plan changes, proration, renewals, failed payments, and suspensions.",
+);
 
 export default function SubscriptionBillingPolicyPage() {
   return (

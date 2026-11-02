@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { API_BASE, getAccessToken, SERVER_UNREACHABLE_MESSAGE } from "@/lib/api/auth";
+import { API_BASE, getAccessToken } from "@/lib/api/auth";
 
 interface AuditLog {
   id: number;
@@ -41,7 +41,9 @@ export function AdminAuditLogs() {
   }, []);
 
   useEffect(() => {
-    void reload(entityFilter);
+    void (async () => {
+      await reload(entityFilter);
+    })();
   }, [reload, entityFilter]);
 
   return (

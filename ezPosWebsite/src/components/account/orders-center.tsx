@@ -276,6 +276,14 @@ export function OrdersCenter() {
                   ))}
               </div>
             ) : null}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setDetail(null)}
+              aria-label="Close order detail"
+            >
+              Close
+            </Button>
           </div>
 
           <div className="mt-4 grid gap-6 lg:grid-cols-2">

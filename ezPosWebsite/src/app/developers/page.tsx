@@ -1,11 +1,11 @@
-import type { Metadata } from "next";
 import { Container } from "@/components/ui/container";
+import { publicMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Developer documentation",
-  description:
-    "Build a custom storefront on the ezPos Storefront API: authentication, products, inventory, orders, and webhooks.",
-};
+export const metadata = publicMetadata(
+  "/developers",
+  "Developer documentation",
+  "Build a custom storefront on the ezPos Storefront API: authentication, products, inventory, orders, and webhooks.",
+);
 
 function Code({ children }: { children: string }) {
   return (

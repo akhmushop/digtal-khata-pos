@@ -53,6 +53,14 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
     void (async () => {
       await loadNotifications();
     })();
+    // Keep the unread badge current without a page reload; skipped while the
+    // tab is hidden to avoid background traffic.
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void loadNotifications();
+      }
+    }, 60_000);
+    return () => clearInterval(interval);
   }, [loadNotifications]);
 
   useEffect(() => {

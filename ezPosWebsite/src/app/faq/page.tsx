@@ -1,13 +1,13 @@
-import type { Metadata } from "next";
 import { Container } from "@/components/ui/container";
 import { SectionHeading } from "@/components/marketing/section-heading";
 import { FaqItem } from "@/components/marketing/faq-item";
+import { publicMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "FAQ",
-  description:
-    "Answers to common questions about ezPos: what it is, what it costs, how your data is handled, and what is coming next.",
-};
+export const metadata = publicMetadata(
+  "/faq",
+  "FAQ",
+  "Answers to common questions about ezPos: what it is, what it costs, how your data is handled, and what is coming next.",
+);
 
 const faqs = [
   {

@@ -11,6 +11,7 @@ import {
   type InvoiceSummary,
   type PaymentSummary,
 } from "@/lib/api/portal";
+import { downloadCsv, toCsv } from "@/lib/csv";
 
 function Pager({
   page,
@@ -50,6 +51,22 @@ function money(amount: number, currency: string): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   })}`;
+}
+
+function exportInvoicesCsv(invoices: InvoiceSummary[]) {
+  const csv = toCsv(
+    ["Invoice", "Period start", "Period end", "Issued", "Currency", "Total", "Status"],
+    invoices.map((invoice) => [
+      invoice.invoiceNumber,
+      invoice.periodStart,
+      invoice.periodEnd,
+      invoice.issuedAt,
+      invoice.currency,
+      invoice.total,
+      invoice.status,
+    ]),
+  );
+  downloadCsv("ezpos-invoices.csv", csv);
 }
 
 export function BillingHistory() {
@@ -123,9 +140,18 @@ export function BillingHistory() {
       />
 
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <h2 className="border-b border-slate-100 px-6 py-4 text-sm font-semibold text-slate-900">
-          Invoices
-        </h2>
+        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+          <h2 className="text-sm font-semibold text-slate-900">Invoices</h2>
+          {invoices.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => exportInvoicesCsv(invoices)}
+              className="rounded-lg border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+            >
+              Export CSV
+            </button>
+          ) : null}
+        </div>
         {invoices.length === 0 ? (
           <p className="px-6 py-8 text-sm text-slate-500">
             No invoices yet.

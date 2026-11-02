@@ -1,11 +1,11 @@
-import type { Metadata } from "next";
 import { LegalPage } from "@/components/legal/legal-page";
+import { publicMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Refund Policy",
-  description:
-    "How cancellations, downgrades, and refunds work for ezPos subscriptions.",
-};
+export const metadata = publicMetadata(
+  "/refund-policy",
+  "Refund Policy",
+  "How cancellations, downgrades, and refunds work for ezPos subscriptions.",
+);
 
 export default function RefundPolicyPage() {
   return (

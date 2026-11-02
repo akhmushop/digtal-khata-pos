@@ -47,47 +47,53 @@ changed.
 
 ## Phase C — Public website completion
 
-1. Cookie Policy page (P1) + link in footer.
-2. Subscription & Billing Policy page (P1) + link.
-3. Canonical URLs + JSON-LD (Organization + Product on pricing) (P2).
+1. ~~Cookie Policy page (P1) + link in footer.~~ ✅
+2. ~~Subscription & Billing Policy page (P1) + link.~~ ✅
+3. ~~Canonical URLs + JSON-LD (P2).~~ ✅ `publicMetadata()` helper on all
+   indexable public pages; Organization + WebSite JSON-LD in the root
+   layout; SoftwareApplication offers on pricing built only from plans
+   served by the backend.
 4. Homepage copy pass after SSLCommerz go-live (remove "not open yet"
    caveats) — content task, gated on operator.
 
 ## Phase D — Auth & onboarding
 
-1. Terms-acceptance checkbox on sign-up (P1, frontend-only; backend
-   schema unchanged — acceptance stored as a note/log client-side is
-   NOT acceptable; document that a backend `terms_accepted_at` column is
-   the honest implementation → **backend proposal required**, 1 column).
-2. Onboarding polish: resumable progress (⛔ blocked — backend proposal:
-   `businesses.onboarding_step` column; present when scheduled).
+1. ~~Terms-acceptance checkbox on sign-up.~~ ✅ (approved batch 1:
+   `businesses.terms_accepted_at` stamped server-side on registration.)
+2. ~~Onboarding resume.~~ ✅ (approved batch 1:
+   `businesses.onboarding_step`, wizard saves progress per step and
+   resumes.)
 3. Duplicate-submission guards already in place (isSubmitting) — verify
    in tests.
 
 ## Phase E — Customer portal
 
-1. Support ticket list pagination (backend param + UI) (P2).
+1. Support ticket list pagination (⛔ backend proposal #6: list param;
+   UI pager ready).
 2. Settings: polish logo crop hints, per-session labels.
-3. Session "last active" (⛔ backend proposal:
-   `refresh_tokens.last_used_at` column updated on refresh).
-4. Orders detail close affordance (P3 UX).
+3. ~~Session "last active".~~ ✅ (approved batch 1:
+   `refresh_tokens.last_used_at` stamped at issue and on rotation.)
+4. ~~Orders detail close affordance~~ ✅.
 
 ## Phase F — Subscription & billing
 
 1. Already complete: grid, proration, cancel/reactivate/renew, invoices,
    pay-now, print view.
-2. CSV/Excel export of invoices (P2, frontend-only from loaded data).
+2. ~~CSV export of invoices~~ ✅ (frontend-only, from loaded data; shared
+   `src/lib/csv.ts` util with unit tests).
 3. Payment-method display once providers are configured server-side
    (⛔ backend config, not code).
 
 ## Phase G — Admin portal
 
-1. Audit-log viewer (P1 — **backend proposal**: `GET /api/saas/audit-logs`
-   with filters over `saas_admin_audit`; UI page with table).
-2. Customers (person-centric) view (P2 — data exists via businesses
-   join; new endpoint + page).
-3. Admin payments CSV export (P2).
-4. Plans feature/limit full editor (P2 — endpoints exist; UI form).
+1. ~~Audit-log viewer~~ ✅ (approved batch 1: `GET /api/saas/audit-logs`
+   with entity filter + `/saas-admin/audit-logs` page).
+2. Customers (person-centric) view (⛔ backend proposal #7: new endpoint
+   + page).
+3. ~~Admin payments CSV export~~ ✅ (frontend-only, from loaded data).
+4. ~~Plans feature/limit full editor~~ ✅ (inline editor per plan row;
+   sends complete limits/features objects — the backend replaces them
+   wholesale).
 
 ## Phase H — Notifications & support
 
@@ -95,7 +101,8 @@ changed.
    preferences storage; defer until requested).
 2. Support categories/priority (⛔ blocked — backend proposal: columns +
    validation; defer).
-3. Unread-count polling on the portal bell (P2, frontend-only).
+3. ~~Unread-count polling on the portal bell~~ ✅ (60s interval, skipped
+   while the tab is hidden).
 
 ## Phase I — Production readiness
 
@@ -103,7 +110,10 @@ changed.
 2. Performance review: bundle analysis, server/client component split
    (P2).
 3. Security review: CSP headers in next.config, referrer policies,
-   dependency audit (P1).
+   dependency audit (P1). npm audit ✅ run 2026-11-02: 16 moderate
+   findings, all `minimatch` via the dev-only ESLint toolchain — accepted
+   (no runtime exposure; the `--force` fix would downgrade eslint to v4).
+   CSP headers still pending.
 4. SSLCommerz sandbox smoke test checklist (operator, gated on keys).
 
 ## Phase J — Final gap verification
@@ -111,19 +121,20 @@ changed.
 Update EZPOS_WEBSITE_GAP_TRACKER.md with per-feature evidence; blocked
 features remain marked ⛔ with their backend proposals attached.
 
-## Backend change proposals requiring approval (none urgent)
+## Backend change proposals requiring approval
+
+**Batch 1 — approved and shipped 2026-11-02** (proposals 1–5: audit-log
+endpoint, `terms_accepted_at`, `onboarding_step`, `last_used_at`,
+ticket category/priority).
 
 | # | Change | Why | Size |
 |---|---|---|---|
-| 1 | `GET /api/saas/audit-logs` (read `saas_admin_audit`) | admin audit-log viewer | small, additive |
-| 2 | `businesses.terms_accepted_at` column + register field | honest terms acceptance | small, additive |
-| 3 | `businesses.onboarding_step` column | resumable onboarding | small, additive |
-| 4 | `refresh_tokens.last_used_at` column (updated on refresh) | session "last active" | small, additive |
-| 5 | support ticket `category`/`priority` columns | richer support UI | small, additive |
+| 6 | support-ticket list pagination params | portal + admin ticket lists | small, additive |
+| 7 | `GET /api/saas/customers` (person-centric view over business memberships) | admin customer management (P2) | small, additive |
 
-All are additive columns/read-endpoints: no existing POS behavior
-touched, no destructive operations, backward-compatible. Approval will
-be requested per-item when its phase is scheduled.
+All are additive: no existing POS behavior touched, no destructive
+operations, backward-compatible. Approval will be requested per-item
+when its phase is scheduled.
 
 ## Verification cadence (every phase)
 
