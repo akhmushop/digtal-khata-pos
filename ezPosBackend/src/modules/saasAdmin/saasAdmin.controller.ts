@@ -313,3 +313,20 @@ export async function runJobs(_req: Request, res: Response) {
     sendSafeError(res, err, "Unable to run the background jobs right now.");
   }
 }
+
+export async function getAuditLogs(req: Request, res: Response) {
+  try {
+    res.status(200).json({
+      success: true,
+      data: await saasAdminService.listAuditLogs({
+        action: typeof req.query.action === "string" ? req.query.action : undefined,
+        entityType:
+          typeof req.query.entityType === "string"
+            ? req.query.entityType
+            : undefined,
+      }),
+    });
+  } catch (err) {
+    sendSafeError(res, err, "Unable to load audit logs right now.");
+  }
+}

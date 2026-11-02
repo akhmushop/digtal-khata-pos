@@ -57,6 +57,7 @@ export interface UpdateBusinessInput {
   timezone?: string;
   mode?: "physical_only" | "online_only" | "omnichannel";
   logoDataUrl?: string | null;
+  onboardingStep?: number;
 }
 
 export async function updateBusiness(

@@ -858,3 +858,41 @@ export async function getBusinessDetailAdmin(
     invoices: invoiceRows,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Audit-log viewer (approved proposal #1)
+// ---------------------------------------------------------------------------
+
+export async function listAuditLogs(
+  options: {
+    action?: string | undefined;
+    entityType?: string | undefined;
+  } = {},
+) {
+  return db
+    .select({
+      id: saasAdminAudit.id,
+      adminUserId: saasAdminAudit.adminUserId,
+      adminName: users.fullName,
+      adminEmail: users.email,
+      action: saasAdminAudit.action,
+      entityType: saasAdminAudit.entityType,
+      entityId: saasAdminAudit.entityId,
+      metadata: saasAdminAudit.metadata,
+      createdAt: saasAdminAudit.createdAt,
+    })
+    .from(saasAdminAudit)
+    .innerJoin(users, eq(users.id, saasAdminAudit.adminUserId))
+    .where(
+      and(
+        options.action
+          ? eq(saasAdminAudit.action, options.action)
+          : undefined,
+        options.entityType
+          ? eq(saasAdminAudit.entityType, options.entityType)
+          : undefined,
+      ),
+    )
+    .orderBy(desc(saasAdminAudit.id))
+    .limit(100);
+}

@@ -17,6 +17,7 @@ export interface ActiveSession {
   ipAddress: string | null;
   userAgent: string | null;
   createdAt: string | null;
+  lastUsedAt: string | null;
   expiresAt: string;
 }
 

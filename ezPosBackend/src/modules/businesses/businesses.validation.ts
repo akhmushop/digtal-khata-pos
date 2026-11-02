@@ -28,6 +28,8 @@ export const createBusinessSchema = z.object({
   address: optionalTextField(z.string().max(500, "Address is too long")),
   businessType: optionalTextField(z.string().max(50, "Business type is too long")),
   country: optionalTextField(z.string().max(50, "Country is too long")),
+  // Set by the website when the owner accepted the terms at sign-up.
+  termsAccepted: z.boolean().optional(),
 });
 
 export type CreateBusinessInput = z.infer<typeof createBusinessSchema>;
@@ -71,6 +73,8 @@ export const updateBusinessSchema = z.object({
       "Logo must be a PNG, JPEG, or WebP image",
     )
     .nullish(),
+  // Resumable onboarding progress: 0 = not started, 4 = complete.
+  onboardingStep: z.number().int().min(0).max(4).optional(),
 });
 
 export type UpdateBusinessInput = z.infer<typeof updateBusinessSchema>;

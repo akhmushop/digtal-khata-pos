@@ -83,6 +83,7 @@ describe("auth client", () => {
       fullName: "Test",
       email: "a@b.c",
       password: "pw",
+      termsAccepted: true,
     });
     expect(result.ok).toBe(false);
     expect(result.status).toBe(409);

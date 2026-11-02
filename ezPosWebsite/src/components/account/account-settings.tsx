@@ -401,8 +401,12 @@ export function AccountSettings() {
                     {session.ipAddress ?? "unknown IP"} · signed in{" "}
                     {session.createdAt
                       ? new Date(session.createdAt).toLocaleString()
-                      : "—"}{' '}
-                    · expires {new Date(session.expiresAt).toLocaleDateString()}
+                      : "—"}
+                    {session.lastUsedAt
+                      ? ` · last active ${new Date(session.lastUsedAt).toLocaleString()}`
+                      : ""}
+                    {" · expires "}
+                    {new Date(session.expiresAt).toLocaleDateString()}
                   </p>
                 </div>
                 <Button

@@ -482,10 +482,11 @@ export async function rotateRefreshToken(
   }
 
   // Atomic claim: exactly one concurrent rotation wins. A loser observes
-  // zero updated rows and falls into the (grace) reuse path.
+  // zero updated rows and falls into the (grace) reuse path. lastUsedAt is
+  // stamped for the sessions "last active" display.
   const claimed = await db
     .update(refreshTokens)
-    .set({ revokedAt: new Date() })
+    .set({ revokedAt: new Date(), lastUsedAt: new Date() })
     .where(
       and(eq(refreshTokens.id, stored.id), isNull(refreshTokens.revokedAt)),
     )
@@ -821,6 +822,7 @@ export interface ActiveSession {
   ipAddress: string | null;
   userAgent: string | null;
   createdAt: Date | null;
+  lastUsedAt: Date | null;
   expiresAt: Date;
 }
 
@@ -833,6 +835,7 @@ export async function listActiveSessions(
       ipAddress: refreshTokens.ipAddress,
       userAgent: refreshTokens.userAgent,
       createdAt: refreshTokens.createdAt,
+      lastUsedAt: refreshTokens.lastUsedAt,
       expiresAt: refreshTokens.expiresAt,
     })
     .from(refreshTokens)

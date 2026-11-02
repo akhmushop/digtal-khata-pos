@@ -190,6 +190,9 @@ export async function createBusinessForUser(
         address: input.address ?? null,
         // Server-derived: the creator, not any client-supplied user ID.
         createdByUserId: userId,
+        ...(input.termsAccepted === true
+          ? { termsAcceptedAt: new Date() }
+          : {}),
       })
       .returning({
         id: businesses.id,
