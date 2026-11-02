@@ -95,6 +95,9 @@ async function issueRefreshToken(
     userId,
     tokenHash: hashToken(refreshToken),
     expiresAt,
+    // A freshly issued token has been "used" the moment it is handed out —
+    // keeps the sessions card's last-active non-null.
+    lastUsedAt: new Date(),
     // Columns are varchar(45)/varchar(255) — truncate defensively.
     ipAddress: meta.ip?.slice(0, 45),
     userAgent: meta.userAgent?.slice(0, 255),

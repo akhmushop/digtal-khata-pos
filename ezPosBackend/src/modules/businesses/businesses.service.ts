@@ -263,6 +263,7 @@ export interface BusinessDetail {
   currency: string;
   timezone: string;
   mode: "physical_only" | "online_only" | "omnichannel";
+  onboardingStep: number;
   logoUrl: string | null;
   createdAt: Date | null;
   subscription: SubscriptionState;
@@ -288,6 +289,7 @@ export async function getBusinessForMembership(
       timezone: businesses.timezone,
       mode: businesses.mode,
       logoUrl: businesses.logoUrl,
+      onboardingStep: businesses.onboardingStep,
       createdAt: businesses.createdAt,
       roleSlug: roles.slug,
     })
@@ -350,6 +352,9 @@ export async function updateBusinessForMembership(
       ...(input.timezone !== undefined ? { timezone: input.timezone } : {}),
       ...(input.logoDataUrl !== undefined
         ? { logoUrl: input.logoDataUrl }
+        : {}),
+      ...(input.onboardingStep !== undefined
+        ? { onboardingStep: input.onboardingStep }
         : {}),
       updatedAt: new Date(),
     })

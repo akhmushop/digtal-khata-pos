@@ -316,4 +316,167 @@ describe("portal completion integration", { skip: !runIntegration }, () => {
     );
     return variant.rows[0]!.id as number;
   }
+
+    it("registers with termsAccepted and stamps the business on creation", async () => {
+      const email = uniqueEmail();
+      const reg = await fetch(`${baseUrl}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: "Terms Test",
+          email,
+          password: "strong-password-123",
+          termsAccepted: true,
+        }),
+      });
+      assert.equal(reg.status, 201);
+      const login = await fetch(`${baseUrl}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password: "strong-password-123" }),
+      });
+      const loginBody = (await login.json()) as { accessToken: string };
+      const biz = await fetch(`${baseUrl}/api/businesses`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${loginBody.accessToken}`,
+        },
+        body: JSON.stringify({ name: "Terms Co", termsAccepted: true }),
+      });
+      assert.equal(biz.status, 201);
+      const stamped = (await pg!.query(
+        "SELECT terms_accepted_at FROM businesses WHERE id = $1",
+        [(await biz.json()).business.id],
+      )).rows[0] as { terms_accepted_at: string };
+      assert.ok(stamped.terms_accepted_at !== null);
+    });
+
+    it("onboardingStep persists through updateBusiness", async () => {
+      const email = uniqueEmail();
+      const reg = await fetch(`${baseUrl}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: "Onb Test",
+          email,
+          password: "strong-password-123",
+        }),
+      });
+      const login = await fetch(`${baseUrl}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password: "strong-password-123" }),
+      });
+      const { accessToken } = (await login.json()) as { accessToken: string };
+      const biz = await fetch(`${baseUrl}/api/businesses`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ name: "Onb Co" }),
+      });
+      const { id } = (await biz.json()).business as { id: number };
+
+      const put = await fetch(`${baseUrl}/api/businesses/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+          "X-Business-Id": String(id),
+        },
+        body: JSON.stringify({ onboardingStep: 2 }),
+      });
+      assert.equal(put.status, 200);
+      const detail = (await (
+        await fetch(`${baseUrl}/api/businesses/${id}`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "X-Business-Id": String(id),
+          },
+        })
+      ).json()) as { business: { onboardingStep: number } };
+      assert.equal(detail.business.onboardingStep, 2);
+    });
+
+    it("sessions expose lastUsedAt after a refresh", async () => {
+      const email = uniqueEmail();
+      await fetch(`${baseUrl}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: "Sess Test",
+          email,
+          password: "strong-password-123",
+        }),
+      });
+      const login = await fetch(`${baseUrl}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password: "strong-password-123" }),
+      });
+      const { accessToken } = (await login.json()) as { accessToken: string };
+      // A refresh stamps last_used_at on the rotating token. Capture the
+      // refresh cookie from login and send it (node fetch has no cookie jar).
+      const loginRes = await fetch(`${baseUrl}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password: "strong-password-123" }),
+      });
+      const setCookie = (loginRes.headers.get("set-cookie") ?? "").split(";")[0]!;
+      await fetch(`${baseUrl}/api/auth/refresh`, {
+        method: "POST",
+        headers: { Cookie: setCookie },
+      });
+
+      const list = await fetch(`${baseUrl}/api/auth/sessions`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const sessions = (await list.json()).data as {
+        lastUsedAt: string | null;
+      }[];
+      assert.ok(sessions.some((s) => s.lastUsedAt !== null));
+    });
+
+    it("support tickets accept category and priority", async () => {
+      const email = uniqueEmail();
+      const reg = await fetch(`${baseUrl}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: "Cat Test",
+          email,
+          password: "strong-password-123",
+        }),
+      });
+      const login = await fetch(`${baseUrl}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password: "strong-password-123" }),
+      });
+      const { accessToken } = (await login.json()) as { accessToken: string };
+
+      const create = await fetch(`${baseUrl}/api/support/tickets`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          subject: "Category test",
+          message: "Testing the category and priority fields on tickets.",
+          category: "billing",
+          priority: "high",
+        }),
+      });
+      assert.equal(create.status, 201);
+      const row = (await pg!.query(
+        "SELECT category, priority FROM support_tickets WHERE subject = 'Category test' ORDER BY id DESC LIMIT 1",
+      )).rows[0] as { category: string; priority: string };
+      assert.equal(row.category, "billing");
+      assert.equal(row.priority, "high");
+    });
+
 });
+
