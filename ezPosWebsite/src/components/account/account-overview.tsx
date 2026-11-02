@@ -82,7 +82,10 @@ export function AccountOverview() {
 
   useEffect(() => {
     if (!businessId) {
-      setLoading(false);
+      void (async () => {
+        await Promise.resolve();
+        setLoading(false);
+      })();
       return;
     }
     void (async () => {

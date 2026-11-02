@@ -69,7 +69,9 @@ export function OrdersCenter() {
   );
 
   useEffect(() => {
-    void reload();
+    void (async () => {
+      await reload();
+    })();
   }, [reload]);
 
   async function act(

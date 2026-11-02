@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/forms/text-field";
-import { useAuth } from "@/components/providers/auth-provider";
 import { useActiveBusiness } from "@/hooks/useActiveBusiness";
 import {
   createWebhookEndpoint,
@@ -63,7 +62,9 @@ export function WebhooksCenter() {
   );
 
   useEffect(() => {
-    void reload();
+    void (async () => {
+      await reload();
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [businessId]);
 

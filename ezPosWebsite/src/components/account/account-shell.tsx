@@ -50,7 +50,9 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
   }, [businessId]);
 
   useEffect(() => {
-    void loadNotifications();
+    void (async () => {
+      await loadNotifications();
+    })();
   }, [loadNotifications]);
 
   useEffect(() => {

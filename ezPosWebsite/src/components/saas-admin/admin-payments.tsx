@@ -24,7 +24,9 @@ export function AdminPayments() {
   }, []);
 
   useEffect(() => {
-    void reload(statusFilter);
+    void (async () => {
+      await reload(statusFilter);
+    })();
   }, [reload, statusFilter]);
 
   return (

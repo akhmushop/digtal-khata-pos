@@ -23,7 +23,9 @@ export function AdminBusinesses() {
   }, []);
 
   useEffect(() => {
-    void reload();
+    void (async () => {
+      await reload();
+    })();
   }, [reload]);
 
   async function toggleStatus(business: AdminBusiness) {

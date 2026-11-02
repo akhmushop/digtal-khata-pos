@@ -42,9 +42,11 @@ async function request<T>(
   const body = (await res.json().catch(() => null)) as Record<string, unknown> | null;
   let data: unknown = body;
   let message: string;
-  if (body && typeof body === "object" && "success" in body && "data" in body) {
-    data = body.data;
-    message = res.ok ? "Done." : "Something went wrong.";
+  if (body && typeof body === "object" && "success" in body) {
+    if ("data" in body) data = body.data;
+    message = res.ok
+      ? "Done."
+      : ((body.message as string | undefined) ?? "Something went wrong.");
   } else {
     message = res.ok ? "Done." : "Something went wrong.";
   }

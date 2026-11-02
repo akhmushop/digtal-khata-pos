@@ -74,7 +74,9 @@ export function SubscriptionManager() {
   }, [businessId]);
 
   useEffect(() => {
-    void reload();
+    void (async () => {
+      await reload();
+    })();
   }, [reload]);
 
   const currentPlanId = payload?.plan?.id ?? null;

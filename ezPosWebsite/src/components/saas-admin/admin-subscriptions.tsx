@@ -28,7 +28,9 @@ export function AdminSubscriptions() {
   }, []);
 
   useEffect(() => {
-    void reload(statusFilter);
+    void (async () => {
+      await reload(statusFilter);
+    })();
   }, [reload, statusFilter]);
 
   useEffect(() => {

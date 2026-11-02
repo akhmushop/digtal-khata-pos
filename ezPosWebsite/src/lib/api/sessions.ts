@@ -34,12 +34,14 @@ export async function fetchSessions(): Promise<
   }
   const body = (await res.json().catch(() => null)) as {
     success?: boolean;
+    message?: string;
     data?: ActiveSession[];
   } | null;
   return {
     ok: res.ok,
     status: res.status,
-    message: res.ok ? "Done." : "Unable to load sessions.",
+    message:
+      body?.message ?? (res.ok ? "Done." : "Unable to load sessions."),
     data: body?.data ?? [],
   };
 }

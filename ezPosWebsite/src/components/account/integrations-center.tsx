@@ -75,7 +75,9 @@ export function IntegrationsCenter() {
   );
 
   useEffect(() => {
-    void reload();
+    void (async () => {
+      await reload();
+    })();
     if (businessId) {
       void (async () => {
         const detail = await fetch(

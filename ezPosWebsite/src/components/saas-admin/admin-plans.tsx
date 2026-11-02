@@ -25,7 +25,9 @@ export function AdminPlans() {
   }, []);
 
   useEffect(() => {
-    void reload();
+    void (async () => {
+      await reload();
+    })();
   }, [reload]);
 
   async function save(plan: AdminPlan, changes: { price?: number; isActive?: boolean; isPopular?: boolean }) {

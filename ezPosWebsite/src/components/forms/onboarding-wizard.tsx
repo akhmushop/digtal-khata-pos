@@ -136,7 +136,10 @@ function OnboardingContent() {
   // Prefill from the existing membership once the auth context resolves.
   useEffect(() => {
     if (membership && !name) {
-      setName(membership.businessName);
+      void (async () => {
+        await Promise.resolve();
+        setName(membership.businessName);
+      })();
     }
   }, [membership, name]);
 

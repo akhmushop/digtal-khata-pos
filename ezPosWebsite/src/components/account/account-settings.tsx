@@ -77,7 +77,12 @@ export function AccountSettings() {
   const [passwordBusy, setPasswordBusy] = useState(false);
 
   useEffect(() => {
-    if (user && fullName === "" && user.fullName) setFullName(user.fullName);
+    if (user && fullName === "" && user.fullName) {
+      void (async () => {
+        await Promise.resolve();
+        setFullName(user.fullName);
+      })();
+    }
   }, [user, fullName]);
 
   // Load the business profile for fields not exposed on the membership.

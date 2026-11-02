@@ -44,7 +44,9 @@ export function SupportCenter() {
   }
 
   useEffect(() => {
-    void reload();
+    void (async () => {
+      await reload();
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
