@@ -7,6 +7,11 @@ import { TextField } from "@/components/forms/text-field";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useActiveBusiness } from "@/hooks/useActiveBusiness";
 import { exportBusinessData, updateBusiness } from "@/lib/api/account";
+import {
+  fetchSessions,
+  revokeSession,
+  type ActiveSession,
+} from "@/lib/api/sessions";
 import { changePassword, updateProfile } from "@/lib/api/portal";
 
 const BUSINESS_TYPES = [
@@ -53,6 +58,8 @@ export function AccountSettings() {
   const [exporting, setExporting] = useState(false);
   const [bizLoaded, setBizLoaded] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
+  const [sessions, setSessions] = useState<ActiveSession[] | null>(null);
+  const [sessionsLoaded, setSessionsLoaded] = useState(false);
   const [bizMessage, setBizMessage] = useState<string | null>(null);
   const [bizOk, setBizOk] = useState(false);
 
@@ -107,6 +114,16 @@ export function AccountSettings() {
       setBizLoaded(true);
     })();
   }, [businessId, bizLoaded]);
+
+  // Active sessions (loaded once per mount)
+  useEffect(() => {
+    if (sessionsLoaded) return;
+    void (async () => {
+      const result = await fetchSessions();
+      setSessions(result.data ?? []);
+      setSessionsLoaded(true);
+    })();
+  }, [sessionsLoaded]);
 
   async function saveBusiness() {
     setBizMessage(null);
@@ -352,6 +369,56 @@ export function AccountSettings() {
             </p>
           ) : null}
         </div>
+      </Card>
+
+      <Card
+        title="Active sessions"
+        description="Devices currently signed in to your account. Signing one out forces it to log in again."
+      >
+        {sessions === null ? (
+          <p className="text-sm text-slate-500">Loading…</p>
+        ) : sessions.length === 0 ? (
+          <p className="text-sm text-slate-500">No active sessions.</p>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {sessions.map((session) => (
+              <li
+                key={session.id}
+                className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"
+              >
+                <div>
+                  <p className="font-medium text-slate-900">
+                    {session.userAgent
+                      ? session.userAgent.slice(0, 60)
+                      : "Unknown device"}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {session.ipAddress ?? "unknown IP"} · signed in{" "}
+                    {session.createdAt
+                      ? new Date(session.createdAt).toLocaleString()
+                      : "—"}{' '}
+                    · expires {new Date(session.expiresAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    void (async () => {
+                      const result = await revokeSession(session.id);
+                      if (result.ok) {
+                        const fresh = await fetchSessions();
+                        setSessions(fresh.data ?? []);
+                      }
+                    })();
+                  }}
+                >
+                  Sign out
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
       </Card>
 
       <Card

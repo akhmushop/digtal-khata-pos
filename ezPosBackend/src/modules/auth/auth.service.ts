@@ -1,5 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
-import { and, desc, eq, gt, inArray, isNull } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "../../db/schema/index.js";
 import { users } from "../../db/schema/users.js";
 import { userRoles } from "../../db/schema/userRoles.js";
@@ -810,4 +810,59 @@ export async function latestVerificationTokenIssuedAt(
     .orderBy(desc(emailVerificationTokens.createdAt))
     .limit(1);
   return record?.createdAt ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Active sessions (portal Settings)
+// ---------------------------------------------------------------------------
+
+export interface ActiveSession {
+  id: number;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: Date | null;
+  expiresAt: Date;
+}
+
+export async function listActiveSessions(
+  userId: number,
+): Promise<ActiveSession[]> {
+  const rows = await db
+    .select({
+      id: refreshTokens.id,
+      ipAddress: refreshTokens.ipAddress,
+      userAgent: refreshTokens.userAgent,
+      createdAt: refreshTokens.createdAt,
+      expiresAt: refreshTokens.expiresAt,
+    })
+    .from(refreshTokens)
+    .where(
+      and(
+        eq(refreshTokens.userId, userId),
+        isNull(refreshTokens.revokedAt),
+        sql`${refreshTokens.expiresAt} > now()`,
+      ),
+    )
+    .orderBy(desc(refreshTokens.createdAt))
+    .limit(20);
+  return rows;
+}
+
+/** Revokes one of the caller's own sessions; returns whether it existed. */
+export async function revokeSession(
+  userId: number,
+  sessionId: number,
+): Promise<boolean> {
+  const revoked = await db
+    .update(refreshTokens)
+    .set({ revokedAt: new Date() })
+    .where(
+      and(
+        eq(refreshTokens.id, sessionId),
+        eq(refreshTokens.userId, userId),
+        isNull(refreshTokens.revokedAt),
+      ),
+    )
+    .returning({ id: refreshTokens.id });
+  return revoked.length > 0;
 }

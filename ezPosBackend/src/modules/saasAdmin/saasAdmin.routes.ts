@@ -16,6 +16,11 @@ router.get("/api/saas/overview", ...admin, adminController.getOverview);
 router.post("/api/saas/jobs/run", ...admin, adminController.runJobs);
 
 router.get("/api/saas/businesses", ...admin, adminController.getBusinesses);
+router.get(
+  "/api/saas/businesses/:businessId/detail",
+  ...admin,
+  adminController.getBusinessDetail,
+);
 router.post(
   "/api/saas/businesses/:businessId/status",
   ...admin,

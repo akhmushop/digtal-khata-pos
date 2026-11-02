@@ -38,6 +38,23 @@ export async function getBusinesses(req: Request, res: Response) {
   }
 }
 
+export async function getBusinessDetail(req: Request, res: Response) {
+  const businessId = Number(req.params.businessId);
+  if (!Number.isInteger(businessId) || businessId <= 0) {
+    return res
+      .status(400)
+      .json({ success: false, message: "A valid business ID is required." });
+  }
+  try {
+    res.status(200).json({
+      success: true,
+      data: await saasAdminService.getBusinessDetailAdmin(businessId),
+    });
+  } catch (err) {
+    sendSafeError(res, err, "Business not found.");
+  }
+}
+
 export async function setBusinessStatus(req: Request, res: Response) {
   const businessId = Number(req.params.businessId);
   const status = req.body?.status === "suspended" ? "suspended" : req.body?.status === "active" ? "active" : null;
