@@ -9,9 +9,12 @@ import {
   CreditCard,
   LayoutDashboard,
   LifeBuoy,
+  Package,
+  Plug,
   Receipt,
   Settings,
   Store,
+  Webhook,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers/auth-provider";
@@ -24,9 +27,12 @@ import {
 
 const NAV = [
   { href: "/account", label: "Overview", icon: Store },
+  { href: "/account/orders", label: "Orders", icon: Package },
   { href: "/dashboard", label: "Business dashboard", icon: LayoutDashboard, external: true },
   { href: "/account/subscription", label: "Subscription", icon: CreditCard },
   { href: "/account/billing", label: "Billing", icon: Receipt },
+  { href: "/account/integrations", label: "Integrations", icon: Plug },
+  { href: "/account/webhooks", label: "Webhooks", icon: Webhook },
   { href: "/account/settings", label: "Settings", icon: Settings },
   { href: "/account/support", label: "Support", icon: LifeBuoy },
 ] as const;
