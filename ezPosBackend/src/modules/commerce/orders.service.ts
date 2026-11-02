@@ -19,7 +19,6 @@ import {
   consumeStockFifo,
 } from "../sales/sales.service.js";
 import { emitWebhookEventInTx } from "../webhooks/webhookDelivery.service.js";
-import { emitNotification } from "../notifications/notifications.service.js";
 import {
   confirmReservationsForSaleInTx,
   createReservationsInTx,
@@ -370,13 +369,6 @@ export async function createOnlineOrder(
       channel: input.channel,
       externalOrderId: input.externalOrderId ?? null,
     });
-    await emitNotification(tx, input.businessId, {
-      type: "order.created",
-      title: `New online order ${result.invoiceNumber}`,
-      body: `${input.channel === "woocommerce" ? "WooCommerce" : "Storefront"} order for ${result.total} BDT.`,
-      entityType: "sale",
-      entityId: result.saleId,
-    });
     return result;
   });
 }
@@ -499,13 +491,6 @@ export async function confirmOnlineOrder(
       invoiceNumber: result.invoiceNumber,
       total: result.total,
     });
-    await emitNotification(tx, businessId, {
-      type: "order.paid",
-      title: `Payment received — ${result.invoiceNumber}`,
-      body: `${result.total} BDT collected; the order is ready for fulfillment.`,
-      entityType: "sale",
-      entityId: result.saleId,
-    });
     return result;
   });
 }
@@ -536,13 +521,6 @@ export async function cancelOnlineOrder(
     await emitWebhookEventInTx(tx, businessId, "order.cancelled", {
       orderId: saleId,
       reason: reason ?? null,
-    });
-    await emitNotification(tx, businessId, {
-      type: "order.cancelled",
-      title: "Order cancelled",
-      body: "The online order was cancelled and its stock released.",
-      entityType: "sale",
-      entityId: saleId,
     });
     void reason;
   });
